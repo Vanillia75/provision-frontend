@@ -574,7 +574,7 @@ export default function App() {
         </div>
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
-          { id: "panique", icon: "ti-alert-triangle", label: "Mode panique" },
+          { id: "panique", icon: "ti-radar-2", label: "Scanner Financier" },
           { id: "salaire", icon: "ti-cash", label: "Combien me verser ?" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
@@ -646,7 +646,7 @@ export default function App() {
                 {disponibleAujourdhui !== null ? (
                   <div style={{ ...S.dispoValue, color: disponibleAujourdhui < 0 ? "#FF8A80" : "#5DCAA5" }}>{formatEUR(disponibleAujourdhui)}</div>
                 ) : (
-                  <div style={S.dispoEmpty}>Renseignez votre solde dans <button style={S.linkBtnLight} onClick={() => setNav("panique")}>Mode panique</button> pour voir ce chiffre</div>
+                  <div style={S.dispoEmpty}>Renseignez votre solde dans <button style={S.linkBtnLight} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce chiffre</div>
                 )}
                 {disponibleAujourdhui !== null && <div style={S.dispoSub}>après URSSAF, impôts, CFE et votre réserve de sécurité de {formatEUR(securiteNum)}</div>}
               </div>
@@ -853,7 +853,7 @@ export default function App() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>🚨 Mode panique</h1><p style={S.pageSub}>Un seul chiffre à donner, H€CTOR fait le reste</p></div>
+                <div><h1 style={S.pageTitle}>🔍 Scanner Financier</h1><p style={S.pageSub}>H€CTOR scanne toute votre situation en un coup d'œil</p></div>
               </div>
 
               <div style={S.card}>
@@ -892,6 +892,36 @@ export default function App() {
                     </div>
                   </div>
 
+                  {(() => {
+                    const recos = [];
+                    if (manque > 0) {
+                      recos.push({ icon: "ti-alert-triangle", text: `Mettre ${formatEUR(manque)} de côté pour couvrir vos charges et votre réserve de sécurité.`, urgent: true });
+                    }
+                    if (urssaf > 0 && estimateData?.periode_courante?.jours_restants <= 14) {
+                      recos.push({ icon: "ti-calendar-due", text: `Déclarer et payer vos cotisations URSSAF avant le ${formatDate(estimateData.periode_courante.date_limite_declaration)} (${estimateData.periode_courante.jours_restants}j restants).`, urgent: estimateData.periode_courante.jours_restants <= 7 });
+                    }
+                    if (apresReserve > securiteNum * 0.5 && apresReserve > 0) {
+                      recos.push({ icon: "ti-cash", text: `Vous avez de la marge — vous pourriez vous verser jusqu'à ${formatEUR(salaireRecommande)} sans risque (voir Mode Salaire).`, urgent: false });
+                    }
+                    if (tvaProche) {
+                      recos.push({ icon: "ti-receipt-tax", text: `Vous approchez du seuil de TVA (${pourcentageSeuilTva}%) — anticipez ce changement.`, urgent: tvaDepasse });
+                    }
+                    if (recos.length === 0) {
+                      recos.push({ icon: "ti-check", text: "Rien à signaler pour l'instant — votre situation est stable.", urgent: false });
+                    }
+                    return (
+                      <div style={{ ...S.card, marginTop: 14 }}>
+                        <div style={S.cardTitle}>🎯 Que faire maintenant ?</div>
+                        {recos.map((r, i) => (
+                          <div key={i} style={S.recoRow}>
+                            <span style={{ ...S.recoNum, background: r.urgent ? "#FCEBEB" : "#E6F1FB", color: r.urgent ? "#A32D2D" : "#0C447C" }}>{i + 1}</span>
+                            <span style={{ fontSize: 13, color: INK, lineHeight: 1.5 }}>{r.text}</span>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
                   <details style={{ ...S.card, marginTop: 14 }}>
                     <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Paramètres avancés (CFE, impôts)</summary>
                     <div style={{ marginTop: 14 }}>
@@ -929,25 +959,34 @@ export default function App() {
                     </div>
                   )}
 
-                  <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je acheter ça ?</div>
+                  <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
+                    <div style={S.cardTitle}>🛒 Mode Achat — Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                      <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Ex : iPhone 1500€ → tapez 1500" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
+                      <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Ex : Jaguar E-PACE → tapez 18000" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
                     </div>
                     {achatMontant && parseFloat(achatMontant) > 0 && (() => {
                       const montant = parseFloat(achatMontant);
+                      const tresorerieApres = solde - montant;
                       const resteApres = apresReserve - montant;
-                      const possible = resteApres >= 0;
+                      const ratioApres = solde > 0 ? resteApres / solde : -1;
+
+                      let verdict = "ok", verdictLabel = "✅ Recommandé", verdictColor = "#0F6E56", verdictBg = "#E1F5EE";
+                      if (resteApres < 0) { verdict = "non"; verdictLabel = "❌ Déconseillé"; verdictColor = "#A32D2D"; verdictBg = "#FCEBEB"; }
+                      else if (ratioApres < 0.15) { verdict = "prudence"; verdictLabel = "⚠️ Prudence"; verdictColor = "#854F0B"; verdictBg = "#FAEEDA"; }
+
                       return (
-                        <div style={{ ...S.achatResult, background: possible ? "#E1F5EE" : "#FCEBEB", color: possible ? "#0F6E56" : "#A32D2D" }}>
-                          <i className={`ti ${possible ? "ti-circle-check" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 24 }} />
-                          <div>
-                            <div style={{ fontWeight: 700, fontSize: 18 }}>{possible ? "✅ Oui" : "❌ Non"}</div>
-                            <div style={{ fontSize: 12, marginTop: 4 }}>
-                              {possible
-                                ? <>Il vous restera <strong>{formatEUR(resteApres)}</strong> de budget libre.</>
-                                : <>Il vous manquerait <strong>{formatEUR(Math.abs(resteApres))}</strong> pour garder votre réserve de sécurité intacte.</>}
-                            </div>
+                        <div>
+                          <div style={{ ...S.achatResult, background: verdictBg, color: verdictColor, marginBottom: 12 }}>
+                            <i className={`ti ${verdict === "ok" ? "ti-circle-check" : verdict === "prudence" ? "ti-alert-triangle" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 26 }} />
+                            <div style={{ fontWeight: 700, fontSize: 18 }}>{verdictLabel}</div>
+                          </div>
+                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Trésorerie restante après achat</span><span style={{ fontWeight: 600 }}>{formatEUR(tresorerieApres)}</span></div>
+                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur vos provisions (URSSAF/CFE)</span><span>{tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
+                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Budget libre restant</span><span style={{ color: resteApres < 0 ? "#A32D2D" : ACCENT, fontWeight: 600 }}>{formatEUR(Math.max(0, resteApres))}</span></div>
+                          <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 8 }}>
+                            {verdict === "ok" && "Cet achat ne compromet ni vos charges futures ni votre réserve de sécurité."}
+                            {verdict === "prudence" && "L'achat passe, mais il ne vous restera presque plus de marge ensuite."}
+                            {verdict === "non" && <>Il vous manquerait <strong>{formatEUR(Math.abs(resteApres))}</strong> pour garder votre réserve de sécurité intacte.</>}
                           </div>
                         </div>
                       );
@@ -984,7 +1023,7 @@ export default function App() {
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
             {panique.solde === "" ? (
-              <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("panique")}>Mode panique</button> pour voir ce calcul.</p></div>
+              <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce calcul.</p></div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 <div style={{ ...S.card, border: "1px solid #EEF2F7" }}>
@@ -1567,6 +1606,8 @@ const S = {
   askHectorBtn: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: `linear-gradient(135deg, ${ACCENT}, #2563A8)`, color: "white", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 18, boxShadow: "0 4px 14px rgba(55,138,221,0.3)" },
   quickAskChip: { background: "white", border: `1px solid ${ACCENT}`, color: ACCENT, borderRadius: 20, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer" },
   salaireRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
+  recoRow: { display: "flex", alignItems: "flex-start", gap: 12, padding: "8px 0" },
+  recoNum: { width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 },
   paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
   paniqueLineLabel: { display: "flex", alignItems: "center" },
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
