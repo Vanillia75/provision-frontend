@@ -777,27 +777,27 @@ export default function App() {
 
               {solde > 0 && (
                 <>
-                  <div style={{ ...S.card, marginTop: 14, background: c.bg, border: `1px solid ${c.dot}` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
-                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: c.dot, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                        <i className={`ti ${score === "vert" ? "ti-check" : score === "orange" ? "ti-alert-triangle" : "ti-alert-octagon"}`} aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
-                      </div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: c.text }}>{c.emoji} {scoreLabel}</div>
+                  <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "36px 24px", background: c.bg, border: `2px solid ${c.dot}` }}>
+                    <div style={S.paniqueResultLabel}>💳 Vous pouvez dépenser</div>
+                    <div style={{ ...S.paniqueResultValue, fontSize: 56, color: apresReserve > 0 ? c.text : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text, marginTop: 10 }}>{c.emoji} {scoreLabel}</div>
+                    <div style={{ fontSize: 13, color: c.text, marginTop: 6, maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+                      {apresReserve > 0
+                        ? `Vous pouvez dépenser jusqu'à ${formatEUR(apresReserve)} tout en conservant votre réserve de sécurité de ${formatEUR(securiteNum)}.`
+                        : `Il manque ${formatEUR(manque)} pour couvrir vos charges à venir${securiteNum > 0 ? " et garder votre réserve" : ""} de ${formatEUR(securiteNum)}.`}
                     </div>
-                    <div style={{ ...S.netRow, color: c.text }}><span>Solde détecté</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
-                    <div style={{ ...S.netRow, color: c.text }}><span>Charges futures (URSSAF + CFE{!profile?.versement_liberatoire ? " + impôts" : ""})</span><span>−{formatEUR(chargesFutures)}</span></div>
-                    {manque > 0 && (
-                      <div style={{ fontSize: 12, color: c.text, marginTop: 8, fontWeight: 500 }}>
-                        Il manque {formatEUR(manque)} pour couvrir vos prochaines échéances{securiteNum > 0 ? " et garder votre réserve" : ""}.
-                      </div>
-                    )}
                   </div>
 
-                  <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "28px 24px" }}>
-                    <div style={S.paniqueResultLabel}>Vous pouvez dépenser</div>
-                    <div style={{ ...S.paniqueResultValue, fontSize: 44, color: apresReserve > 0 ? ACCENT : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</div>
-                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>
-                      sans toucher à votre réserve de {formatEUR(securiteNum)} · <button style={S.linkBtn} onClick={() => setNav("dashboard")}>modifier ma réserve</button>
+                  <div style={{ ...S.card, marginTop: 14 }}>
+                    <div style={S.cardTitle}>💰 Argent disponible après charges</div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde détecté</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Charges futures (URSSAF + CFE{!profile?.versement_liberatoire ? " + impôts" : ""})</span><span style={{ color: "#854F0B" }}>−{formatEUR(chargesFutures)}</span></div>
+                    <div style={S.paniqueResult}>
+                      <span style={S.paniqueResultLabel}>Argent disponible après charges</span>
+                      <span style={{ ...S.paniqueResultValue, fontSize: 28, color: ACCENT }}>{formatEUR(solde - chargesFutures)}</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6, textAlign: "center" }}>
+                      Réserve de {formatEUR(securiteNum)} ensuite réservée pour votre sécurité · <button style={S.linkBtn} onClick={() => setNav("dashboard")}>modifier ma réserve</button>
                     </div>
                   </div>
 
@@ -820,7 +820,7 @@ export default function App() {
                   </details>
 
                   <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je me permettre cet achat ?</div>
+                    <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je acheter ça ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                       <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Ex : iPhone 1500€ → tapez 1500" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
                     </div>
@@ -832,11 +832,11 @@ export default function App() {
                         <div style={{ ...S.achatResult, background: possible ? "#E1F5EE" : "#FCEBEB", color: possible ? "#0F6E56" : "#A32D2D" }}>
                           <i className={`ti ${possible ? "ti-circle-check" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 24 }} />
                           <div>
-                            <div style={{ fontWeight: 700, fontSize: 16 }}>{possible ? "Oui" : "Non"}</div>
-                            <div style={{ fontSize: 12, marginTop: 2 }}>
+                            <div style={{ fontWeight: 700, fontSize: 18 }}>{possible ? "✅ Oui" : "❌ Non"}</div>
+                            <div style={{ fontSize: 12, marginTop: 4 }}>
                               {possible
-                                ? `Après achat, il vous resterait ${formatEUR(resteApres)} au-delà de votre réserve.`
-                                : `Il vous manquerait ${formatEUR(Math.abs(resteApres))} pour garder votre réserve de sécurité intacte.`}
+                                ? <>Il vous restera <strong>{formatEUR(resteApres)}</strong> de budget libre.</>
+                                : <>Il vous manquerait <strong>{formatEUR(Math.abs(resteApres))}</strong> pour garder votre réserve de sécurité intacte.</>}
                             </div>
                           </div>
                         </div>
@@ -845,9 +845,9 @@ export default function App() {
                   </div>
 
                   <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}><i className="ti ti-skull" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Si je retire tout aujourd'hui ?</div>
+                    <div style={S.cardTitle}><i className="ti ti-skull" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />💀 Que se passe-t-il si je retire tout ?</div>
                     {!showRetraitTout ? (
-                      <button style={{ ...S.btnPrimary, background: "#A32D2D" }} onClick={() => setShowRetraitTout(true)}>RETIRER TOUT (simulation)</button>
+                      <button style={{ ...S.btnPrimary, background: "#A32D2D" }} onClick={() => setShowRetraitTout(true)}>Simuler le retrait total</button>
                     ) : (
                       <div style={{ ...S.achatResult, background: "#FCEBEB", color: "#A32D2D", flexDirection: "column", alignItems: "flex-start" }}>
                         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
