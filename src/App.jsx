@@ -102,7 +102,7 @@ export default function App() {
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "200" });
+  const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "200", dettes: "0" });
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("3000");
   const [simActivite, setSimActivite] = useState("services");
@@ -110,6 +110,8 @@ export default function App() {
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [achatMontant, setAchatMontant] = useState("");
   const [heuresTravaillees, setHeuresTravaillees] = useState("");
+  const [simFiscalCa, setSimFiscalCa] = useState("4000");
+  const [simFiscalPeriode, setSimFiscalPeriode] = useState("mensuel");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
@@ -354,24 +356,53 @@ export default function App() {
     rouge: { emoji: "🔴", label: "Situation critique", color: "#A32D2D", bg: "#FCEBEB", border: "#E24B4A" },
   };
 
-  // --- Score sante HECTOR /100, calcule a partir du MEME disponibleAujourdhui ---
+  // --- Score sante HECTOR /100 : 5 composantes ponderees ---
   function calculScoreSante() {
-    if (disponibleAujourdhui === null) return null;
-    if (disponibleAujourdhui > 0) return Math.min(100, Math.round(50 + disponibleAujourdhui / 50));
-    if (disponibleAujourdhui >= -1000) return Math.round(50 + (disponibleAujourdhui / 1000) * 30);
-    return Math.max(0, Math.round(20 + (disponibleAujourdhui + 1000) / 100));
+    if (panique.solde === "" || !estimateData || estimateData.disponible === false) return null;
+    const dettesNum = parseFloat(panique.dettes) || 0;
+
+    // A. Tresorerie vs charges a venir (30 pts)
+    let ptsTreso;
+    if (totalChargesAVenir <= 0) ptsTreso = soldeNum >= 0 ? 30 : 0;
+    else ptsTreso = Math.max(0, Math.min(30, Math.round((soldeNum / totalChargesAVenir) * 15)));
+
+    // B. Reserve de securite couverte (20 pts)
+    let ptsReserve;
+    if (securiteNum <= 0) ptsReserve = 20;
+    else ptsReserve = Math.max(0, Math.min(20, Math.round(((soldeNum - totalChargesAVenir) / securiteNum) * 20)));
+
+    // C. URSSAF specifiquement provisionnee (20 pts)
+    let ptsUrssaf;
+    if (urssafProvision <= 0) ptsUrssaf = 20;
+    else ptsUrssaf = Math.max(0, Math.min(20, Math.round((soldeNum / urssafProvision) * 20)));
+
+    // D. Regularite du CA mois par mois (15 pts)
+    const moisActifs = revenusParMois.filter(m => m.total > 0);
+    let ptsRegularite = 7;
+    if (moisActifs.length >= 2) {
+      const moyenne = moisActifs.reduce((s, m) => s + m.total, 0) / moisActifs.length;
+      const variance = moisActifs.reduce((s, m) => s + Math.pow(m.total - moyenne, 2), 0) / moisActifs.length;
+      const cv = moyenne > 0 ? Math.sqrt(variance) / moyenne : 1;
+      ptsRegularite = Math.max(0, Math.min(15, Math.round((1 - Math.min(cv, 1)) * 15)));
+    }
+
+    // E. Endettement vs CA annuel (15 pts)
+    let ptsDette;
+    if (dettesNum <= 0) ptsDette = 15;
+    else {
+      const ratioDette = dettesNum / Math.max(estimateData.ca_annuel || 1, 1);
+      ptsDette = Math.max(0, Math.min(15, Math.round((1 - Math.min(ratioDette, 1)) * 15)));
+    }
+
+    return { total: Math.max(0, Math.min(100, ptsTreso + ptsReserve + ptsUrssaf + ptsRegularite + ptsDette)), ptsTreso, ptsReserve, ptsUrssaf, ptsRegularite, ptsDette };
   }
-  const scoreSante = calculScoreSante();
+  const scoreDetail = calculScoreSante();
+  const scoreSante = scoreDetail?.total ?? null;
   function scoreInfo(s) {
-    if (s === null) return { label: "—", color: "#8BA5C0", desc: "Renseignez votre solde dans Mode Panique pour calculer votre score." };
-    const st = statutFinancier();
-    return {
-      label: STATUT_INFO[st].label,
-      color: STATUT_INFO[st].color,
-      desc: st === "vert" ? "Votre réserve de sécurité est couverte, vous pouvez dépenser sereinement."
-        : st === "orange" ? "Votre disponible après charges et réserve est tout juste à l'équilibre."
-        : "Votre solde actuel ne couvre pas vos charges à venir et votre réserve. Anticipez avant l'échéance.",
-    };
+    if (s === null) return { label: "—", color: "#8BA5C0", desc: "Renseignez votre solde dans Scanner Financier pour calculer votre score." };
+    if (s >= 75) return { label: "Excellent", color: "#1D9E75", desc: "Trésorerie, réserve et provisions sont solides." };
+    if (s >= 45) return { label: "Correct", color: "#EF9F27", desc: "Quelques points de vigilance à surveiller." };
+    return { label: "Risque élevé", color: "#E24B4A", desc: "Plusieurs indicateurs sont dans le rouge — agissez rapidement." };
   }
 
   // --- Coach prix ---
@@ -395,6 +426,8 @@ export default function App() {
   const moyenneMensuelleCA = estimateData?.ca_annuel != null ? estimateData.ca_annuel / moisEcoulesAnnee : 0;
   const tresorerieApresDettes = soldeNum - totalChargesAVenir;
   const moisSurvie = moyenneMensuelleCA > 0 && panique.solde !== "" ? Math.max(0, Math.round((tresorerieApresDettes / moyenneMensuelleCA) * 10) / 10) : null;
+  const joursSurvie = moisSurvie !== null ? Math.round(moisSurvie * 30) : null;
+  const dateRupture = joursSurvie !== null ? new Date(Date.now() + joursSurvie * 86400000) : null;
 
   if (!token) {
     const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
@@ -412,7 +445,7 @@ export default function App() {
             {[
               { icon: "ti-calculator", t: "Calcul URSSAF automatique", d: "Cotisations recalculées en temps réel selon vos revenus" },
               { icon: "ti-file-invoice", t: "Factures professionnelles", d: "Créez, numérotez et envoyez vos factures en 2 minutes" },
-              { icon: "ti-alert-triangle", t: "Mode panique", d: "Sachez en un clic ce qu'il vous reste vraiment disponible" },
+              { icon: "ti-radar-2", t: "Scanner Financier", d: "Sachez en un clic ce qu'il vous reste vraiment disponible" },
               { icon: "ti-message-circle", t: "Assistant IA fiscal", d: "Posez vos questions URSSAF, TVA, ACRE 24h/24" },
               { icon: "ti-bell", t: "Actualités & échéances", d: "Alertes avant chaque déclaration, zéro oubli" },
               { icon: "ti-building-bank", t: "Connexion bancaire", d: "Qonto, Shine, Revolut... bientôt 100% automatique" },
@@ -576,6 +609,7 @@ export default function App() {
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
           { id: "panique", icon: "ti-radar-2", label: "Scanner Financier" },
           { id: "salaire", icon: "ti-cash", label: "Combien me verser ?" },
+          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
           { id: "factures", icon: "ti-file", label: "Factures" },
@@ -725,7 +759,7 @@ export default function App() {
               })()}
               <div style={{ borderTop: "0.5px solid #EEF2F7", marginTop: 16, paddingTop: 14 }}>
                 <div style={S.cardTitle}>
-                  Réserve de sécurité <span style={{ fontWeight: 400, fontSize: 11, color: "#8BA5C0" }}>(utilisée dans Mode panique)</span>
+                  Réserve de sécurité <span style={{ fontWeight: 400, fontSize: 11, color: "#8BA5C0" }}>(utilisée dans Scanner Financier)</span>
                   <input style={S.objectifInput} type="number" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
                 </div>
               </div>
@@ -923,11 +957,15 @@ export default function App() {
                   })()}
 
                   <details style={{ ...S.card, marginTop: 14 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Paramètres avancés (CFE, impôts)</summary>
+                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Paramètres avancés (CFE, impôts, dettes)</summary>
                     <div style={{ marginTop: 14 }}>
                       <div style={S.paniqueLine}>
                         <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CFE estimée</span>
                         <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
+                      </div>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Dettes / emprunts en cours</span>
+                        <input style={S.inlineEditValue} type="number" step="0.01" value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e.target.value })} />
                       </div>
                       {profile?.versement_liberatoire ? (
                         <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0" }}>Impôts déjà inclus dans votre taux URSSAF (versement libératoire activé).</p>
@@ -953,8 +991,16 @@ export default function App() {
                       <div style={{ fontSize: 36, fontWeight: 700, color: moisSurvie >= 6 ? "#1D9E75" : moisSurvie >= 3 ? "#EF9F27" : "#A32D2D" }}>
                         {moisSurvie} mois
                       </div>
+                      <div style={{ fontSize: 13, color: "#5B6573", marginTop: 4 }}>
+                        soit environ {joursSurvie} jours · rupture estimée vers le {dateRupture?.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
+                      </div>
                       <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>
                         de trésorerie restante (après charges dues), au rythme de votre CA mensuel moyen actuel
+                      </div>
+                      <div style={{ marginTop: 12 }}>
+                        <span style={{ ...S.badge, ...(score === "vert" ? S.badgeGreen : score === "orange" ? S.badgeOrange : { background: "#FCEBEB", color: "#A32D2D" }) }}>
+                          Niveau de risque : {STATUT_INFO[score].emoji} {STATUT_INFO[score].label}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1052,6 +1098,62 @@ export default function App() {
           </div>
         )}
 
+        {nav === "simulateur" && estimateData && estimateData.disponible !== false && (() => {
+          const caInput = parseFloat(simFiscalCa) || 0;
+          const caAnnuelSim = simFiscalPeriode === "mensuel" ? caInput * 12 : caInput;
+          const caAffiche = caInput;
+          const tauxUrssaf = (estimateData.taux_global_pct || 0) / 100;
+          const cotisationsSim = Math.round(caAffiche * tauxUrssaf * 100) / 100;
+          const impotsSim = (() => {
+            if (profile?.versement_liberatoire || !activiteInfo) return 0;
+            const revenuImposable = caAnnuelSim * (1 - activiteInfo.abattement);
+            const impotAnnuel = revenuImposable * (parseFloat(tmi) / 100);
+            return Math.round((simFiscalPeriode === "mensuel" ? impotAnnuel / 12 : impotAnnuel) * 100) / 100;
+          })();
+          const disponibleSim = Math.max(0, Math.round((caAffiche - cotisationsSim - impotsSim) * 100) / 100);
+          const total = Math.max(caAffiche, 1);
+          const pctCotis = (cotisationsSim / total) * 100;
+          const pctImpots = (impotsSim / total) * 100;
+          const pctDispo = (disponibleSim / total) * 100;
+
+          return (
+            <div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                <div><h1 style={S.pageTitle}>📊 Simulateur fiscal</h1><p style={S.pageSub}>Modifiez votre CA et voyez l'impact en direct</p></div>
+              </div>
+
+              <div style={S.card}>
+                <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+                  <button type="button" onClick={() => setSimFiscalPeriode("mensuel")} style={{ ...S.toggleBtn, ...(simFiscalPeriode === "mensuel" ? S.toggleBtnActive : {}) }}>Par mois</button>
+                  <button type="button" onClick={() => setSimFiscalPeriode("annuel")} style={{ ...S.toggleBtn, ...(simFiscalPeriode === "annuel" ? S.toggleBtnActive : {}) }}>Par an</button>
+                </div>
+                <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px" }} type="number" step="100" value={simFiscalCa} onChange={e => setSimFiscalCa(e.target.value)} />
+              </div>
+
+              <div style={{ ...S.card, marginTop: 14 }}>
+                <div style={S.cardTitle}>Répartition de votre CA</div>
+                <div style={S.simBarTrack}>
+                  {pctDispo > 0 && <div style={{ ...S.simBarSeg, width: `${pctDispo}%`, background: "#1D9E75" }} />}
+                  {pctCotis > 0 && <div style={{ ...S.simBarSeg, width: `${pctCotis}%`, background: "#EF9F27" }} />}
+                  {pctImpots > 0 && <div style={{ ...S.simBarSeg, width: `${pctImpots}%`, background: "#A32D2D" }} />}
+                </div>
+                <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: 11, color: "#6B7A8D" }}>
+                  <span><span style={{ ...S.legendDot, background: "#1D9E75" }} />Disponible {Math.round(pctDispo)}%</span>
+                  <span><span style={{ ...S.legendDot, background: "#EF9F27" }} />URSSAF {Math.round(pctCotis)}%</span>
+                  {impotsSim > 0 && <span><span style={{ ...S.legendDot, background: "#A32D2D" }} />Impôts {Math.round(pctImpots)}%</span>}
+                </div>
+              </div>
+
+              <div style={S.kpiGrid} className="kpi-grid-r" >
+                <div style={S.kpiCard}><span style={S.kpiLabel}>CA {simFiscalPeriode === "mensuel" ? "mensuel" : "annuel"}</span><span style={S.kpiValue}>{formatEUR(caAffiche)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Cotisations URSSAF</span><span style={{ ...S.kpiValue, color: "#854F0B" }}>{formatEUR(cotisationsSim)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Impôts estimés</span><span style={{ ...S.kpiValue, color: "#A32D2D" }}>{formatEUR(impotsSim)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Revenu réellement disponible</span><span style={{ ...S.kpiValue, color: "#1D9E75" }}>{formatEUR(disponibleSim)}</span></div>
+              </div>
+            </div>
+          );
+        })()}
+
         {nav === "score" && (() => {
           const info = scoreInfo(scoreSante);
           return (
@@ -1064,15 +1166,23 @@ export default function App() {
               </div>
               {scoreSante !== null && (
                 <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>Basé sur</div>
+                  <div style={S.cardTitle}>Détail du calcul</div>
                   {[
-                    { label: "Trésorerie vs charges à venir", icon: "ti-coin" },
-                    { label: "Proximité de la prochaine échéance", icon: "ti-calendar-due" },
-                    { label: "Position vis-à-vis du plafond annuel", icon: "ti-gauge" },
-                    { label: "Disponible après réserve de sécurité", icon: "ti-shield" },
+                    { label: "Trésorerie vs charges à venir", icon: "ti-coin", pts: scoreDetail.ptsTreso, max: 30 },
+                    { label: "Réserve de sécurité couverte", icon: "ti-shield", pts: scoreDetail.ptsReserve, max: 20 },
+                    { label: "URSSAF provisionnée", icon: "ti-receipt", pts: scoreDetail.ptsUrssaf, max: 20 },
+                    { label: "Régularité du CA mensuel", icon: "ti-chart-line", pts: scoreDetail.ptsRegularite, max: 15 },
+                    { label: "Endettement", icon: "ti-credit-card", pts: scoreDetail.ptsDette, max: 15 },
                   ].map((f, i) => (
-                    <div key={i} style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />{f.label}</span></div>
+                    <div key={i} style={S.scoreDetailRow}>
+                      <span style={S.paniqueLineLabel}><i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />{f.label}</span>
+                      <div style={S.scoreBarTrack}><div style={{ ...S.scoreBarFill, width: `${(f.pts / f.max) * 100}%`, background: f.pts / f.max > 0.6 ? "#1D9E75" : f.pts / f.max > 0.3 ? "#EF9F27" : "#E24B4A" }} /></div>
+                      <span style={{ fontSize: 12, color: "#6B7A8D", width: 50, textAlign: "right" }}>{f.pts}/{f.max}</span>
+                    </div>
                   ))}
+                  <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
+                    Dettes prises en compte : {formatEUR(parseFloat(panique.dettes) || 0)} · <button style={S.linkBtn} onClick={() => setNav("panique")}>modifier</button>
+                  </p>
                 </div>
               )}
             </div>
@@ -1608,6 +1718,14 @@ const S = {
   salaireRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   recoRow: { display: "flex", alignItems: "flex-start", gap: 12, padding: "8px 0" },
   recoNum: { width: 22, height: 22, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 11, fontWeight: 700, flexShrink: 0 },
+  scoreDetailRow: { display: "flex", alignItems: "center", gap: 10, padding: "8px 0" },
+  scoreBarTrack: { flex: 1, height: 6, background: "#EEF2F7", borderRadius: 3, overflow: "hidden" },
+  scoreBarFill: { height: "100%", borderRadius: 3 },
+  simBarTrack: { display: "flex", height: 36, borderRadius: 10, overflow: "hidden", background: "#EEF2F7" },
+  simBarSeg: { height: "100%", transition: "width 0.2s ease" },
+  legendDot: { display: "inline-block", width: 8, height: 8, borderRadius: "50%", marginRight: 5, verticalAlign: 1 },
+  toggleBtn: { flex: 1, padding: "8px 12px", borderRadius: 8, border: "1px solid #DDE5EE", background: "#fff", fontSize: 12, fontWeight: 500, cursor: "pointer", color: "#5B6358" },
+  toggleBtnActive: { border: `1.5px solid ${ACCENT}`, background: "#E6F1FB", color: "#0C447C" },
   paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
   paniqueLineLabel: { display: "flex", alignItems: "center" },
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
