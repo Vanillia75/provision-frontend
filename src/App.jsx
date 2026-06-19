@@ -430,6 +430,12 @@ export default function App() {
     : tauxHoraireReel < 25 ? "rouge" : tauxHoraireReel < 45 ? "jaune" : "vert";
 
   const [revenuViseMensuel, setRevenuViseMensuel] = useState("");
+  const [quickAskQuestions, setQuickAskQuestions] = useState([
+    "Combien puis-je me verser ce mois-ci ?",
+    "Puis-je acheter un MacBook à 2000€ ?",
+    "Quand vais-je dépasser mon plafond ?",
+    "Mon activité est-elle en bonne santé ?",
+  ]);
 
   // --- Simulateur de vie : combien gagner pour vivre comme je veux ---
   const revenuViseNum = parseFloat(revenuViseMensuel) || 0;
@@ -715,6 +721,22 @@ export default function App() {
               {moisSurvie !== null && (
                 <div style={S.heroDispoSub}>🛡️ soit environ <strong style={{ color: "white" }}>{moisSurvie} mois de sécurité</strong></div>
               )}
+              {disponibleAujourdhui !== null && (
+                <details style={{ marginTop: 16, textAlign: "left" }}>
+                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Voir d'où vient ce chiffre</summary>
+                  <div style={{ marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 16px" }}>
+                    <div style={S.heroDetailRow}><span>CA encaissé (année)</span><span>{formatEUR(estimateData.ca_annuel)}</span></div>
+                    <div style={S.heroDetailRow}><span>Solde bancaire actuel</span><span>{formatEUR(soldeNum)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− CFE</span><span style={{ color: "#FAC775" }}>{formatEUR(cfeNum)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#B5D4F4" }}>− Réserve de sécurité</span><span style={{ color: "#B5D4F4" }}>{formatEUR(securiteNum)}</span></div>
+                    <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
+                      <span style={{ color: "#5DCAA5" }}>= Disponible réel</span><span style={{ color: "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
+                    </div>
+                  </div>
+                </details>
+              )}
             </div>
 
             {/* ─── 4 choses en 5 secondes : mettre de côté / objectifs / projections / sécurité ─── */}
@@ -728,38 +750,52 @@ export default function App() {
               </div>
               <div style={S.card}>
                 <div style={S.cardTitle}>📈 Si ça continue ainsi</div>
-                <div style={S.projRow}><span>Fin du mois</span><strong>{formatEUR(projectionFinMois)}</strong></div>
-                <div style={S.projRow}><span>Fin de l'année</span><strong>{formatEUR(projectionFinAnnee)}</strong></div>
+                <div style={S.projRow}>
+                  <span>Fin du mois<br /><span style={{ fontSize: 10, color: "#8BA5C0" }}>au rythme de vos encaissements depuis le {jourDuMois} {MOIS[aujourdhui.getMonth()]}</span></span>
+                  <strong>{formatEUR(projectionFinMois)}</strong>
+                </div>
+                <div style={S.projRow}>
+                  <span>Fin de l'année<br /><span style={{ fontSize: 10, color: "#8BA5C0" }}>au rythme moyen depuis janvier</span></span>
+                  <strong>{formatEUR(projectionFinAnnee)}</strong>
+                </div>
               </div>
             </div>
 
-            <div style={{ ...S.card, marginTop: 14, marginBottom: 20 }}>
-              <div style={S.cardTitle}>🎯 Où vous en êtes</div>
-              {(() => {
-                const objM = parseFloat(objectifMensuel) || 1;
-                const pctM = Math.min(100, Math.round((caCeMoisCi / objM) * 100));
-                const objA = parseFloat(objectifAnnuel) || 1;
-                const pctA = Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100));
-                return (
-                  <>
-                    <div style={{ marginBottom: 14 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
-                        <span>Objectif du mois</span>
-                        <span>{formatEUR(caCeMoisCi)} / <input style={{ ...S.objectifInput, width: 70, padding: "2px 6px" }} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} /></span>
-                      </div>
-                      <div style={S.progressTrack}><div style={{ ...S.progressFill, background: ACCENT, width: `${pctM}%` }} /></div>
+            {(() => {
+              const objM = parseFloat(objectifMensuel) || 1;
+              const pctM = Math.min(100, Math.round((caCeMoisCi / objM) * 100));
+              const objA = parseFloat(objectifAnnuel) || 1;
+              const pctA = Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100));
+              return (
+                <>
+                  <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
+                      <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>
                     </div>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
-                        <span>Objectif de l'année</span>
-                        <span>{formatEUR(estimateData.ca_annuel)} / <input style={{ ...S.objectifInput, width: 80, padding: "2px 6px" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} /></span>
-                      </div>
-                      <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%` }} /></div>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 6, margin: "8px 0 10px" }}>
+                      <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
+                      <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
+                      <input style={{ ...S.objectifInput, width: 80, fontSize: 14 }} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
                     </div>
-                  </>
-                );
-              })()}
-            </div>
+                    <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%` }} /></div>
+                    {pctM >= 100 ? (
+                      <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
+                    ) : (
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
+                    )}
+                  </div>
+
+                  <div style={{ ...S.card, marginTop: 14, marginBottom: 20 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
+                      <span>🗓️ Objectif de l'année</span>
+                      <span>{formatEUR(estimateData.ca_annuel)} / <input style={{ ...S.objectifInput, width: 80, padding: "2px 6px" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} /></span>
+                    </div>
+                    <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%` }} /></div>
+                  </div>
+                </>
+              );
+            })()}
 
             {statut && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
@@ -770,7 +806,15 @@ export default function App() {
               </div>
             )}
 
-            <button style={S.askHectorBtn} onClick={() => setNav("assistant")}>
+            <button style={S.askHectorBtn} onClick={() => {
+              setQuickAskQuestions([
+                "Combien puis-je me verser ?",
+                "Puis-je faire un achat important ?",
+                "Combien dois-je mettre de côté ce mois-ci ?",
+                "Suis-je en sécurité financièrement ce mois-ci ?",
+              ]);
+              setNav("assistant");
+            }}>
               <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 20 }} />
               💬 Demander à H€CTOR — "Puis-je acheter ça ?", "Combien me verser ?"...
             </button>
@@ -1684,12 +1728,7 @@ export default function App() {
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
-                {[
-                  "Combien puis-je me verser ce mois-ci ?",
-                  "Puis-je acheter un MacBook à 2000€ ?",
-                  "Quand vais-je dépasser mon plafond ?",
-                  "Mon activité est-elle en bonne santé ?",
-                ].map(q => (
+                {quickAskQuestions.map(q => (
                   <button key={q} style={S.quickAskChip} onClick={() => { setAiInput(q); }}>{q}</button>
                 ))}
               </div>
@@ -1875,6 +1914,7 @@ const S = {
   heroDispoLabel: { fontSize: 13, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
   heroDispoValue: { fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 },
   heroDispoSub: { fontSize: 14, color: "#B5D4F4", marginTop: 10 },
+  heroDetailRow: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4", padding: "4px 0" },
   projRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "10px 0", borderBottom: "0.5px solid #EEF2F7" },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#3D4452", marginBottom: 14 },
   checkboxLabel: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 12, lineHeight: 1.4 },
