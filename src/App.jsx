@@ -1,9 +1,12 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 // ──────────────────────────────────────────────────────────
 // IMPORTANT : remplacer par l'URL Railway une fois le backend déployé
 // ──────────────────────────────────────────────────────────
-const API_BASE = "https://VOTRE-BACKEND.up.railway.app";
+const API_BASE = "https://provision-backend-production.up.railway.app";
+
+// IMPORTANT : remplacer par votre Client ID Google (Google Cloud Console)
+const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
 const STATUTS = [
   { id: "auto_entrepreneur", label: "Auto-entrepreneur", disponible: true },
@@ -55,6 +58,48 @@ export default function App() {
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeForm, setIncomeForm] = useState({ date: "", amount: "", description: "" });
   const [uploadingFile, setUploadingFile] = useState(false);
+  const googleButtonRef = useRef(null);
+
+  async function handleGoogleCredential(response) {
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiFetch("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential: response.credential }),
+      });
+      localStorage.setItem("token", data.token);
+      setToken(data.token);
+      setEmail(data.email);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (token || !googleButtonRef.current) return;
+
+    function renderButton() {
+      if (window.google && googleButtonRef.current) {
+        window.google.accounts.id.initialize({
+          client_id: GOOGLE_CLIENT_ID,
+          callback: handleGoogleCredential,
+        });
+        window.google.accounts.id.renderButton(googleButtonRef.current, {
+          theme: "outline",
+          size: "large",
+          width: 360,
+          text: "continue_with",
+        });
+      } else {
+        setTimeout(renderButton, 200);
+      }
+    }
+    renderButton();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, authMode]);
 
   const authHeaders = useCallback(
     () => ({ Authorization: `Bearer ${token}` }),
@@ -213,6 +258,9 @@ export default function App() {
             </p>
 
             {error && <div style={styles.errorBanner}>{error}</div>}
+
+            <div ref={googleButtonRef} style={styles.googleButtonWrap}></div>
+            <p style={styles.orDivider}>ou avec un email</p>
 
             <label style={styles.label}>
               Email
@@ -692,6 +740,7 @@ const styles = {
     padding: 0,
   },
   switchAuth: { fontSize: 13, color: "#5B6358", textAlign: "center", marginTop: 16 },
+  googleButtonWrap: { display: "flex", justifyContent: "center", marginBottom: 4 },
   errorBanner: {
     background: "#FBEAEA",
     color: danger,
