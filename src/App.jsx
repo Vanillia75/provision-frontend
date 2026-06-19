@@ -703,58 +703,52 @@ export default function App() {
 
         {nav === "panique" && (() => {
           const solde = parseFloat(panique.solde) || 0;
-          const urssaf = parseFloat(panique.urssaf) || 0;
+          const urssaf = urssafProvision; // calcule automatiquement par H€CTOR, plus de saisie manuelle
           const impots = parseFloat(panique.impots) || 0;
           const cfe = parseFloat(panique.cfe) || 0;
           const totalCharges = urssaf + impots + cfe;
-          const disponible = solde - totalCharges;
-          const ratio = solde > 0 ? disponible / solde : 0;
-          let score = "vert", scoreLabel = "Situation saine", scoreDesc = "Vous avez une bonne marge après avoir mis de côté toutes vos charges.";
-          if (disponible < 0) { score = "rouge"; scoreLabel = "Risque de manque de trésorerie"; scoreDesc = "Vos charges à venir dépassent votre solde actuel. Anticipez avant l'échéance."; }
-          else if (ratio < 0.2) { score = "orange"; scoreLabel = "Attention aux provisions"; scoreDesc = "Il vous reste peu de marge une fois les charges mises de côté."; }
+          const disponibleReel = solde - totalCharges; // avant reserve
+          const apresReserve = disponibleReel - securiteNum; // ce qu'on peut vraiment depenser
+          const manqueReserve = apresReserve < 0 ? Math.abs(apresReserve) : 0;
+          let score = "vert", scoreLabel = "Situation saine", scoreDesc = "Votre réserve de sécurité est couverte, vous pouvez dépenser sereinement.";
+          if (apresReserve < 0 && disponibleReel < 0) { score = "rouge"; scoreLabel = "Situation critique"; scoreDesc = "Votre solde actuel ne couvre même pas vos charges à venir. Anticipez avant l'échéance."; }
+          else if (apresReserve < 0) { score = "rouge"; scoreLabel = "Réserve non atteinte"; scoreDesc = `Il manque ${formatEUR(manqueReserve)} pour atteindre votre réserve de sécurité de ${formatEUR(securiteNum)}.`; }
+          else if (apresReserve < securiteNum * 0.2) { score = "orange"; scoreLabel = "Situation fragile"; scoreDesc = "Votre réserve est tout juste couverte, peu de marge au-delà."; }
           const scoreColors = { vert: { bg: "#E1F5EE", text: "#0F6E56", dot: "#1D9E75" }, orange: { bg: "#FAEEDA", text: "#854F0B", dot: "#EF9F27" }, rouge: { bg: "#FCEBEB", text: "#A32D2D", dot: "#E24B4A" } };
           const c = scoreColors[score];
           return (
             <div>
               <div style={S.pageHeader}>
-                <div><h1 style={S.pageTitle}>🚨 Mode panique</h1><p style={S.pageSub}>"Si je retire tout aujourd'hui, combien je vais regretter dans 3 mois ?"</p></div>
+                <div><h1 style={S.pageTitle}>🚨 Mode panique</h1><p style={S.pageSub}>Un seul chiffre à donner, H€CTOR fait le reste</p></div>
               </div>
 
               <div style={S.card}>
-                <div style={S.cardTitle}>Votre situation</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 4 }}>
-                  <label style={S.label}>Solde bancaire actuel
-                    <input style={S.input} type="number" step="0.01" placeholder="Ex : 12000 (tapez votre montant réel)" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
-                  </label>
-                  <label style={S.label}>URSSAF à provisionner
-                    <input style={S.input} type="number" step="0.01" value={panique.urssaf} onChange={e => setPanique({ ...panique, urssaf: e.target.value })} />
-                  </label>
-                  <label style={S.label}>Impôts estimés
-                    <input style={S.input} type="number" step="0.01" value={panique.impots} onChange={e => setPanique({ ...panique, impots: e.target.value })} />
-                  </label>
-                  <label style={S.label}>CFE estimée
-                    <input style={S.input} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
-                  </label>
-                  <label style={S.label}>Réserve de sécurité souhaitée
-                    <input style={S.input} type="number" step="0.01" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
-                  </label>
-                </div>
-                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "0 0 4px" }}>
-                  URSSAF pré-rempli automatiquement selon vos revenus. Impôts et CFE sont des estimations à ajuster — vérifiez avec votre comptable si besoin.
+                <label style={S.label}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>Quel est le solde de votre compte ?</span>
+                  <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="0.01" placeholder="Ex : 3445" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+                </label>
+                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "10px 0 0" }}>
+                  H€CTOR connaît déjà votre CA, votre activité, votre taux URSSAF et vos échéances — pas besoin de les ressaisir.
                 </p>
               </div>
 
               {solde > 0 && (
                 <>
                   <div style={{ ...S.card, marginTop: 14 }}>
+                    <div style={S.cardTitle}>Calculé automatiquement</div>
                     <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde bancaire</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF à provisionner</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts estimés</span><span style={{ color: "#854F0B" }}>−{formatEUR(impots)}</span></div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE estimée</span><span style={{ color: "#854F0B" }}>−{formatEUR(cfe)}</span></div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-shield" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Réserve de sécurité</span><span style={{ color: "#6B7A8D" }}>−{formatEUR(securiteNum)}</span></div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF (calculé sur vos revenus réels)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
+                    <div style={S.paniqueLine}>
+                      <span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts (estimation à ajuster)</span>
+                      <input style={S.inlineEditValue} type="number" step="0.01" value={panique.impots} onChange={e => setPanique({ ...panique, impots: e.target.value })} />
+                    </div>
+                    <div style={S.paniqueLine}>
+                      <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE (estimation à ajuster)</span>
+                      <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
+                    </div>
                     <div style={S.paniqueResult}>
-                      <span style={S.paniqueResultLabel}>Vous pouvez réellement dépenser</span>
-                      <span style={{ ...S.paniqueResultValue, color: (disponible - securiteNum) < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponible - securiteNum)}</span>
+                      <span style={S.paniqueResultLabel}>Disponible réel</span>
+                      <span style={{ ...S.paniqueResultValue, color: disponibleReel < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponibleReel)}</span>
                     </div>
                   </div>
 
@@ -763,26 +757,48 @@ export default function App() {
                       <i className={`ti ${score === "vert" ? "ti-check" : score === "orange" ? "ti-alert-triangle" : "ti-alert-octagon"}`} aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
                     </div>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{scoreLabel}</div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{score === "rouge" ? "🔴" : score === "orange" ? "🟠" : "🟢"} {scoreLabel}</div>
                       <div style={{ fontSize: 12, color: c.text, marginTop: 2, opacity: 0.85 }}>{scoreDesc}</div>
                     </div>
                   </div>
 
                   <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je acheter ça ?</div>
+                    <div style={S.cardTitle}>
+                      Réserve cible
+                      <input style={S.objectifInput} type="number" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
+                    </div>
+                    {manqueReserve > 0 ? (
+                      <span style={{ fontSize: 13, color: "#A32D2D" }}>Il manque <strong>{formatEUR(manqueReserve)}</strong> pour atteindre votre réserve de {formatEUR(securiteNum)}</span>
+                    ) : (
+                      <span style={{ fontSize: 13, color: "#0F6E56" }}>Réserve atteinte ✓</span>
+                    )}
+                  </div>
+
+                  <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "28px 24px" }}>
+                    <div style={S.paniqueResultLabel}>Vous pouvez dépenser</div>
+                    <div style={{ ...S.paniqueResultValue, fontSize: 44, color: apresReserve > 0 ? ACCENT : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</div>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>sans toucher à votre réserve de sécurité</div>
+                  </div>
+
+                  <div style={{ ...S.card, marginTop: 14 }}>
+                    <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je me permettre cet achat ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                      <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Montant de l'achat €" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
+                      <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Ex : iPhone 1500€ → tapez 1500" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
                     </div>
                     {achatMontant && parseFloat(achatMontant) > 0 && (() => {
                       const montant = parseFloat(achatMontant);
-                      const resteApres = disponible - securiteNum - montant;
+                      const resteApres = apresReserve - montant;
                       const possible = resteApres >= 0;
                       return (
                         <div style={{ ...S.achatResult, background: possible ? "#E1F5EE" : "#FCEBEB", color: possible ? "#0F6E56" : "#A32D2D" }}>
-                          <i className={`ti ${possible ? "ti-circle-check" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 20 }} />
+                          <i className={`ti ${possible ? "ti-circle-check" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 24 }} />
                           <div>
-                            <div style={{ fontWeight: 600, fontSize: 14 }}>{possible ? "Achat possible" : "Achat déconseillé"}</div>
-                            <div style={{ fontSize: 12, marginTop: 2 }}>Disponible restant après achat : {formatEUR(resteApres)}</div>
+                            <div style={{ fontWeight: 700, fontSize: 16 }}>{possible ? "Oui" : "Non"}</div>
+                            <div style={{ fontSize: 12, marginTop: 2 }}>
+                              {possible
+                                ? `Après achat, il vous resterait ${formatEUR(resteApres)} au-delà de votre réserve.`
+                                : `Il vous manquerait ${formatEUR(Math.abs(resteApres))} pour garder votre réserve de sécurité intacte.`}
+                            </div>
                           </div>
                         </div>
                       );
@@ -801,7 +817,7 @@ export default function App() {
                         <div style={S.netRow}><span>URSSAF</span><span>{formatEUR(urssaf)}</span></div>
                         <div style={S.netRow}><span>CFE</span><span>{formatEUR(cfe)}</span></div>
                         <div style={{ ...S.netRow, fontWeight: 700, borderTop: "1px solid #F7C1C1", paddingTop: 6, marginTop: 4 }}>
-                          <span>Manque estimé</span><span>{formatEUR(Math.max(0, totalCharges - 0))}</span>
+                          <span>Manque estimé</span><span>{formatEUR(totalCharges)}</span>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, marginTop: 10 }}>
                           {totalCharges > 0 ? "🔴 Très mauvaise idée" : "🟢 Vous n'avez rien à provisionner pour l'instant"}
@@ -1356,6 +1372,7 @@ const S = {
   objectifInput: { width: 110, fontFamily: "inherit", fontSize: 13, padding: "5px 8px", borderRadius: 6, border: "1px solid #DDE5EE", textAlign: "right" },
   achatResult: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 10 },
   modelText: { fontSize: 12, color: "#3D4452", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#FAFBFC", border: "1px solid #EEF2F7", borderRadius: 8, padding: "12px 14px", margin: 0, lineHeight: 1.6 },
+  inlineEditValue: { width: 90, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: "#854F0B", padding: "4px 8px", borderRadius: 6, border: "1px solid #EEF2F7", textAlign: "right" },
   paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
   paniqueLineLabel: { display: "flex", alignItems: "center" },
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
