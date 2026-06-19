@@ -57,6 +57,7 @@ export default function App() {
   const [incomeList, setIncomeList] = useState([]);
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeForm, setIncomeForm] = useState({ date: "", amount: "", description: "" });
+  const [incomeIsNet, setIncomeIsNet] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const googleButtonRef = useRef(null);
 
@@ -197,12 +198,19 @@ export default function App() {
   async function handleAddIncome(e) {
     e.preventDefault();
     setError("");
+    const taux = estimateData?.taux_global_pct
+      ? estimateData.taux_global_pct / 100
+      : 0.214;
+    const saisie = parseFloat(incomeForm.amount);
+    const montantBrut = incomeIsNet
+      ? Math.round((saisie / (1 - taux)) * 100) / 100
+      : saisie;
     try {
       await apiFetch("/income", {
         method: "POST",
         body: JSON.stringify({
           date: incomeForm.date,
-          amount: parseFloat(incomeForm.amount),
+          amount: montantBrut,
           description: incomeForm.description || null,
         }),
       });
@@ -471,6 +479,14 @@ export default function App() {
                   <span style={styles.statSub}>
                     avant le {formatDate(estimateData.periode_courante.date_limite_declaration)}
                   </span>
+                  <a
+                    href="https://www.autoentrepreneur.urssaf.fr"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={styles.urssafLink}
+                  >
+                    Déclarer sur autoentrepreneur.urssaf.fr →
+                  </a>
                 </div>
               </div>
 
@@ -549,17 +565,73 @@ export default function App() {
                   }
                   required
                 />
+
+                <div style={styles.amountToggleRow}>
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.toggleBtn,
+                      ...(!incomeIsNet ? styles.toggleBtnActive : {}),
+                    }}
+                    onClick={() => setIncomeIsNet(false)}
+                  >
+                    Montant brut (CA)
+                  </button>
+                  <button
+                    type="button"
+                    style={{
+                      ...styles.toggleBtn,
+                      ...(incomeIsNet ? styles.toggleBtnActive : {}),
+                    }}
+                    onClick={() => setIncomeIsNet(true)}
+                  >
+                    Montant net reçu
+                  </button>
+                </div>
+
+                <p style={styles.toggleHint}>
+                  {incomeIsNet
+                    ? "Ce que vous avez gardé après avoir mis de côté les cotisations — on recalcule le CA brut automatiquement."
+                    : "Ce que votre client vous a versé, avant de mettre quoi que ce soit de côté pour l'URSSAF."}
+                </p>
+
                 <input
                   style={styles.input}
                   type="number"
                   step="0.01"
-                  placeholder="Montant €"
+                  placeholder={incomeIsNet ? "Montant net reçu €" : "Chiffre d'affaires brut €"}
                   value={incomeForm.amount}
                   onChange={(e) =>
                     setIncomeForm({ ...incomeForm, amount: e.target.value })
                   }
                   required
                 />
+
+                {incomeIsNet && incomeForm.amount && parseFloat(incomeForm.amount) > 0 && (() => {
+                  const taux = estimateData?.taux_global_pct
+                    ? estimateData.taux_global_pct / 100
+                    : 0.214;
+                  const net = parseFloat(incomeForm.amount);
+                  const brut = Math.round((net / (1 - taux)) * 100) / 100;
+                  const cotisations = Math.round((brut - net) * 100) / 100;
+                  return (
+                    <div style={styles.netPreview}>
+                      <div style={styles.netPreviewRow}>
+                        <span>CA brut enregistré</span>
+                        <span style={styles.netPreviewValue}>{formatEUR(brut)}</span>
+                      </div>
+                      <div style={styles.netPreviewRow}>
+                        <span style={{ color: warning }}>Cotisations URSSAF ({estimateData?.taux_global_pct ?? 21.4}%)</span>
+                        <span style={{ color: warning }}>−{formatEUR(cotisations)}</span>
+                      </div>
+                      <div style={{ ...styles.netPreviewRow, borderTop: `1px solid ${line}`, paddingTop: 8, marginTop: 4 }}>
+                        <span style={{ fontWeight: 500 }}>Net à garder</span>
+                        <span style={{ ...styles.netPreviewValue, color: accent }}>{formatEUR(net)}</span>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <input
                   style={styles.input}
                   type="text"
@@ -903,5 +975,58 @@ const styles = {
     cursor: "pointer",
     fontSize: 14,
     padding: 4,
+  },
+  amountToggleRow: {
+    display: "flex",
+    gap: 8,
+  },
+  toggleBtn: {
+    flex: 1,
+    padding: "8px 12px",
+    borderRadius: 8,
+    border: `1px solid ${line}`,
+    background: "#fff",
+    fontSize: 12,
+    fontWeight: 500,
+    cursor: "pointer",
+    color: "#5B6358",
+  },
+  toggleBtnActive: {
+    border: `1.5px solid ${accent}`,
+    background: "#EAF4F0",
+    color: accentDark,
+  },
+  toggleHint: {
+    fontSize: 12,
+    color: "#8A9182",
+    margin: "2px 0 4px",
+    lineHeight: 1.4,
+  },
+  netPreview: {
+    background: "#F7F9F5",
+    border: `1px solid ${line}`,
+    borderRadius: 8,
+    padding: "10px 14px",
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+  netPreviewRow: {
+    display: "flex",
+    justifyContent: "space-between",
+    fontSize: 13,
+    color: "#5B6358",
+  },
+  netPreviewValue: {
+    fontFamily: "'IBM Plex Mono', monospace",
+    fontWeight: 500,
+    color: ink,
+  },
+  urssafLink: {
+    fontSize: 11,
+    color: accent,
+    textDecoration: "none",
+    marginTop: 4,
+    fontWeight: 500,
   },
 };
