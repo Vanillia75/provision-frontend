@@ -921,9 +921,13 @@ export default function App() {
                       <span style={S.paniqueResultLabel}>Argent disponible après charges</span>
                       <span style={{ ...S.paniqueResultValue, fontSize: 28, color: ACCENT }}>{formatEUR(solde - chargesFutures)}</span>
                     </div>
-                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6, textAlign: "center" }}>
-                      Réserve de {formatEUR(securiteNum)} ensuite réservée pour votre sécurité · <button style={S.linkBtn} onClick={() => setNav("dashboard")}>modifier ma réserve</button>
+                    <div style={{ ...S.paniqueLine, marginTop: 14, borderTop: "1px solid #EEF2F7", paddingTop: 12 }}>
+                      <span style={S.paniqueLineLabel}><i className="ti ti-shield" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Réserve de sécurité visée <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(votre objectif, modifiable)</span></span>
+                      <input style={S.inlineEditValue} type="number" step="100" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
                     </div>
+                    <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, textAlign: "center" }}>
+                      C'est vous qui définissez ce montant — H€CTOR le retient ensuite pour calculer ce que vous pouvez vraiment dépenser sans y toucher.
+                    </p>
                   </div>
 
                   {(() => {
