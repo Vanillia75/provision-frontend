@@ -304,7 +304,7 @@ export default function App() {
   const maxRevenu = Math.max(...revenusParMois.map(m => m.total), 1);
 
   // --- Calcul central : "Disponible aujourd'hui" ---
-  // Reutilise pour : dashboard, simulateur d'achat, mode panique, score sante
+  // Source unique de verite, reutilisee partout : dashboard, simulateur d'achat, mode panique, score sante
   const soldeNum = parseFloat(panique.solde) || 0;
   const urssafProvision = estimateData?.disponible !== false
     ? (estimateData?.montant_a_provisionner || 0) +
@@ -312,33 +312,44 @@ export default function App() {
         ? Math.round((estimateData.ca_periode_precedente || 0) * ((estimateData?.taux_global_pct || 0) / 100) * 100) / 100
         : 0)
     : 0;
-  const impotsNum = parseFloat(panique.impots) || 0;
+  const impotsNum = profile?.versement_liberatoire ? 0 : (parseFloat(panique.impots) || 0);
   const cfeNum = parseFloat(panique.cfe) || 0;
   const totalChargesAVenir = urssafProvision + impotsNum + cfeNum;
   const securiteNum = parseFloat(objectifSecurite) || 0;
   const disponibleAujourdhui = soldeNum > 0 ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
 
-  // --- Score sante HECTOR /100 ---
+  // --- Statut unifie (memes seuils que Mode Panique : >0 vert, 0 a -1000 orange, <-1000 rouge) ---
+  function statutFinancier() {
+    if (disponibleAujourdhui === null) return null;
+    if (disponibleAujourdhui > 0) return "vert";
+    if (disponibleAujourdhui >= -1000) return "orange";
+    return "rouge";
+  }
+  const statut = statutFinancier();
+  const STATUT_INFO = {
+    vert: { emoji: "🟢", label: "Situation saine", color: "#1D9E75", bg: "#E1F5EE", border: "#1D9E75" },
+    orange: { emoji: "🟠", label: "Situation fragile", color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27" },
+    rouge: { emoji: "🔴", label: "Situation critique", color: "#A32D2D", bg: "#FCEBEB", border: "#E24B4A" },
+  };
+
+  // --- Score sante HECTOR /100, calcule a partir du MEME disponibleAujourdhui ---
   function calculScoreSante() {
-    if (soldeNum <= 0 || !estimateData || estimateData.disponible === false) return null;
-    let score = 100;
-    const ratioCharges = soldeNum > 0 ? totalChargesAVenir / soldeNum : 1;
-    if (ratioCharges > 0.8) score -= 40;
-    else if (ratioCharges > 0.5) score -= 25;
-    else if (ratioCharges > 0.3) score -= 10;
-    if (estimateData.periode_courante?.jours_restants <= 7) score -= 15;
-    else if (estimateData.periode_courante?.jours_restants <= 14) score -= 7;
-    if (estimateData.pourcentage_plafond > 90) score -= 15;
-    else if (estimateData.pourcentage_plafond > 75) score -= 7;
-    if (disponibleAujourdhui !== null && disponibleAujourdhui < 0) score -= 25;
-    return Math.max(0, Math.min(100, score));
+    if (disponibleAujourdhui === null) return null;
+    if (disponibleAujourdhui > 0) return Math.min(100, Math.round(50 + disponibleAujourdhui / 50));
+    if (disponibleAujourdhui >= -1000) return Math.round(50 + (disponibleAujourdhui / 1000) * 30);
+    return Math.max(0, Math.round(20 + (disponibleAujourdhui + 1000) / 100));
   }
   const scoreSante = calculScoreSante();
   function scoreInfo(s) {
     if (s === null) return { label: "—", color: "#8BA5C0", desc: "Renseignez votre solde dans Mode Panique pour calculer votre score." };
-    if (s >= 75) return { label: "Excellent", color: "#1D9E75", desc: "Votre trésorerie est saine, vos charges sont sous contrôle." };
-    if (s >= 50) return { label: "Correct", color: "#EF9F27", desc: "Quelques points de vigilance à surveiller." };
-    return { label: "Risque élevé", color: "#E24B4A", desc: "Vos charges à venir pèsent lourd sur votre trésorerie actuelle." };
+    const st = statutFinancier();
+    return {
+      label: STATUT_INFO[st].label,
+      color: STATUT_INFO[st].color,
+      desc: st === "vert" ? "Votre réserve de sécurité est couverte, vous pouvez dépenser sereinement."
+        : st === "orange" ? "Votre disponible après charges et réserve est tout juste à l'équilibre."
+        : "Votre solde actuel ne couvre pas vos charges à venir et votre réserve. Anticipez avant l'échéance.",
+    };
   }
 
   // --- Coach prix ---
@@ -458,6 +469,25 @@ export default function App() {
                 </label>
                 <label style={S.checkboxLabel}><input type="checkbox" checked={profileForm.acre} onChange={e => setProfileForm({ ...profileForm, acre: e.target.checked })} />Je bénéficie de l'ACRE (1ère année, -50%)</label>
                 <label style={S.checkboxLabel}><input type="checkbox" checked={profileForm.versement_liberatoire} onChange={e => setProfileForm({ ...profileForm, versement_liberatoire: e.target.checked })} />Versement libératoire de l'impôt</label>
+
+                <p style={S.sectionLabel}>Réserve de sécurité souhaitée</p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
+                  {[1000, 3000, 5000].map(v => (
+                    <button type="button" key={v} onClick={() => setObjectifSecurite(String(v))}
+                      style={{ ...S.statutCard, ...(objectifSecurite === String(v) ? S.statutCardActive : {}) }}>
+                      {formatEUR(v)}
+                    </button>
+                  ))}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <button type="button" onClick={() => setObjectifSecurite("")}
+                      style={{ ...S.statutCard, flex: 1, ...(![1000, 3000, 5000].includes(parseFloat(objectifSecurite)) ? S.statutCardActive : {}) }}>
+                      Personnalisée
+                    </button>
+                    {![1000, 3000, 5000].includes(parseFloat(objectifSecurite)) && (
+                      <input style={{ ...S.input, width: 100 }} type="number" placeholder="€" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
+                    )}
+                  </div>
+                </div>
               </>
             )}
             <button style={S.btnPrimary} type="submit" disabled={loading}>{loading ? "…" : "Valider"}</button>
@@ -527,6 +557,15 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            {statut && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: STATUT_INFO[statut].color }}>
+                  {STATUT_INFO[statut].emoji} {STATUT_INFO[statut].label}
+                </span>
+                <button style={S.linkBtn} onClick={() => setNav("panique")}>voir le détail →</button>
+              </div>
+            )}
 
             <div style={S.dispoHero}>
               <div>
@@ -611,6 +650,12 @@ export default function App() {
                   </>
                 );
               })()}
+              <div style={{ borderTop: "0.5px solid #EEF2F7", marginTop: 16, paddingTop: 14 }}>
+                <div style={S.cardTitle}>
+                  Réserve de sécurité <span style={{ fontWeight: 400, fontSize: 11, color: "#8BA5C0" }}>(utilisée dans Mode panique)</span>
+                  <input style={S.objectifInput} type="number" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
+                </div>
+              </div>
             </div>
 
             <div style={{ ...S.card, marginBottom: 20 }}>
@@ -702,20 +747,18 @@ export default function App() {
         )}
 
         {nav === "panique" && (() => {
-          const solde = parseFloat(panique.solde) || 0;
-          const urssaf = urssafProvision; // calcule automatiquement par H€CTOR, plus de saisie manuelle
-          const impots = parseFloat(panique.impots) || 0;
-          const cfe = parseFloat(panique.cfe) || 0;
-          const totalCharges = urssaf + impots + cfe;
-          const disponibleReel = solde - totalCharges; // avant reserve
-          const apresReserve = disponibleReel - securiteNum; // ce qu'on peut vraiment depenser
-          const manqueReserve = apresReserve < 0 ? Math.abs(apresReserve) : 0;
-          let score = "vert", scoreLabel = "Situation saine", scoreDesc = "Votre réserve de sécurité est couverte, vous pouvez dépenser sereinement.";
-          if (apresReserve < 0 && disponibleReel < 0) { score = "rouge"; scoreLabel = "Situation critique"; scoreDesc = "Votre solde actuel ne couvre même pas vos charges à venir. Anticipez avant l'échéance."; }
-          else if (apresReserve < 0) { score = "rouge"; scoreLabel = "Réserve non atteinte"; scoreDesc = `Il manque ${formatEUR(manqueReserve)} pour atteindre votre réserve de sécurité de ${formatEUR(securiteNum)}.`; }
-          else if (apresReserve < securiteNum * 0.2) { score = "orange"; scoreLabel = "Situation fragile"; scoreDesc = "Votre réserve est tout juste couverte, peu de marge au-delà."; }
-          const scoreColors = { vert: { bg: "#E1F5EE", text: "#0F6E56", dot: "#1D9E75" }, orange: { bg: "#FAEEDA", text: "#854F0B", dot: "#EF9F27" }, rouge: { bg: "#FCEBEB", text: "#A32D2D", dot: "#E24B4A" } };
-          const c = scoreColors[score];
+          const solde = soldeNum;
+          const urssaf = urssafProvision; // calcule automatiquement par H€CTOR
+          const impots = impotsNum; // deja inclus dans le taux si versement liberatoire
+          const cfe = cfeNum;
+          const chargesFutures = totalChargesAVenir;
+          const apresReserve = disponibleAujourdhui ?? 0;
+
+          const score = statut || "vert"; // meme source que le Score H€CTOR et le Dashboard
+          const c = { ...STATUT_INFO[score], dot: STATUT_INFO[score].border, text: STATUT_INFO[score].color };
+          const scoreLabel = c.label;
+          const manque = apresReserve < 0 ? Math.abs(apresReserve) : 0;
+
           return (
             <div>
               <div style={S.pageHeader}>
@@ -724,61 +767,57 @@ export default function App() {
 
               <div style={S.card}>
                 <label style={S.label}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>Quel est le solde de votre compte ?</span>
-                  <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="0.01" placeholder="Ex : 3445" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+                  <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>💳 Quel est le solde de votre compte ?</span>
+                  <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="0.01" placeholder="Ex : 1224" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
                 </label>
                 <p style={{ fontSize: 11, color: "#8BA5C0", margin: "10px 0 0" }}>
-                  H€CTOR connaît déjà votre CA, votre activité, votre taux URSSAF et vos échéances — pas besoin de les ressaisir.
+                  H€CTOR connaît déjà votre CA, votre activité, votre taux URSSAF et votre réserve cible — rien d'autre à remplir.
                 </p>
               </div>
 
               {solde > 0 && (
                 <>
-                  <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}>Calculé automatiquement</div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde bancaire</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF (calculé sur vos revenus réels)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
-                    <div style={S.paniqueLine}>
-                      <span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts (estimation à ajuster)</span>
-                      <input style={S.inlineEditValue} type="number" step="0.01" value={panique.impots} onChange={e => setPanique({ ...panique, impots: e.target.value })} />
+                  <div style={{ ...S.card, marginTop: 14, background: c.bg, border: `1px solid ${c.dot}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 14 }}>
+                      <div style={{ width: 44, height: 44, borderRadius: "50%", background: c.dot, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                        <i className={`ti ${score === "vert" ? "ti-check" : score === "orange" ? "ti-alert-triangle" : "ti-alert-octagon"}`} aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: c.text }}>{c.emoji} {scoreLabel}</div>
                     </div>
-                    <div style={S.paniqueLine}>
-                      <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE (estimation à ajuster)</span>
-                      <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
-                    </div>
-                    <div style={S.paniqueResult}>
-                      <span style={S.paniqueResultLabel}>Disponible réel</span>
-                      <span style={{ ...S.paniqueResultValue, color: disponibleReel < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponibleReel)}</span>
-                    </div>
-                  </div>
-
-                  <div style={{ ...S.card, marginTop: 14, background: c.bg, border: `1px solid ${c.dot}`, display: "flex", alignItems: "center", gap: 14 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: c.dot, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <i className={`ti ${score === "vert" ? "ti-check" : score === "orange" ? "ti-alert-triangle" : "ti-alert-octagon"}`} aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{score === "rouge" ? "🔴" : score === "orange" ? "🟠" : "🟢"} {scoreLabel}</div>
-                      <div style={{ fontSize: 12, color: c.text, marginTop: 2, opacity: 0.85 }}>{scoreDesc}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}>
-                      Réserve cible
-                      <input style={S.objectifInput} type="number" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
-                    </div>
-                    {manqueReserve > 0 ? (
-                      <span style={{ fontSize: 13, color: "#A32D2D" }}>Il manque <strong>{formatEUR(manqueReserve)}</strong> pour atteindre votre réserve de {formatEUR(securiteNum)}</span>
-                    ) : (
-                      <span style={{ fontSize: 13, color: "#0F6E56" }}>Réserve atteinte ✓</span>
+                    <div style={{ ...S.netRow, color: c.text }}><span>Solde détecté</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
+                    <div style={{ ...S.netRow, color: c.text }}><span>Charges futures (URSSAF + CFE{!profile?.versement_liberatoire ? " + impôts" : ""})</span><span>−{formatEUR(chargesFutures)}</span></div>
+                    {manque > 0 && (
+                      <div style={{ fontSize: 12, color: c.text, marginTop: 8, fontWeight: 500 }}>
+                        Il manque {formatEUR(manque)} pour couvrir vos prochaines échéances{securiteNum > 0 ? " et garder votre réserve" : ""}.
+                      </div>
                     )}
                   </div>
 
                   <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "28px 24px" }}>
                     <div style={S.paniqueResultLabel}>Vous pouvez dépenser</div>
                     <div style={{ ...S.paniqueResultValue, fontSize: 44, color: apresReserve > 0 ? ACCENT : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</div>
-                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>sans toucher à votre réserve de sécurité</div>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>
+                      sans toucher à votre réserve de {formatEUR(securiteNum)} · <button style={S.linkBtn} onClick={() => setNav("dashboard")}>modifier ma réserve</button>
+                    </div>
                   </div>
+
+                  <details style={{ ...S.card, marginTop: 14 }}>
+                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Paramètres avancés (CFE, impôts)</summary>
+                    <div style={{ marginTop: 14 }}>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CFE estimée</span>
+                        <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
+                      </div>
+                      {profile?.versement_liberatoire ? (
+                        <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0" }}>Impôts déjà inclus dans votre taux URSSAF (versement libératoire activé).</p>
+                      ) : (
+                        <div style={S.paniqueLine}>
+                          <span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Impôts estimés (hors versement libératoire)</span>
+                          <input style={S.inlineEditValue} type="number" step="0.01" value={panique.impots} onChange={e => setPanique({ ...panique, impots: e.target.value })} />
+                        </div>
+                      )}
+                    </div>
+                  </details>
 
                   <div style={{ ...S.card, marginTop: 14 }}>
                     <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je me permettre cet achat ?</div>
@@ -817,10 +856,10 @@ export default function App() {
                         <div style={S.netRow}><span>URSSAF</span><span>{formatEUR(urssaf)}</span></div>
                         <div style={S.netRow}><span>CFE</span><span>{formatEUR(cfe)}</span></div>
                         <div style={{ ...S.netRow, fontWeight: 700, borderTop: "1px solid #F7C1C1", paddingTop: 6, marginTop: 4 }}>
-                          <span>Manque estimé</span><span>{formatEUR(totalCharges)}</span>
+                          <span>Manque estimé</span><span>{formatEUR(chargesFutures)}</span>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, marginTop: 10 }}>
-                          {totalCharges > 0 ? "🔴 Très mauvaise idée" : "🟢 Vous n'avez rien à provisionner pour l'instant"}
+                          {chargesFutures > 0 ? "🔴 Très mauvaise idée" : "🟢 Vous n'avez rien à provisionner pour l'instant"}
                         </div>
                       </div>
                     )}
