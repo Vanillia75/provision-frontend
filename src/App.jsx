@@ -10,9 +10,9 @@ const STATUTS = [
 ];
 
 const ACTIVITES = [
-  { id: "vente", label: "Vente de marchandises", taux: "12,3%", abattement: 0.71 },
-  { id: "services", label: "Prestations de services", taux: "21,2%", abattement: 0.50 },
-  { id: "bnc", label: "Profession libérale (BNC)", taux: "25,6%", abattement: 0.34 },
+  { id: "vente", label: "Vente de marchandises", taux: "12,3%", abattement: 0.71, seuilTva: 85000 },
+  { id: "services", label: "Prestations de services", taux: "21,2%", abattement: 0.50, seuilTva: 37500 },
+  { id: "bnc", label: "Profession libérale (BNC)", taux: "25,6%", abattement: 0.34, seuilTva: 37500 },
 ];
 
 const TMI_OPTIONS = [
@@ -370,6 +370,24 @@ export default function App() {
   const heuresNum = parseFloat(heuresTravaillees) || 0;
   const tauxHoraireReel = heuresNum > 0 && estimateData ? Math.round(((estimateData.ca_annuel || 0) * (1 - (estimateData.taux_global_pct || 0) / 100)) / heuresNum * 100) / 100 : null;
 
+  // --- TVA : detection du depassement du seuil de franchise en base ---
+  const seuilTva = activiteInfo?.seuilTva || null;
+  const pourcentageSeuilTva = seuilTva && estimateData?.ca_annuel != null ? Math.round((estimateData.ca_annuel / seuilTva) * 100) : null;
+  const tvaProche = pourcentageSeuilTva !== null && pourcentageSeuilTva >= 80;
+  const tvaDepasse = pourcentageSeuilTva !== null && pourcentageSeuilTva >= 100;
+
+  // --- Mode salaire : combien puis-je me verser (3 niveaux) ---
+  const baseSalaire = Math.max(0, disponibleAujourdhui || 0);
+  const salairePrudent = Math.round(baseSalaire * 0.4);
+  const salaireRecommande = Math.round(baseSalaire * 0.7);
+  const salaireMaximum = Math.round(baseSalaire);
+
+  // --- Mois de survie (si l'activite s'arrete demain) ---
+  const moisEcoulesAnnee = new Date().getMonth() + 1;
+  const moyenneMensuelleCA = estimateData?.ca_annuel != null ? estimateData.ca_annuel / moisEcoulesAnnee : 0;
+  const tresorerieApresDettes = soldeNum - totalChargesAVenir;
+  const moisSurvie = moyenneMensuelleCA > 0 && panique.solde !== "" ? Math.max(0, Math.round((tresorerieApresDettes / moyenneMensuelleCA) * 10) / 10) : null;
+
   if (!token) {
     const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
     const caSim = parseFloat(simCa) || 0;
@@ -537,6 +555,7 @@ export default function App() {
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
           { id: "panique", icon: "ti-alert-triangle", label: "Mode panique" },
+          { id: "salaire", icon: "ti-cash", label: "Combien me verser ?" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
           { id: "factures", icon: "ti-file", label: "Factures" },
@@ -584,6 +603,11 @@ export default function App() {
                 </div>
               )}
             </div>
+
+            <button style={S.askHectorBtn} onClick={() => setNav("assistant")}>
+              <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 20 }} />
+              💬 Demander à H€CTOR — "Puis-je acheter ça ?", "Combien me verser ?"...
+            </button>
 
             {statut && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -761,6 +785,21 @@ export default function App() {
                     Déclarer sur autoentrepreneur.urssaf.fr →
                   </a>
                 </div>
+                {tvaProche && (
+                  <div style={{ ...S.card, background: tvaDepasse ? "#FCEBEB" : "#FAEEDA", border: `1px solid ${tvaDepasse ? "#E24B4A" : "#EF9F27"}` }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <i className="ti ti-receipt-tax" aria-hidden="true" style={{ fontSize: 20, color: tvaDepasse ? "#A32D2D" : "#854F0B" }} />
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: tvaDepasse ? "#A32D2D" : "#854F0B" }}>
+                          {tvaDepasse ? "🔴 Franchise TVA dépassée" : "🟠 Vous approchez du seuil TVA"}
+                        </div>
+                        <div style={{ fontSize: 12, color: tvaDepasse ? "#A32D2D" : "#854F0B", marginTop: 2 }}>
+                          Seuil de {formatEUR(seuilTva)} ({pourcentageSeuilTva}% atteint){tvaDepasse ? " — vous devez désormais facturer et reverser la TVA." : ", au-delà vous devrez facturer la TVA."}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 <div style={S.card}>
                   <div style={S.cardTitle}>Actualités récentes</div>
                   {NEWS.slice(0, 3).map((n, i) => (
@@ -854,6 +893,18 @@ export default function App() {
                     </div>
                   </details>
 
+                  {moisSurvie !== null && (
+                    <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "24px" }}>
+                      <div style={S.cardTitle}>💀 Si votre activité s'arrête demain</div>
+                      <div style={{ fontSize: 36, fontWeight: 700, color: moisSurvie >= 6 ? "#1D9E75" : moisSurvie >= 3 ? "#EF9F27" : "#A32D2D" }}>
+                        {moisSurvie} mois
+                      </div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>
+                        de trésorerie restante (après charges dues), au rythme de votre CA mensuel moyen actuel
+                      </div>
+                    </div>
+                  )}
+
                   <div style={{ ...S.card, marginTop: 14 }}>
                     <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je acheter ça ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -904,6 +955,39 @@ export default function App() {
             </div>
           );
         })()}
+
+        {nav === "salaire" && (
+          <div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
+            {panique.solde === "" ? (
+              <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("panique")}>Mode panique</button> pour voir ce calcul.</p></div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div style={{ ...S.card, border: "1px solid #EEF2F7" }}>
+                  <div style={S.salaireRow}>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>🟢 Prudent</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>Marge confortable, idéal en période incertaine</div></div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: "#1D9E75" }}>{formatEUR(salairePrudent)}</div>
+                  </div>
+                </div>
+                <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
+                  <div style={S.salaireRow}>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>🔵 Recommandé</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>Bon équilibre entre revenu et sécurité</div></div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: ACCENT }}>{formatEUR(salaireRecommande)}</div>
+                  </div>
+                </div>
+                <div style={{ ...S.card, border: "1px solid #EEF2F7" }}>
+                  <div style={S.salaireRow}>
+                    <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>🔴 Maximum</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>Tout le disponible — zéro marge supplémentaire après</div></div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: "#A32D2D" }}>{formatEUR(salaireMaximum)}</div>
+                  </div>
+                </div>
+                <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center" }}>
+                  Basé sur votre disponible après charges et réserve de sécurité ({formatEUR(disponibleAujourdhui || 0)}).
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         {nav === "score" && (() => {
           const info = scoreInfo(scoreSante);
@@ -1292,7 +1376,19 @@ export default function App() {
         {nav === "assistant" && (
           <div>
             <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
-            <div style={{ ...S.card, display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
+            {aiMessages.length <= 1 && (
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+                {[
+                  "Combien puis-je me verser ce mois-ci ?",
+                  "Puis-je acheter un MacBook à 2000€ ?",
+                  "Quand vais-je dépasser mon plafond ?",
+                  "Mon activité est-elle en bonne santé ?",
+                ].map(q => (
+                  <button key={q} style={S.quickAskChip} onClick={() => { setAiInput(q); }}>{q}</button>
+                ))}
+              </div>
+            )}
+            <div style={{ ...S.card, display: "flex", flexDirection: "column", height: "calc(100vh - 260px)" }}>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}>
                 {aiMessages.map((m, i) => (
                   <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
@@ -1308,6 +1404,7 @@ export default function App() {
             </div>
           </div>
         )}
+
 
         {nav === "abonnement" && (
           <div>
@@ -1461,6 +1558,9 @@ const S = {
   achatResult: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 10 },
   modelText: { fontSize: 12, color: "#3D4452", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#FAFBFC", border: "1px solid #EEF2F7", borderRadius: 8, padding: "12px 14px", margin: 0, lineHeight: 1.6 },
   inlineEditValue: { width: 90, fontFamily: "'IBM Plex Mono', monospace", fontSize: 13, color: "#854F0B", padding: "4px 8px", borderRadius: 6, border: "1px solid #EEF2F7", textAlign: "right" },
+  askHectorBtn: { width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, background: `linear-gradient(135deg, ${ACCENT}, #2563A8)`, color: "white", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 18, boxShadow: "0 4px 14px rgba(55,138,221,0.3)" },
+  quickAskChip: { background: "white", border: `1px solid ${ACCENT}`, color: ACCENT, borderRadius: 20, padding: "8px 14px", fontSize: 12, fontWeight: 500, cursor: "pointer" },
+  salaireRow: { display: "flex", justifyContent: "space-between", alignItems: "center" },
   paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
   paniqueLineLabel: { display: "flex", alignItems: "center" },
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
