@@ -198,19 +198,12 @@ export default function App() {
   async function handleAddIncome(e) {
     e.preventDefault();
     setError("");
-    const taux = estimateData?.taux_global_pct
-      ? estimateData.taux_global_pct / 100
-      : 0.214;
-    const saisie = parseFloat(incomeForm.amount);
-    const montantBrut = incomeIsNet
-      ? Math.round((saisie / (1 - taux)) * 100) / 100
-      : saisie;
     try {
       await apiFetch("/income", {
         method: "POST",
         body: JSON.stringify({
           date: incomeForm.date,
-          amount: montantBrut,
+          amount: parseFloat(incomeForm.amount),
           description: incomeForm.description || null,
         }),
       });
@@ -255,14 +248,14 @@ export default function App() {
         <style>{globalCss}</style>
         <div style={styles.authWrap}>
           <div style={styles.logo}>
-            <span style={styles.logoMark}>◆</span> Provision
+            <PawIcon /> H€CTOR
           </div>
           <form style={styles.card} onSubmit={handleAuth}>
             <h1 style={styles.title}>
               {authMode === "login" ? "Connexion" : "Créer un compte"}
             </h1>
             <p style={styles.subtitle}>
-              Suivez vos revenus, on calcule ce que vous devez mettre de côté.
+              H€CTOR calcule ce que vous devez mettre de côté pour l'URSSAF.
             </p>
 
             {error && <div style={styles.errorBanner}>{error}</div>}
@@ -327,7 +320,7 @@ export default function App() {
         <style>{globalCss}</style>
         <div style={styles.main}>
           <div style={styles.logo}>
-            <span style={styles.logoMark}>◆</span> Provision
+            <PawIcon /> H€CTOR
           </div>
           <form style={styles.card} onSubmit={handleSaveProfile}>
             <h1 style={styles.title}>Votre situation</h1>
@@ -440,7 +433,7 @@ export default function App() {
       <div style={styles.mainWide}>
         <header style={styles.dashHeader}>
           <div style={styles.logo}>
-            <span style={styles.logoMark}>◆</span> Provision
+            <PawIcon /> H€CTOR
           </div>
           <button style={styles.linkButton} onClick={handleLogout}>
             Déconnexion
@@ -566,40 +559,11 @@ export default function App() {
                   required
                 />
 
-                <div style={styles.amountToggleRow}>
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.toggleBtn,
-                      ...(!incomeIsNet ? styles.toggleBtnActive : {}),
-                    }}
-                    onClick={() => setIncomeIsNet(false)}
-                  >
-                    Montant brut (CA)
-                  </button>
-                  <button
-                    type="button"
-                    style={{
-                      ...styles.toggleBtn,
-                      ...(incomeIsNet ? styles.toggleBtnActive : {}),
-                    }}
-                    onClick={() => setIncomeIsNet(true)}
-                  >
-                    Montant net reçu
-                  </button>
-                </div>
-
-                <p style={styles.toggleHint}>
-                  {incomeIsNet
-                    ? "Ce que vous avez gardé après avoir mis de côté les cotisations — on recalcule le CA brut automatiquement."
-                    : "Ce que votre client vous a versé, avant de mettre quoi que ce soit de côté pour l'URSSAF."}
-                </p>
-
                 <input
                   style={styles.input}
                   type="number"
                   step="0.01"
-                  placeholder={incomeIsNet ? "Montant net reçu €" : "Chiffre d'affaires brut €"}
+                  placeholder="Montant reçu de votre client €"
                   value={incomeForm.amount}
                   onChange={(e) =>
                     setIncomeForm({ ...incomeForm, amount: e.target.value })
@@ -607,26 +571,22 @@ export default function App() {
                   required
                 />
 
-                {incomeIsNet && incomeForm.amount && parseFloat(incomeForm.amount) > 0 && (() => {
+                {incomeForm.amount && parseFloat(incomeForm.amount) > 0 && (() => {
                   const taux = estimateData?.taux_global_pct
                     ? estimateData.taux_global_pct / 100
                     : 0.214;
-                  const net = parseFloat(incomeForm.amount);
-                  const brut = Math.round((net / (1 - taux)) * 100) / 100;
-                  const cotisations = Math.round((brut - net) * 100) / 100;
+                  const brut = parseFloat(incomeForm.amount);
+                  const cotisations = Math.round(brut * taux * 100) / 100;
+                  const net = Math.round((brut - cotisations) * 100) / 100;
                   return (
                     <div style={styles.netPreview}>
                       <div style={styles.netPreviewRow}>
-                        <span>CA brut enregistré</span>
-                        <span style={styles.netPreviewValue}>{formatEUR(brut)}</span>
-                      </div>
-                      <div style={styles.netPreviewRow}>
-                        <span style={{ color: warning }}>Cotisations URSSAF ({estimateData?.taux_global_pct ?? 21.4}%)</span>
-                        <span style={{ color: warning }}>−{formatEUR(cotisations)}</span>
+                        <span style={{ color: warning, fontWeight: 500 }}>À mettre de côté URSSAF ({estimateData?.taux_global_pct ?? 21.4}%)</span>
+                        <span style={{ color: warning, fontFamily: "'IBM Plex Mono', monospace" }}>−{formatEUR(cotisations)}</span>
                       </div>
                       <div style={{ ...styles.netPreviewRow, borderTop: `1px solid ${line}`, paddingTop: 8, marginTop: 4 }}>
-                        <span style={{ fontWeight: 500 }}>Net à garder</span>
-                        <span style={{ ...styles.netPreviewValue, color: accent }}>{formatEUR(net)}</span>
+                        <span style={{ fontWeight: 600 }}>Dans votre poche</span>
+                        <span style={{ fontFamily: "'IBM Plex Mono', monospace", fontWeight: 600, color: accent }}>{formatEUR(net)}</span>
                       </div>
                     </div>
                   );
@@ -690,14 +650,24 @@ export default function App() {
 // ──────────────────────────────────────────────────────────
 // Design tokens
 // ──────────────────────────────────────────────────────────
-const ink = "#182019";
-const paper = "#F4F6F1";
+const ink = "#0F0F1A";
+const paper = "#F5F4F0";
 const cardBg = "#FFFFFF";
-const line = "#DBE0D5";
-const accent = "#1F6F58";
-const accentDark = "#15493A";
+const line = "#E2E0DC";
+const accent = "#C4302B";
+const accentDark = "#8B1F1B";
 const warning = "#B5651D";
 const danger = "#B23B3B";
+
+const PawIcon = ({ size = 28 }) => (
+  <svg width={size} height={size} viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="50" cy="62" rx="22" ry="18" fill={accent} />
+    <ellipse cx="28" cy="48" rx="10" ry="13" fill={accent} />
+    <ellipse cx="72" cy="48" rx="10" ry="13" fill={accent} />
+    <ellipse cx="38" cy="32" rx="8" ry="11" fill={accent} />
+    <ellipse cx="62" cy="32" rx="8" ry="11" fill={accent} />
+  </svg>
+);
 
 const globalCss = `
   @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap');
