@@ -271,26 +271,18 @@ export default function App() {
     e.preventDefault();
     if (!aiInput.trim() || aiLoading) return;
     const userMsg = { role: "user", content: aiInput };
-    setAiMessages(m => [...m, userMsg]);
+    const newMessages = [...aiMessages, userMsg];
+    setAiMessages(newMessages);
     setAiInput("");
     setAiLoading(true);
     try {
-      const context = estimateData ? `L'utilisateur est auto-entrepreneur en ${profile?.activite || "services"}, CA annuel ${estimateData.ca_annuel}€, taux URSSAF ${estimateData.taux_global_pct}%.` : "";
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      const data = await apiFetch("/assistant/chat", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-6",
-          max_tokens: 1000,
-          system: `Tu es H€CTOR, un assistant fiscal expert pour les auto-entrepreneurs français. Tu réponds de façon claire, concise et bienveillante. ${context} Tu donnes des conseils pratiques sur l'URSSAF, les cotisations, la TVA, l'ACRE, la déclaration de revenus. Tu rappelles toujours de consulter un comptable pour les cas complexes.`,
-          messages: [...aiMessages, userMsg].map(m => ({ role: m.role, content: m.content })),
-        }),
+        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
       });
-      const data = await res.json();
-      const reply = data.content?.[0]?.text || "Désolé, je n'ai pas pu répondre.";
-      setAiMessages(m => [...m, { role: "assistant", content: reply }]);
-    } catch {
-      setAiMessages(m => [...m, { role: "assistant", content: "Une erreur est survenue. Réessayez dans un moment." }]);
+      setAiMessages(m => [...m, { role: "assistant", content: data.reply }]);
+    } catch (err) {
+      setAiMessages(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setAiLoading(false);
     }
@@ -316,8 +308,21 @@ export default function App() {
           <h1 style={S.authHero}>Votre assistant fiscal<br />intelligent</h1>
           <p style={S.authSub}>H€CTOR calcule vos cotisations URSSAF, crée vos factures et répond à toutes vos questions fiscales en temps réel.</p>
           <div style={S.authFeatures}>
-            {["Calcul URSSAF automatique", "Création de factures pro", "Assistant IA fiscal 24/7", "Actualités fiscales en direct"].map(f => (
-              <div key={f} style={S.authFeature}><span style={S.authFeatureCheck}>✓</span>{f}</div>
+            {[
+              { icon: "ti-calculator", t: "Calcul URSSAF automatique", d: "Cotisations recalculées en temps réel selon vos revenus" },
+              { icon: "ti-file-invoice", t: "Factures professionnelles", d: "Créez, numérotez et envoyez vos factures en 2 minutes" },
+              { icon: "ti-alert-triangle", t: "Mode panique", d: "Sachez en un clic ce qu'il vous reste vraiment disponible" },
+              { icon: "ti-message-circle", t: "Assistant IA fiscal", d: "Posez vos questions URSSAF, TVA, ACRE 24h/24" },
+              { icon: "ti-bell", t: "Actualités & échéances", d: "Alertes avant chaque déclaration, zéro oubli" },
+              { icon: "ti-building-bank", t: "Connexion bancaire", d: "Qonto, Shine, Revolut... bientôt 100% automatique" },
+            ].map(f => (
+              <div key={f.t} style={S.authFeatureCard}>
+                <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
+                <div>
+                  <div style={S.authFeatureTitle}>{f.t}</div>
+                  <div style={S.authFeatureDesc}>{f.d}</div>
+                </div>
+              </div>
             ))}
           </div>
 
@@ -426,6 +431,7 @@ export default function App() {
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
           { id: "panique", icon: "ti-alert-triangle", label: "Mode panique" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
+          { id: "banque", icon: "ti-building-bank", label: "Connexion bancaire" },
           { id: "factures", icon: "ti-file", label: "Factures" },
           { id: "contacts", icon: "ti-user", label: "Contacts" },
           { id: "echeances", icon: "ti-calendar", label: "Échéances" },
@@ -494,7 +500,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={S.kpiGrid}>
+            <div style={S.kpiGrid} className="kpi-grid-r">
               <div style={S.kpiCard}>
                 <span style={S.kpiLabel}>À mettre de côté · {estimateData.periode_courante?.label}</span>
                 <span style={S.kpiValue}>{formatEUR(estimateData.montant_a_provisionner)}</span>
@@ -516,7 +522,40 @@ export default function App() {
                 <span style={S.kpiSub}>ce mois</span>
               </div>
             </div>
-            <div style={S.row2}>
+
+            <div style={{ ...S.card, marginBottom: 20 }}>
+              <div style={S.cardTitle}><i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Simulation rapide</div>
+              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
+              <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="CA encaissé" value={simCa} onChange={e => setSimCa(e.target.value)} />
+                <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
+                  <option value="vente">Vente de marchandises (12,3%)</option>
+                  <option value="services">Prestations de services (21,2%)</option>
+                  <option value="bnc">Profession libérale (25,6%)</option>
+                </select>
+              </div>
+              {(() => {
+                const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
+                const caSim = parseFloat(simCa) || 0;
+                const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
+                const netSim = Math.round((caSim - urssafSim) * 100) / 100;
+                if (caSim <= 0) return null;
+                return (
+                  <div style={{ display: "flex", gap: 24 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>À mettre de côté URSSAF</div>
+                      <div style={{ fontSize: 22, fontWeight: 600, color: "#854F0B" }}>{formatEUR(urssafSim)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>Dans votre poche</div>
+                      <div style={{ fontSize: 22, fontWeight: 600, color: ACCENT }}>{formatEUR(netSim)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+
+            <div style={S.row2} className="row2-r">
               <div style={S.card}>
                 <div style={S.cardTitle}>Revenus par mois</div>
                 {revenusParMois.map((m, i) => (
@@ -595,7 +634,7 @@ export default function App() {
                 <div style={S.cardTitle}>Votre situation</div>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 4 }}>
                   <label style={S.label}>Solde bancaire actuel
-                    <input style={S.input} type="number" step="0.01" placeholder="12 000" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+                    <input style={S.input} type="number" step="0.01" placeholder="Ex : 12000 (tapez votre montant réel)" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
                   </label>
                   <label style={S.label}>URSSAF à provisionner
                     <input style={S.input} type="number" step="0.01" value={panique.urssaf} onChange={e => setPanique({ ...panique, urssaf: e.target.value })} />
@@ -645,26 +684,6 @@ export default function App() {
             <div style={S.pageHeader}>
               <div><h1 style={S.pageTitle}>Revenus</h1><p style={S.pageSub}>Tous vos encaissements</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
-            </div>
-
-            <div style={{ ...S.card, marginBottom: 16 }}>
-              <div style={S.cardTitle}>Connexion bancaire automatique <span style={{ ...S.badge, ...S.badgeOrange }}>Bientôt</span></div>
-              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 14px" }}>
-                Connectez votre banque pour récupérer vos encaissements automatiquement, sans rien saisir.
-              </p>
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
-                {[
-                  { nom: "Qonto", icon: "ti-building-bank" },
-                  { nom: "Shine", icon: "ti-sun" },
-                  { nom: "Revolut Business", icon: "ti-credit-card" },
-                  { nom: "Autre banque", icon: "ti-building-bank" },
-                ].map(b => (
-                  <div key={b.nom} style={S.bankCard}>
-                    <i className={`ti ${b.icon}`} aria-hidden="true" style={{ fontSize: 22, color: "#8BA5C0" }} />
-                    <span style={{ fontSize: 12, color: "#6B7A8D", marginTop: 6 }}>{b.nom}</span>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {showAddIncome && (
@@ -791,6 +810,61 @@ export default function App() {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {nav === "banque" && (
+          <div>
+            <div style={S.pageHeader}>
+              <div><h1 style={S.pageTitle}>Connexion bancaire</h1><p style={S.pageSub}>Fini la saisie manuelle</p></div>
+            </div>
+
+            <div style={S.bankHero}>
+              <i className="ti ti-plug-connected" aria-hidden="true" style={{ fontSize: 28, color: ACCENT, marginBottom: 12 }} />
+              <h2 style={{ fontSize: 17, fontWeight: 600, color: INK, margin: "0 0 8px" }}>Bientôt : connectez votre banque en 30 secondes</h2>
+              <p style={{ fontSize: 13, color: "#5B6573", lineHeight: 1.6, maxWidth: 520, margin: "0 auto" }}>
+                Aujourd'hui, vous ajoutez vos revenus à la main ou via une facture. Une fois cette fonction activée, H€CTOR ira chercher directement vos encaissements sur votre compte bancaire — votre dashboard se remplira tout seul, chaque jour, sans rien faire.
+              </p>
+            </div>
+
+            <div style={S.row2} className="row2-r">
+              <div style={S.card}>
+                <div style={S.cardTitle}>Comment ça marchera</div>
+                {[
+                  { n: "1", t: "Vous choisissez votre banque", d: "Qonto, Shine, Revolut Business, ou n'importe quelle banque classique." },
+                  { n: "2", t: "Vous autorisez l'accès en lecture seule", d: "Comme sur l'appli officielle de votre banque — H€CTOR ne peut rien dépenser, juste lire vos encaissements." },
+                  { n: "3", t: "Vos revenus se remplissent automatiquement", d: "Chaque virement reçu apparaît dans votre dashboard, et le calcul URSSAF se met à jour en temps réel." },
+                ].map(s => (
+                  <div key={s.n} style={S.conseilItem}>
+                    <div style={{ ...S.conseilIcon, background: "#E6F1FB", color: "#0C447C", fontWeight: 600, fontSize: 13 }}>{s.n}</div>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: INK, marginBottom: 2 }}>{s.t}</div>
+                      <div style={{ fontSize: 12, color: "#6B7A8D", lineHeight: 1.5 }}>{s.d}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div style={S.card}>
+                <div style={S.cardTitle}>Banques prévues au lancement</div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[
+                    { nom: "Qonto", icon: "ti-building-bank" },
+                    { nom: "Shine", icon: "ti-sun" },
+                    { nom: "Revolut Business", icon: "ti-credit-card" },
+                    { nom: "Banque classique", icon: "ti-building-bank" },
+                  ].map(b => (
+                    <div key={b.nom} style={S.bankCard}>
+                      <i className={`ti ${b.icon}`} aria-hidden="true" style={{ fontSize: 22, color: "#8BA5C0" }} />
+                      <span style={{ fontSize: 12, color: "#6B7A8D", marginTop: 6, textAlign: "center" }}>{b.nom}</span>
+                    </div>
+                  ))}
+                </div>
+                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "14px 0 0", textAlign: "center" }}>
+                  Connexion sécurisée via un prestataire agréé (Open Banking / DSP2)
+                </p>
+              </div>
             </div>
           </div>
         )}
@@ -926,11 +1000,12 @@ const CSS = `
 const S = {
   authPage: { display: "flex", minHeight: "100vh" },
   authLeft: { flex: 1, background: INK, padding: "60px 48px", display: "flex", flexDirection: "column", justifyContent: "center" },
-  authHero: { fontFamily: "Georgia, serif", fontSize: 36, fontWeight: 700, color: "white", margin: "32px 0 16px", lineHeight: 1.2 },
-  authSub: { fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 32px" },
-  authFeatures: { display: "flex", flexDirection: "column", gap: 12 },
-  authFeature: { display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#B5D4F4" },
-  authFeatureCheck: { color: "#5DCAA5", fontWeight: 700 },
+  authHero: { fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "white", margin: "24px 0 12px", lineHeight: 1.2 },
+  authSub: { fontSize: 14, color: "#8BA5C0", lineHeight: 1.5, margin: "0 0 24px" },
+  authFeatures: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
+  authFeatureCard: { display: "flex", alignItems: "flex-start", gap: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" },
+  authFeatureTitle: { fontSize: 12, fontWeight: 600, color: "white", lineHeight: 1.3 },
+  authFeatureDesc: { fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, marginTop: 3 },
   simWidget: { marginTop: 36, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: 18 },
   simInput: { flex: 1, fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", outline: "none", background: "rgba(255,255,255,0.08)", color: "white" },
   simSelect: { flex: 1, fontFamily: "inherit", fontSize: 13, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", outline: "none", background: "rgba(255,255,255,0.08)", color: "white" },
@@ -995,6 +1070,7 @@ const S = {
   dropZoneSmall: { display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px dashed #DDE5EE", borderRadius: 8, padding: "14px 16px", cursor: "pointer", fontSize: 13, color: "#5B6573", background: "white", marginBottom: 12 },
   empty: { fontSize: 13, color: "#8BA5C0", textAlign: "center", padding: "24px 0" },
   bankCard: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "16px 10px", border: "1px dashed #DDE5EE", borderRadius: 10, background: "#FAFBFC", cursor: "not-allowed" },
+  bankHero: { background: "white", border: "0.5px solid #DDE5EE", borderRadius: 12, padding: "32px 24px", textAlign: "center", marginBottom: 16 },
   paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
   paniqueLineLabel: { display: "flex", alignItems: "center" },
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
