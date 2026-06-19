@@ -109,7 +109,11 @@ export default function App() {
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [achatMontant, setAchatMontant] = useState("");
-  const [heuresTravaillees, setHeuresTravaillees] = useState("");
+  const [heuresParSemaine, setHeuresParSemaine] = useState("");
+  const [joursParSemaine, setJoursParSemaine] = useState("5");
+  const [semainesParAn, setSemainesParAn] = useState("46");
+  const [augmentationPct, setAugmentationPct] = useState("10");
+  const [objectifHoraire, setObjectifHoraire] = useState("40");
   const [simFiscalCa, setSimFiscalCa] = useState("4000");
   const [simFiscalPeriode, setSimFiscalPeriode] = useState("mensuel");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
@@ -405,9 +409,22 @@ export default function App() {
     return { label: "Risque élevé", color: "#E24B4A", desc: "Plusieurs indicateurs sont dans le rouge — agissez rapidement." };
   }
 
-  // --- Coach prix ---
-  const heuresNum = parseFloat(heuresTravaillees) || 0;
-  const tauxHoraireReel = heuresNum > 0 && estimateData ? Math.round(((estimateData.ca_annuel || 0) * (1 - (estimateData.taux_global_pct || 0) / 100)) / heuresNum * 100) / 100 : null;
+  // --- Coach prix : a partir d'un rythme hebdomadaire, pas d'un total annuel irrealiste ---
+  const hParSemaine = parseFloat(heuresParSemaine) || 0;
+  const jParSemaine = parseFloat(joursParSemaine) || 5;
+  const semaines = parseFloat(semainesParAn) || 46;
+  const heuresAnnuelles = hParSemaine * semaines;
+  const heuresParJour = jParSemaine > 0 ? hParSemaine / jParSemaine : 0;
+  const revenuNetAnnuel = estimateData ? (estimateData.ca_annuel || 0) * (1 - (estimateData.taux_global_pct || 0) / 100) : 0;
+  const tauxHoraireReel = heuresAnnuelles > 0 ? Math.round((revenuNetAnnuel / heuresAnnuelles) * 100) / 100 : null;
+  const revenuJournalierMoyen = tauxHoraireReel !== null ? Math.round(tauxHoraireReel * heuresParJour * 100) / 100 : null;
+  const augPct = parseFloat(augmentationPct) || 0;
+  const tauxHoraireApresAugmentation = tauxHoraireReel !== null ? Math.round(tauxHoraireReel * (1 + augPct / 100) * 100) / 100 : null;
+  const gainAnnuelAugmentation = tauxHoraireApresAugmentation !== null ? Math.round((tauxHoraireApresAugmentation - tauxHoraireReel) * heuresAnnuelles) : null;
+  const objHoraireNum = parseFloat(objectifHoraire) || 0;
+  const caRequisPourObjectif = (objHoraireNum > 0 && heuresAnnuelles > 0 && estimateData)
+    ? Math.round((objHoraireNum * heuresAnnuelles) / (1 - (estimateData.taux_global_pct || 0) / 100))
+    : null;
 
   // --- TVA : detection du depassement du seuil de franchise en base ---
   const seuilTva = activiteInfo?.seuilTva || null;
@@ -1195,32 +1212,84 @@ export default function App() {
 
         {nav === "coach" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Coach prix</h1><p style={S.pageSub}>Savez-vous combien vous gagnez vraiment de l'heure ?</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Coach prix</h1><p style={S.pageSub}>Beaucoup d'indépendants se sous-facturent sans s'en rendre compte. Voyons où vous en êtes.</p></div></div>
+
             <div style={S.card}>
-              <label style={S.label}>Heures travaillées cette année (estimation)
-                <input style={S.input} type="number" placeholder="Ex : 800" value={heuresTravaillees} onChange={e => setHeuresTravaillees(e.target.value)} />
-              </label>
-              {tauxHoraireReel !== null && estimateData && (
-                <div style={{ marginTop: 16 }}>
-                  <div style={S.paniqueResult}>
-                    <span style={S.paniqueResultLabel}>Votre taux horaire réel (après charges)</span>
-                    <span style={{ ...S.paniqueResultValue, color: tauxHoraireReel < 25 ? "#A32D2D" : tauxHoraireReel < 40 ? "#854F0B" : ACCENT }}>{formatEUR(tauxHoraireReel)}/h</span>
-                  </div>
-                  {tauxHoraireReel < 40 && (
-                    <div style={{ ...S.achatResult, background: "#FAEEDA", color: "#854F0B", marginTop: 12 }}>
-                      <i className="ti ti-trending-up" aria-hidden="true" style={{ fontSize: 20 }} />
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <label style={S.label}>Heures travaillées par semaine
+                  <input style={S.input} type="number" placeholder="Ex : 35" value={heuresParSemaine} onChange={e => setHeuresParSemaine(e.target.value)} />
+                </label>
+                <label style={S.label}>Jours travaillés par semaine
+                  <input style={S.input} type="number" placeholder="Ex : 5" value={joursParSemaine} onChange={e => setJoursParSemaine(e.target.value)} />
+                </label>
+              </div>
+              <details>
+                <summary style={{ cursor: "pointer", fontSize: 12, color: "#5B6573", marginBottom: 8 }}>⚙️ Semaines travaillées par an (vacances incluses)</summary>
+                <input style={{ ...S.input, marginTop: 6 }} type="number" value={semainesParAn} onChange={e => setSemainesParAn(e.target.value)} />
+              </details>
+            </div>
+
+            {tauxHoraireReel !== null && estimateData && (
+              <>
+                <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px" }}>
+                  <div style={S.paniqueResultLabel}>Votre revenu horaire réel (après charges)</div>
+                  <div style={{ ...S.paniqueResultValue, fontSize: 48, color: tauxHoraireReel < 25 ? "#A32D2D" : tauxHoraireReel < 40 ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 20 }}>/h</span></div>
+                  {revenuJournalierMoyen !== null && (
+                    <div style={{ fontSize: 13, color: "#6B7A8D", marginTop: 8 }}>soit environ <strong>{formatEUR(revenuJournalierMoyen)}</strong> par journée travaillée</div>
+                  )}
+                </div>
+
+                {tauxHoraireReel < 40 && (
+                  <div style={{ ...S.card, marginTop: 14, background: "#FAEEDA", border: "1px solid #EF9F27" }}>
+                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
+                      <i className="ti ti-bulb" aria-hidden="true" style={{ fontSize: 22, color: "#854F0B", flexShrink: 0, marginTop: 2 }} />
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: 13 }}>Pour viser 40€/h réel</div>
-                        <div style={{ fontSize: 12, marginTop: 2 }}>
-                          Il faudrait facturer au moins {formatEUR(Math.round((40 * heuresNum) / (1 - (estimateData.taux_global_pct / 100))))} de CA brut sur l'année, contre {formatEUR(estimateData.ca_annuel)} actuellement.
+                        <div style={{ fontWeight: 600, fontSize: 14, color: "#633806" }}>Vous vous sous-facturez probablement</div>
+                        <div style={{ fontSize: 13, color: "#854F0B", marginTop: 4, lineHeight: 1.5 }}>
+                          Beaucoup d'indépendants dans votre situation gagnent davantage une fois qu'ils ajustent leurs tarifs. Regardez la simulation ci-dessous — augmenter même légèrement vos prix peut faire une vraie différence sans travailler une heure de plus.
                         </div>
                       </div>
                     </div>
+                  </div>
+                )}
+
+                <div style={{ ...S.card, marginTop: 14 }}>
+                  <div style={S.cardTitle}>📈 Si j'augmente mes tarifs de...</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <input style={{ ...S.input, width: 80 }} type="number" value={augmentationPct} onChange={e => setAugmentationPct(e.target.value)} />
+                    <span style={{ fontSize: 14, color: INK }}>%</span>
+                  </div>
+                  {tauxHoraireApresAugmentation !== null && (
+                    <div style={S.paniqueLine}>
+                      <span style={S.paniqueLineLabel}>Nouveau taux horaire</span>
+                      <span style={{ fontWeight: 600, color: "#1D9E75" }}>{formatEUR(tauxHoraireApresAugmentation)}/h</span>
+                    </div>
+                  )}
+                  {gainAnnuelAugmentation !== null && gainAnnuelAugmentation > 0 && (
+                    <div style={{ fontSize: 13, color: "#5B6573", marginTop: 8 }}>
+                      Soit <strong style={{ color: "#1D9E75" }}>{formatEUR(gainAnnuelAugmentation)} de plus par an</strong>, sans changer votre rythme de travail.
+                    </div>
                   )}
                 </div>
-              )}
-              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14 }}>Calcul basé sur votre CA annuel actuel et le nombre d'heures que vous indiquez — à ajuster au fil de l'année.</p>
-            </div>
+
+                <div style={{ ...S.card, marginTop: 14 }}>
+                  <div style={S.cardTitle}>🎯 Mon objectif de revenu horaire</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <input style={{ ...S.input, width: 100 }} type="number" value={objectifHoraire} onChange={e => setObjectifHoraire(e.target.value)} />
+                    <span style={{ fontSize: 14, color: INK }}>€/h</span>
+                  </div>
+                  {caRequisPourObjectif !== null && (
+                    <div style={{ fontSize: 13, color: "#5B6573", lineHeight: 1.6 }}>
+                      Pour atteindre {formatEUR(objHoraireNum)}/h, il vous faudrait facturer environ <strong>{formatEUR(caRequisPourObjectif)}</strong> de CA brut sur l'année (contre {formatEUR(estimateData.ca_annuel)} actuellement).
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
+            <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
+              Calcul basé sur votre CA annuel actuel et votre rythme de travail déclaré — à ajuster au fil de l'année.
+            </p>
           </div>
         )}
 
