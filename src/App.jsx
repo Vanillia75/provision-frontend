@@ -10,9 +10,17 @@ const STATUTS = [
 ];
 
 const ACTIVITES = [
-  { id: "vente", label: "Vente de marchandises", taux: "12,3%" },
-  { id: "services", label: "Prestations de services", taux: "21,2%" },
-  { id: "bnc", label: "Profession libérale (BNC)", taux: "25,6%" },
+  { id: "vente", label: "Vente de marchandises", taux: "12,3%", abattement: 0.71 },
+  { id: "services", label: "Prestations de services", taux: "21,2%", abattement: 0.50 },
+  { id: "bnc", label: "Profession libérale (BNC)", taux: "25,6%", abattement: 0.34 },
+];
+
+const TMI_OPTIONS = [
+  { id: "0", label: "0% — je ne paie pas d'impôt actuellement" },
+  { id: "11", label: "11%" },
+  { id: "30", label: "30%" },
+  { id: "41", label: "41%" },
+  { id: "45", label: "45%" },
 ];
 
 const NEWS = [
@@ -95,6 +103,7 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "200" });
+  const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("3000");
   const [simActivite, setSimActivite] = useState("services");
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
@@ -102,6 +111,7 @@ export default function App() {
   const [achatMontant, setAchatMontant] = useState("");
   const [heuresTravaillees, setHeuresTravaillees] = useState("");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const googleButtonRef = useRef(null);
 
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -151,6 +161,7 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
   useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
+  useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
 
   useEffect(() => {
     if (token) loadEverything();
@@ -312,11 +323,14 @@ export default function App() {
         ? Math.round((estimateData.ca_periode_precedente || 0) * ((estimateData?.taux_global_pct || 0) / 100) * 100) / 100
         : 0)
     : 0;
-  const impotsNum = profile?.versement_liberatoire ? 0 : (parseFloat(panique.impots) || 0);
+  const activiteInfo = ACTIVITES.find(a => a.id === profile?.activite);
+  const revenuImposableAnnuel = activiteInfo ? (estimateData?.ca_annuel || 0) * (1 - activiteInfo.abattement) : 0;
+  const impotsAnnuelEstime = Math.round(revenuImposableAnnuel * (parseFloat(tmi) / 100));
+  const impotsNum = profile?.versement_liberatoire ? 0 : Math.round((impotsAnnuelEstime / 12) * 100) / 100;
   const cfeNum = parseFloat(panique.cfe) || 0;
   const totalChargesAVenir = urssafProvision + impotsNum + cfeNum;
   const securiteNum = parseFloat(objectifSecurite) || 0;
-  const disponibleAujourdhui = soldeNum > 0 ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
+  const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
 
   // --- Statut unifie (memes seuils que Mode Panique : >0 vert, 0 a -1000 orange, <-1000 rouge) ---
   function statutFinancier() {
@@ -503,9 +517,22 @@ export default function App() {
     <div style={S.appWrap}>
       <style>{CSS}</style>
 
-      <aside style={{ ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }}>
+      <div className="mobile-topbar">
+        <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
+          <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
+        </button>
+        <Logo size={24} />
+        <div style={{ width: 38 }} />
+      </div>
+
+      <div className={`sidebar-backdrop ${mobileMenuOpen ? "mobile-open" : ""}`} onClick={() => setMobileMenuOpen(false)} />
+
+      <aside className={`sidebar ${mobileMenuOpen ? "mobile-open" : ""}`} style={{ ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }}>
         <div style={S.sidebarTop}>
           {sidebarOpen ? <Logo size={28} /> : <LogoIcon size={32} />}
+          <button style={{ ...S.navItem, padding: "4px 8px", width: "auto" }} className="mobile-only-close" onClick={() => setMobileMenuOpen(false)}>
+            <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 18 }} />
+          </button>
         </div>
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
@@ -524,9 +551,9 @@ export default function App() {
           { id: "assistant", icon: "ti-message", label: "Assistant IA" },
           { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
         ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => setNav(item.id)}>
+          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18 }} />
-            {sidebarOpen && <span style={S.navLabel}>{item.label}</span>}
+            <span style={S.navLabel} className="nav-label-mobile-show">{sidebarOpen ? item.label : ""}</span>
           </button>
         ))}
         <div style={S.sidebarBottom}>
@@ -540,12 +567,12 @@ export default function App() {
         </div>
       </aside>
 
-      <main style={S.mainContent}>
+      <main style={S.mainContent} className="main-content">
         {error && <div style={S.errorBanner}>{error}</div>}
 
         {nav === "dashboard" && estimateData && (
           <div>
-            <div style={S.pageHeader}>
+            <div style={S.pageHeader} className="page-header-r">
               <div>
                 <h1 style={S.pageTitle}>Bonjour 👋</h1>
                 <p style={S.pageSub}>Votre situation fiscale en un coup d'œil</p>
@@ -567,7 +594,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={S.dispoHero}>
+            <div style={S.dispoHero} className="dispo-hero-r">
               <div>
                 <div style={S.dispoLabel}>💰 Disponible aujourd'hui</div>
                 {disponibleAujourdhui !== null ? (
@@ -659,7 +686,10 @@ export default function App() {
             </div>
 
             <div style={{ ...S.card, marginBottom: 20 }}>
-              <div style={S.cardTitle}><i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Simulation rapide</div>
+              <div style={S.cardTitle}>
+                <span><i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Simulation rapide</span>
+                {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
+              </div>
               <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
                 <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="CA encaissé" value={simCa} onChange={e => setSimCa(e.target.value)} />
@@ -761,7 +791,7 @@ export default function App() {
 
           return (
             <div>
-              <div style={S.pageHeader}>
+              <div style={S.pageHeader} className="page-header-r">
                 <div><h1 style={S.pageTitle}>🚨 Mode panique</h1><p style={S.pageSub}>Un seul chiffre à donner, H€CTOR fait le reste</p></div>
               </div>
 
@@ -775,7 +805,7 @@ export default function App() {
                 </p>
               </div>
 
-              {solde > 0 && (
+              {panique.solde !== "" && (
                 <>
                   <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "36px 24px", background: c.bg, border: `2px solid ${c.dot}` }}>
                     <div style={S.paniqueResultLabel}>💳 Vous pouvez dépenser</div>
@@ -811,9 +841,14 @@ export default function App() {
                       {profile?.versement_liberatoire ? (
                         <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0" }}>Impôts déjà inclus dans votre taux URSSAF (versement libératoire activé).</p>
                       ) : (
-                        <div style={S.paniqueLine}>
-                          <span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Impôts estimés (hors versement libératoire)</span>
-                          <input style={S.inlineEditValue} type="number" step="0.01" value={panique.impots} onChange={e => setPanique({ ...panique, impots: e.target.value })} />
+                        <div style={{ marginTop: 10 }}>
+                          <span style={{ ...S.paniqueLineLabel, display: "flex", marginBottom: 6 }}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Votre tranche d'imposition (TMI)</span>
+                          <select style={S.input} value={tmi} onChange={e => setTmi(e.target.value)}>
+                            {TMI_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                          </select>
+                          <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0", lineHeight: 1.5 }}>
+                            Visible sur votre dernier avis d'imposition. H€CTOR calcule : CA × ({activiteInfo ? Math.round((1 - activiteInfo.abattement) * 100) : "—"}% après abattement {activiteInfo ? Math.round(activiteInfo.abattement * 100) : "—"}%) × {tmi}% = environ {formatEUR(impotsAnnuelEstime)}/an, soit {formatEUR(impotsNum)}/mois.
+                          </p>
                         </div>
                       )}
                     </div>
@@ -874,7 +909,7 @@ export default function App() {
           const info = scoreInfo(scoreSante);
           return (
             <div>
-              <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Score H€CTOR</h1><p style={S.pageSub}>Votre santé financière en un coup d'œil</p></div></div>
+              <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Score H€CTOR</h1><p style={S.pageSub}>Votre santé financière en un coup d'œil</p></div></div>
               <div style={{ ...S.card, textAlign: "center", padding: "40px 24px" }}>
                 <div style={{ fontSize: 56, fontWeight: 700, color: info.color, lineHeight: 1 }}>{scoreSante !== null ? `${scoreSante}` : "—"}<span style={{ fontSize: 24, color: "#8BA5C0" }}>/100</span></div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: info.color, marginTop: 10 }}>{info.label}</div>
@@ -899,7 +934,7 @@ export default function App() {
 
         {nav === "coach" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Coach prix</h1><p style={S.pageSub}>Savez-vous combien vous gagnez vraiment de l'heure ?</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Coach prix</h1><p style={S.pageSub}>Savez-vous combien vous gagnez vraiment de l'heure ?</p></div></div>
             <div style={S.card}>
               <label style={S.label}>Heures travaillées cette année (estimation)
                 <input style={S.input} type="number" placeholder="Ex : 800" value={heuresTravaillees} onChange={e => setHeuresTravaillees(e.target.value)} />
@@ -930,7 +965,7 @@ export default function App() {
 
         {nav === "societe" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Passage en société ?</h1><p style={S.pageSub}>Auto-entrepreneur, SASU ou EURL — où en êtes-vous</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Passage en société ?</h1><p style={S.pageSub}>Auto-entrepreneur, SASU ou EURL — où en êtes-vous</p></div></div>
             {estimateData && estimateData.disponible !== false && (() => {
               const pct = estimateData.pourcentage_plafond;
               let niveau = "vert", titre = "Pas encore nécessaire", texte = "Votre activité reste confortablement dans le cadre du régime micro-entrepreneur.";
@@ -961,7 +996,7 @@ export default function App() {
 
         {nav === "modeles" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Modèles</h1><p style={S.pageSub}>Des textes prêts à copier-coller</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Modèles</h1><p style={S.pageSub}>Des textes prêts à copier-coller</p></div></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 { titre: "Relance impayé", texte: "Bonjour [Nom],\n\nJe me permets de revenir vers vous concernant la facture [N°] du [date], d'un montant de [montant]€, dont l'échéance est dépassée.\n\nPourriez-vous me confirmer la date de règlement prévue ?\n\nBien à vous," },
@@ -985,7 +1020,7 @@ export default function App() {
 
         {nav === "revenus" && (
           <div>
-            <div style={S.pageHeader}>
+            <div style={S.pageHeader} className="page-header-r">
               <div><h1 style={S.pageTitle}>Revenus</h1><p style={S.pageSub}>Tous vos encaissements</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
             </div>
@@ -1034,7 +1069,7 @@ export default function App() {
 
         {nav === "factures" && (
           <div>
-            <div style={S.pageHeader}>
+            <div style={S.pageHeader} className="page-header-r">
               <div><h1 style={S.pageTitle}>Factures</h1><p style={S.pageSub}>Créez et envoyez vos factures</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowNewFacture(!showNewFacture)}>+ Nouvelle facture</button>
             </div>
@@ -1089,7 +1124,7 @@ export default function App() {
 
         {nav === "contacts" && (
           <div>
-            <div style={S.pageHeader}>
+            <div style={S.pageHeader} className="page-header-r">
               <div><h1 style={S.pageTitle}>Contacts</h1><p style={S.pageSub}>Vos clients</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddContact(!showAddContact)}>+ Ajouter</button>
             </div>
@@ -1139,7 +1174,7 @@ export default function App() {
 
         {nav === "banque" && (
           <div>
-            <div style={S.pageHeader}>
+            <div style={S.pageHeader} className="page-header-r">
               <div><h1 style={S.pageTitle}>Connexion bancaire</h1><p style={S.pageSub}>Fini la saisie manuelle</p></div>
             </div>
 
@@ -1194,7 +1229,7 @@ export default function App() {
 
         {nav === "echeances" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Échéances</h1><p style={S.pageSub}>Ne manquez aucune date importante</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Échéances</h1><p style={S.pageSub}>Ne manquez aucune date importante</p></div></div>
             <div style={{ display: "flex", gap: 16, marginBottom: 14, fontSize: 12, color: "#6B7A8D" }}>
               <span>🔴 ≤ 7 jours</span><span>🟠 ≤ 15 jours</span><span>🟢 30+ jours</span>
             </div>
@@ -1224,7 +1259,7 @@ export default function App() {
 
         {nav === "actualites" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Actualités fiscales</h1><p style={S.pageSub}>Les dernières nouvelles URSSAF et impôts</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Actualités fiscales</h1><p style={S.pageSub}>Les dernières nouvelles URSSAF et impôts</p></div></div>
             <div style={S.card}>
               {NEWS.map((n, i) => (
                 <div key={i} style={{ ...S.newsItem, padding: "14px 0" }}>
@@ -1239,7 +1274,7 @@ export default function App() {
 
         {nav === "conseils" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Conseils & optimisation</h1><p style={S.pageSub}>Personnalisés selon votre situation</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Conseils & optimisation</h1><p style={S.pageSub}>Personnalisés selon votre situation</p></div></div>
             <div style={S.card}>
               {CONSEILS.map((c, i) => (
                 <div key={i} style={S.conseilItem}>
@@ -1256,7 +1291,7 @@ export default function App() {
 
         {nav === "assistant" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
             <div style={{ ...S.card, display: "flex", flexDirection: "column", height: "calc(100vh - 200px)" }}>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}>
                 {aiMessages.map((m, i) => (
@@ -1276,7 +1311,7 @@ export default function App() {
 
         {nav === "abonnement" && (
           <div>
-            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Choisissez la formule adaptée à vos besoins</p></div></div>
+            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Choisissez la formule adaptée à vos besoins</p></div></div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
               {PLANS.map((p, i) => (
                 <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
@@ -1313,11 +1348,25 @@ const CSS = `
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
   button { font-family: inherit; }
+  .mobile-topbar { display: none; }
+  .sidebar-backdrop { display: none; }
+  .mobile-only-close { display: none; }
   @media (max-width: 768px) {
-    .sidebar { width: 60px !important; }
-    .kpi-grid-r { grid-template-columns: 1fr 1fr !important; }
+    .mobile-only-close { display: flex !important; margin-left: auto; }
+    .mobile-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: ${INK}; position: sticky; top: 0; z-index: 60; }
+    .sidebar { position: fixed !important; top: 0; left: 0; height: 100vh; z-index: 70; width: 240px !important; transform: translateX(-100%); transition: transform 0.25s ease; }
+    .sidebar.mobile-open { transform: translateX(0); }
+    .sidebar-backdrop.mobile-open { display: block; position: fixed; inset: 0; background: rgba(10,37,64,0.5); z-index: 65; }
+    .main-content { padding: 16px 14px !important; }
+    .kpi-grid-r { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
     .row2-r { grid-template-columns: 1fr !important; }
     .plans-r { grid-template-columns: 1fr !important; }
+    .dispo-hero-r { flex-direction: column !important; align-items: flex-start !important; }
+    .dispo-hero-r > div:last-child { text-align: left !important; }
+    .page-header-r { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
+  }
+  @media (max-width: 420px) {
+    .kpi-grid-r { grid-template-columns: 1fr !important; }
   }
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
@@ -1327,8 +1376,8 @@ const CSS = `
 `;
 
 const S = {
-  authPage: { display: "flex", minHeight: "100vh" },
-  authLeft: { flex: 1, background: INK, padding: "60px 48px", display: "flex", flexDirection: "column", justifyContent: "center" },
+  authPage: { display: "flex", flexDirection: "column", minHeight: "100vh", background: INK },
+  authLeft: { padding: "48px 24px 32px", display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", maxWidth: 640, margin: "0 auto", width: "100%" },
   authHero: { fontFamily: "Georgia, serif", fontSize: 32, fontWeight: 700, color: "white", margin: "24px 0 12px", lineHeight: 1.2 },
   authSub: { fontSize: 14, color: "#8BA5C0", lineHeight: 1.5, margin: "0 0 24px" },
   authFeatures: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 },
@@ -1338,7 +1387,7 @@ const S = {
   simWidget: { marginTop: 36, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: 18 },
   simInput: { flex: 1, fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", outline: "none", background: "rgba(255,255,255,0.08)", color: "white" },
   simSelect: { flex: 1, fontFamily: "inherit", fontSize: 13, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", outline: "none", background: "rgba(255,255,255,0.08)", color: "white" },
-  authRight: { width: 460, background: PAPER, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 },
+  authRight: { width: "100%", maxWidth: 460, margin: "0 auto", background: PAPER, display: "flex", alignItems: "center", justifyContent: "center", padding: "32px 20px 48px", borderRadius: "20px 20px 0 0" },
   authCard: { width: "100%", background: "white", borderRadius: 16, border: "0.5px solid #DDE5EE", padding: 32 },
   authTitle: { fontSize: 20, fontWeight: 600, color: INK, margin: "0 0 20px" },
   appWrap: { display: "flex", minHeight: "100vh", background: PAPER },
