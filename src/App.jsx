@@ -109,11 +109,11 @@ export default function App() {
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [achatMontant, setAchatMontant] = useState("");
-  const [heuresParSemaine, setHeuresParSemaine] = useState("");
-  const [joursParSemaine, setJoursParSemaine] = useState("5");
-  const [semainesParAn, setSemainesParAn] = useState("46");
-  const [augmentationPct, setAugmentationPct] = useState("10");
-  const [objectifHoraire, setObjectifHoraire] = useState("40");
+  const [tarifMontant, setTarifMontant] = useState("");
+  const [tarifUnite, setTarifUnite] = useState("heure");
+  const [heuresParJour, setHeuresParJourCoach] = useState("7");
+  const [heuresParPrestation, setHeuresParPrestation] = useState("3");
+  const [objectifHoraire, setObjectifHoraire] = useState("60");
   const [simFiscalCa, setSimFiscalCa] = useState("4000");
   const [simFiscalPeriode, setSimFiscalPeriode] = useState("mensuel");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
@@ -409,22 +409,38 @@ export default function App() {
     return { label: "Risque élevé", color: "#E24B4A", desc: "Plusieurs indicateurs sont dans le rouge — agissez rapidement." };
   }
 
-  // --- Coach prix : a partir d'un rythme hebdomadaire, pas d'un total annuel irrealiste ---
-  const hParSemaine = parseFloat(heuresParSemaine) || 0;
-  const jParSemaine = parseFloat(joursParSemaine) || 5;
-  const semaines = parseFloat(semainesParAn) || 46;
-  const heuresAnnuelles = hParSemaine * semaines;
-  const heuresParJour = jParSemaine > 0 ? hParSemaine / jParSemaine : 0;
-  const revenuNetAnnuel = estimateData ? (estimateData.ca_annuel || 0) * (1 - (estimateData.taux_global_pct || 0) / 100) : 0;
-  const tauxHoraireReel = heuresAnnuelles > 0 ? Math.round((revenuNetAnnuel / heuresAnnuelles) * 100) / 100 : null;
-  const revenuJournalierMoyen = tauxHoraireReel !== null ? Math.round(tauxHoraireReel * heuresParJour * 100) / 100 : null;
-  const augPct = parseFloat(augmentationPct) || 0;
-  const tauxHoraireApresAugmentation = tauxHoraireReel !== null ? Math.round(tauxHoraireReel * (1 + augPct / 100) * 100) / 100 : null;
-  const gainAnnuelAugmentation = tauxHoraireApresAugmentation !== null ? Math.round((tauxHoraireApresAugmentation - tauxHoraireReel) * heuresAnnuelles) : null;
+  // --- Coach prix : modele simplifie "combien facturez-vous", avec bornes realistes ---
+  const tarifNum = parseFloat(tarifMontant) || 0;
+  const hParJourCoach = Math.min(24, Math.max(0.5, parseFloat(heuresParJour) || 7)); // borne 0.5-24h/jour
+  const hParPrestation = Math.min(200, Math.max(0.25, parseFloat(heuresParPrestation) || 3)); // borne realiste
+  const tauxHoraireReel = (() => {
+    if (tarifNum <= 0) return null;
+    if (tarifUnite === "heure") return Math.round(tarifNum * 100) / 100;
+    if (tarifUnite === "jour") return Math.round((tarifNum / hParJourCoach) * 100) / 100;
+    if (tarifUnite === "prestation") return Math.round((tarifNum / hParPrestation) * 100) / 100;
+    return null;
+  })();
   const objHoraireNum = parseFloat(objectifHoraire) || 0;
-  const caRequisPourObjectif = (objHoraireNum > 0 && heuresAnnuelles > 0 && estimateData)
-    ? Math.round((objHoraireNum * heuresAnnuelles) / (1 - (estimateData.taux_global_pct || 0) / 100))
+  const ecartPctVersObjectif = (tauxHoraireReel !== null && tauxHoraireReel > 0 && objHoraireNum > 0)
+    ? Math.round(((objHoraireNum - tauxHoraireReel) / tauxHoraireReel) * 100)
     : null;
+  const niveauTarif = tauxHoraireReel === null ? null
+    : tauxHoraireReel < 25 ? "rouge" : tauxHoraireReel < 45 ? "jaune" : "vert";
+
+  const [revenuViseMensuel, setRevenuViseMensuel] = useState("");
+
+  // --- Simulateur de vie : combien gagner pour vivre comme je veux ---
+  const revenuViseNum = parseFloat(revenuViseMensuel) || 0;
+  const tauxGlobalDec = estimateData ? (estimateData.taux_global_pct || 0) / 100 : 0;
+  const caMensuelNecessaire = (revenuViseNum > 0 && tauxGlobalDec < 1) ? Math.round(revenuViseNum / (1 - tauxGlobalDec)) : null;
+  const caAnnuelNecessaire = caMensuelNecessaire !== null ? caMensuelNecessaire * 12 : null;
+  const urssafAnnuelleVie = caAnnuelNecessaire !== null ? Math.round(caAnnuelNecessaire * tauxGlobalDec) : null;
+  const impotsAnnuelsVie = (() => {
+    if (caAnnuelNecessaire === null || profile?.versement_liberatoire || !activiteInfo) return 0;
+    const revenuImposable = caAnnuelNecessaire * (1 - activiteInfo.abattement);
+    return Math.round(revenuImposable * (parseFloat(tmi) / 100));
+  })();
+  const depassePlafondVie = caAnnuelNecessaire !== null && estimateData?.plafond ? caAnnuelNecessaire > estimateData.plafond : false;
 
   // --- TVA : detection du depassement du seuil de franchise en base ---
   const seuilTva = activiteInfo?.seuilTva || null;
@@ -625,6 +641,7 @@ export default function App() {
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
           { id: "panique", icon: "ti-radar-2", label: "Scanner Financier" },
+          { id: "simvie", icon: "ti-target", label: "Combien dois-je gagner ?" },
           { id: "salaire", icon: "ti-cash", label: "Combien me verser ?" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
@@ -681,6 +698,44 @@ export default function App() {
               <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 20 }} />
               💬 Demander à H€CTOR — "Puis-je acheter ça ?", "Combien me verser ?"...
             </button>
+
+            <div style={S.compteursRow} className="kpi-grid-r">
+              <div style={S.compteurCard}>
+                <span style={S.compteurLabel}>Aujourd'hui</span>
+                <span style={S.compteurValue}>{disponibleAujourdhui !== null ? formatEUR(Math.max(0, disponibleAujourdhui)) : "—"}</span>
+                <span style={S.compteurSub}>disponible</span>
+              </div>
+              <div style={S.compteurCard}>
+                <span style={S.compteurLabel}>Ce mois-ci</span>
+                <span style={S.compteurValue}>{formatEUR(revenusParMois[new Date().getMonth()]?.total || 0)}</span>
+                <span style={S.compteurSub}>encaissé</span>
+              </div>
+              <div style={S.compteurCard}>
+                <span style={S.compteurLabel}>Cette année</span>
+                <span style={S.compteurValue}>{formatEUR(estimateData.ca_annuel)}</span>
+                <span style={S.compteurSub}>de CA</span>
+              </div>
+            </div>
+
+            {panique.solde !== "" && (
+              <div style={{ ...S.card, marginBottom: 20 }}>
+                <div style={S.cardTitle}>📈 Progression</div>
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
+                    <span>🛡️ Réserve de sécurité</span>
+                    <span>{formatEUR(Math.max(0, soldeNum - totalChargesAVenir))} / {formatEUR(securiteNum)}</span>
+                  </div>
+                  <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${securiteNum > 0 ? Math.min(100, Math.max(0, ((soldeNum - totalChargesAVenir) / securiteNum) * 100)) : 100}%` }} /></div>
+                </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
+                    <span>🧾 URSSAF provisionnée</span>
+                    <span>{urssafProvision > 0 ? Math.min(100, Math.round((soldeNum / urssafProvision) * 100)) : 100}%</span>
+                  </div>
+                  <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#EF9F27", width: `${urssafProvision > 0 ? Math.min(100, Math.max(0, (soldeNum / urssafProvision) * 100)) : 100}%` }} /></div>
+                </div>
+              </div>
+            )}
 
             {statut && (
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
@@ -919,33 +974,86 @@ export default function App() {
 
               {panique.solde !== "" && (
                 <>
-                  <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "36px 24px", background: c.bg, border: `2px solid ${c.dot}` }}>
-                    <div style={S.paniqueResultLabel}>💳 Vous pouvez dépenser</div>
-                    <div style={{ ...S.paniqueResultValue, fontSize: 56, color: apresReserve > 0 ? c.text : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: c.text, marginTop: 10 }}>{c.emoji} {scoreLabel}</div>
-                    <div style={{ fontSize: 13, color: c.text, marginTop: 6, maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
-                      {apresReserve > 0
-                        ? `Vous pouvez dépenser jusqu'à ${formatEUR(apresReserve)} tout en conservant votre réserve de sécurité de ${formatEUR(securiteNum)}.`
-                        : `Il manque ${formatEUR(manque)} pour couvrir vos charges à venir${securiteNum > 0 ? " et garder votre réserve" : ""} de ${formatEUR(securiteNum)}.`}
-                    </div>
-                  </div>
+                  {/* ─── DIAGNOSTIC H€CTOR : la decision, en premier, en 5 secondes ─── */}
+                  {(() => {
+                    const urssafOk = soldeNum >= urssaf;
+                    const reserveOk = (soldeNum - chargesFutures) >= securiteNum;
+                    const risques = [];
+                    if (!urssafOk) risques.push("URSSAF non provisionnée");
+                    if (!reserveOk) risques.push("réserve de sécurité non atteinte");
+                    if (moisSurvie !== null && moisSurvie < 3) risques.push("trésorerie sous 3 mois d'autonomie");
+                    return (
+                      <div style={{ ...S.card, marginTop: 14, background: INK, border: "none" }}>
+                        <div style={{ fontSize: 11, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 14, textAlign: "center" }}>Diagnostic H€CTOR</div>
+                        <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 20 }}>{c.emoji}</span>
+                          <span style={{ fontSize: 16, fontWeight: 600, color: "white" }}>Santé financière : {scoreSante ?? "—"}/100</span>
+                        </div>
+                        <div style={{ textAlign: "center", marginTop: 18, marginBottom: 18 }}>
+                          <div style={{ fontSize: 11, color: "#8BA5C0" }}>💰 Disponible réel</div>
+                          <div style={{ fontSize: 44, fontWeight: 700, color: apresReserve > 0 ? "#5DCAA5" : "#FF8A80" }}>{formatEUR(Math.max(0, apresReserve))}</div>
+                        </div>
+                        <div style={S.diagGrid}>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#8BA5C0" }}>📅 Autonomie</div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: "white" }}>{moisSurvie !== null ? `${moisSurvie} mois sans revenus` : "—"}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: 11, color: "#8BA5C0" }}>⚠️ Risques</div>
+                            <div style={{ fontSize: 15, fontWeight: 600, color: risques.length ? "#FAC775" : "#5DCAA5" }}>{risques.length ? risques.join(", ") : "Aucun"}</div>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                          <div style={{ fontSize: 11, color: "#8BA5C0" }}>🎯 Recommandation</div>
+                          <div style={{ fontSize: 14, fontWeight: 600, color: "white", marginTop: 4 }}>
+                            {apresReserve > 0 ? <>Vous pouvez vous verser jusqu'à {formatEUR(salaireRecommande)}</> : <>Mettez {formatEUR(manque)} de côté avant toute dépense</>}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
-                  <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.cardTitle}>💰 Argent disponible après charges</div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde détecté</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
-                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Charges futures (URSSAF + CFE{!profile?.versement_liberatoire ? " + impôts" : ""})</span><span style={{ color: "#854F0B" }}>−{formatEUR(chargesFutures)}</span></div>
-                    <div style={S.paniqueResult}>
-                      <span style={S.paniqueResultLabel}>Argent disponible après charges</span>
-                      <span style={{ ...S.paniqueResultValue, fontSize: 28, color: ACCENT }}>{formatEUR(solde - chargesFutures)}</span>
+                  {/* ─── Détail du calcul : pour ceux qui veulent comprendre le pourquoi ─── */}
+                  <details style={{ ...S.card, marginTop: 14 }}>
+                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>📋 Voir le détail du calcul</summary>
+                    <div style={{ marginTop: 14 }}>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde actuel</span>
+                        <span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span>
+                      </div>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-shield" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Réserve de sécurité <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(votre objectif)</span></span>
+                        <input style={S.inlineEditValue} type="number" step="100" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
+                      </div>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF à payer <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(calculé sur votre CA réel)</span></span>
+                        <span style={{ color: "#854F0B", fontWeight: 600 }}>{formatEUR(urssaf)}</span>
+                      </div>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts estimés {profile?.versement_liberatoire ? <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(inclus dans le taux URSSAF)</span> : <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(TMI {tmi}%)</span>}</span>
+                        <span style={{ color: "#854F0B", fontWeight: 600 }}>{formatEUR(impots)}</span>
+                      </div>
+                      <div style={S.paniqueLine}>
+                        <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE estimée <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(estimation, modifiable)</span></span>
+                        <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
+                      </div>
+                      <div style={S.paniqueResult}>
+                        <span style={S.paniqueResultLabel}>Disponible immédiatement</span>
+                        <span style={{ ...S.paniqueResultValue, fontSize: 32, color: apresReserve > 0 ? c.text : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</span>
+                        <span style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6 }}>
+                          {formatEUR(solde)} − {formatEUR(securiteNum)} (réserve) − {formatEUR(urssaf)} (URSSAF) − {formatEUR(impots)} (impôts) − {formatEUR(cfe)} (CFE)
+                        </span>
+                      </div>
+                      {!profile?.versement_liberatoire && (
+                        <details style={{ marginTop: 10 }}>
+                          <summary style={{ cursor: "pointer", fontSize: 11, color: "#8BA5C0" }}>Modifier ma tranche d'imposition (TMI)</summary>
+                          <select style={{ ...S.input, marginTop: 8 }} value={tmi} onChange={e => setTmi(e.target.value)}>
+                            {TMI_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
+                          </select>
+                        </details>
+                      )}
                     </div>
-                    <div style={{ ...S.paniqueLine, marginTop: 14, borderTop: "1px solid #EEF2F7", paddingTop: 12 }}>
-                      <span style={S.paniqueLineLabel}><i className="ti ti-shield" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Réserve de sécurité visée <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(votre objectif, modifiable)</span></span>
-                      <input style={S.inlineEditValue} type="number" step="100" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
-                    </div>
-                    <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, textAlign: "center" }}>
-                      C'est vous qui définissez ce montant — H€CTOR le retient ensuite pour calculer ce que vous pouvez vraiment dépenser sans y toucher.
-                    </p>
-                  </div>
+                  </details>
 
                   {(() => {
                     const recos = [];
@@ -978,31 +1086,12 @@ export default function App() {
                   })()}
 
                   <details style={{ ...S.card, marginTop: 14 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Paramètres avancés (CFE, impôts, dettes)</summary>
+                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Dettes / emprunts en cours <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour le Score H€CTOR)</span></summary>
                     <div style={{ marginTop: 14 }}>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CFE estimée</span>
-                        <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
-                      </div>
                       <div style={S.paniqueLine}>
                         <span style={S.paniqueLineLabel}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Dettes / emprunts en cours</span>
                         <input style={S.inlineEditValue} type="number" step="0.01" value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e.target.value })} />
                       </div>
-                      {profile?.versement_liberatoire ? (
-                        <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0" }}>Impôts déjà inclus dans votre taux URSSAF (versement libératoire activé).</p>
-                      ) : (
-                        <div style={{ marginTop: 10 }}>
-                          <span style={{ ...S.paniqueLineLabel, display: "flex", marginBottom: 6 }}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Votre tranche d'imposition (TMI)</span>
-                          <select style={S.input} value={tmi} onChange={e => setTmi(e.target.value)}>
-                            {TMI_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                          </select>
-                          <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0", lineHeight: 1.5 }}>
-                            {estimateData?.ca_annuel > 0
-                              ? <>Visible sur votre dernier avis d'imposition. H€CTOR calcule : CA × ({activiteInfo ? Math.round((1 - activiteInfo.abattement) * 100) : "—"}% après abattement {activiteInfo ? Math.round(activiteInfo.abattement * 100) : "—"}%) × {tmi}% = environ {formatEUR(impotsAnnuelEstime)}/an, soit {formatEUR(impotsNum)}/mois.</>
-                              : <>Visible sur votre dernier avis d'imposition. Le calcul s'activera dès que vous aurez ajouté des revenus (actuellement 0€ de CA enregistré).</>}
-                          </p>
-                        </div>
-                      )}
                     </div>
                   </details>
 
@@ -1085,6 +1174,57 @@ export default function App() {
             </div>
           );
         })()}
+
+        {nav === "simvie" && estimateData && estimateData.disponible !== false && (
+          <div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+              <div><h1 style={S.pageTitle}>🎯 Combien dois-je gagner ?</h1><p style={S.pageSub}>Pour vivre comme vous voulez, combien faut-il facturer ?</p></div>
+            </div>
+
+            <div style={S.card}>
+              <label style={S.label}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>Je veux gagner net, par mois</span>
+                <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="100" placeholder="Ex : 5000" value={revenuViseMensuel} onChange={e => setRevenuViseMensuel(e.target.value)} />
+              </label>
+            </div>
+
+            {caMensuelNecessaire !== null && (
+              <>
+                <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px", background: INK }}>
+                  <div style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>CA mensuel nécessaire</div>
+                  <div style={{ fontSize: 44, fontWeight: 700, color: "#5DCAA5", marginTop: 6 }}>{formatEUR(caMensuelNecessaire)}</div>
+                  <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 8 }}>soit {formatEUR(caAnnuelNecessaire)} de CA sur l'année</div>
+                </div>
+
+                <div style={{ ...S.card, marginTop: 14 }}>
+                  <div style={S.cardTitle}>Le détail</div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>CA annuel nécessaire</span><span style={{ fontWeight: 600 }}>{formatEUR(caAnnuelNecessaire)}</span></div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>URSSAF (sur l'année)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssafAnnuelleVie)}</span></div>
+                  {impotsAnnuelsVie > 0 && <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impôts estimés (sur l'année)</span><span style={{ color: "#854F0B" }}>−{formatEUR(impotsAnnuelsVie)}</span></div>}
+                  <div style={S.paniqueResult}>
+                    <span style={S.paniqueResultLabel}>Revenu net mensuel obtenu</span>
+                    <span style={{ ...S.paniqueResultValue, fontSize: 28, color: "#1D9E75" }}>{formatEUR(revenuViseNum)}/mois</span>
+                  </div>
+                </div>
+
+                {depassePlafondVie && (
+                  <div style={{ ...S.card, marginTop: 14, background: "#FCEBEB", border: "1px solid #E24B4A" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 20, color: "#A32D2D", flexShrink: 0, marginTop: 2 }} />
+                      <div style={{ fontSize: 13, color: "#A32D2D" }}>
+                        Ce CA dépasserait le plafond auto-entrepreneur ({formatEUR(estimateData.plafond)}/an). Pour viser ce niveau de revenu durablement, il faudra envisager un passage en société.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
+                  Calcul basé sur votre taux de cotisations actuel ({estimateData.taux_global_pct}%) et votre tranche d'imposition.
+                </p>
+              </>
+            )}
+          </div>
+        )}
 
         {nav === "salaire" && (
           <div>
@@ -1212,83 +1352,65 @@ export default function App() {
 
         {nav === "coach" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Coach prix</h1><p style={S.pageSub}>Beaucoup d'indépendants se sous-facturent sans s'en rendre compte. Voyons où vous en êtes.</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Coach prix</h1><p style={S.pageSub}>Beaucoup d'indépendants se sous-facturent sans s'en rendre compte.</p></div></div>
 
             <div style={S.card}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <label style={S.label}>Heures travaillées par semaine
-                  <input style={S.input} type="number" placeholder="Ex : 35" value={heuresParSemaine} onChange={e => setHeuresParSemaine(e.target.value)} />
-                </label>
-                <label style={S.label}>Jours travaillés par semaine
-                  <input style={S.input} type="number" placeholder="Ex : 5" value={joursParSemaine} onChange={e => setJoursParSemaine(e.target.value)} />
-                </label>
+              <label style={S.label}>
+                <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>Combien facturez-vous actuellement ?</span>
+                <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="1" placeholder="Ex : 500" value={tarifMontant} onChange={e => setTarifMontant(e.target.value)} />
+              </label>
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                {[{ id: "jour", l: "par jour" }, { id: "heure", l: "par heure" }, { id: "prestation", l: "par prestation" }].map(u => (
+                  <button key={u.id} type="button" onClick={() => setTarifUnite(u.id)} style={{ ...S.toggleBtn, ...(tarifUnite === u.id ? S.toggleBtnActive : {}) }}>{u.l}</button>
+                ))}
               </div>
-              <details>
-                <summary style={{ cursor: "pointer", fontSize: 12, color: "#5B6573", marginBottom: 8 }}>⚙️ Semaines travaillées par an (vacances incluses)</summary>
-                <input style={{ ...S.input, marginTop: 6 }} type="number" value={semainesParAn} onChange={e => setSemainesParAn(e.target.value)} />
-              </details>
+              {tarifUnite === "jour" && (
+                <label style={{ ...S.label, marginTop: 12 }}>Heures travaillées par jour
+                  <input style={S.input} type="number" min="0.5" max="24" value={heuresParJour} onChange={e => setHeuresParJourCoach(e.target.value)} />
+                </label>
+              )}
+              {tarifUnite === "prestation" && (
+                <label style={{ ...S.label, marginTop: 12 }}>Heures passées en moyenne par prestation
+                  <input style={S.input} type="number" min="0.25" max="200" value={heuresParPrestation} onChange={e => setHeuresParPrestation(e.target.value)} />
+                </label>
+              )}
             </div>
 
-            {tauxHoraireReel !== null && estimateData && (
+            {tauxHoraireReel !== null && (
               <>
                 <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px" }}>
-                  <div style={S.paniqueResultLabel}>Votre revenu horaire réel (après charges)</div>
-                  <div style={{ ...S.paniqueResultValue, fontSize: 48, color: tauxHoraireReel < 25 ? "#A32D2D" : tauxHoraireReel < 40 ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 20 }}>/h</span></div>
-                  {revenuJournalierMoyen !== null && (
-                    <div style={{ fontSize: 13, color: "#6B7A8D", marginTop: 8 }}>soit environ <strong>{formatEUR(revenuJournalierMoyen)}</strong> par journée travaillée</div>
-                  )}
-                </div>
-
-                {tauxHoraireReel < 40 && (
-                  <div style={{ ...S.card, marginTop: 14, background: "#FAEEDA", border: "1px solid #EF9F27" }}>
-                    <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
-                      <i className="ti ti-bulb" aria-hidden="true" style={{ fontSize: 22, color: "#854F0B", flexShrink: 0, marginTop: 2 }} />
-                      <div>
-                        <div style={{ fontWeight: 600, fontSize: 14, color: "#633806" }}>Vous vous sous-facturez probablement</div>
-                        <div style={{ fontSize: 13, color: "#854F0B", marginTop: 4, lineHeight: 1.5 }}>
-                          Beaucoup d'indépendants dans votre situation gagnent davantage une fois qu'ils ajustent leurs tarifs. Regardez la simulation ci-dessous — augmenter même légèrement vos prix peut faire une vraie différence sans travailler une heure de plus.
-                        </div>
-                      </div>
-                    </div>
+                  <div style={S.paniqueResultLabel}>Votre vrai revenu</div>
+                  <div style={{ ...S.paniqueResultValue, fontSize: 48, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 20 }}>/h</span></div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75", marginTop: 8 }}>
+                    {niveauTarif === "rouge" && "🔴 En dessous de la moyenne"}
+                    {niveauTarif === "jaune" && "🟡 Dans la moyenne"}
+                    {niveauTarif === "vert" && "🟢 Au-dessus de la moyenne"}
                   </div>
-                )}
-
-                <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>📈 Si j'augmente mes tarifs de...</div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                    <input style={{ ...S.input, width: 80 }} type="number" value={augmentationPct} onChange={e => setAugmentationPct(e.target.value)} />
-                    <span style={{ fontSize: 14, color: INK }}>%</span>
-                  </div>
-                  {tauxHoraireApresAugmentation !== null && (
-                    <div style={S.paniqueLine}>
-                      <span style={S.paniqueLineLabel}>Nouveau taux horaire</span>
-                      <span style={{ fontWeight: 600, color: "#1D9E75" }}>{formatEUR(tauxHoraireApresAugmentation)}/h</span>
-                    </div>
-                  )}
-                  {gainAnnuelAugmentation !== null && gainAnnuelAugmentation > 0 && (
-                    <div style={{ fontSize: 13, color: "#5B6573", marginTop: 8 }}>
-                      Soit <strong style={{ color: "#1D9E75" }}>{formatEUR(gainAnnuelAugmentation)} de plus par an</strong>, sans changer votre rythme de travail.
-                    </div>
-                  )}
                 </div>
 
                 <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>🎯 Mon objectif de revenu horaire</div>
+                  <div style={S.cardTitle}>🎯 Pour atteindre votre objectif</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                     <input style={{ ...S.input, width: 100 }} type="number" value={objectifHoraire} onChange={e => setObjectifHoraire(e.target.value)} />
                     <span style={{ fontSize: 14, color: INK }}>€/h</span>
                   </div>
-                  {caRequisPourObjectif !== null && (
-                    <div style={{ fontSize: 13, color: "#5B6573", lineHeight: 1.6 }}>
-                      Pour atteindre {formatEUR(objHoraireNum)}/h, il vous faudrait facturer environ <strong>{formatEUR(caRequisPourObjectif)}</strong> de CA brut sur l'année (contre {formatEUR(estimateData.ca_annuel)} actuellement).
-                    </div>
+                  {ecartPctVersObjectif !== null && (
+                    ecartPctVersObjectif > 0 ? (
+                      <div style={{ fontSize: 14, color: "#5B6573" }}>
+                        Pour atteindre {formatEUR(objHoraireNum)}/h, augmentez vos tarifs de <strong style={{ color: "#1D9E75", fontSize: 18 }}>+{ecartPctVersObjectif}%</strong>.
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: 14, color: "#1D9E75" }}>
+                        🎉 Vous dépassez déjà cet objectif !
+                      </div>
+                    )
                   )}
                 </div>
               </>
             )}
 
             <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
-              Calcul basé sur votre CA annuel actuel et votre rythme de travail déclaré — à ajuster au fil de l'année.
+              Comparaison indicative (moyenne basse ~25€/h, moyenne ~45€/h pour des indépendants en France).
             </p>
           </div>
         )}
@@ -1804,6 +1926,13 @@ const S = {
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
   paniqueResultLabel: { fontSize: 12, color: "#6B7A8D", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
   paniqueResultValue: { fontSize: 40, fontWeight: 700, fontVariantNumeric: "tabular-nums" },
+  checkRow: { display: "flex", alignItems: "center", gap: 10, padding: "6px 0" },
+  diagGrid: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, textAlign: "center" },
+  compteursRow: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginTop: 14, marginBottom: 18 },
+  compteurCard: { background: "white", border: "0.5px solid #DDE5EE", borderRadius: 12, padding: "14px 16px", display: "flex", flexDirection: "column", gap: 2, textAlign: "center" },
+  compteurLabel: { fontSize: 11, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 },
+  compteurValue: { fontSize: 20, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", marginTop: 2 },
+  compteurSub: { fontSize: 11, color: "#8BA5C0" },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#3D4452", marginBottom: 14 },
   checkboxLabel: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 12, lineHeight: 1.4 },
   input: { fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid #DDE5EE", outline: "none", width: "100%" },
