@@ -95,6 +95,8 @@ export default function App() {
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "200" });
+  const [simCa, setSimCa] = useState("3000");
+  const [simActivite, setSimActivite] = useState("services");
   const googleButtonRef = useRef(null);
 
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -302,6 +304,10 @@ export default function App() {
   const maxRevenu = Math.max(...revenusParMois.map(m => m.total), 1);
 
   if (!token) {
+    const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
+    const caSim = parseFloat(simCa) || 0;
+    const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
+    const netSim = Math.round((caSim - urssafSim) * 100) / 100;
     return (
       <div style={S.authPage}>
         <style>{CSS}</style>
@@ -313,6 +319,32 @@ export default function App() {
             {["Calcul URSSAF automatique", "Création de factures pro", "Assistant IA fiscal 24/7", "Actualités fiscales en direct"].map(f => (
               <div key={f} style={S.authFeature}><span style={S.authFeatureCheck}>✓</span>{f}</div>
             ))}
+          </div>
+
+          <div style={S.simWidget}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+              Essayez sans créer de compte
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <input style={S.simInput} type="number" placeholder="CA encaissé" value={simCa} onChange={e => setSimCa(e.target.value)} />
+              <select style={S.simSelect} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
+                <option value="vente">Vente (12,3%)</option>
+                <option value="services">Services (21,2%)</option>
+                <option value="bnc">Libéral (25,6%)</option>
+              </select>
+            </div>
+            {caSim > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>À mettre de côté URSSAF</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: "#FAC775" }}>{formatEUR(urssafSim)}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>Dans votre poche</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: "#5DCAA5" }}>{formatEUR(netSim)}</div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div style={S.authRight}>
@@ -497,6 +529,24 @@ export default function App() {
                 ))}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {(() => {
+                  const today = new Date();
+                  const moisEcoules = today.getMonth() + 1;
+                  const moyenneMensuelle = estimateData.ca_annuel / moisEcoules;
+                  const caProjete = Math.round(moyenneMensuelle * 12);
+                  const cotisationsProjetees = Math.round(caProjete * (estimateData.taux_global_pct / 100));
+                  const moisAvantDepassement = moyenneMensuelle > 0 ? Math.ceil((estimateData.plafond - estimateData.ca_annuel) / moyenneMensuelle) : null;
+                  return (
+                    <div style={S.card}>
+                      <div style={S.cardTitle}>À ce rythme, sur l'année</div>
+                      <div style={S.netRow}><span>CA annuel estimé</span><span style={{ fontWeight: 600 }}>{formatEUR(caProjete)}</span></div>
+                      <div style={S.netRow}><span>Cotisations estimées</span><span style={{ color: "#854F0B" }}>{formatEUR(cotisationsProjetees)}</span></div>
+                      {moisAvantDepassement && moisAvantDepassement > 0 && moisAvantDepassement <= 12 && (
+                        <div style={{ ...S.netRow, color: "#A32D2D", marginTop: 4 }}><span>Dépassement du plafond dans</span><span>~{moisAvantDepassement} mois</span></div>
+                      )}
+                    </div>
+                  );
+                })()}
                 <div style={S.card}>
                   <div style={S.cardTitle}>Seuil annuel
                     <span style={S.cardSub}>{formatEUR(estimateData.ca_annuel)} / {formatEUR(estimateData.plafond)}</span>
@@ -565,23 +615,23 @@ export default function App() {
               {solde > 0 && (
                 <>
                   <div style={{ ...S.card, marginTop: 14 }}>
-                    <div style={S.netRow}><span>Solde bancaire</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
-                    <div style={{ ...S.netRow, color: "#854F0B" }}><span>URSSAF à provisionner</span><span>−{formatEUR(urssaf)}</span></div>
-                    <div style={{ ...S.netRow, color: "#854F0B" }}><span>Impôts estimés</span><span>−{formatEUR(impots)}</span></div>
-                    <div style={{ ...S.netRow, color: "#854F0B" }}><span>CFE estimée</span><span>−{formatEUR(cfe)}</span></div>
-                    <div style={{ ...S.netRow, borderTop: "1px solid #DDE5EE", paddingTop: 10, marginTop: 6, fontSize: 16, fontWeight: 700 }}>
-                      <span>Argent réellement disponible</span>
-                      <span style={{ color: disponible < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponible)}</span>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde bancaire</span><span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span></div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF à provisionner</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts estimés</span><span style={{ color: "#854F0B" }}>−{formatEUR(impots)}</span></div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE estimée</span><span style={{ color: "#854F0B" }}>−{formatEUR(cfe)}</span></div>
+                    <div style={S.paniqueResult}>
+                      <span style={S.paniqueResultLabel}>Argent réellement disponible</span>
+                      <span style={{ ...S.paniqueResultValue, color: disponible < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponible)}</span>
                     </div>
                   </div>
 
-                  <div style={{ ...S.card, marginTop: 14, background: c.bg, border: `1px solid ${c.dot}` }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ width: 12, height: 12, borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
-                      <div>
-                        <div style={{ fontSize: 14, fontWeight: 600, color: c.text }}>{scoreLabel}</div>
-                        <div style={{ fontSize: 12, color: c.text, marginTop: 2, opacity: 0.85 }}>{scoreDesc}</div>
-                      </div>
+                  <div style={{ ...S.card, marginTop: 14, background: c.bg, border: `1px solid ${c.dot}`, display: "flex", alignItems: "center", gap: 14 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", background: c.dot, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <i className={`ti ${score === "vert" ? "ti-check" : score === "orange" ? "ti-alert-triangle" : "ti-alert-octagon"}`} aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: c.text }}>{scoreLabel}</div>
+                      <div style={{ fontSize: 12, color: c.text, marginTop: 2, opacity: 0.85 }}>{scoreDesc}</div>
                     </div>
                   </div>
                 </>
@@ -596,6 +646,27 @@ export default function App() {
               <div><h1 style={S.pageTitle}>Revenus</h1><p style={S.pageSub}>Tous vos encaissements</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
             </div>
+
+            <div style={{ ...S.card, marginBottom: 16 }}>
+              <div style={S.cardTitle}>Connexion bancaire automatique <span style={{ ...S.badge, ...S.badgeOrange }}>Bientôt</span></div>
+              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 14px" }}>
+                Connectez votre banque pour récupérer vos encaissements automatiquement, sans rien saisir.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+                {[
+                  { nom: "Qonto", icon: "ti-building-bank" },
+                  { nom: "Shine", icon: "ti-sun" },
+                  { nom: "Revolut Business", icon: "ti-credit-card" },
+                  { nom: "Autre banque", icon: "ti-building-bank" },
+                ].map(b => (
+                  <div key={b.nom} style={S.bankCard}>
+                    <i className={`ti ${b.icon}`} aria-hidden="true" style={{ fontSize: 22, color: "#8BA5C0" }} />
+                    <span style={{ fontSize: 12, color: "#6B7A8D", marginTop: 6 }}>{b.nom}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
             {showAddIncome && (
               <div style={{ ...S.card, marginBottom: 16 }}>
                 <label style={S.dropZoneSmall}>
@@ -845,6 +916,11 @@ const CSS = `
     .row2-r { grid-template-columns: 1fr !important; }
     .plans-r { grid-template-columns: 1fr !important; }
   }
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  input[type=number] { -moz-appearance: textfield; }
+  input, select, textarea, button { transition: border-color 0.15s, background 0.15s, transform 0.1s; }
+  input:focus, select:focus, textarea:focus { border-color: #378ADD !important; box-shadow: 0 0 0 3px rgba(55,138,221,0.12); }
+  button:active { transform: scale(0.98); }
 `;
 
 const S = {
@@ -855,6 +931,9 @@ const S = {
   authFeatures: { display: "flex", flexDirection: "column", gap: 12 },
   authFeature: { display: "flex", alignItems: "center", gap: 10, fontSize: 14, color: "#B5D4F4" },
   authFeatureCheck: { color: "#5DCAA5", fontWeight: 700 },
+  simWidget: { marginTop: 36, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 14, padding: 18 },
+  simInput: { flex: 1, fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", outline: "none", background: "rgba(255,255,255,0.08)", color: "white" },
+  simSelect: { flex: 1, fontFamily: "inherit", fontSize: 13, padding: "10px 12px", borderRadius: 8, border: "1px solid rgba(255,255,255,0.15)", outline: "none", background: "rgba(255,255,255,0.08)", color: "white" },
   authRight: { width: 460, background: PAPER, display: "flex", alignItems: "center", justifyContent: "center", padding: 40 },
   authCard: { width: "100%", background: "white", borderRadius: 16, border: "0.5px solid #DDE5EE", padding: 32 },
   authTitle: { fontSize: 20, fontWeight: 600, color: INK, margin: "0 0 20px" },
@@ -915,6 +994,12 @@ const S = {
   factureRow: { display: "flex", gap: 8, marginBottom: 8, alignItems: "center" },
   dropZoneSmall: { display: "flex", alignItems: "center", justifyContent: "center", border: "1.5px dashed #DDE5EE", borderRadius: 8, padding: "14px 16px", cursor: "pointer", fontSize: 13, color: "#5B6573", background: "white", marginBottom: 12 },
   empty: { fontSize: 13, color: "#8BA5C0", textAlign: "center", padding: "24px 0" },
+  bankCard: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "16px 10px", border: "1px dashed #DDE5EE", borderRadius: 10, background: "#FAFBFC", cursor: "not-allowed" },
+  paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
+  paniqueLineLabel: { display: "flex", alignItems: "center" },
+  paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
+  paniqueResultLabel: { fontSize: 12, color: "#6B7A8D", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  paniqueResultValue: { fontSize: 40, fontWeight: 700, fontVariantNumeric: "tabular-nums" },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#3D4452", marginBottom: 14 },
   checkboxLabel: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 12, lineHeight: 1.4 },
   input: { fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid #DDE5EE", outline: "none", width: "100%" },
