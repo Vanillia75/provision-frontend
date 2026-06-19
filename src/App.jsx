@@ -97,6 +97,11 @@ export default function App() {
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "200" });
   const [simCa, setSimCa] = useState("3000");
   const [simActivite, setSimActivite] = useState("services");
+  const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
+  const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
+  const [achatMontant, setAchatMontant] = useState("");
+  const [heuresTravaillees, setHeuresTravaillees] = useState("");
+  const [showRetraitTout, setShowRetraitTout] = useState(false);
   const googleButtonRef = useRef(null);
 
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -143,6 +148,9 @@ export default function App() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }
+
+  useEffect(() => { localStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
+  useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
 
   useEffect(() => {
     if (token) loadEverything();
@@ -295,6 +303,48 @@ export default function App() {
   });
   const maxRevenu = Math.max(...revenusParMois.map(m => m.total), 1);
 
+  // --- Calcul central : "Disponible aujourd'hui" ---
+  // Reutilise pour : dashboard, simulateur d'achat, mode panique, score sante
+  const soldeNum = parseFloat(panique.solde) || 0;
+  const urssafProvision = estimateData?.disponible !== false
+    ? (estimateData?.montant_a_provisionner || 0) +
+      (estimateData?.periode_precedente?.jours_restants > 0
+        ? Math.round((estimateData.ca_periode_precedente || 0) * ((estimateData?.taux_global_pct || 0) / 100) * 100) / 100
+        : 0)
+    : 0;
+  const impotsNum = parseFloat(panique.impots) || 0;
+  const cfeNum = parseFloat(panique.cfe) || 0;
+  const totalChargesAVenir = urssafProvision + impotsNum + cfeNum;
+  const securiteNum = parseFloat(objectifSecurite) || 0;
+  const disponibleAujourdhui = soldeNum > 0 ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
+
+  // --- Score sante HECTOR /100 ---
+  function calculScoreSante() {
+    if (soldeNum <= 0 || !estimateData || estimateData.disponible === false) return null;
+    let score = 100;
+    const ratioCharges = soldeNum > 0 ? totalChargesAVenir / soldeNum : 1;
+    if (ratioCharges > 0.8) score -= 40;
+    else if (ratioCharges > 0.5) score -= 25;
+    else if (ratioCharges > 0.3) score -= 10;
+    if (estimateData.periode_courante?.jours_restants <= 7) score -= 15;
+    else if (estimateData.periode_courante?.jours_restants <= 14) score -= 7;
+    if (estimateData.pourcentage_plafond > 90) score -= 15;
+    else if (estimateData.pourcentage_plafond > 75) score -= 7;
+    if (disponibleAujourdhui !== null && disponibleAujourdhui < 0) score -= 25;
+    return Math.max(0, Math.min(100, score));
+  }
+  const scoreSante = calculScoreSante();
+  function scoreInfo(s) {
+    if (s === null) return { label: "—", color: "#8BA5C0", desc: "Renseignez votre solde dans Mode Panique pour calculer votre score." };
+    if (s >= 75) return { label: "Excellent", color: "#1D9E75", desc: "Votre trésorerie est saine, vos charges sont sous contrôle." };
+    if (s >= 50) return { label: "Correct", color: "#EF9F27", desc: "Quelques points de vigilance à surveiller." };
+    return { label: "Risque élevé", color: "#E24B4A", desc: "Vos charges à venir pèsent lourd sur votre trésorerie actuelle." };
+  }
+
+  // --- Coach prix ---
+  const heuresNum = parseFloat(heuresTravaillees) || 0;
+  const tauxHoraireReel = heuresNum > 0 && estimateData ? Math.round(((estimateData.ca_annuel || 0) * (1 - (estimateData.taux_global_pct || 0) / 100)) / heuresNum * 100) / 100 : null;
+
   if (!token) {
     const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
     const caSim = parseFloat(simCa) || 0;
@@ -430,10 +480,14 @@ export default function App() {
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
           { id: "panique", icon: "ti-alert-triangle", label: "Mode panique" },
+          { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
-          { id: "banque", icon: "ti-building-bank", label: "Connexion bancaire" },
           { id: "factures", icon: "ti-file", label: "Factures" },
           { id: "contacts", icon: "ti-user", label: "Contacts" },
+          { id: "coach", icon: "ti-target-arrow", label: "Coach prix" },
+          { id: "societe", icon: "ti-building", label: "Passage société" },
+          { id: "modeles", icon: "ti-template", label: "Modèles" },
+          { id: "banque", icon: "ti-building-bank", label: "Connexion bancaire" },
           { id: "echeances", icon: "ti-calendar", label: "Échéances" },
           { id: "actualites", icon: "ti-bell", label: "Actualités" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
@@ -470,6 +524,25 @@ export default function App() {
                 <div style={S.alertChip}>
                   <i className="ti ti-clock" style={{ fontSize: 13 }} aria-hidden="true" />
                   Déclaration dans {estimateData.periode_courante.jours_restants}j
+                </div>
+              )}
+            </div>
+
+            <div style={S.dispoHero}>
+              <div>
+                <div style={S.dispoLabel}>💰 Disponible aujourd'hui</div>
+                {disponibleAujourdhui !== null ? (
+                  <div style={{ ...S.dispoValue, color: disponibleAujourdhui < 0 ? "#FF8A80" : "#5DCAA5" }}>{formatEUR(disponibleAujourdhui)}</div>
+                ) : (
+                  <div style={S.dispoEmpty}>Renseignez votre solde dans <button style={S.linkBtnLight} onClick={() => setNav("panique")}>Mode panique</button> pour voir ce chiffre</div>
+                )}
+                {disponibleAujourdhui !== null && <div style={S.dispoSub}>après URSSAF, impôts, CFE et votre réserve de sécurité de {formatEUR(securiteNum)}</div>}
+              </div>
+              {disponibleAujourdhui !== null && (
+                <div style={{ textAlign: "right" }}>
+                  <div style={S.dispoPlaisirLabel}>🎯 Budget plaisir</div>
+                  <div style={S.dispoPlaisirValue}>{formatEUR(Math.max(0, Math.round(disponibleAujourdhui * 0.3)))}</div>
+                  <div style={{ fontSize: 10, color: "#8BA5C0" }}>30% du disponible, à dépenser sans culpabiliser</div>
                 </div>
               )}
             </div>
@@ -521,6 +594,23 @@ export default function App() {
                 <span style={S.kpiValue}>{factures.length}</span>
                 <span style={S.kpiSub}>ce mois</span>
               </div>
+            </div>
+
+            <div style={{ ...S.card, marginBottom: 20 }}>
+              <div style={S.cardTitle}>
+                Objectif annuel
+                <input style={S.objectifInput} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
+              </div>
+              {(() => {
+                const obj = parseFloat(objectifAnnuel) || 1;
+                const pct = Math.min(Math.round((estimateData.ca_annuel / obj) * 100), 100);
+                return (
+                  <>
+                    <div style={S.progressTrack}><div style={{ ...S.progressFill, width: `${pct}%` }} /></div>
+                    <span style={S.kpiSub}>{formatEUR(estimateData.ca_annuel)} sur {formatEUR(obj)} visés · {pct}%</span>
+                  </>
+                );
+              })()}
             </div>
 
             <div style={{ ...S.card, marginBottom: 20 }}>
@@ -591,7 +681,7 @@ export default function App() {
                     <span style={S.cardSub}>{formatEUR(estimateData.ca_annuel)} / {formatEUR(estimateData.plafond)}</span>
                   </div>
                   <div style={S.progressTrack}><div style={{ ...S.progressFill, width: `${Math.min(estimateData.pourcentage_plafond, 100)}%` }} /></div>
-                  <span style={S.kpiSub}>{estimateData.pourcentage_plafond}% du plafond annuel</span>
+                  <span style={S.kpiSub}>Vous pouvez encore encaisser <strong>{formatEUR(estimateData.plafond - estimateData.ca_annuel)}</strong> avant le plafond</span>
                   <a href="https://www.autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer" style={S.urssafLink}>
                     Déclarer sur autoentrepreneur.urssaf.fr →
                   </a>
@@ -645,6 +735,9 @@ export default function App() {
                   <label style={S.label}>CFE estimée
                     <input style={S.input} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
                   </label>
+                  <label style={S.label}>Réserve de sécurité souhaitée
+                    <input style={S.input} type="number" step="0.01" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
+                  </label>
                 </div>
                 <p style={{ fontSize: 11, color: "#8BA5C0", margin: "0 0 4px" }}>
                   URSSAF pré-rempli automatiquement selon vos revenus. Impôts et CFE sont des estimations à ajuster — vérifiez avec votre comptable si besoin.
@@ -658,9 +751,10 @@ export default function App() {
                     <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF à provisionner</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
                     <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts estimés</span><span style={{ color: "#854F0B" }}>−{formatEUR(impots)}</span></div>
                     <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE estimée</span><span style={{ color: "#854F0B" }}>−{formatEUR(cfe)}</span></div>
+                    <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-shield" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Réserve de sécurité</span><span style={{ color: "#6B7A8D" }}>−{formatEUR(securiteNum)}</span></div>
                     <div style={S.paniqueResult}>
-                      <span style={S.paniqueResultLabel}>Argent réellement disponible</span>
-                      <span style={{ ...S.paniqueResultValue, color: disponible < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponible)}</span>
+                      <span style={S.paniqueResultLabel}>Vous pouvez réellement dépenser</span>
+                      <span style={{ ...S.paniqueResultValue, color: (disponible - securiteNum) < 0 ? "#A32D2D" : ACCENT }}>{formatEUR(disponible - securiteNum)}</span>
                     </div>
                   </div>
 
@@ -673,11 +767,166 @@ export default function App() {
                       <div style={{ fontSize: 12, color: c.text, marginTop: 2, opacity: 0.85 }}>{scoreDesc}</div>
                     </div>
                   </div>
+
+                  <div style={{ ...S.card, marginTop: 14 }}>
+                    <div style={S.cardTitle}><i className="ti ti-shopping-cart" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Puis-je acheter ça ?</div>
+                    <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                      <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Montant de l'achat €" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
+                    </div>
+                    {achatMontant && parseFloat(achatMontant) > 0 && (() => {
+                      const montant = parseFloat(achatMontant);
+                      const resteApres = disponible - securiteNum - montant;
+                      const possible = resteApres >= 0;
+                      return (
+                        <div style={{ ...S.achatResult, background: possible ? "#E1F5EE" : "#FCEBEB", color: possible ? "#0F6E56" : "#A32D2D" }}>
+                          <i className={`ti ${possible ? "ti-circle-check" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 20 }} />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 14 }}>{possible ? "Achat possible" : "Achat déconseillé"}</div>
+                            <div style={{ fontSize: 12, marginTop: 2 }}>Disponible restant après achat : {formatEUR(resteApres)}</div>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <div style={{ ...S.card, marginTop: 14 }}>
+                    <div style={S.cardTitle}><i className="ti ti-skull" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Si je retire tout aujourd'hui ?</div>
+                    {!showRetraitTout ? (
+                      <button style={{ ...S.btnPrimary, background: "#A32D2D" }} onClick={() => setShowRetraitTout(true)}>RETIRER TOUT (simulation)</button>
+                    ) : (
+                      <div style={{ ...S.achatResult, background: "#FCEBEB", color: "#A32D2D", flexDirection: "column", alignItems: "flex-start" }}>
+                        <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
+                          Dans {estimateData?.periode_courante?.jours_restants ?? "?"} jours, vos charges arrivent quand même :
+                        </div>
+                        <div style={S.netRow}><span>URSSAF</span><span>{formatEUR(urssaf)}</span></div>
+                        <div style={S.netRow}><span>CFE</span><span>{formatEUR(cfe)}</span></div>
+                        <div style={{ ...S.netRow, fontWeight: 700, borderTop: "1px solid #F7C1C1", paddingTop: 6, marginTop: 4 }}>
+                          <span>Manque estimé</span><span>{formatEUR(Math.max(0, totalCharges - 0))}</span>
+                        </div>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginTop: 10 }}>
+                          {totalCharges > 0 ? "🔴 Très mauvaise idée" : "🟢 Vous n'avez rien à provisionner pour l'instant"}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </div>
           );
         })()}
+
+        {nav === "score" && (() => {
+          const info = scoreInfo(scoreSante);
+          return (
+            <div>
+              <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Score H€CTOR</h1><p style={S.pageSub}>Votre santé financière en un coup d'œil</p></div></div>
+              <div style={{ ...S.card, textAlign: "center", padding: "40px 24px" }}>
+                <div style={{ fontSize: 56, fontWeight: 700, color: info.color, lineHeight: 1 }}>{scoreSante !== null ? `${scoreSante}` : "—"}<span style={{ fontSize: 24, color: "#8BA5C0" }}>/100</span></div>
+                <div style={{ fontSize: 16, fontWeight: 600, color: info.color, marginTop: 10 }}>{info.label}</div>
+                <div style={{ fontSize: 13, color: "#6B7A8D", marginTop: 8, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>{info.desc}</div>
+              </div>
+              {scoreSante !== null && (
+                <div style={{ ...S.card, marginTop: 14 }}>
+                  <div style={S.cardTitle}>Basé sur</div>
+                  {[
+                    { label: "Trésorerie vs charges à venir", icon: "ti-coin" },
+                    { label: "Proximité de la prochaine échéance", icon: "ti-calendar-due" },
+                    { label: "Position vis-à-vis du plafond annuel", icon: "ti-gauge" },
+                    { label: "Disponible après réserve de sécurité", icon: "ti-shield" },
+                  ].map((f, i) => (
+                    <div key={i} style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />{f.label}</span></div>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {nav === "coach" && (
+          <div>
+            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Coach prix</h1><p style={S.pageSub}>Savez-vous combien vous gagnez vraiment de l'heure ?</p></div></div>
+            <div style={S.card}>
+              <label style={S.label}>Heures travaillées cette année (estimation)
+                <input style={S.input} type="number" placeholder="Ex : 800" value={heuresTravaillees} onChange={e => setHeuresTravaillees(e.target.value)} />
+              </label>
+              {tauxHoraireReel !== null && estimateData && (
+                <div style={{ marginTop: 16 }}>
+                  <div style={S.paniqueResult}>
+                    <span style={S.paniqueResultLabel}>Votre taux horaire réel (après charges)</span>
+                    <span style={{ ...S.paniqueResultValue, color: tauxHoraireReel < 25 ? "#A32D2D" : tauxHoraireReel < 40 ? "#854F0B" : ACCENT }}>{formatEUR(tauxHoraireReel)}/h</span>
+                  </div>
+                  {tauxHoraireReel < 40 && (
+                    <div style={{ ...S.achatResult, background: "#FAEEDA", color: "#854F0B", marginTop: 12 }}>
+                      <i className="ti ti-trending-up" aria-hidden="true" style={{ fontSize: 20 }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: 13 }}>Pour viser 40€/h réel</div>
+                        <div style={{ fontSize: 12, marginTop: 2 }}>
+                          Il faudrait facturer au moins {formatEUR(Math.round((40 * heuresNum) / (1 - (estimateData.taux_global_pct / 100))))} de CA brut sur l'année, contre {formatEUR(estimateData.ca_annuel)} actuellement.
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14 }}>Calcul basé sur votre CA annuel actuel et le nombre d'heures que vous indiquez — à ajuster au fil de l'année.</p>
+            </div>
+          </div>
+        )}
+
+        {nav === "societe" && (
+          <div>
+            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Passage en société ?</h1><p style={S.pageSub}>Auto-entrepreneur, SASU ou EURL — où en êtes-vous</p></div></div>
+            {estimateData && estimateData.disponible !== false && (() => {
+              const pct = estimateData.pourcentage_plafond;
+              let niveau = "vert", titre = "Pas encore nécessaire", texte = "Votre activité reste confortablement dans le cadre du régime micro-entrepreneur.";
+              if (pct > 80) { niveau = "rouge"; titre = "À étudier sérieusement"; texte = "Vous approchez du plafond. Une société vous permettrait de continuer à grandir sans limite de CA, avec une vraie déduction des charges."; }
+              else if (pct > 50) { niveau = "orange"; titre = "À garder en tête"; texte = "Pas urgent, mais commencez à vous renseigner — le passage en société prend du temps à préparer."; }
+              const colors = { vert: "#1D9E75", orange: "#EF9F27", rouge: "#E24B4A" };
+              return (
+                <div style={{ ...S.card, display: "flex", alignItems: "center", gap: 16 }}>
+                  <div style={{ width: 16, height: 16, borderRadius: "50%", background: colors[niveau], flexShrink: 0 }} />
+                  <div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{titre}</div>
+                    <div style={{ fontSize: 13, color: "#6B7A8D", marginTop: 4 }}>{texte}</div>
+                  </div>
+                </div>
+              );
+            })()}
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>Les grandes différences</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, fontSize: 12 }}>
+                <div><strong>Auto-entrepreneur</strong><p style={{ color: "#6B7A8D" }}>Simple, % fixe sur le CA, plafonné</p></div>
+                <div><strong>EURL</strong><p style={{ color: "#6B7A8D" }}>Charges déductibles, IS ou IR, comptabilité complète</p></div>
+                <div><strong>SASU</strong><p style={{ color: "#6B7A8D" }}>Statut assimilé salarié, charges plus lourdes mais protection sociale renforcée</p></div>
+              </div>
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14 }}>Cette analyse est indicative. Un expert-comptable reste indispensable avant de changer de statut.</p>
+            </div>
+          </div>
+        )}
+
+        {nav === "modeles" && (
+          <div>
+            <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Modèles</h1><p style={S.pageSub}>Des textes prêts à copier-coller</p></div></div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                { titre: "Relance impayé", texte: "Bonjour [Nom],\n\nJe me permets de revenir vers vous concernant la facture [N°] du [date], d'un montant de [montant]€, dont l'échéance est dépassée.\n\nPourriez-vous me confirmer la date de règlement prévue ?\n\nBien à vous," },
+                { titre: "Hausse de tarifs", texte: "Bonjour [Nom],\n\nJe vous informe qu'à compter du [date], mes tarifs évoluent à [nouveau tarif].\n\nCette révision reflète [raison : montée en compétence / coûts / etc.]. Je reste à votre disposition pour en discuter.\n\nCordialement," },
+                { titre: "Email de prospection", texte: "Bonjour [Nom],\n\nJe me permets de vous contacter au sujet de [besoin identifié]. Je propose [votre service] et pense pouvoir vous aider sur ce point.\n\nSeriez-vous disponible pour un échange rapide cette semaine ?\n\nBien à vous," },
+                { titre: "CGV simplifiées", texte: "Conditions Générales de Vente\n\n1. Les prestations sont facturées au tarif en vigueur au moment de la commande.\n2. Le règlement est dû à réception de facture, sauf accord contraire.\n3. Tout retard de paiement entraîne des pénalités au taux légal en vigueur.\n4. TVA non applicable, article 293 B du CGI." },
+              ].map((m, i) => (
+                <div key={i} style={S.card}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{m.titre}</span>
+                    <button style={S.btnSecondary} onClick={() => navigator.clipboard?.writeText(m.texte)}>
+                      <i className="ti ti-copy" aria-hidden="true" style={{ fontSize: 14, marginRight: 4 }} />Copier
+                    </button>
+                  </div>
+                  <pre style={S.modelText}>{m.texte}</pre>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {nav === "revenus" && (
           <div>
@@ -800,6 +1049,25 @@ export default function App() {
                 <button style={{ ...S.btnPrimary, marginTop: 12 }} onClick={() => { setContacts(c => [...c, { ...contactForm, id: Date.now() }]); setContactForm({ nom: "", email: "", siret: "", adresse: "" }); setShowAddContact(false); }}>Enregistrer</button>
               </div>
             )}
+            {factures.length > 0 && (() => {
+              const parClient = {};
+              factures.forEach(f => { parClient[f.client_nom] = (parClient[f.client_nom] || 0) + f.total; });
+              const totalCa = Object.values(parClient).reduce((a, b) => a + b, 0);
+              const meilleur = Object.entries(parClient).sort((a, b) => b[1] - a[1])[0];
+              const concentration = meilleur && totalCa > 0 ? Math.round((meilleur[1] / totalCa) * 100) : 0;
+              return (
+                <div style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardTitle}>Analyse client</div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}><i className="ti ti-trophy" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Meilleur client</span><span style={{ fontWeight: 600 }}>{meilleur?.[0]} ({formatEUR(meilleur?.[1])})</span></div>
+                  {concentration >= 50 && (
+                    <div style={{ ...S.achatResult, background: "#FAEEDA", color: "#854F0B", marginTop: 10 }}>
+                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 18 }} />
+                      <div style={{ fontSize: 12 }}><strong>{concentration}%</strong> de votre CA facturé vient d'un seul client. Risque de dépendance élevé.</div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
             <div style={S.card}>
               {contacts.length === 0 ? <p style={S.empty}>Aucun contact. Ajoutez vos clients pour pré-remplir vos factures.</p> : contacts.map(c => (
                 <div key={c.id} style={S.incomeRow}>
@@ -872,23 +1140,29 @@ export default function App() {
         {nav === "echeances" && (
           <div>
             <div style={S.pageHeader}><div><h1 style={S.pageTitle}>Échéances</h1><p style={S.pageSub}>Ne manquez aucune date importante</p></div></div>
+            <div style={{ display: "flex", gap: 16, marginBottom: 14, fontSize: 12, color: "#6B7A8D" }}>
+              <span>🔴 ≤ 7 jours</span><span>🟠 ≤ 15 jours</span><span>🟢 30+ jours</span>
+            </div>
             <div style={S.card}>
               {[
                 { date: "31 juillet 2026", label: "Déclaration URSSAF T2 2026", type: "URSSAF", urgence: estimateData?.periode_courante?.jours_restants },
                 { date: "31 octobre 2026", label: "Déclaration URSSAF T3 2026", type: "URSSAF", urgence: null },
                 { date: "15 décembre 2026", label: "CFE (Cotisation Foncière des Entreprises)", type: "Impôts", urgence: null },
                 { date: "31 janvier 2027", label: "Déclaration URSSAF T4 2026", type: "URSSAF", urgence: null },
-              ].map((e, i) => (
-                <div key={i} style={{ ...S.newsItem, display: "flex", alignItems: "center", gap: 12 }}>
-                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: e.type === "URSSAF" ? ACCENT : "#854F0B", flexShrink: 0 }} />
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 13, fontWeight: 500, color: INK }}>{e.label}</div>
-                    <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>{e.date}</div>
+              ].map((e, i) => {
+                const dotColor = e.urgence == null ? "#8BA5C0" : e.urgence <= 7 ? "#E24B4A" : e.urgence <= 15 ? "#EF9F27" : "#1D9E75";
+                return (
+                  <div key={i} style={{ ...S.newsItem, display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, color: INK }}>{e.label}</div>
+                      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>{e.date}</div>
+                    </div>
+                    {e.urgence != null && <span style={{ ...S.alertChip, background: dotColor + "22", color: dotColor }}>{e.urgence}j restants</span>}
+                    <span style={{ ...S.badge, ...(e.type === "URSSAF" ? S.badgeBlue : S.badgeOrange) }}>{e.type}</span>
                   </div>
-                  {e.urgence && <span style={S.alertChip}>{e.urgence}j restants</span>}
-                  <span style={{ ...S.badge, ...(e.type === "URSSAF" ? S.badgeBlue : S.badgeOrange) }}>{e.type}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         )}
@@ -1071,6 +1345,17 @@ const S = {
   empty: { fontSize: 13, color: "#8BA5C0", textAlign: "center", padding: "24px 0" },
   bankCard: { display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "16px 10px", border: "1px dashed #DDE5EE", borderRadius: 10, background: "#FAFBFC", cursor: "not-allowed" },
   bankHero: { background: "white", border: "0.5px solid #DDE5EE", borderRadius: 12, padding: "32px 24px", textAlign: "center", marginBottom: 16 },
+  dispoHero: { background: INK, borderRadius: 14, padding: "22px 26px", marginBottom: 18, display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 16 },
+  dispoLabel: { fontSize: 12, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 },
+  dispoValue: { fontSize: 36, fontWeight: 700, marginTop: 4, fontVariantNumeric: "tabular-nums" },
+  dispoSub: { fontSize: 11, color: "#8BA5C0", marginTop: 4 },
+  dispoEmpty: { fontSize: 13, color: "#B5D4F4", marginTop: 6, maxWidth: 320 },
+  dispoPlaisirLabel: { fontSize: 11, color: "#8BA5C0", fontWeight: 600 },
+  dispoPlaisirValue: { fontSize: 22, fontWeight: 700, color: "#FAC775", marginTop: 2 },
+  linkBtnLight: { background: "none", border: "none", color: "#5DCAA5", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: 0, textDecoration: "underline" },
+  objectifInput: { width: 110, fontFamily: "inherit", fontSize: 13, padding: "5px 8px", borderRadius: 6, border: "1px solid #DDE5EE", textAlign: "right" },
+  achatResult: { display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderRadius: 10 },
+  modelText: { fontSize: 12, color: "#3D4452", whiteSpace: "pre-wrap", fontFamily: "inherit", background: "#FAFBFC", border: "1px solid #EEF2F7", borderRadius: 8, padding: "12px 14px", margin: 0, lineHeight: 1.6 },
   paniqueLine: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "9px 0", borderBottom: "0.5px solid #EEF2F7" },
   paniqueLineLabel: { display: "flex", alignItems: "center" },
   paniqueResult: { display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center", paddingTop: 20, marginTop: 8 },
