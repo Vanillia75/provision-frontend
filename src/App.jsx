@@ -107,6 +107,7 @@ export default function App() {
   const [simCa, setSimCa] = useState("3000");
   const [simActivite, setSimActivite] = useState("services");
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
+  const [objectifMensuel, setObjectifMensuel] = useState(() => localStorage.getItem("objectifMensuel") || "4200");
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [achatMontant, setAchatMontant] = useState("");
   const [tarifMontant, setTarifMontant] = useState("");
@@ -174,6 +175,7 @@ export default function App() {
   }
 
   useEffect(() => { localStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
+  useEffect(() => { localStorage.setItem("objectifMensuel", objectifMensuel); }, [objectifMensuel]);
   useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
   useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
 
@@ -462,6 +464,14 @@ export default function App() {
   const joursSurvie = moisSurvie !== null ? Math.round(moisSurvie * 30) : null;
   const dateRupture = joursSurvie !== null ? new Date(Date.now() + joursSurvie * 86400000) : null;
 
+  // --- Projections fin de mois / fin d'annee, pour le Dashboard ---
+  const aujourdhui = new Date();
+  const jourDuMois = aujourdhui.getDate();
+  const joursDansLeMois = new Date(aujourdhui.getFullYear(), aujourdhui.getMonth() + 1, 0).getDate();
+  const caCeMoisCi = revenusParMois[aujourdhui.getMonth()]?.total || 0;
+  const projectionFinMois = jourDuMois > 0 ? Math.round((caCeMoisCi / jourDuMois) * joursDansLeMois) : caCeMoisCi;
+  const projectionFinAnnee = estimateData ? Math.round(moyenneMensuelleCA * 12) : null;
+
   if (!token) {
     const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
     const caSim = parseFloat(simCa) || 0;
@@ -684,7 +694,7 @@ export default function App() {
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
               <div>
                 <h1 style={S.pageTitle}>Bonjour 👋</h1>
-                <p style={S.pageSub}>Votre situation fiscale en un coup d'œil</p>
+                <p style={S.pageSub}>Votre situation en un coup d'œil</p>
               </div>
               {estimateData.periode_courante?.jours_restants <= 30 && (
                 <div style={S.alertChip}>
@@ -694,148 +704,94 @@ export default function App() {
               )}
             </div>
 
+            {/* ─── LA STAR : Disponible réel, en grand, avec le temps de sécurité juste à côté ─── */}
+            <div style={S.heroDispo}>
+              <div style={S.heroDispoLabel}>💰 Vous pouvez dépenser</div>
+              {disponibleAujourdhui !== null ? (
+                <div style={{ ...S.heroDispoValue, color: disponibleAujourdhui < 0 ? "#FF8A80" : "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</div>
+              ) : (
+                <div style={S.dispoEmpty}>Renseignez votre solde dans <button style={S.linkBtnLight} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce chiffre</div>
+              )}
+              {moisSurvie !== null && (
+                <div style={S.heroDispoSub}>🛡️ soit environ <strong style={{ color: "white" }}>{moisSurvie} mois de sécurité</strong></div>
+              )}
+            </div>
+
+            {/* ─── 4 choses en 5 secondes : mettre de côté / objectifs / projections / sécurité ─── */}
+            <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
+              <div style={S.card}>
+                <div style={S.cardTitle}>💸 Combien mettre de côté</div>
+                <div style={{ textAlign: "center", padding: "8px 0" }}>
+                  <div style={{ fontSize: 28, fontWeight: 700, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</div>
+                  <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>pour {estimateData.periode_courante?.label}, avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)}</div>
+                </div>
+              </div>
+              <div style={S.card}>
+                <div style={S.cardTitle}>📈 Si ça continue ainsi</div>
+                <div style={S.projRow}><span>Fin du mois</span><strong>{formatEUR(projectionFinMois)}</strong></div>
+                <div style={S.projRow}><span>Fin de l'année</span><strong>{formatEUR(projectionFinAnnee)}</strong></div>
+              </div>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14, marginBottom: 20 }}>
+              <div style={S.cardTitle}>🎯 Où vous en êtes</div>
+              {(() => {
+                const objM = parseFloat(objectifMensuel) || 1;
+                const pctM = Math.min(100, Math.round((caCeMoisCi / objM) * 100));
+                const objA = parseFloat(objectifAnnuel) || 1;
+                const pctA = Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100));
+                return (
+                  <>
+                    <div style={{ marginBottom: 14 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
+                        <span>Objectif du mois</span>
+                        <span>{formatEUR(caCeMoisCi)} / <input style={{ ...S.objectifInput, width: 70, padding: "2px 6px" }} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} /></span>
+                      </div>
+                      <div style={S.progressTrack}><div style={{ ...S.progressFill, background: ACCENT, width: `${pctM}%` }} /></div>
+                    </div>
+                    <div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
+                        <span>Objectif de l'année</span>
+                        <span>{formatEUR(estimateData.ca_annuel)} / <input style={{ ...S.objectifInput, width: 80, padding: "2px 6px" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} /></span>
+                      </div>
+                      <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%` }} /></div>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {statut && (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: STATUT_INFO[statut].color }}>
+                  {STATUT_INFO[statut].emoji} {STATUT_INFO[statut].label}
+                </span>
+                <button style={S.linkBtn} onClick={() => setNav("panique")}>voir pourquoi →</button>
+              </div>
+            )}
+
             <button style={S.askHectorBtn} onClick={() => setNav("assistant")}>
               <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 20 }} />
               💬 Demander à H€CTOR — "Puis-je acheter ça ?", "Combien me verser ?"...
             </button>
 
-            <div style={S.compteursRow} className="kpi-grid-r">
-              <div style={S.compteurCard}>
-                <span style={S.compteurLabel}>Aujourd'hui</span>
-                <span style={S.compteurValue}>{disponibleAujourdhui !== null ? formatEUR(Math.max(0, disponibleAujourdhui)) : "—"}</span>
-                <span style={S.compteurSub}>disponible</span>
-              </div>
-              <div style={S.compteurCard}>
-                <span style={S.compteurLabel}>Ce mois-ci</span>
-                <span style={S.compteurValue}>{formatEUR(revenusParMois[new Date().getMonth()]?.total || 0)}</span>
-                <span style={S.compteurSub}>encaissé</span>
-              </div>
-              <div style={S.compteurCard}>
-                <span style={S.compteurLabel}>Cette année</span>
-                <span style={S.compteurValue}>{formatEUR(estimateData.ca_annuel)}</span>
-                <span style={S.compteurSub}>de CA</span>
-              </div>
-            </div>
-
-            {panique.solde !== "" && (
-              <div style={{ ...S.card, marginBottom: 20 }}>
-                <div style={S.cardTitle}>📈 Progression</div>
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
-                    <span>🛡️ Réserve de sécurité</span>
-                    <span>{formatEUR(Math.max(0, soldeNum - totalChargesAVenir))} / {formatEUR(securiteNum)}</span>
-                  </div>
-                  <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${securiteNum > 0 ? Math.min(100, Math.max(0, ((soldeNum - totalChargesAVenir) / securiteNum) * 100)) : 100}%` }} /></div>
-                </div>
-                <div>
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#6B7A8D", marginBottom: 4 }}>
-                    <span>🧾 URSSAF provisionnée</span>
-                    <span>{urssafProvision > 0 ? Math.min(100, Math.round((soldeNum / urssafProvision) * 100)) : 100}%</span>
-                  </div>
-                  <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#EF9F27", width: `${urssafProvision > 0 ? Math.min(100, Math.max(0, (soldeNum / urssafProvision) * 100)) : 100}%` }} /></div>
-                </div>
-              </div>
-            )}
-
-            {statut && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: STATUT_INFO[statut].color }}>
-                  {STATUT_INFO[statut].emoji} {STATUT_INFO[statut].label}
-                </span>
-                <button style={S.linkBtn} onClick={() => setNav("panique")}>voir le détail →</button>
-              </div>
-            )}
-
-            <div style={isMobile ? { ...S.dispoHero, flexDirection: "column", alignItems: "flex-start" } : S.dispoHero}>
-              <div>
-                <div style={S.dispoLabel}>💰 Disponible aujourd'hui</div>
-                {disponibleAujourdhui !== null ? (
-                  <div style={{ ...S.dispoValue, color: disponibleAujourdhui < 0 ? "#FF8A80" : "#5DCAA5" }}>{formatEUR(disponibleAujourdhui)}</div>
-                ) : (
-                  <div style={S.dispoEmpty}>Renseignez votre solde dans <button style={S.linkBtnLight} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce chiffre</div>
-                )}
-                {disponibleAujourdhui !== null && <div style={S.dispoSub}>après URSSAF, impôts, CFE et votre réserve de sécurité de {formatEUR(securiteNum)}</div>}
-              </div>
-              {disponibleAujourdhui !== null && (
-                <div style={{ textAlign: "right" }}>
-                  <div style={S.dispoPlaisirLabel}>🎯 Budget plaisir</div>
-                  <div style={S.dispoPlaisirValue}>{formatEUR(Math.max(0, Math.round(disponibleAujourdhui * 0.3)))}</div>
-                  <div style={{ fontSize: 10, color: "#8BA5C0" }}>30% du disponible, à dépenser sans culpabiliser</div>
-                </div>
-              )}
-            </div>
-
-            {estimateData.periode_courante && (
+            {estimateData.periode_courante && estimateData.periode_courante.jours_restants <= 14 && (
               <div style={{
                 ...S.echeanceBanner,
-                ...(estimateData.periode_courante.jours_restants <= 7 ? S.echeanceBannerUrgent :
-                    estimateData.periode_courante.jours_restants <= 14 ? S.echeanceBannerWarning :
-                    S.echeanceBannerNormal)
+                ...(estimateData.periode_courante.jours_restants <= 7 ? S.echeanceBannerUrgent : S.echeanceBannerWarning)
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <i className="ti ti-calendar-due" aria-hidden="true" style={{ fontSize: 20 }} />
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 600 }}>
-                      Prochaine échéance — dans {estimateData.periode_courante.jours_restants} jours
-                    </div>
-                    <div style={{ fontSize: 12, marginTop: 2, opacity: 0.85 }}>
-                      Déclaration URSSAF {estimateData.periode_courante.label} avant le {formatDate(estimateData.periode_courante.date_limite_declaration)}
-                      {estimateData.ca_periode_courante > 0 && ` · ${formatEUR(estimateData.ca_periode_courante)} à déclarer`}
-                    </div>
+                  <div style={{ fontSize: 13, fontWeight: 600 }}>
+                    Déclaration URSSAF dans {estimateData.periode_courante.jours_restants} jours
                   </div>
                 </div>
                 <a href="https://www.autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 12, fontWeight: 600, color: "inherit", textDecoration: "none", whiteSpace: "nowrap", opacity: 0.9 }}>
-                  Déclarer maintenant →
+                  style={{ fontSize: 12, fontWeight: 600, color: "inherit", textDecoration: "none", whiteSpace: "nowrap" }}>
+                  Déclarer →
                 </a>
               </div>
             )}
-
-            <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr", gap: 8 } : S.kpiGrid}>
-              <div style={S.kpiCard}>
-                <span style={S.kpiLabel}>À mettre de côté · {estimateData.periode_courante?.label}</span>
-                <span style={S.kpiValue}>{formatEUR(estimateData.montant_a_provisionner)}</span>
-                <span style={S.kpiSub}>sur {formatEUR(estimateData.ca_periode_courante)} encaissés · {estimateData.taux_global_pct}%</span>
-              </div>
-              <div style={S.kpiCard}>
-                <span style={S.kpiLabel}>CA annuel {new Date().getFullYear()}</span>
-                <span style={S.kpiValue}>{formatEUR(estimateData.ca_annuel)}</span>
-                <span style={{ ...S.kpiSub, color: "#0F6E56" }}>{estimateData.pourcentage_plafond}% du plafond</span>
-              </div>
-              <div style={S.kpiCard}>
-                <span style={S.kpiLabel}>URSSAF à provisionner</span>
-                <span style={S.kpiValue}>{formatEUR(incomeList.reduce((s, e) => s + e.amount, 0) * (estimateData.taux_global_pct / 100))}</span>
-                <span style={{ ...S.kpiSub, color: "#854F0B" }}>sur l'année complète</span>
-              </div>
-              <div style={S.kpiCard}>
-                <span style={S.kpiLabel}>Factures émises</span>
-                <span style={S.kpiValue}>{factures.length}</span>
-                <span style={S.kpiSub}>ce mois</span>
-              </div>
-            </div>
-
-            <div style={{ ...S.card, marginBottom: 20 }}>
-              <div style={S.cardTitle}>
-                Objectif annuel
-                <input style={S.objectifInput} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
-              </div>
-              {(() => {
-                const obj = parseFloat(objectifAnnuel) || 1;
-                const pct = Math.min(Math.round((estimateData.ca_annuel / obj) * 100), 100);
-                return (
-                  <>
-                    <div style={S.progressTrack}><div style={{ ...S.progressFill, width: `${pct}%` }} /></div>
-                    <span style={S.kpiSub}>{formatEUR(estimateData.ca_annuel)} sur {formatEUR(obj)} visés · {pct}%</span>
-                  </>
-                );
-              })()}
-              <div style={{ borderTop: "0.5px solid #EEF2F7", marginTop: 16, paddingTop: 14 }}>
-                <div style={S.cardTitle}>
-                  Réserve de sécurité <span style={{ fontWeight: 400, fontSize: 11, color: "#8BA5C0" }}>(utilisée dans Scanner Financier)</span>
-                  <input style={S.objectifInput} type="number" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
-                </div>
-              </div>
-            </div>
 
             <div style={{ ...S.card, marginBottom: 20 }}>
               <div style={S.cardTitle}>
@@ -844,7 +800,7 @@ export default function App() {
               </div>
               <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="CA encaissé" value={simCa} onChange={e => setSimCa(e.target.value)} />
+                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="J'encaisse..." value={simCa} onChange={e => setSimCa(e.target.value)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
                   <option value="vente">Vente de marchandises (12,3%)</option>
                   <option value="services">Prestations de services (21,2%)</option>
@@ -860,11 +816,11 @@ export default function App() {
                 return (
                   <div style={{ display: "flex", gap: 24 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>À mettre de côté URSSAF</div>
+                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>À mettre de côté</div>
                       <div style={{ fontSize: 22, fontWeight: 600, color: "#854F0B" }}>{formatEUR(urssafSim)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>Dans votre poche</div>
+                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>Argent réellement disponible</div>
                       <div style={{ fontSize: 22, fontWeight: 600, color: ACCENT }}>{formatEUR(netSim)}</div>
                     </div>
                   </div>
@@ -885,24 +841,6 @@ export default function App() {
                 ))}
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {(() => {
-                  const today = new Date();
-                  const moisEcoules = today.getMonth() + 1;
-                  const moyenneMensuelle = estimateData.ca_annuel / moisEcoules;
-                  const caProjete = Math.round(moyenneMensuelle * 12);
-                  const cotisationsProjetees = Math.round(caProjete * (estimateData.taux_global_pct / 100));
-                  const moisAvantDepassement = moyenneMensuelle > 0 ? Math.ceil((estimateData.plafond - estimateData.ca_annuel) / moyenneMensuelle) : null;
-                  return (
-                    <div style={S.card}>
-                      <div style={S.cardTitle}>À ce rythme, sur l'année</div>
-                      <div style={S.netRow}><span>CA annuel estimé</span><span style={{ fontWeight: 600 }}>{formatEUR(caProjete)}</span></div>
-                      <div style={S.netRow}><span>Cotisations estimées</span><span style={{ color: "#854F0B" }}>{formatEUR(cotisationsProjetees)}</span></div>
-                      {moisAvantDepassement && moisAvantDepassement > 0 && moisAvantDepassement <= 12 && (
-                        <div style={{ ...S.netRow, color: "#A32D2D", marginTop: 4 }}><span>Dépassement du plafond dans</span><span>~{moisAvantDepassement} mois</span></div>
-                      )}
-                    </div>
-                  );
-                })()}
                 <div style={S.card}>
                   <div style={S.cardTitle}>Seuil annuel
                     <span style={S.cardSub}>{formatEUR(estimateData.ca_annuel)} / {formatEUR(estimateData.plafond)}</span>
@@ -1933,6 +1871,11 @@ const S = {
   compteurLabel: { fontSize: 11, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.3 },
   compteurValue: { fontSize: 20, fontWeight: 700, color: INK, fontVariantNumeric: "tabular-nums", marginTop: 2 },
   compteurSub: { fontSize: 11, color: "#8BA5C0" },
+  heroDispo: { background: INK, borderRadius: 16, padding: "30px 28px", marginBottom: 16, textAlign: "center" },
+  heroDispoLabel: { fontSize: 13, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
+  heroDispoValue: { fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 },
+  heroDispoSub: { fontSize: 14, color: "#B5D4F4", marginTop: 10 },
+  projRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "10px 0", borderBottom: "0.5px solid #EEF2F7" },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#3D4452", marginBottom: 14 },
   checkboxLabel: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 12, lineHeight: 1.4 },
   input: { fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid #DDE5EE", outline: "none", width: "100%" },
