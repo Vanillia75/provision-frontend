@@ -112,6 +112,14 @@ export default function App() {
   const [heuresTravaillees, setHeuresTravaillees] = useState("");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
+
+  useEffect(() => {
+    function handleResize() { setIsMobile(window.innerWidth <= 768); }
+    window.addEventListener("resize", handleResize);
+    handleResize();
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
   const googleButtonRef = useRef(null);
 
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
@@ -400,7 +408,7 @@ export default function App() {
           <Logo size={36} />
           <h1 style={S.authHero}>Votre assistant fiscal<br />intelligent</h1>
           <p style={S.authSub}>H€CTOR calcule vos cotisations URSSAF, crée vos factures et répond à toutes vos questions fiscales en temps réel.</p>
-          <div style={S.authFeatures}>
+          <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
             {[
               { icon: "ti-calculator", t: "Calcul URSSAF automatique", d: "Cotisations recalculées en temps réel selon vos revenus" },
               { icon: "ti-file-invoice", t: "Factures professionnelles", d: "Créez, numérotez et envoyez vos factures en 2 minutes" },
@@ -532,25 +540,37 @@ export default function App() {
   const userInitials = (profile?.email || "").slice(0, 2).toUpperCase();
 
   return (
-    <div style={S.appWrap}>
+    <div style={isMobile ? { ...S.appWrap, display: "block" } : S.appWrap}>
       <style>{CSS}</style>
 
-      <div className="mobile-topbar">
-        <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
-          <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 22, color: "white" }} />
-        </button>
-        <Logo size={24} />
-        <div style={{ width: 38 }} />
-      </div>
-
-      <div className={`sidebar-backdrop ${mobileMenuOpen ? "mobile-open" : ""}`} onClick={() => setMobileMenuOpen(false)} />
-
-      <aside className={`sidebar ${mobileMenuOpen ? "mobile-open" : ""}`} style={{ ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }}>
-        <div style={S.sidebarTop}>
-          {sidebarOpen ? <Logo size={28} /> : <LogoIcon size={32} />}
-          <button style={{ ...S.navItem, padding: "4px 8px", width: "auto" }} className="mobile-only-close" onClick={() => setMobileMenuOpen(false)}>
-            <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 18 }} />
+      {isMobile && (
+        <div style={S.mobileTopbar}>
+          <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
+            <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 24, color: "white" }} />
           </button>
+          <Logo size={22} />
+          <div style={{ width: 36 }} />
+        </div>
+      )}
+
+      {isMobile && mobileMenuOpen && (
+        <div style={S.sidebarBackdrop} onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      <aside
+        style={
+          isMobile
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }
+            : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }
+        }
+      >
+        <div style={S.sidebarTop}>
+          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={28} />}
+          {isMobile && (
+            <button style={{ ...S.navItem, padding: "4px 8px", width: "auto", marginLeft: "auto" }} onClick={() => setMobileMenuOpen(false)}>
+              <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 20 }} />
+            </button>
+          )}
         </div>
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
@@ -571,27 +591,29 @@ export default function App() {
           { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18 }} />
-            <span style={S.navLabel} className="nav-label-mobile-show">{sidebarOpen ? item.label : ""}</span>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+            {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
           </button>
         ))}
         <div style={S.sidebarBottom}>
-          <button style={S.navItem} onClick={() => setSidebarOpen(!sidebarOpen)}>
-            <i className={`ti ${sidebarOpen ? "ti-layout-sidebar-left-collapse" : "ti-layout-sidebar-left-expand"}`} aria-hidden="true" style={{ fontSize: 18 }} />
-          </button>
+          {!isMobile && (
+            <button style={S.navItem} onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <i className={`ti ${sidebarOpen ? "ti-layout-sidebar-left-collapse" : "ti-layout-sidebar-left-expand"}`} aria-hidden="true" style={{ fontSize: 18 }} />
+            </button>
+          )}
           <div style={S.userRow}>
             <div style={S.avatar}>{userInitials}</div>
-            {sidebarOpen && <button style={S.linkBtn} onClick={handleLogout}>Déconnexion</button>}
+            {(isMobile || sidebarOpen) && <button style={S.linkBtn} onClick={handleLogout}>Déconnexion</button>}
           </div>
         </div>
       </aside>
 
-      <main style={S.mainContent} className="main-content">
+      <main style={isMobile ? { ...S.mainContent, padding: "16px 14px" } : S.mainContent}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
         {nav === "dashboard" && estimateData && (
           <div>
-            <div style={S.pageHeader} className="page-header-r">
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
               <div>
                 <h1 style={S.pageTitle}>Bonjour 👋</h1>
                 <p style={S.pageSub}>Votre situation fiscale en un coup d'œil</p>
@@ -618,7 +640,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={S.dispoHero} className="dispo-hero-r">
+            <div style={isMobile ? { ...S.dispoHero, flexDirection: "column", alignItems: "flex-start" } : S.dispoHero}>
               <div>
                 <div style={S.dispoLabel}>💰 Disponible aujourd'hui</div>
                 {disponibleAujourdhui !== null ? (
@@ -663,7 +685,7 @@ export default function App() {
               </div>
             )}
 
-            <div style={S.kpiGrid} className="kpi-grid-r">
+            <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr", gap: 8 } : S.kpiGrid}>
               <div style={S.kpiCard}>
                 <span style={S.kpiLabel}>À mettre de côté · {estimateData.periode_courante?.label}</span>
                 <span style={S.kpiValue}>{formatEUR(estimateData.montant_a_provisionner)}</span>
@@ -744,7 +766,7 @@ export default function App() {
               })()}
             </div>
 
-            <div style={S.row2} className="row2-r">
+            <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
               <div style={S.card}>
                 <div style={S.cardTitle}>Revenus par mois</div>
                 {revenusParMois.map((m, i) => (
@@ -830,7 +852,7 @@ export default function App() {
 
           return (
             <div>
-              <div style={S.pageHeader} className="page-header-r">
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
                 <div><h1 style={S.pageTitle}>🚨 Mode panique</h1><p style={S.pageSub}>Un seul chiffre à donner, H€CTOR fait le reste</p></div>
               </div>
 
@@ -886,7 +908,9 @@ export default function App() {
                             {TMI_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
                           </select>
                           <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 0", lineHeight: 1.5 }}>
-                            Visible sur votre dernier avis d'imposition. H€CTOR calcule : CA × ({activiteInfo ? Math.round((1 - activiteInfo.abattement) * 100) : "—"}% après abattement {activiteInfo ? Math.round(activiteInfo.abattement * 100) : "—"}%) × {tmi}% = environ {formatEUR(impotsAnnuelEstime)}/an, soit {formatEUR(impotsNum)}/mois.
+                            {estimateData?.ca_annuel > 0
+                              ? <>Visible sur votre dernier avis d'imposition. H€CTOR calcule : CA × ({activiteInfo ? Math.round((1 - activiteInfo.abattement) * 100) : "—"}% après abattement {activiteInfo ? Math.round(activiteInfo.abattement * 100) : "—"}%) × {tmi}% = environ {formatEUR(impotsAnnuelEstime)}/an, soit {formatEUR(impotsNum)}/mois.</>
+                              : <>Visible sur votre dernier avis d'imposition. Le calcul s'activera dès que vous aurez ajouté des revenus (actuellement 0€ de CA enregistré).</>}
                           </p>
                         </div>
                       )}
@@ -958,7 +982,7 @@ export default function App() {
 
         {nav === "salaire" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
             {panique.solde === "" ? (
               <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("panique")}>Mode panique</button> pour voir ce calcul.</p></div>
             ) : (
@@ -993,7 +1017,7 @@ export default function App() {
           const info = scoreInfo(scoreSante);
           return (
             <div>
-              <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Score H€CTOR</h1><p style={S.pageSub}>Votre santé financière en un coup d'œil</p></div></div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Score H€CTOR</h1><p style={S.pageSub}>Votre santé financière en un coup d'œil</p></div></div>
               <div style={{ ...S.card, textAlign: "center", padding: "40px 24px" }}>
                 <div style={{ fontSize: 56, fontWeight: 700, color: info.color, lineHeight: 1 }}>{scoreSante !== null ? `${scoreSante}` : "—"}<span style={{ fontSize: 24, color: "#8BA5C0" }}>/100</span></div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: info.color, marginTop: 10 }}>{info.label}</div>
@@ -1018,7 +1042,7 @@ export default function App() {
 
         {nav === "coach" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Coach prix</h1><p style={S.pageSub}>Savez-vous combien vous gagnez vraiment de l'heure ?</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Coach prix</h1><p style={S.pageSub}>Savez-vous combien vous gagnez vraiment de l'heure ?</p></div></div>
             <div style={S.card}>
               <label style={S.label}>Heures travaillées cette année (estimation)
                 <input style={S.input} type="number" placeholder="Ex : 800" value={heuresTravaillees} onChange={e => setHeuresTravaillees(e.target.value)} />
@@ -1049,7 +1073,7 @@ export default function App() {
 
         {nav === "societe" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Passage en société ?</h1><p style={S.pageSub}>Auto-entrepreneur, SASU ou EURL — où en êtes-vous</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Passage en société ?</h1><p style={S.pageSub}>Auto-entrepreneur, SASU ou EURL — où en êtes-vous</p></div></div>
             {estimateData && estimateData.disponible !== false && (() => {
               const pct = estimateData.pourcentage_plafond;
               let niveau = "vert", titre = "Pas encore nécessaire", texte = "Votre activité reste confortablement dans le cadre du régime micro-entrepreneur.";
@@ -1080,7 +1104,7 @@ export default function App() {
 
         {nav === "modeles" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Modèles</h1><p style={S.pageSub}>Des textes prêts à copier-coller</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Modèles</h1><p style={S.pageSub}>Des textes prêts à copier-coller</p></div></div>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 { titre: "Relance impayé", texte: "Bonjour [Nom],\n\nJe me permets de revenir vers vous concernant la facture [N°] du [date], d'un montant de [montant]€, dont l'échéance est dépassée.\n\nPourriez-vous me confirmer la date de règlement prévue ?\n\nBien à vous," },
@@ -1104,7 +1128,7 @@ export default function App() {
 
         {nav === "revenus" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r">
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
               <div><h1 style={S.pageTitle}>Revenus</h1><p style={S.pageSub}>Tous vos encaissements</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
             </div>
@@ -1153,7 +1177,7 @@ export default function App() {
 
         {nav === "factures" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r">
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
               <div><h1 style={S.pageTitle}>Factures</h1><p style={S.pageSub}>Créez et envoyez vos factures</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowNewFacture(!showNewFacture)}>+ Nouvelle facture</button>
             </div>
@@ -1208,7 +1232,7 @@ export default function App() {
 
         {nav === "contacts" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r">
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
               <div><h1 style={S.pageTitle}>Contacts</h1><p style={S.pageSub}>Vos clients</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddContact(!showAddContact)}>+ Ajouter</button>
             </div>
@@ -1258,7 +1282,7 @@ export default function App() {
 
         {nav === "banque" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r">
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
               <div><h1 style={S.pageTitle}>Connexion bancaire</h1><p style={S.pageSub}>Fini la saisie manuelle</p></div>
             </div>
 
@@ -1270,7 +1294,7 @@ export default function App() {
               </p>
             </div>
 
-            <div style={S.row2} className="row2-r">
+            <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
               <div style={S.card}>
                 <div style={S.cardTitle}>Comment ça marchera</div>
                 {[
@@ -1313,7 +1337,7 @@ export default function App() {
 
         {nav === "echeances" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Échéances</h1><p style={S.pageSub}>Ne manquez aucune date importante</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Échéances</h1><p style={S.pageSub}>Ne manquez aucune date importante</p></div></div>
             <div style={{ display: "flex", gap: 16, marginBottom: 14, fontSize: 12, color: "#6B7A8D" }}>
               <span>🔴 ≤ 7 jours</span><span>🟠 ≤ 15 jours</span><span>🟢 30+ jours</span>
             </div>
@@ -1343,7 +1367,7 @@ export default function App() {
 
         {nav === "actualites" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Actualités fiscales</h1><p style={S.pageSub}>Les dernières nouvelles URSSAF et impôts</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Actualités fiscales</h1><p style={S.pageSub}>Les dernières nouvelles URSSAF et impôts</p></div></div>
             <div style={S.card}>
               {NEWS.map((n, i) => (
                 <div key={i} style={{ ...S.newsItem, padding: "14px 0" }}>
@@ -1358,7 +1382,7 @@ export default function App() {
 
         {nav === "conseils" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Conseils & optimisation</h1><p style={S.pageSub}>Personnalisés selon votre situation</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Conseils & optimisation</h1><p style={S.pageSub}>Personnalisés selon votre situation</p></div></div>
             <div style={S.card}>
               {CONSEILS.map((c, i) => (
                 <div key={i} style={S.conseilItem}>
@@ -1375,7 +1399,7 @@ export default function App() {
 
         {nav === "assistant" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {[
@@ -1408,8 +1432,8 @@ export default function App() {
 
         {nav === "abonnement" && (
           <div>
-            <div style={S.pageHeader} className="page-header-r"><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Choisissez la formule adaptée à vos besoins</p></div></div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16 }}>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Choisissez la formule adaptée à vos besoins</p></div></div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
               {PLANS.map((p, i) => (
                 <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
                   {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
@@ -1445,26 +1469,6 @@ const CSS = `
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
   button { font-family: inherit; }
-  .mobile-topbar { display: none; }
-  .sidebar-backdrop { display: none; }
-  .mobile-only-close { display: none; }
-  @media (max-width: 768px) {
-    .mobile-only-close { display: flex !important; margin-left: auto; }
-    .mobile-topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: ${INK}; position: sticky; top: 0; z-index: 60; }
-    .sidebar { position: fixed !important; top: 0; left: 0; height: 100vh; z-index: 70; width: 240px !important; transform: translateX(-100%); transition: transform 0.25s ease; }
-    .sidebar.mobile-open { transform: translateX(0); }
-    .sidebar-backdrop.mobile-open { display: block; position: fixed; inset: 0; background: rgba(10,37,64,0.5); z-index: 65; }
-    .main-content { padding: 16px 14px !important; }
-    .kpi-grid-r { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
-    .row2-r { grid-template-columns: 1fr !important; }
-    .plans-r { grid-template-columns: 1fr !important; }
-    .dispo-hero-r { flex-direction: column !important; align-items: flex-start !important; }
-    .dispo-hero-r > div:last-child { text-align: left !important; }
-    .page-header-r { flex-direction: column !important; align-items: flex-start !important; gap: 10px !important; }
-  }
-  @media (max-width: 420px) {
-    .kpi-grid-r { grid-template-columns: 1fr !important; }
-  }
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
   input[type=number] { -moz-appearance: textfield; }
   input, select, textarea, button { transition: border-color 0.15s, background 0.15s, transform 0.1s; }
@@ -1488,6 +1492,8 @@ const S = {
   authCard: { width: "100%", background: "white", borderRadius: 16, border: "0.5px solid #DDE5EE", padding: 32 },
   authTitle: { fontSize: 20, fontWeight: 600, color: INK, margin: "0 0 20px" },
   appWrap: { display: "flex", minHeight: "100vh", background: PAPER },
+  mobileTopbar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: INK, position: "sticky", top: 0, zIndex: 60 },
+  sidebarBackdrop: { position: "fixed", inset: 0, background: "rgba(10,37,64,0.5)", zIndex: 75 },
   sidebar: { width: 220, background: INK, display: "flex", flexDirection: "column", padding: "20px 0", flexShrink: 0, transition: "width 0.2s" },
   sidebarClosed: { width: 64 },
   sidebarTop: { padding: "0 16px 24px", display: "flex", justifyContent: "center" },
