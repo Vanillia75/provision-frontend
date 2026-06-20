@@ -862,9 +862,10 @@ export default function App() {
               <div style={S.onboardingNotice}>
                 <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>2 infos pour profiter de H€CTOR à 100%</div>
-                  <div style={{ fontSize: 12, color: "#5B6573", marginTop: 2 }}>
-                    Le <strong>solde</strong> ci-dessus sert à calculer votre disponible immédiat. Vos <strong>revenus encaissés</strong> (factures, virements clients) servent à calculer ce que vous devez mettre de côté et suivre vos objectifs — ce sont deux choses différentes, à renseigner toutes les deux.
+                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>Pour obtenir des calculs fiables</div>
+                  <div style={{ fontSize: 12, color: "#5B6573", marginTop: 4, lineHeight: 1.6 }}>
+                    <strong>1.</strong> Indiquez votre solde bancaire (ci-dessus)<br />
+                    <strong>2.</strong> Ajoutez vos revenus encaissés
                   </div>
                 </div>
                 <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
@@ -878,6 +879,23 @@ export default function App() {
                 <div style={{ ...S.heroDispoValue, color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
               ) : (
                 <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
+              )}
+              {argentDisponibleBrut !== null && (
+                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3, alignItems: "center", fontSize: 13 }}>
+                  <div style={{ color: "rgba(255,255,255,0.85)" }}>
+                    🛡️ Réserve cible : <strong>{formatEUR(securiteNum)}</strong>
+                    <span style={{ fontSize: 11, color: "#7A93AD", marginLeft: 4 }}>
+                      {securitePrecise
+                        ? "(calculée sur vos dépenses)"
+                        : baseMensuelleSecurite > 0 && securiteNum > 0
+                          ? `(≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois, estimée sur votre CA)`
+                          : "(montant personnalisé)"}
+                    </span>
+                  </div>
+                  <div style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775", fontWeight: 600 }}>
+                    ➡️ Marge prudente : {formatEUR(Math.max(0, disponibleAujourdhui))}
+                  </div>
+                </div>
               )}
               {argentDisponibleBrut !== null && (
                 <div style={S.heroDispoSub}>
@@ -898,12 +916,15 @@ export default function App() {
                 <details style={{ marginTop: 16, textAlign: "left" }}>
                   <summary style={{ cursor: "pointer", fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Voir d'où vient ce chiffre</summary>
                   <div style={{ marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 16px" }}>
-                    <div style={S.heroDetailRow}><span>CA encaissé (année)</span><span>{formatEUR(estimateData.ca_annuel)}</span></div>
+                    <div style={S.heroDetailRow}>
+                      <span>CA encaissé (année)</span>
+                      <span>{estimateData.ca_annuel === 0 ? <span style={{ color: "#7A93AD", fontStyle: "italic", fontSize: 12 }}>Aucun revenu enregistré pour le moment</span> : formatEUR(estimateData.ca_annuel)}</span>
+                    </div>
                     <div style={S.heroDetailRow}><span>Solde bancaire actuel</span><span>{formatEUR(soldeNum)}</span></div>
                     <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
                     <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
                     <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                      <span style={{ color: "#FAC775" }}>− CFE estimée <span style={{ fontSize: 10, color: "#7A93AD" }}>{cfeNum === 0 ? "(souvent ~200€/an, à renseigner)" : "(forfait, modifiable)"}</span></span>
+                      <span style={{ color: "#FAC775" }}>− Cotisation Foncière des Entreprises <span title="Impôt local annuel dû par la plupart des entreprises, même sans local professionnel dédié. Souvent autour de 200€/an pour un auto-entrepreneur, mais variable selon la commune." style={{ cursor: "help", borderBottom: "1px dotted #7A93AD" }}>(CFE) ⓘ</span> <span style={{ fontSize: 10, color: "#7A93AD" }}>{cfeNum === 0 ? "(souvent ~200€/an, à renseigner)" : "(forfait, modifiable)"}</span></span>
                       <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                         <input
                           style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FAC775", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
@@ -930,7 +951,8 @@ export default function App() {
                     </div>
 
                     <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Régler ma réserve en mois de sécurité {securitePrecise ? "(basé sur vos dépenses réelles)" : "(estimation sur votre CA)"}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "white", marginBottom: 2 }}>Combien de mois de sécurité voulez-vous garder ?</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Choisissez une durée pour fixer votre réserve cible {securitePrecise ? "(basé sur vos dépenses réelles)" : "(estimation sur votre CA)"}</div>
                       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                         {[1, 3, 6].map(m => (
                           <button key={m} type="button"
