@@ -118,6 +118,8 @@ export default function App() {
   const [profilTelephone, setProfilTelephone] = useState(() => localStorage.getItem("profilTelephone") || "");
   const [profilEntreprise, setProfilEntreprise] = useState(() => localStorage.getItem("profilEntreprise") || "");
   const [profilSiret, setProfilSiret] = useState(() => localStorage.getItem("profilSiret") || "");
+  const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
+  const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [outilsOpen, setOutilsOpen] = useState(false);
   const [montantCopie, setMontantCopie] = useState(false);
   const [caCopie, setCaCopie] = useState(false);
@@ -283,6 +285,25 @@ export default function App() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleLookupSiret() {
+    if (!profilSiret) return;
+    setSiretLookupStatus("loading");
+    setSiretLookupMessage("");
+    try {
+      const data = await apiFetch(`/siret/lookup?siret=${encodeURIComponent(profilSiret)}`);
+      if (data.raison_sociale) setProfilEntreprise(data.raison_sociale);
+      await apiFetch("/profile/siret", {
+        method: "POST",
+        body: JSON.stringify({ siret: data.siret, raison_sociale: data.raison_sociale }),
+      });
+      setSiretLookupStatus("success");
+      setSiretLookupMessage(data.raison_sociale ? `Trouvé : ${data.raison_sociale}` : "Établissement trouvé");
+    } catch (err) {
+      setSiretLookupStatus("error");
+      setSiretLookupMessage(err.message);
     }
   }
 
@@ -2048,7 +2069,17 @@ export default function App() {
                   <input style={S.input} type="text" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} placeholder="VANILLA" />
                 </label>
                 <label style={S.label}>SIRET
-                  <input style={S.input} type="text" value={profilSiret} onChange={e => setProfilSiret(e.target.value)} placeholder="123 456 789 00012" />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input style={{ ...S.input, flex: 1 }} type="text" value={profilSiret} onChange={e => { setProfilSiret(e.target.value); setSiretLookupStatus(""); }} placeholder="123 456 789 00012" />
+                    <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "0 16px", whiteSpace: "nowrap" }} onClick={handleLookupSiret} disabled={!profilSiret || siretLookupStatus === "loading"}>
+                      {siretLookupStatus === "loading" ? "…" : "Vérifier"}
+                    </button>
+                  </div>
+                  {siretLookupMessage && (
+                    <p style={{ fontSize: 11, marginTop: 4, color: siretLookupStatus === "error" ? "#C0392B" : "#2E8B57" }}>
+                      {siretLookupStatus === "error" ? "⚠️ " : "✓ "}{siretLookupMessage}
+                    </p>
+                  )}
                 </label>
                 <label style={S.label}>Statut juridique
                   <input style={{ ...S.input, background: "#FAFBFC", color: "#8BA5C0" }} type="text" value={profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut || "—"} readOnly />
