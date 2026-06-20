@@ -893,7 +893,10 @@ export default function App() {
                 )}
               </div>
               <div style={S.card}>
-                <div style={S.cardTitle}>📈 Si ça continue ainsi</div>
+                <div style={S.cardTitle}>
+                  <span>📈 Si ça continue ainsi</span>
+                  <button style={S.linkBtn} onClick={() => setNav("revenus")}>Mes revenus →</button>
+                </div>
                 {estimateData.ca_annuel > 0 ? (
                   <>
                     <div style={S.projRow}>
@@ -1130,11 +1133,16 @@ export default function App() {
         {nav === "declaration" && estimateData && estimateData.disponible !== false && (() => {
           const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
           const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : estimateData.ca_periode_courante;
-          const cotisationsAffichees = declarationCotisations !== "" ? parseFloat(declarationCotisations) || 0 : estimateData.montant_a_provisionner;
+          const cotisationsAffichees = declarationCotisations !== ""
+            ? parseFloat(declarationCotisations) || 0
+            : declarationCa !== ""
+              ? Math.round((parseFloat(declarationCa) || 0) * ((estimateData.taux_global_pct || 0) / 100) * 100) / 100
+              : estimateData.montant_a_provisionner;
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
                 <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout est pré-rempli, modifiez si besoin</p></div>
+                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>Voir mes revenus</button>
               </div>
 
               <div style={{ ...S.card, textAlign: "center", padding: "20px 24px" }}>
@@ -1150,7 +1158,7 @@ export default function App() {
                 </div>
                 <div style={S.paniqueLine}>
                   <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Cotisations estimées <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>({estimateData.taux_global_pct}%)</span></span>
-                  <input style={S.inlineEditValue} type="number" step="0.01" placeholder={String(estimateData.montant_a_provisionner)} value={declarationCotisations} onChange={e => setDeclarationCotisations(e.target.value)} />
+                  <input style={S.inlineEditValue} type="number" step="0.01" placeholder={String(cotisationsAffichees)} value={declarationCotisations} onChange={e => setDeclarationCotisations(e.target.value)} />
                 </div>
                 <div style={S.paniqueLine}>
                   <span style={S.paniqueLineLabel}><i className="ti ti-id" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Activité / statut</span>
