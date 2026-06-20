@@ -918,8 +918,10 @@ function AppInner() {
     impayee: { label: "Impayée", bg: "#E24B4A", color: "white" },
   };
 
+  const [timelineRange, setTimelineRange] = useState(30);
+
   useEffect(() => {
-    if ((nav === "factures" || nav === "contacts") && token) loadInvoices();
+    if ((nav === "factures" || nav === "contacts" || nav === "timeline") && token) loadInvoices();
   }, [nav, token]);
 
   // ────────────────────────────────────────────────────────────
@@ -1408,6 +1410,7 @@ function AppInner() {
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
           { id: "echeances", icon: "ti-calendar-due", label: "Échéances" },
+          { id: "timeline", icon: "ti-timeline", label: "Timeline financière" },
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
           { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
@@ -1860,6 +1863,188 @@ function AppInner() {
             </div>
           </div>
         )}
+
+        {nav === "timeline" && (() => {
+          if (panique.solde === "") {
+            return (
+              <div>
+                <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                  <div><h1 style={S.pageTitle}>📈 Timeline financière</h1><p style={S.pageSub}>Vais-je avoir un trou de trésorerie bientôt ?</p></div>
+                </div>
+                <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde sur le <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour voir votre projection.</p></div>
+              </div>
+            );
+          }
+
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          const horizon = new Date(today.getTime() + timelineRange * 86400000);
+
+          function joursLabel(d) {
+            const diff = Math.round((d - today) / 86400000);
+            if (diff <= 0) return "Aujourd'hui";
+            return `dans ${diff} jour${diff > 1 ? "s" : ""}`;
+          }
+
+          const events = [];
+
+          // Frais récurrents estimés — un point au 1er de chaque mois
+          if (moyenneMensuelleFrais > 0) {
+            let cursor = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+            while (cursor <= horizon) {
+              events.push({ date: new Date(cursor), label: "Frais récurrents estimés", amount: -Math.round(moyenneMensuelleFrais), type: "frais" });
+              cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+            }
+          }
+
+          // URSSAF
+          if (estimateData?.periode_courante?.date_limite_declaration) {
+            const d = new Date(estimateData.periode_courante.date_limite_declaration);
+            if (d >= today && d <= horizon) {
+              events.push({ date: d, label: "Déclaration URSSAF", amount: -(estimateData.montant_a_provisionner || 0), type: "urssaf" });
+            }
+          }
+
+          // CFE
+          let dateCfe = new Date(today.getFullYear(), 11, 15);
+          if (dateCfe < today) dateCfe = new Date(today.getFullYear() + 1, 11, 15);
+          if (dateCfe <= horizon) {
+            events.push({ date: dateCfe, label: "CFE", amount: -(parseFloat(panique.cfe) || 0), type: "cfe" });
+          }
+
+          // Impôts (déclaration de revenus)
+          if (!profile?.versement_liberatoire) {
+            let dateImpots = new Date(today.getFullYear(), 4, 15);
+            if (dateImpots < today) dateImpots = new Date(today.getFullYear() + 1, 4, 15);
+            if (dateImpots <= horizon) {
+              events.push({ date: dateImpots, label: "Déclaration de revenus", amount: -(impotsAnnuelEstime || 0), type: "impots" });
+            }
+          }
+
+          // Factures en attente avec date d'échéance
+          const facturesAvecDate = invoicesList.filter(i => i.statut === "envoyee" && i.date_echeance);
+          facturesAvecDate.forEach(inv => {
+            const d = new Date(inv.date_echeance);
+            if (d >= today && d <= horizon) {
+              events.push({ date: d, label: `Facture ${inv.client_nom}`, amount: inv.montant, type: "facture" });
+            }
+          });
+
+          // Factures en attente sans date d'échéance
+          const facturesSansDate = invoicesList.filter(i => i.statut === "envoyee" && !i.date_echeance);
+
+          events.sort((a, b) => a.date - b.date);
+
+          let running = soldeNum;
+          let low = soldeNum;
+          const rows = events.map(e => {
+            running += e.amount;
+            if (running < low) low = running;
+            return { ...e, running };
+          });
+          const endBalance = running;
+
+          const ICONS = { frais: "ti-receipt-2", urssaf: "ti-building-bank", cfe: "ti-building", impots: "ti-percentage", facture: "ti-file-invoice" };
+          const STYLES = {
+            frais: { bg: "#F1F2EE", fg: "#5B6573" },
+            urssaf: { bg: "#FAEEDA", fg: "#854F0B" },
+            cfe: { bg: "#FAEEDA", fg: "#854F0B" },
+            impots: { bg: "#FAEEDA", fg: "#854F0B" },
+            facture: { bg: "#E1F5EE", fg: "#0F6E56" },
+          };
+
+          const niveauAlerte = low < 0 ? "rouge" : low < securiteNum ? "orange" : null;
+
+          return (
+            <div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                <div><h1 style={S.pageTitle}>📈 Timeline financière</h1><p style={S.pageSub}>Vais-je avoir un trou de trésorerie bientôt ?</p></div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {[30, 60, 90].map(r => (
+                    <button key={r} onClick={() => setTimelineRange(r)} style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "8px 16px", ...(timelineRange === r ? S.toggleBtnActive : {}) }}>{r}j</button>
+                  ))}
+                </div>
+              </div>
+
+              {niveauAlerte && (
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10, borderRadius: 12, padding: "12px 16px", marginBottom: 16,
+                  background: niveauAlerte === "rouge" ? "#FCEBEB" : "#FAEEDA",
+                  border: `1px solid ${niveauAlerte === "rouge" ? "#E24B4A" : "#EF9F27"}`,
+                }}>
+                  <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 18, color: niveauAlerte === "rouge" ? "#A32D2D" : "#854F0B", flexShrink: 0 }} />
+                  <span style={{ fontSize: 13.5, color: niveauAlerte === "rouge" ? "#A32D2D" : "#854F0B" }}>
+                    {niveauAlerte === "rouge"
+                      ? <><strong>Trou de trésorerie détecté</strong> — votre solde passerait sous 0€ d'ici {timelineRange} jours.</>
+                      : <><strong>Réserve de sécurité entamée</strong> — votre solde passerait sous votre réserve cible ({formatEUR(securiteNum)}).</>}
+                  </span>
+                </div>
+              )}
+
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10, marginBottom: 20 }}>
+                <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "14px 16px" }}>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>Solde actuel</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: INK, marginTop: 4 }}>{formatEUR(soldeNum)}</div>
+                </div>
+                <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "14px 16px" }}>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>Point le plus bas</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, marginTop: 4, color: low < 0 ? "#A32D2D" : low < securiteNum ? "#854F0B" : INK }}>{formatEUR(low)}</div>
+                </div>
+                <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "14px 16px" }}>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>Solde projeté ({timelineRange}j)</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: INK, marginTop: 4 }}>{formatEUR(endBalance)}</div>
+                </div>
+              </div>
+
+              {rows.length === 0 ? (
+                <div style={S.card}><p style={S.empty}>Aucun événement prévu sur les {timelineRange} prochains jours.</p></div>
+              ) : (
+                <div style={{ position: "relative", paddingLeft: 24, borderLeft: "2px solid #DDE5EE", marginLeft: 4 }}>
+                  {rows.map((e, i) => {
+                    const st = STYLES[e.type];
+                    return (
+                      <div key={i} style={{ position: "relative", paddingBottom: 22 }}>
+                        <div style={{ position: "absolute", left: -33, top: 2, width: 16, height: 16, borderRadius: "50%", background: st.bg, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid white" }}>
+                          <i className={`ti ${ICONS[e.type]}`} aria-hidden="true" style={{ fontSize: 9, color: st.fg }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>{e.label}</div>
+                            <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{joursLabel(e.date)}</div>
+                          </div>
+                          <div style={{ textAlign: "right", flexShrink: 0 }}>
+                            <div style={{ fontSize: 13.5, fontWeight: 600, color: e.amount > 0 ? "#0F6E56" : INK }}>{e.amount > 0 ? "+" : ""}{formatEUR(e.amount)}</div>
+                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>solde : {formatEUR(e.running)}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {facturesSansDate.length > 0 && (
+                <div style={{ ...S.card, marginTop: 20 }}>
+                  <div style={S.cardTitle}>Factures en attente sans date</div>
+                  <p style={{ fontSize: 12, color: "#8BA5C0", margin: "-8px 0 12px" }}>Ces montants sont attendus mais n'ont pas d'échéance renseignée — ils n'apparaissent pas dans la frise ci-dessus.</p>
+                  {facturesSansDate.map(inv => (
+                    <div key={inv.id} style={S.paniqueLine}>
+                      <span style={S.paniqueLineLabel}>{inv.client_nom}</span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <strong>{formatEUR(inv.montant)}</strong>
+                        <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => { startEditInvoice(inv); setNav("factures"); }}>+ Ajouter une échéance</button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
+                Les frais récurrents sont estimés à partir de votre moyenne mensuelle — les montants exacts peuvent varier. Cette projection suppose que vos factures en attente sont payées à l'échéance prévue.
+              </p>
+            </div>
+          );
+        })()}
 
         {nav === "echeances" && (() => {
           const today = new Date();
