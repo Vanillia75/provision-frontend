@@ -92,6 +92,7 @@ export default function App() {
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeForm, setIncomeForm] = useState({ date: "", amount: "", description: "" });
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [factureExtraite, setFactureExtraite] = useState(null);
   const [contacts, setContacts] = useState([]);
   const [showAddContact, setShowAddContact] = useState(false);
   const [contactForm, setContactForm] = useState({ nom: "", email: "", siret: "", adresse: "" });
@@ -117,12 +118,16 @@ export default function App() {
   const [profilTelephone, setProfilTelephone] = useState(() => localStorage.getItem("profilTelephone") || "");
   const [profilEntreprise, setProfilEntreprise] = useState(() => localStorage.getItem("profilEntreprise") || "");
   const [profilSiret, setProfilSiret] = useState(() => localStorage.getItem("profilSiret") || "");
+  const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
+  const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [outilsOpen, setOutilsOpen] = useState(false);
   const [montantCopie, setMontantCopie] = useState(false);
   const [caCopie, setCaCopie] = useState(false);
   const [declarationPeriode, setDeclarationPeriode] = useState("");
   const [declarationCa, setDeclarationCa] = useState("");
   const [declarationCotisations, setDeclarationCotisations] = useState("");
+  const [editingDeclarationCa, setEditingDeclarationCa] = useState(false);
+  const [editingDeclarationCotisations, setEditingDeclarationCotisations] = useState(false);
   const [historiqueDeclarations, setHistoriqueDeclarations] = useState(() => {
     try { return JSON.parse(localStorage.getItem("historiqueDeclarations") || "[]"); } catch { return []; }
   });
@@ -163,7 +168,10 @@ export default function App() {
     });
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      throw new Error(body.detail || `Erreur (code ${res.status})`);
+      const isObj = body.detail && typeof body.detail === "object";
+      const err = new Error(isObj ? (body.detail.message || "Erreur") : (body.detail || `Erreur (code ${res.status})`));
+      if (isObj) err.detail = body.detail;
+      throw err;
     }
     return res.json();
   }
@@ -282,6 +290,25 @@ export default function App() {
     }
   }
 
+  async function handleLookupSiret() {
+    if (!profilSiret) return;
+    setSiretLookupStatus("loading");
+    setSiretLookupMessage("");
+    try {
+      const data = await apiFetch(`/siret/lookup?siret=${encodeURIComponent(profilSiret)}`);
+      if (data.raison_sociale) setProfilEntreprise(data.raison_sociale);
+      await apiFetch("/profile/siret", {
+        method: "POST",
+        body: JSON.stringify({ siret: data.siret, raison_sociale: data.raison_sociale }),
+      });
+      setSiretLookupStatus("success");
+      setSiretLookupMessage(data.raison_sociale ? `Trouvé : ${data.raison_sociale}` : "Établissement trouvé");
+    } catch (err) {
+      setSiretLookupStatus("error");
+      setSiretLookupMessage(err.message);
+    }
+  }
+
   async function handleAddIncome(e) {
     e.preventDefault();
     try {
@@ -296,15 +323,50 @@ export default function App() {
 
   async function handleUploadInvoice(file) {
     setUploadingFile(true);
+    setError("");
     try {
       const form = new FormData();
       form.append("file", file);
-      await apiFetch("/income/upload", { method: "POST", body: form });
-      await loadEverything();
+      const data = await apiFetch("/income/extract", { method: "POST", body: form });
+      setFactureExtraite({
+        amount: String(data.amount),
+        date: data.date,
+        filename: data.filename,
+        client: data.client || "",
+        description: data.description || "",
+        numero_facture: data.numero_facture || "",
+        tva_pct: data.tva_pct,
+      });
     } catch (err) {
       setError(err.message);
     } finally {
       setUploadingFile(false);
+    }
+  }
+
+  async function handleConfirmFacture(force = false) {
+    try {
+      await apiFetch("/income/confirm", {
+        method: "POST",
+        body: JSON.stringify({
+          date: factureExtraite.date,
+          amount: parseFloat(factureExtraite.amount) || 0,
+          client: factureExtraite.client || null,
+          description: factureExtraite.description || null,
+          numero_facture: factureExtraite.numero_facture || null,
+          filename: factureExtraite.filename || null,
+          force,
+        }),
+      });
+      setFactureExtraite(null);
+      setShowAddIncome(false);
+      await loadEverything();
+    } catch (err) {
+      if (err.detail?.code === "DOUBLON_POTENTIEL") {
+        setFactureExtraite(f => ({ ...f, doublon: err.detail }));
+      } else {
+        setError(err.message);
+      }
     }
   }
 
@@ -335,7 +397,7 @@ export default function App() {
 
   function saveFacture() {
     const num = `F-${new Date().getFullYear()}-${String(factures.length + 1).padStart(3, "0")}`;
-    const f = { ...factureForm, numero: num, date: new Date().toISOString().split("T")[0], total: totalFacture(), statut: "envoyée" };
+    const f = { ...factureForm, numero: num, date: new Date().toISOString().split("T")[0], total: totalFacture(), statut: "Brouillon enregistré" };
     setFactures(prev => [f, ...prev]);
     setShowNewFacture(false);
     setFactureForm({ client_nom: "", client_email: "", client_adresse: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
@@ -796,6 +858,19 @@ export default function App() {
               {panique.solde !== "" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
             </div>
 
+            {estimateData.ca_annuel === 0 && (
+              <div style={S.onboardingNotice}>
+                <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>2 infos pour profiter de H€CTOR à 100%</div>
+                  <div style={{ fontSize: 12, color: "#5B6573", marginTop: 2 }}>
+                    Le <strong>solde</strong> ci-dessus sert à calculer votre disponible immédiat. Vos <strong>revenus encaissés</strong> (factures, virements clients) servent à calculer ce que vous devez mettre de côté et suivre vos objectifs — ce sont deux choses différentes, à renseigner toutes les deux.
+                  </div>
+                </div>
+                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
+              </div>
+            )}
+
             {/* ─── LA STAR : Argent réellement disponible, jamais masqué par la réserve ─── */}
             <div style={S.heroDispo}>
               <div style={S.heroDispoLabel}>💰 Argent disponible</div>
@@ -876,17 +951,34 @@ export default function App() {
               )}
             </div>
 
+            {argentDisponibleBrut !== null && (
+              <div style={S.explainBanner}>
+                Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve, votre marge prudente est de <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>{" "}
+                <span style={{ fontSize: 11, color: "#5B82A8" }}>— c'est ce 2ème chiffre qu'utilisent Mode Achat et Mode Salaire.</span>
+              </div>
+            )}
+
             {/* ─── 4 choses en 5 secondes : mettre de côté / objectifs / projections / sécurité ─── */}
             <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
               <div style={S.card}>
                 <div style={S.cardTitle}>💸 Combien mettre de côté</div>
-                <div style={{ textAlign: "center", padding: "8px 0" }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</div>
-                  <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>pour {estimateData.periode_courante?.label}, avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)}</div>
-                </div>
+                {estimateData.ca_periode_courante > 0 ? (
+                  <div style={{ textAlign: "center", padding: "8px 0" }}>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</div>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>sur {formatEUR(estimateData.ca_periode_courante)} de revenus enregistrés, pour {estimateData.periode_courante?.label}</div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "center", padding: "16px 0" }}>
+                    <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 10px" }}>0€ à mettre de côté car aucun revenu n'est encore enregistré.<br />Ceci ne dépend pas de votre solde bancaire.</p>
+                    <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
+                  </div>
+                )}
               </div>
               <div style={S.card}>
-                <div style={S.cardTitle}>📈 Si ça continue ainsi</div>
+                <div style={S.cardTitle}>
+                  <span>📈 Si ça continue ainsi</span>
+                  <button style={S.linkBtn} onClick={() => setNav("revenus")}>Mes revenus →</button>
+                </div>
                 {estimateData.ca_annuel > 0 ? (
                   <>
                     <div style={S.projRow}>
@@ -919,6 +1011,7 @@ export default function App() {
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>
                     </div>
+                    <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
                       <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
                       <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
@@ -927,7 +1020,9 @@ export default function App() {
                       <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                     </div>
                     <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
-                    {pctM >= 100 ? (
+                    {caCeMoisCi === 0 ? (
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                    ) : pctM >= 100 ? (
                       <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
                     ) : (
                       <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
@@ -939,6 +1034,7 @@ export default function App() {
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>
                     </div>
+                    <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
                       <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
                       <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
@@ -947,6 +1043,9 @@ export default function App() {
                       <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                     </div>
                     <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
+                    {estimateData.ca_annuel === 0 && (
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                    )}
                   </div>
                 </>
               );
@@ -1116,11 +1215,16 @@ export default function App() {
         {nav === "declaration" && estimateData && estimateData.disponible !== false && (() => {
           const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
           const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : estimateData.ca_periode_courante;
-          const cotisationsAffichees = declarationCotisations !== "" ? parseFloat(declarationCotisations) || 0 : estimateData.montant_a_provisionner;
+          const cotisationsAffichees = declarationCotisations !== ""
+            ? parseFloat(declarationCotisations) || 0
+            : declarationCa !== ""
+              ? Math.round((parseFloat(declarationCa) || 0) * ((estimateData.taux_global_pct || 0) / 100) * 100) / 100
+              : estimateData.montant_a_provisionner;
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
                 <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout est pré-rempli, modifiez si besoin</p></div>
+                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>Voir mes revenus</button>
               </div>
 
               <div style={{ ...S.card, textAlign: "center", padding: "20px 24px" }}>
@@ -1132,11 +1236,37 @@ export default function App() {
               <div style={{ ...S.card, marginTop: 14 }}>
                 <div style={S.paniqueLine}>
                   <span style={S.paniqueLineLabel}><i className="ti ti-chart-bar" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CA à déclarer</span>
-                  <input style={S.inlineEditValue} type="number" step="0.01" placeholder={String(estimateData.ca_periode_courante)} value={declarationCa} onChange={e => setDeclarationCa(e.target.value)} />
+                  {editingDeclarationCa ? (
+                    <input
+                      style={{ ...S.inlineEditValue, width: 110 }}
+                      type="number" step="0.01" autoFocus
+                      value={declarationCa !== "" ? declarationCa : String(estimateData.ca_periode_courante)}
+                      onChange={e => setDeclarationCa(e.target.value)}
+                      onBlur={() => setEditingDeclarationCa(false)}
+                    />
+                  ) : (
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <strong style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#0A2540" }}>{formatEUR(caAffiche)}</strong>
+                      <button type="button" style={{ ...S.linkBtn, fontSize: 11, padding: 0 }} onClick={() => setEditingDeclarationCa(true)}>✎ Modifier</button>
+                    </span>
+                  )}
                 </div>
                 <div style={S.paniqueLine}>
                   <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Cotisations estimées <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>({estimateData.taux_global_pct}%)</span></span>
-                  <input style={S.inlineEditValue} type="number" step="0.01" placeholder={String(estimateData.montant_a_provisionner)} value={declarationCotisations} onChange={e => setDeclarationCotisations(e.target.value)} />
+                  {editingDeclarationCotisations ? (
+                    <input
+                      style={{ ...S.inlineEditValue, width: 110 }}
+                      type="number" step="0.01" autoFocus
+                      value={declarationCotisations !== "" ? declarationCotisations : String(cotisationsAffichees)}
+                      onChange={e => setDeclarationCotisations(e.target.value)}
+                      onBlur={() => setEditingDeclarationCotisations(false)}
+                    />
+                  ) : (
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <strong style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#854F0B" }}>{formatEUR(cotisationsAffichees)}</strong>
+                      <button type="button" style={{ ...S.linkBtn, fontSize: 11, padding: 0 }} onClick={() => setEditingDeclarationCotisations(true)}>✎ Modifier</button>
+                    </span>
+                  )}
                 </div>
                 <div style={S.paniqueLine}>
                   <span style={S.paniqueLineLabel}><i className="ti ti-id" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Activité / statut</span>
@@ -1232,6 +1362,11 @@ export default function App() {
                 <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde sur le <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour utiliser ce simulateur.</p></div>
               ) : (
                 <>
+                  <div style={S.explainBanner}>
+                    Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve de sécurité, votre marge prudente est de <strong>{formatEUR(Math.max(0, apresReserve))}</strong>.
+                    <span style={{ display: "block", fontSize: 11, color: "#5B82A8", marginTop: 4 }}>C'est cette marge prudente que H€CTOR utilise pour ses recommandations d'achat ci-dessous.</span>
+                  </div>
+
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
                     <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -1644,60 +1779,192 @@ export default function App() {
           </div>
         )}
 
-        {nav === "revenus" && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>Revenus</h1><p style={S.pageSub}>Tous vos encaissements</p></div>
-              <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
-            </div>
+        {nav === "revenus" && (() => {
+          const moisActuel = new Date().getMonth();
+          const anneeActuelle = new Date().getFullYear();
+          const incomeCeMois = incomeList.filter(e => new Date(e.date).getMonth() === moisActuel && new Date(e.date).getFullYear() === anneeActuelle);
+          const caMoisCi = incomeCeMois.reduce((s, e) => s + e.amount, 0);
+          const nbFactures = incomeCeMois.length;
+          const factureMoyenne = nbFactures > 0 ? Math.round((caMoisCi / nbFactures) * 100) / 100 : 0;
+          const parClientRevenus = {};
+          incomeList.forEach(e => {
+            const cle = (e.description?.match(/Client\s*:\s*([^—]+)/)?.[1] || "").trim() || "Non précisé";
+            parClientRevenus[cle] = (parClientRevenus[cle] || 0) + e.amount;
+          });
+          const meilleurClientRevenus = Object.entries(parClientRevenus).filter(([k]) => k !== "Non précisé").sort((a, b) => b[1] - a[1])[0];
+          const urssafAProvisionner = estimateData ? Math.round(caMoisCi * ((estimateData.taux_global_pct || 0) / 100) * 100) / 100 : 0;
 
-            {showAddIncome && (
-              <div style={{ ...S.card, marginBottom: 16 }}>
-                <label style={S.dropZoneSmall}>
-                  <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadInvoice(e.target.files[0])} style={{ display: "none" }} />
-                  {uploadingFile ? "Lecture en cours…" : "＋ Importer une facture (PDF, JPG, PNG)"}
-                </label>
-                <p style={S.orDivider}>ou saisie manuelle</p>
-                <form style={{ display: "flex", flexDirection: "column", gap: 10 }} onSubmit={handleAddIncome}>
-                  <input style={S.input} type="date" value={incomeForm.date} onChange={e => setIncomeForm({ ...incomeForm, date: e.target.value })} required />
-                  <input style={S.input} type="number" step="0.01" placeholder="Montant reçu du client €" value={incomeForm.amount} onChange={e => setIncomeForm({ ...incomeForm, amount: e.target.value })} required />
-                  {incomeForm.amount && parseFloat(incomeForm.amount) > 0 && (() => {
-                    const taux = estimateData?.taux_global_pct ? estimateData.taux_global_pct / 100 : 0.214;
-                    const brut = parseFloat(incomeForm.amount);
-                    const urssaf = Math.round(brut * taux * 100) / 100;
-                    const net = Math.round((brut - urssaf) * 100) / 100;
-                    return (
-                      <div style={S.netPreview}>
-                        <div style={S.netRow}><span style={{ color: "#854F0B" }}>URSSAF à mettre de côté ({estimateData?.taux_global_pct ?? 21.4}%)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
-                        <div style={{ ...S.netRow, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span style={{ fontWeight: 500 }}>Dans votre poche</span><span style={{ fontWeight: 600, color: ACCENT }}>{formatEUR(net)}</span></div>
-                      </div>
-                    );
-                  })()}
-                  <input style={S.input} type="text" placeholder="Description (optionnel)" value={incomeForm.description} onChange={e => setIncomeForm({ ...incomeForm, description: e.target.value })} />
-                  <button style={S.btnPrimary} type="submit">Ajouter</button>
-                </form>
+          return (
+            <div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                <div><h1 style={S.pageTitle}>Revenus & Factures</h1><p style={S.pageSub}>La source de vérité de votre activité</p></div>
+                <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
               </div>
-            )}
-            <div style={S.card}>
-              {incomeList.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeList.map(entry => (
-                <div key={entry.id} style={S.incomeRow}>
-                  <div style={{ flex: 1 }}>
-                    <span style={S.incomeAmt}>{formatEUR(entry.amount)}</span>
-                    <span style={S.incomeMeta}>{formatDate(entry.date)}{entry.description ? ` · ${entry.description}` : ""}</span>
-                  </div>
-                  <span style={{ ...S.badge, ...(entry.source === "facture" ? S.badgeGreen : S.badgeGray) }}>{entry.source === "facture" ? "Facture" : "Manuel"}</span>
-                  <button style={S.deleteBtn} onClick={() => handleDeleteIncome(entry.id)}>✕</button>
+
+              <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : S.kpiGrid}>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>CA ce mois</span><span style={S.kpiValue}>{formatEUR(caMoisCi)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Factures / revenus</span><span style={S.kpiValue}>{nbFactures}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Facture moyenne</span><span style={S.kpiValue}>{formatEUR(factureMoyenne)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Meilleur client</span><span style={{ ...S.kpiValue, fontSize: 16 }}>{meilleurClientRevenus?.[0] || "—"}</span></div>
+              </div>
+              <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-12px 0 16px" }}>≈ {formatEUR(urssafAProvisionner)} à provisionner d'URSSAF sur le CA de ce mois.</p>
+
+              {showAddIncome && !factureExtraite && (
+                <div style={{ ...S.card, marginBottom: 16 }}>
+                  <label style={S.dropZoneSmall}>
+                    <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadInvoice(e.target.files[0])} style={{ display: "none" }} />
+                    {uploadingFile ? "Lecture en cours…" : "＋ Importer une facture (PDF, JPG, PNG)"}
+                  </label>
+                  <p style={S.orDivider}>ou saisie manuelle</p>
+                  <form style={{ display: "flex", flexDirection: "column", gap: 10 }} onSubmit={handleAddIncome}>
+                    <input style={S.input} type="date" value={incomeForm.date} onChange={e => setIncomeForm({ ...incomeForm, date: e.target.value })} required />
+                    <input style={S.input} type="number" step="0.01" placeholder="Montant reçu du client €" value={incomeForm.amount} onChange={e => setIncomeForm({ ...incomeForm, amount: e.target.value })} required />
+                    {incomeForm.amount && parseFloat(incomeForm.amount) > 0 && (() => {
+                      const taux = estimateData?.taux_global_pct ? estimateData.taux_global_pct / 100 : 0.214;
+                      const brut = parseFloat(incomeForm.amount);
+                      const urssaf = Math.round(brut * taux * 100) / 100;
+                      const net = Math.round((brut - urssaf) * 100) / 100;
+                      return (
+                        <div style={S.netPreview}>
+                          <div style={S.netRow}><span style={{ color: "#854F0B" }}>URSSAF à mettre de côté ({estimateData?.taux_global_pct ?? 21.4}%)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
+                          <div style={{ ...S.netRow, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span style={{ fontWeight: 500 }}>Dans votre poche</span><span style={{ fontWeight: 600, color: ACCENT }}>{formatEUR(net)}</span></div>
+                        </div>
+                      );
+                    })()}
+                    <input style={S.input} type="text" placeholder="Description (optionnel)" value={incomeForm.description} onChange={e => setIncomeForm({ ...incomeForm, description: e.target.value })} />
+                    <button style={S.btnPrimary} type="submit">Ajouter</button>
+                  </form>
                 </div>
-              ))}
+              )}
+
+              {/* ─── ECRAN DE CONFIRMATION OBLIGATOIRE avant tout enregistrement ─── */}
+              {factureExtraite && (() => {
+                const montant = parseFloat(factureExtraite.amount) || 0;
+                const tauxPct = estimateData?.taux_global_pct ?? 21.4;
+                const urssafSurFacture = Math.round(montant * (tauxPct / 100) * 100) / 100;
+                const nouveauCaAnnuel = (estimateData?.ca_annuel || 0) + montant;
+
+                // Comparatif avant / apres, sur les VRAIES variables du Dashboard
+                const caMoisAvant = caCeMoisCi;
+                const caMoisApres = caCeMoisCi + montant;
+                const dispoAvant = argentDisponibleBrut ?? 0;
+                const chargesApres = totalChargesAVenir + urssafSurFacture;
+                const dispoApres = Math.max(0, Math.round((soldeNum + montant - chargesApres) * 100) / 100);
+
+                return (
+                  <div style={{ ...S.card, marginBottom: 16, border: `2px solid ${ACCENT}`, padding: 0, overflow: "hidden" }}>
+                    <div style={{ padding: "18px 20px 14px" }}>
+                      <div style={S.cardTitle}>📄 Facture détectée — vérifiez avant de valider</div>
+                      <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-8px 0 14px" }}>Détection automatique, tous les champs sont modifiables.</p>
+
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 6 }}>
+                        <label style={S.label}>Montant détecté
+                          <input style={S.input} type="number" step="0.01" value={factureExtraite.amount} onChange={e => setFactureExtraite({ ...factureExtraite, amount: e.target.value })} />
+                        </label>
+                        <label style={S.label}>Date
+                          <input style={S.input} type="date" value={factureExtraite.date} onChange={e => setFactureExtraite({ ...factureExtraite, date: e.target.value })} />
+                        </label>
+                        <label style={S.label}>Client {!factureExtraite.client && <span style={S.aVerifierTag}>à vérifier</span>}
+                          <input style={S.input} type="text" placeholder="Non détecté — renseignez-le" value={factureExtraite.client} onChange={e => setFactureExtraite({ ...factureExtraite, client: e.target.value })} />
+                        </label>
+                        <label style={S.label}>Description {!factureExtraite.description && <span style={S.aVerifierTag}>à vérifier</span>}
+                          <input style={S.input} type="text" placeholder="Non détectée — renseignez-la" value={factureExtraite.description} onChange={e => setFactureExtraite({ ...factureExtraite, description: e.target.value })} />
+                        </label>
+                        <label style={S.label}>N° de facture {!factureExtraite.numero_facture && <span style={S.aVerifierTag}>à vérifier</span>}
+                          <input style={S.input} type="text" placeholder="Non détecté — renseignez-le" value={factureExtraite.numero_facture} onChange={e => setFactureExtraite({ ...factureExtraite, numero_facture: e.target.value })} />
+                        </label>
+                      </div>
+                      {factureExtraite.tva_pct != null && (
+                        <p style={{ fontSize: 11, color: "#8BA5C0", margin: "0 0 10px" }}>TVA détectée sur le document : {factureExtraite.tva_pct}% — à vérifier, non utilisée dans le calcul.</p>
+                      )}
+                    </div>
+
+                    {/* ─── LE COMPARATIF QUI CREE L'EFFET WOW ─── */}
+                    <div style={{ background: INK, padding: "20px" }}>
+                      <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700, marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5 }}>⚡ Cette facture va immédiatement</div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14 }}>
+                        <div style={S.impactCompareCard}>
+                          <div style={{ fontSize: 11, color: "#8BA5C0" }}>CA du mois</div>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+                            <span style={{ fontSize: 15, color: "#7A93AD", textDecoration: "line-through" }}>{formatEUR(caMoisAvant)}</span>
+                            <i className="ti ti-arrow-right" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />
+                            <span style={{ fontSize: 22, fontWeight: 700, color: "#5DCAA5" }}>{formatEUR(caMoisApres)}</span>
+                          </div>
+                        </div>
+                        <div style={S.impactCompareCard}>
+                          <div style={{ fontSize: 11, color: "#8BA5C0" }}>Disponible réel</div>
+                          <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 4 }}>
+                            <span style={{ fontSize: 15, color: "#7A93AD", textDecoration: "line-through" }}>{formatEUR(dispoAvant)}</span>
+                            <i className="ti ti-arrow-right" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />
+                            <span style={{ fontSize: 22, fontWeight: 700, color: "#5DCAA5" }}>{formatEUR(dispoApres)}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                        <div style={S.impactRowDark}>✓ Ajoute <strong style={{ color: "white" }}>{formatEUR(montant)}</strong> à votre chiffre d'affaires</div>
+                        <div style={S.impactRowDark}>✓ Augmente votre URSSAF estimée de <strong style={{ color: "#FAC775" }}>{formatEUR(urssafSurFacture)}</strong></div>
+                        <div style={S.impactRowDark}>✓ Met à jour vos projections (fin de mois, fin d'année)</div>
+                        <div style={S.impactRowDark}>✓ Fait avancer votre objectif mensuel ({formatEUR(nouveauCaAnnuel)} de CA annuel après ajout)</div>
+                        <div style={S.impactRowDark}>✓ Apparaît dans votre historique de revenus</div>
+                      </div>
+                      <p style={{ fontSize: 10, color: "#7A93AD", marginTop: 12 }}>
+                        Le "Disponible réel" ci-dessus suppose que ce montant arrive sur votre compte. Tant que la connexion bancaire n'existe pas, pensez à mettre à jour votre solde sur le Dashboard une fois le virement reçu.
+                      </p>
+                    </div>
+
+                    {factureExtraite.doublon && (
+                      <div style={{ ...S.doublonWarning, margin: "0 20px 16px" }}>
+                        <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                          <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 20, color: "#854F0B", flexShrink: 0, marginTop: 2 }} />
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: 13, color: "#633806" }}>⚠️ Facture potentiellement déjà importée</div>
+                            <div style={{ fontSize: 12, color: "#854F0B", marginTop: 4 }}>
+                              Une entrée similaire existe déjà : {formatEUR(factureExtraite.doublon.existing_amount)} le {formatDate(factureExtraite.doublon.existing_date)}{factureExtraite.doublon.existing_description ? ` — ${factureExtraite.doublon.existing_description}` : ""}.
+                            </div>
+                            <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                              <button style={S.linkBtn} onClick={() => { setNav("revenus"); }}>Voir l'ancienne facture</button>
+                              <button style={{ ...S.linkBtn, color: "#A32D2D" }} onClick={() => handleConfirmFacture(true)}>Importer quand même</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: 10, padding: "16px 20px" }}>
+                      <button style={S.btnPrimary} onClick={() => handleConfirmFacture(false)}>✓ Confirmer et tout mettre à jour</button>
+                      <button style={S.btnSecondary} onClick={() => setFactureExtraite(null)}>Annuler</button>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <div style={S.card}>
+                {incomeList.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeList.map(entry => (
+                  <div key={entry.id} style={S.incomeRow}>
+                    <div style={{ flex: 1 }}>
+                      <span style={S.incomeAmt}>{formatEUR(entry.amount)}</span>
+                      <span style={S.incomeMeta}>{formatDate(entry.date)}{entry.description ? ` · ${entry.description}` : ""}</span>
+                    </div>
+                    <span style={{ ...S.badge, ...S.badgeGreen }}>✓ Comptabilisée</span>
+                    <span style={{ ...S.badge, ...(entry.source === "facture" ? S.badgeBlue : S.badgeGray) }}>{entry.source === "facture" ? "Import" : "Manuel"}</span>
+                    <button style={S.deleteBtn} onClick={() => handleDeleteIncome(entry.id)}>✕</button>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {nav === "factures" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>Factures</h1><p style={S.pageSub}>Créez et envoyez vos factures</p></div>
-              <button style={S.btnPrimarySmall} onClick={() => setShowNewFacture(!showNewFacture)}>+ Nouvelle facture</button>
+              <div><h1 style={S.pageTitle}>Factures</h1><p style={S.pageSub}>Créez vos factures, ou importez-en une depuis Revenus</p></div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button style={S.btnSecondary} onClick={() => { setNav("revenus"); setShowAddIncome(true); }}>📄 Importer une facture</button>
+                <button style={S.btnPrimarySmall} onClick={() => setShowNewFacture(!showNewFacture)}>+ Nouvelle facture</button>
+              </div>
             </div>
             {showNewFacture && (
               <div style={{ ...S.card, marginBottom: 16 }}>
@@ -1729,9 +1996,12 @@ export default function App() {
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <button style={S.btnPrimary} onClick={saveFacture}>Enregistrer et envoyer</button>
+                  <button style={S.btnPrimary} onClick={saveFacture}>Enregistrer</button>
                   <button style={S.btnSecondary} onClick={() => setShowNewFacture(false)}>Annuler</button>
                 </div>
+                <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
+                  La facture est enregistrée dans H€CTOR. <strong>L'envoi par email arrive bientôt</strong> — pour l'instant, téléchargez ou copiez les informations pour l'envoyer vous-même à votre client.
+                </p>
               </div>
             )}
             <div style={S.card}>
@@ -1741,7 +2011,7 @@ export default function App() {
                     <span style={S.incomeAmt}>{f.numero} — {f.client_nom}</span>
                     <span style={S.incomeMeta}>{formatDate(f.date)} · {formatEUR(f.total)}</span>
                   </div>
-                  <span style={{ ...S.badge, ...S.badgeGreen }}>{f.statut}</span>
+                  <span style={{ ...S.badge, ...S.badgeGray }}>{f.statut}</span>
                 </div>
               ))}
             </div>
@@ -1827,7 +2097,17 @@ export default function App() {
                   <input style={S.input} type="text" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} placeholder="VANILLA" />
                 </label>
                 <label style={S.label}>SIRET
-                  <input style={S.input} type="text" value={profilSiret} onChange={e => setProfilSiret(e.target.value)} placeholder="123 456 789 00012" />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input style={{ ...S.input, flex: 1 }} type="text" value={profilSiret} onChange={e => { setProfilSiret(e.target.value); setSiretLookupStatus(""); }} placeholder="123 456 789 00012" />
+                    <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "0 16px", whiteSpace: "nowrap" }} onClick={handleLookupSiret} disabled={!profilSiret || siretLookupStatus === "loading"}>
+                      {siretLookupStatus === "loading" ? "…" : "Vérifier"}
+                    </button>
+                  </div>
+                  {siretLookupMessage && (
+                    <p style={{ fontSize: 11, marginTop: 4, color: siretLookupStatus === "error" ? "#C0392B" : "#2E8B57" }}>
+                      {siretLookupStatus === "error" ? "⚠️ " : "✓ "}{siretLookupMessage}
+                    </p>
+                  )}
                 </label>
                 <label style={S.label}>Statut juridique
                   <input style={{ ...S.input, background: "#FAFBFC", color: "#8BA5C0" }} type="text" value={profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut || "—"} readOnly />
@@ -1922,10 +2202,10 @@ export default function App() {
 
         {nav === "abonnement" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Choisissez la formule adaptée à vos besoins</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Le système de paiement arrive prochainement — voici ce qui est prévu</p></div></div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
               {PLANS.map((p, i) => (
-                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
+                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative", opacity: i === 0 ? 1 : 0.85 }}>
                   {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
                   <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 4 }}>{p.nom}</div>
                   <div style={{ marginBottom: 16 }}>
@@ -1937,9 +2217,15 @@ export default function App() {
                       <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
                     </div>
                   ))}
-                  <button style={{ ...S.btnPrimary, marginTop: 16, ...(i !== 1 ? { background: "white", color: ACCENT, border: `1px solid ${ACCENT}` } : {}) }}>
-                    {i === 0 ? "Continuer gratuitement" : "Choisir ce plan"}
-                  </button>
+                  {i === 0 ? (
+                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "white", color: ACCENT, border: `1px solid ${ACCENT}` }} onClick={() => setNav("dashboard")}>
+                      Continuer gratuitement
+                    </button>
+                  ) : (
+                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "#EEF2F7", color: "#9098A6", cursor: "not-allowed", border: "1px solid #DDE5EE" }} disabled>
+                      🔒 Bientôt disponible
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -2085,6 +2371,13 @@ const S = {
   heroDispoValue: { fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 },
   heroDispoSub: { fontSize: 14, color: "#B5D4F4", marginTop: 10 },
   soldeInputCard: { display: "flex", alignItems: "center", gap: 14, background: "white", border: "1px solid #DDE5EE", borderRadius: 12, padding: "12px 16px", marginBottom: 14 },
+  onboardingNotice: { display: "flex", alignItems: "center", gap: 14, background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 12, padding: "14px 16px", marginBottom: 14, flexWrap: "wrap" },
+  explainBanner: { background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#28425E", marginBottom: 14, lineHeight: 1.5 },
+  impactRow: { fontSize: 13, color: "#3D4452", padding: "4px 0" },
+  impactCompareCard: { background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "12px 14px" },
+  impactRowDark: { fontSize: 13, color: "#C5D4E3", padding: "4px 0" },
+  doublonWarning: { background: "#FAEEDA", border: "1px solid #EF9F27", borderRadius: 10, padding: "14px 16px" },
+  aVerifierTag: { fontSize: 9, fontWeight: 600, color: "#854F0B", background: "#FAEEDA", padding: "1px 6px", borderRadius: 6, marginLeft: 6, textTransform: "uppercase" },
   soldeInput: { border: "none", outline: "none", fontSize: 18, fontWeight: 600, color: INK, width: "100%", padding: 0 },
   sidebarGreeting: { padding: "0 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 8 },
   profilAvatar: { width: 52, height: 52, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, color: "#0C447C", flexShrink: 0 },
