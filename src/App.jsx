@@ -114,7 +114,9 @@ export default function App() {
   const [tarifUnite, setTarifUnite] = useState("heure");
   const [heuresParJour, setHeuresParJourCoach] = useState("7");
   const [heuresParPrestation, setHeuresParPrestation] = useState("3");
+  const [joursParSemaineCoach, setJoursParSemaineCoach] = useState("5");
   const [objectifHoraire, setObjectifHoraire] = useState("60");
+  const [haussePct, setHaussePct] = useState("10");
   const [simFiscalCa, setSimFiscalCa] = useState("4000");
   const [simFiscalPeriode, setSimFiscalPeriode] = useState("mensuel");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
@@ -415,6 +417,7 @@ export default function App() {
   const tarifNum = parseFloat(tarifMontant) || 0;
   const hParJourCoach = Math.min(24, Math.max(0.5, parseFloat(heuresParJour) || 7)); // borne 0.5-24h/jour
   const hParPrestation = Math.min(200, Math.max(0.25, parseFloat(heuresParPrestation) || 3)); // borne realiste
+  const jParSemaineCoach = Math.min(7, Math.max(0.5, parseFloat(joursParSemaineCoach) || 5)); // borne 0.5-7j/semaine
   const tauxHoraireReel = (() => {
     if (tarifNum <= 0) return null;
     if (tarifUnite === "heure") return Math.round(tarifNum * 100) / 100;
@@ -422,12 +425,21 @@ export default function App() {
     if (tarifUnite === "prestation") return Math.round((tarifNum / hParPrestation) * 100) / 100;
     return null;
   })();
+  const revenuJournalierCoach = tauxHoraireReel !== null ? Math.round(tauxHoraireReel * hParJourCoach * 100) / 100 : null;
+  const revenuMensuelCoach = revenuJournalierCoach !== null ? Math.round(revenuJournalierCoach * jParSemaineCoach * 4.33) : null;
+  const revenuAnnuelCoach = revenuMensuelCoach !== null ? revenuMensuelCoach * 12 : null;
   const objHoraireNum = parseFloat(objectifHoraire) || 0;
   const ecartPctVersObjectif = (tauxHoraireReel !== null && tauxHoraireReel > 0 && objHoraireNum > 0)
     ? Math.round(((objHoraireNum - tauxHoraireReel) / tauxHoraireReel) * 100)
     : null;
   const niveauTarif = tauxHoraireReel === null ? null
     : tauxHoraireReel < 25 ? "rouge" : tauxHoraireReel < 45 ? "jaune" : "vert";
+  const haussePctNum = Math.min(100, Math.max(0, parseFloat(haussePct) || 0));
+  const tauxHoraireApresHausse = tauxHoraireReel !== null ? Math.round(tauxHoraireReel * (1 + haussePctNum / 100) * 100) / 100 : null;
+  const gainMensuelHausse = (revenuMensuelCoach !== null && tauxHoraireApresHausse !== null && tauxHoraireReel)
+    ? Math.round(revenuMensuelCoach * (haussePctNum / 100))
+    : null;
+  const gainAnnuelHausse = gainMensuelHausse !== null ? gainMensuelHausse * 12 : null;
 
   const [revenuViseMensuel, setRevenuViseMensuel] = useState("");
   const [quickAskQuestions, setQuickAskQuestions] = useState([
@@ -1112,15 +1124,35 @@ export default function App() {
                       if (resteApres < 0) { verdict = "non"; verdictLabel = "❌ Déconseillé"; verdictColor = "#A32D2D"; verdictBg = "#FCEBEB"; }
                       else if (ratioApres < 0.15) { verdict = "prudence"; verdictLabel = "⚠️ Prudence"; verdictColor = "#854F0B"; verdictBg = "#FAEEDA"; }
 
+                      const moisSurvieApres = moyenneMensuelleCA > 0 ? Math.max(0, Math.round(((tresorerieApres - chargesFutures) / moyenneMensuelleCA) * 10) / 10) : null;
+                      const joursSurvieApres = moisSurvieApres !== null ? Math.round(moisSurvieApres * 30) : null;
+
                       return (
                         <div>
                           <div style={{ ...S.achatResult, background: verdictBg, color: verdictColor, marginBottom: 12 }}>
                             <i className={`ti ${verdict === "ok" ? "ti-circle-check" : verdict === "prudence" ? "ti-alert-triangle" : "ti-circle-x"}`} aria-hidden="true" style={{ fontSize: 26 }} />
                             <div style={{ fontWeight: 700, fontSize: 18 }}>{verdictLabel}</div>
                           </div>
-                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Trésorerie restante après achat</span><span style={{ fontWeight: 600 }}>{formatEUR(tresorerieApres)}</span></div>
+
+                          <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
+                            <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "#F7F9F5", borderRadius: 8 }}>
+                              <div style={{ fontSize: 10, color: "#8BA5C0", textTransform: "uppercase" }}>Disponible avant</div>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: INK }}>{formatEUR(Math.max(0, apresReserve))}</div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: "#8BA5C0" }}>→</div>
+                            <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "#F7F9F5", borderRadius: 8 }}>
+                              <div style={{ fontSize: 10, color: "#8BA5C0", textTransform: "uppercase" }}>Disponible après</div>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: resteApres < 0 ? "#A32D2D" : "#1D9E75" }}>{formatEUR(Math.max(0, resteApres))}</div>
+                            </div>
+                          </div>
+
+                          {moisSurvieApres !== null && (
+                            <div style={S.paniqueLine}>
+                              <span style={S.paniqueLineLabel}>🛡️ Sécurité après achat</span>
+                              <span style={{ fontWeight: 600, color: moisSurvieApres >= 3 ? "#1D9E75" : moisSurvieApres >= 1 ? "#854F0B" : "#A32D2D" }}>{moisSurvieApres} mois ({joursSurvieApres}j)</span>
+                            </div>
+                          )}
                           <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur vos provisions (URSSAF/CFE)</span><span>{tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
-                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Budget libre restant</span><span style={{ color: resteApres < 0 ? "#A32D2D" : ACCENT, fontWeight: 600 }}>{formatEUR(Math.max(0, resteApres))}</span></div>
                           <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 8 }}>
                             {verdict === "ok" && "Cet achat ne compromet ni vos charges futures ni votre réserve de sécurité."}
                             {verdict === "prudence" && "L'achat passe, mais il ne vous restera presque plus de marge ensuite."}
@@ -1215,24 +1247,28 @@ export default function App() {
               <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce calcul.</p></div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                <div style={{ ...S.card, border: "1px solid #EEF2F7" }}>
-                  <div style={S.salaireRow}>
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>🟢 Prudent</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>Marge confortable, idéal en période incertaine</div></div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: "#1D9E75" }}>{formatEUR(salairePrudent)}</div>
-                  </div>
-                </div>
-                <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
-                  <div style={S.salaireRow}>
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>🔵 Recommandé</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>Bon équilibre entre revenu et sécurité</div></div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: ACCENT }}>{formatEUR(salaireRecommande)}</div>
-                  </div>
-                </div>
-                <div style={{ ...S.card, border: "1px solid #EEF2F7" }}>
-                  <div style={S.salaireRow}>
-                    <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>🔴 Maximum</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>Tout le disponible — zéro marge supplémentaire après</div></div>
-                    <div style={{ fontSize: 22, fontWeight: 700, color: "#A32D2D" }}>{formatEUR(salaireMaximum)}</div>
-                  </div>
-                </div>
+                {[
+                  { emoji: "🟢", label: "Prudent", desc: "Marge confortable, idéal en période incertaine", montant: salairePrudent, color: "#1D9E75", border: "1px solid #EEF2F7" },
+                  { emoji: "🔵", label: "Recommandé", desc: "Bon équilibre entre revenu et sécurité", montant: salaireRecommande, color: ACCENT, border: `2px solid ${ACCENT}` },
+                  { emoji: "🔴", label: "Maximum", desc: "Tout le disponible — zéro marge supplémentaire après", montant: salaireMaximum, color: "#A32D2D", border: "1px solid #EEF2F7" },
+                ].map(niveau => {
+                  const tresorerieRestante = soldeNum - niveau.montant;
+                  const moisApres = moyenneMensuelleCA > 0 ? Math.max(0, Math.round(((tresorerieRestante - totalChargesAVenir) / moyenneMensuelleCA) * 10) / 10) : null;
+                  return (
+                    <div key={niveau.label} style={{ ...S.card, border: niveau.border }}>
+                      <div style={S.salaireRow}>
+                        <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>{niveau.emoji} {niveau.label}</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>{niveau.desc}</div></div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: niveau.color }}>{formatEUR(niveau.montant)}</div>
+                      </div>
+                      {moisApres !== null && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 10, paddingTop: 10, borderTop: "0.5px solid #EEF2F7" }}>
+                          <span>Trésorerie restante</span>
+                          <span style={{ fontWeight: 600 }}>{formatEUR(Math.max(0, tresorerieRestante))} · 🛡️ {moisApres} mois de sécurité</span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center" }}>
                   Basé sur votre disponible après charges et réserve de sécurité ({formatEUR(disponibleAujourdhui || 0)}).
                 </p>
@@ -1334,7 +1370,7 @@ export default function App() {
 
         {nav === "coach" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Coach prix</h1><p style={S.pageSub}>Beaucoup d'indépendants se sous-facturent sans s'en rendre compte.</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Coach prix</h1><p style={S.pageSub}>Est-ce que je suis sous-facturé ?</p></div></div>
 
             <div style={S.card}>
               <label style={S.label}>
@@ -1356,18 +1392,50 @@ export default function App() {
                   <input style={S.input} type="number" min="0.25" max="200" value={heuresParPrestation} onChange={e => setHeuresParPrestation(e.target.value)} />
                 </label>
               )}
+              <label style={{ ...S.label, marginTop: 12 }}>Jours travaillés par semaine <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour estimer vos revenus mensuels)</span>
+                <input style={S.input} type="number" min="0.5" max="7" value={joursParSemaineCoach} onChange={e => setJoursParSemaineCoach(e.target.value)} />
+              </label>
             </div>
 
             {tauxHoraireReel !== null && (
               <>
                 <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px" }}>
-                  <div style={S.paniqueResultLabel}>Votre vrai revenu</div>
+                  <div style={S.paniqueResultLabel}>Votre vrai revenu horaire</div>
                   <div style={{ ...S.paniqueResultValue, fontSize: 48, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 20 }}>/h</span></div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75", marginTop: 8 }}>
-                    {niveauTarif === "rouge" && "🔴 En dessous de la moyenne"}
-                    {niveauTarif === "jaune" && "🟡 Dans la moyenne"}
-                    {niveauTarif === "vert" && "🟢 Au-dessus de la moyenne"}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75", marginTop: 8 }}>
+                    {niveauTarif === "rouge" && "🔴 Vous êtes sous-facturé"}
+                    {niveauTarif === "jaune" && "🟡 Tarif dans la moyenne"}
+                    {niveauTarif === "vert" && "🟢 Bien facturé, au-dessus de la moyenne"}
                   </div>
+                </div>
+
+                <div style={{ ...S.card, marginTop: 14 }}>
+                  <div style={S.cardTitle}>Vos revenus, à tous les horizons</div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par heure</span><span style={{ fontWeight: 600 }}>{formatEUR(tauxHoraireReel)}</span></div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par jour</span><span style={{ fontWeight: 600 }}>{formatEUR(revenuJournalierCoach)}</span></div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par mois</span><span style={{ fontWeight: 600 }}>{formatEUR(revenuMensuelCoach)}</span></div>
+                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par an</span><span style={{ fontWeight: 600 }}>{formatEUR(revenuAnnuelCoach)}</span></div>
+                </div>
+
+                <div style={{ ...S.card, marginTop: 14 }}>
+                  <div style={S.cardTitle}>📈 Impact concret d'une hausse de tarifs</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    {[5, 10, 20].map(p => (
+                      <button key={p} type="button" onClick={() => setHaussePct(String(p))} style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "8px 16px", ...(haussePct === String(p) ? S.toggleBtnActive : {}) }}>+{p}%</button>
+                    ))}
+                    <input style={{ ...S.input, width: 70 }} type="number" min="0" max="100" value={haussePct} onChange={e => setHaussePct(e.target.value)} />
+                    <span style={{ fontSize: 13, color: INK }}>%</span>
+                  </div>
+                  {tauxHoraireApresHausse !== null && (
+                    <>
+                      <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Nouveau tarif horaire</span><span style={{ fontWeight: 600, color: "#1D9E75" }}>{formatEUR(tauxHoraireApresHausse)}/h</span></div>
+                      <div style={{ ...S.netRow, marginTop: 10, fontSize: 15 }}>
+                        <span>Gain concret</span>
+                        <span style={{ fontWeight: 700, color: "#1D9E75" }}>+{formatEUR(gainMensuelHausse)}/mois · +{formatEUR(gainAnnuelHausse)}/an</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6 }}>Sans travailler une heure de plus.</div>
+                    </>
+                  )}
                 </div>
 
                 <div style={{ ...S.card, marginTop: 14 }}>
