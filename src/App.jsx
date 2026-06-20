@@ -820,9 +820,9 @@ export default function App() {
   // --- Mois de survie (si l'activite s'arrete demain) ---
   const moisEcoulesAnnee = new Date().getMonth() + 1;
   const moyenneMensuelleCA = estimateData?.ca_annuel != null ? estimateData.ca_annuel / moisEcoulesAnnee : 0;
-  const depensesMensuellesNum = parseFloat(depensesMensuelles) || 0;
-  const baseMensuelleSecurite = depensesMensuellesNum > 0 ? depensesMensuellesNum : moyenneMensuelleCA;
-  const securitePrecise = depensesMensuellesNum > 0; // true si base sur vos vraies depenses, false si approxime sur le CA
+  const moyenneMensuelleFrais = expensesSummary?.frais_annee ? expensesSummary.frais_annee / moisEcoulesAnnee : 0;
+  const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
+  const securitePrecise = moyenneMensuelleFrais > 0; // true si base sur vos vrais Frais d'entreprise, false si approxime sur le CA
   const tresorerieApresDettes = soldeNum - totalChargesAVenir;
   const moisSurvie = baseMensuelleSecurite > 0 && panique.solde !== "" ? Math.max(0, Math.round((tresorerieApresDettes / baseMensuelleSecurite) * 10) / 10) : null;
   const joursSurvie = moisSurvie !== null ? Math.round(moisSurvie * 30) : null;
@@ -1146,7 +1146,7 @@ export default function App() {
               {moisSurvie !== null && (
                 <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
                   🕐 soit environ {moisSurvie} mois de sécurité
-                  {!securitePrecise && <span style={{ fontSize: 10, color: "#7A93AD" }}> (estimation sur votre CA — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("profil")}>indiquez vos dépenses réelles</button>)</span>}
+                  {!securitePrecise && <span style={{ fontSize: 10, color: "#7A93AD" }}> (estimation sur votre CA — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("frais")}>ajoutez vos frais réels</button>)</span>}
                 </div>
               )}
               {disponibleAujourdhui !== null && (
@@ -1203,9 +1203,9 @@ export default function App() {
                           </button>
                         ))}
                       </div>
-                      {depensesMensuellesNum === 0 && (
+                      {moyenneMensuelleFrais === 0 && (
                         <div style={{ fontSize: 10, color: "#7A93AD", marginTop: 6 }}>
-                          Sans vos dépenses réelles, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 11, fontWeight: 700, textDecoration: "underline" }} onClick={() => setNav("profil")}>préciser mes dépenses →</button>
+                          Sans vos frais réels, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 11, fontWeight: 700, textDecoration: "underline" }} onClick={() => setNav("frais")}>ajouter mes frais →</button>
                         </div>
                       )}
                     </div>
@@ -2358,10 +2358,11 @@ export default function App() {
               </div>
 
               {expensesSummary && (
-                <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr" } : { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr 1fr" }}>
+                <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
                   <div style={S.kpiCard}><span style={S.kpiLabel}>Frais du mois</span><span style={S.kpiValue}>{formatEUR(expensesSummary.frais_mois)}</span></div>
                   <div style={S.kpiCard}><span style={S.kpiLabel}>Frais de l'année</span><span style={S.kpiValue}>{formatEUR(totalAnnee)}</span></div>
                   <div style={S.kpiCard}><span style={S.kpiLabel}>Plus gros poste</span><span style={{ ...S.kpiValue, fontSize: 16 }}>{plusGrosPoste ? `${labelCategorie(plusGrosPoste.categorie)} (${formatEUR(plusGrosPoste.montant)})` : "—"}</span></div>
+                  <div style={S.kpiCard}><span style={S.kpiLabel}>Moyenne mensuelle</span><span style={{ ...S.kpiValue, fontSize: 18 }}>{moyenneMensuelleFrais > 0 ? formatEUR(moyenneMensuelleFrais) : "—"}</span></div>
                 </div>
               )}
 
@@ -2530,20 +2531,6 @@ export default function App() {
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
                 Activité : {ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · pour changer de statut ou d'activité, contactez le support.
               </p>
-            </div>
-
-            <div style={{ ...S.card, marginTop: 14 }}>
-              <div style={S.cardTitle}>💸 Mes dépenses mensuelles réelles <span style={{ fontWeight: 400, fontSize: 11, color: "#8BA5C0" }}>(optionnel)</span></div>
-              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 10px", lineHeight: 1.5 }}>
-                Sans cette info, H€CTOR estime votre "réserve de sécurité" sur votre CA moyen — ce qui peut être trompeur si vous facturez beaucoup mais dépensez peu (ou l'inverse). Indiquez vos vraies dépenses pour un calcul fiable.
-              </p>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <input style={S.input} type="number" step="50" placeholder="Ex : 2000" value={depensesMensuelles} onChange={e => setDepensesMensuelles(e.target.value)} />
-                <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "10px 20px", whiteSpace: "nowrap" }} onClick={handleSaveProfileDetails} disabled={profileDetailsSaving}>
-                  {profileDetailsSaving ? "…" : "Enregistrer"}
-                </button>
-              </div>
-              {depensesMensuelles !== "" && <p style={{ fontSize: 11, color: "#1D9E75", marginTop: 8 }}>✓ Vos mois de sécurité sont maintenant calculés sur ce montant, pas sur votre CA.</p>}
             </div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
