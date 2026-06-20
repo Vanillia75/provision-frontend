@@ -880,10 +880,17 @@ export default function App() {
             <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
               <div style={S.card}>
                 <div style={S.cardTitle}>💸 Combien mettre de côté</div>
-                <div style={{ textAlign: "center", padding: "8px 0" }}>
-                  <div style={{ fontSize: 28, fontWeight: 700, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</div>
-                  <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>pour {estimateData.periode_courante?.label}, avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)}</div>
-                </div>
+                {estimateData.ca_periode_courante > 0 ? (
+                  <div style={{ textAlign: "center", padding: "8px 0" }}>
+                    <div style={{ fontSize: 28, fontWeight: 700, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</div>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>sur {formatEUR(estimateData.ca_periode_courante)} de revenus enregistrés, pour {estimateData.periode_courante?.label}</div>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: "center", padding: "16px 0" }}>
+                    <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 10px" }}>0€ à mettre de côté car aucun revenu n'est encore enregistré.<br />Ceci ne dépend pas de votre solde bancaire.</p>
+                    <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
+                  </div>
+                )}
               </div>
               <div style={S.card}>
                 <div style={S.cardTitle}>📈 Si ça continue ainsi</div>
@@ -919,6 +926,7 @@ export default function App() {
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>
                     </div>
+                    <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
                       <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
                       <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
@@ -927,7 +935,9 @@ export default function App() {
                       <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                     </div>
                     <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
-                    {pctM >= 100 ? (
+                    {caCeMoisCi === 0 ? (
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                    ) : pctM >= 100 ? (
                       <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
                     ) : (
                       <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
@@ -939,6 +949,7 @@ export default function App() {
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
                       <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>
                     </div>
+                    <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                     <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
                       <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
                       <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
@@ -947,6 +958,9 @@ export default function App() {
                       <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                     </div>
                     <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
+                    {estimateData.ca_annuel === 0 && (
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                    )}
                   </div>
                 </>
               );
