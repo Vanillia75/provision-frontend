@@ -562,6 +562,47 @@ export default function App() {
     setIncomeList([]);
   }
 
+  const [exportingData, setExportingData] = useState(false);
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  async function handleExportData() {
+    setExportingData(true);
+    try {
+      const data = await apiFetch("/account/export");
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `hector-export-${new Date().toISOString().split("T")[0]}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setExportingData(false);
+    }
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirmText !== "SUPPRIMER") return;
+    setDeletingAccount(true);
+    try {
+      await apiFetch("/account", { method: "DELETE" });
+      localStorage.clear();
+      setToken(null);
+      setProfile(null);
+      setEstimateData(null);
+      setIncomeList([]);
+    } catch (err) {
+      setError(err.message);
+      setDeletingAccount(false);
+    }
+  }
+
   async function handleSaveProfile(e) {
     e.preventDefault();
     setLoading(true);
@@ -2827,6 +2868,57 @@ export default function App() {
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, lineHeight: 1.5 }}>
                 Bientôt : connectez Qonto, Shine, Revolut Business ou une banque classique pour que vos revenus se remplissent automatiquement, sans saisie manuelle.
               </p>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>🔒 Mes données</div>
+              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 14px", lineHeight: 1.5 }}>
+                Conformément au RGPD, vous pouvez exporter l'ensemble de vos données ou supprimer définitivement votre compte H€CTOR.
+              </p>
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" style={S.btnSecondary} onClick={handleExportData} disabled={exportingData}>
+                  <i className="ti ti-download" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />
+                  {exportingData ? "Export en cours…" : "Exporter mes données"}
+                </button>
+                <button type="button" style={{ ...S.btnSecondary, color: "#A32D2D", borderColor: "#E24B4A" }} onClick={() => setShowDeleteAccount(true)}>
+                  <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />
+                  Supprimer mon compte
+                </button>
+              </div>
+
+              {showDeleteAccount && (
+                <div style={{ marginTop: 16, padding: "14px 16px", background: "#FCEBEB", border: "1px solid #F7C1C1", borderRadius: 10 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: "#791F1F", marginBottom: 6 }}>
+                    ⚠️ Cette action est irréversible
+                  </div>
+                  <p style={{ fontSize: 12, color: "#791F1F", margin: "0 0 10px", lineHeight: 1.5 }}>
+                    Toutes vos données (profil, revenus, factures, frais) seront définitivement supprimées. Pensez à exporter vos données avant si besoin.
+                  </p>
+                  <p style={{ fontSize: 12, color: "#791F1F", margin: "0 0 8px" }}>
+                    Tapez <strong>SUPPRIMER</strong> pour confirmer :
+                  </p>
+                  <input
+                    style={{ ...S.input, marginBottom: 10, maxWidth: 240 }}
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={e => setDeleteConfirmText(e.target.value)}
+                    placeholder="SUPPRIMER"
+                  />
+                  <div style={{ display: "flex", gap: 10 }}>
+                    <button
+                      type="button"
+                      style={{ ...S.btnPrimary, width: "auto", padding: "10px 20px", background: "#A32D2D" }}
+                      onClick={handleDeleteAccount}
+                      disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
+                    >
+                      {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
+                    </button>
+                    <button type="button" style={S.btnSecondary} onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}>
+                      Annuler
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             <p style={{ fontSize: 11, color: "#B0B6C0", textAlign: "center", marginTop: 20, display: "flex", gap: 8, justifyContent: "center" }}>
