@@ -1643,7 +1643,7 @@ export default function App() {
                               <span style={{ fontWeight: 600, color: moisSurvieApres >= 3 ? "#1D9E75" : moisSurvieApres >= 1 ? "#854F0B" : "#A32D2D" }}>{moisSurvieApres} mois ({joursSurvieApres}j)</span>
                             </div>
                           )}
-                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur vos provisions (URSSAF/CFE)</span><span>{tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
+                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur vos provisions (URSSAF/CFE)</span><span>{chargesFutures <= 0 ? "— aucune provision en cours" : tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
                           <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 8 }}>
                             {verdict === "ok" && "Cet achat ne compromet ni vos charges futures ni votre réserve de sécurité."}
                             {verdict === "prudence" && "L'achat passe, mais il ne vous restera presque plus de marge ensuite."}
