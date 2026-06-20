@@ -96,9 +96,13 @@ export default function App() {
   const [contacts, setContacts] = useState([]);
   const [showAddContact, setShowAddContact] = useState(false);
   const [contactForm, setContactForm] = useState({ nom: "", email: "", siret: "", adresse: "" });
-  const [factures, setFactures] = useState([]);
+  const [invoicesList, setInvoicesList] = useState([]);
+  const [invoicesSummary, setInvoicesSummary] = useState(null);
+  const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [showNewFacture, setShowNewFacture] = useState(false);
-  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  const [editingInvoiceId, setEditingInvoiceId] = useState(null);
+  const todayISO = new Date().toISOString().split("T")[0];
+  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Bonjour ! Je suis H€CTOR, votre assistant fiscal. Posez-moi vos questions sur l'URSSAF, la TVA, l'ACRE, vos cotisations..." }]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -395,13 +399,122 @@ export default function App() {
     return factureForm.lignes.reduce((sum, l) => sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
   }
 
-  function saveFacture() {
-    const num = `F-${new Date().getFullYear()}-${String(factures.length + 1).padStart(3, "0")}`;
-    const f = { ...factureForm, numero: num, date: new Date().toISOString().split("T")[0], total: totalFacture(), statut: "Brouillon enregistré" };
-    setFactures(prev => [f, ...prev]);
-    setShowNewFacture(false);
-    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  async function loadInvoices() {
+    setInvoicesLoading(true);
+    try {
+      const [list, summary] = await Promise.all([apiFetch("/invoices"), apiFetch("/invoices/summary")]);
+      setInvoicesList(list);
+      setInvoicesSummary(summary);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setInvoicesLoading(false);
+    }
   }
+
+  function resetFactureForm() {
+    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setEditingInvoiceId(null);
+  }
+
+  function startEditInvoice(inv) {
+    setFactureForm({
+      client_nom: inv.client_nom || "",
+      client_email: inv.client_email || "",
+      client_adresse: inv.client_adresse || "",
+      date_emission: inv.date_emission || todayISO,
+      date_echeance: inv.date_echeance || "",
+      lignes: (inv.lignes && inv.lignes.length > 0) ? inv.lignes : [{ description: "", quantite: 1, prix_unitaire: "" }],
+      notes: inv.notes || "",
+    });
+    setEditingInvoiceId(inv.id);
+    setShowNewFacture(true);
+  }
+
+  async function saveFacture(statutVoulu) {
+    const lignes = factureForm.lignes.map(l => ({
+      description: l.description,
+      quantite: parseFloat(l.quantite) || 0,
+      prix_unitaire: parseFloat(l.prix_unitaire) || 0,
+    }));
+    try {
+      if (editingInvoiceId) {
+        await apiFetch(`/invoices/${editingInvoiceId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            client_nom: factureForm.client_nom,
+            client_email: factureForm.client_email || null,
+            client_adresse: factureForm.client_adresse || null,
+            date_emission: factureForm.date_emission,
+            date_echeance: factureForm.date_echeance || null,
+            lignes,
+            notes: factureForm.notes || null,
+          }),
+        });
+      } else {
+        await apiFetch("/invoices", {
+          method: "POST",
+          body: JSON.stringify({
+            client_nom: factureForm.client_nom,
+            client_email: factureForm.client_email || null,
+            client_adresse: factureForm.client_adresse || null,
+            date_emission: factureForm.date_emission,
+            date_echeance: factureForm.date_echeance || null,
+            lignes,
+            notes: factureForm.notes || null,
+            statut: statutVoulu || "brouillon",
+          }),
+        });
+      }
+      setShowNewFacture(false);
+      resetFactureForm();
+      await loadInvoices();
+      await loadEverything();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleInvoiceStatus(id, statut) {
+    try {
+      await apiFetch(`/invoices/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut }) });
+      await loadInvoices();
+      await loadEverything();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleDeleteInvoice(id) {
+    try {
+      await apiFetch(`/invoices/${id}`, { method: "DELETE" });
+      await loadInvoices();
+      await loadEverything();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  function invoiceIsOverdue(inv) {
+    if (!["envoyee", "impayee"].includes(inv.statut) || !inv.date_echeance) return false;
+    return new Date(inv.date_echeance) < new Date(todayISO);
+  }
+
+  function joursDeRetard(inv) {
+    if (!inv.date_echeance) return 0;
+    return Math.max(0, Math.round((new Date(todayISO) - new Date(inv.date_echeance)) / 86400000));
+  }
+
+  const INVOICE_STATUT_INFO = {
+    brouillon: { label: "Brouillon", bg: "#F1F2EE", color: "#5B6573" },
+    envoyee: { label: "Envoyée", bg: "#E6F1FB", color: "#0C447C" },
+    payee: { label: "Payée", bg: "#E1F5EE", color: "#0F6E56" },
+    impayee: { label: "Impayée", bg: "#E24B4A", color: "white" },
+  };
+
+  useEffect(() => {
+    if ((nav === "factures" || nav === "contacts") && token) loadInvoices();
+  }, [nav, token]);
 
   async function askAI(e) {
     e.preventDefault();
@@ -1815,7 +1928,7 @@ export default function App() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>Revenus & Factures</h1><p style={S.pageSub}>La source de vérité de votre activité</p></div>
+                <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que vous émettez à vos clients — pas vos dépenses</p></div>
                 <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
               </div>
 
@@ -1829,9 +1942,12 @@ export default function App() {
 
               {showAddIncome && !factureExtraite && (
                 <div style={{ ...S.card, marginBottom: 16 }}>
+                  <p style={{ fontSize: 12, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 8, padding: "8px 12px", margin: "0 0 12px" }}>
+                    ⚠️ Importez ici uniquement les factures que <strong>vous</strong> émettez à vos clients (revenu encaissé). Pas vos factures fournisseurs ou dépenses (téléphone, matériel, abonnements...).
+                  </p>
                   <label style={S.dropZoneSmall}>
                     <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadInvoice(e.target.files[0])} style={{ display: "none" }} />
-                    {uploadingFile ? "Lecture en cours…" : "＋ Importer une facture (PDF, JPG, PNG)"}
+                    {uploadingFile ? "Lecture en cours…" : "＋ Importer une facture client (PDF, JPG, PNG)"}
                   </label>
                   <p style={S.orDivider}>ou saisie manuelle</p>
                   <form style={{ display: "flex", flexDirection: "column", gap: 10 }} onSubmit={handleAddIncome}>
@@ -1978,20 +2094,38 @@ export default function App() {
         {nav === "factures" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>Factures</h1><p style={S.pageSub}>Créez vos factures, ou importez-en une depuis Revenus</p></div>
+              <div><h1 style={S.pageTitle}>Factures clients</h1><p style={S.pageSub}>Suivez ce qui a été payé ou non</p></div>
               <div style={{ display: "flex", gap: 8 }}>
-                <button style={S.btnSecondary} onClick={() => { setNav("revenus"); setShowAddIncome(true); }}>📄 Importer une facture</button>
-                <button style={S.btnPrimarySmall} onClick={() => setShowNewFacture(!showNewFacture)}>+ Nouvelle facture</button>
+                <button style={S.btnSecondary} onClick={() => { setNav("revenus"); setShowAddIncome(true); }}>📄 Importer une facture client</button>
+                <button style={S.btnPrimarySmall} onClick={() => { resetFactureForm(); setShowNewFacture(!showNewFacture); }}>+ Nouvelle facture</button>
               </div>
             </div>
+
+            {invoicesSummary && (
+              <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : S.kpiGrid}>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Facturé</span><span style={S.kpiValue}>{formatEUR(invoicesSummary.facture_total)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Payé</span><span style={{ ...S.kpiValue, color: "#1D9E75" }}>{formatEUR(invoicesSummary.paye_total)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>En attente</span><span style={{ ...S.kpiValue, color: "#854F0B" }}>{formatEUR(invoicesSummary.en_attente_total)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Impayées</span><span style={{ ...S.kpiValue, color: "#A32D2D" }}>{invoicesSummary.impayees_count}</span></div>
+              </div>
+            )}
+
             {showNewFacture && (
               <div style={{ ...S.card, marginBottom: 16 }}>
-                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>Nouvelle facture</h3>
+                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input style={S.input} placeholder="Nom du client" value={factureForm.client_nom} onChange={e => setFactureForm({ ...factureForm, client_nom: e.target.value })} />
                   <input style={S.input} placeholder="Email du client" type="email" value={factureForm.client_email} onChange={e => setFactureForm({ ...factureForm, client_email: e.target.value })} />
                 </div>
-                <input style={{ ...S.input, marginBottom: 16 }} placeholder="Adresse du client" value={factureForm.client_adresse} onChange={e => setFactureForm({ ...factureForm, client_adresse: e.target.value })} />
+                <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={factureForm.client_adresse} onChange={e => setFactureForm({ ...factureForm, client_adresse: e.target.value })} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                  <label style={{ ...S.label, marginBottom: 0 }}>Date d'émission
+                    <input style={S.input} type="date" value={factureForm.date_emission} onChange={e => setFactureForm({ ...factureForm, date_emission: e.target.value })} />
+                  </label>
+                  <label style={{ ...S.label, marginBottom: 0 }}>Échéance (optionnel)
+                    <input style={S.input} type="date" value={factureForm.date_echeance} onChange={e => setFactureForm({ ...factureForm, date_echeance: e.target.value })} />
+                  </label>
+                </div>
                 <div style={S.factureHeaderRow}>
                   <span style={{ flex: 3, fontSize: 12, color: "#6B7A8D" }}>Description</span>
                   <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "center" }}>Qté</span>
@@ -2013,26 +2147,65 @@ export default function App() {
                   <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalFacture())}</span></div>
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
-                <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <button style={S.btnPrimary} onClick={saveFacture}>Enregistrer</button>
-                  <button style={S.btnSecondary} onClick={() => setShowNewFacture(false)}>Annuler</button>
+                <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                  <button style={S.btnPrimary} onClick={() => saveFacture(editingInvoiceId ? undefined : "brouillon")}>{editingInvoiceId ? "Enregistrer les modifications" : "Enregistrer en brouillon"}</button>
+                  {!editingInvoiceId && <button style={S.btnSecondary} onClick={() => saveFacture("envoyee")}>Enregistrer et marquer envoyée</button>}
+                  <button style={S.btnSecondary} onClick={() => { setShowNewFacture(false); resetFactureForm(); }}>Annuler</button>
                 </div>
                 <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
-                  La facture est enregistrée dans H€CTOR. <strong>L'envoi par email arrive bientôt</strong> — pour l'instant, téléchargez ou copiez les informations pour l'envoyer vous-même à votre client.
+                  Cette facture ne compte dans votre CA encaissé que lorsqu'elle est marquée « Payée ».
                 </p>
               </div>
             )}
+
             <div style={S.card}>
-              {factures.length === 0 ? <p style={S.empty}>Aucune facture créée. Commencez par en créer une !</p> : factures.map((f, i) => (
-                <div key={i} style={S.incomeRow}>
-                  <div style={{ flex: 1 }}>
-                    <span style={S.incomeAmt}>{f.numero} — {f.client_nom}</span>
-                    <span style={S.incomeMeta}>{formatDate(f.date)} · {formatEUR(f.total)}</span>
+              {invoicesLoading ? (
+                <p style={S.empty}>Chargement…</p>
+              ) : invoicesList.length === 0 ? (
+                <p style={S.empty}>Aucune facture créée. Commencez par en créer une !</p>
+              ) : invoicesList.map(inv => {
+                const overdue = invoiceIsOverdue(inv);
+                const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
+                return (
+                  <div key={inv.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", background: overdue ? "#FCEBEB" : "transparent", margin: overdue ? "0 -20px" : 0, paddingLeft: overdue ? 20 : 0, paddingRight: overdue ? 20 : 0 }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{inv.client_nom}</div>
+                      {overdue ? (
+                        <div style={{ fontSize: 12, color: "#A32D2D", marginTop: 2 }}>
+                          <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, verticalAlign: -2 }} /> {inv.numero} · en retard de {joursDeRetard(inv)}j (échéance {formatDate(inv.date_echeance)})
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>
+                          {inv.numero} · émise le {formatDate(inv.date_emission)}{inv.date_echeance ? ` · échéance ${formatDate(inv.date_echeance)}` : ""}
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: INK, minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(inv.montant)}</span>
+                    {inv.statut === "envoyee" || inv.statut === "impayee" ? (
+                      <select style={{ ...S.toggleBtn, flex: "0 0 auto", padding: "5px 8px", fontSize: 11 }} value={inv.statut} onChange={e => handleInvoiceStatus(inv.id, e.target.value)}>
+                        <option value="envoyee">Envoyée</option>
+                        <option value="impayee">Impayée</option>
+                        <option value="payee">Marquer payée</option>
+                      </select>
+                    ) : (
+                      <span style={{ background: info.bg, color: info.color, fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{info.label}</span>
+                    )}
+                    {inv.statut === "brouillon" && (
+                      <button style={{ ...S.linkBtn, fontSize: 11, whiteSpace: "nowrap" }} onClick={() => handleInvoiceStatus(inv.id, "envoyee")}>Marquer envoyée</button>
+                    )}
+                    <button aria-label="Modifier" onClick={() => startEditInvoice(inv)} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                      <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
+                    </button>
+                    <button aria-label="Supprimer" onClick={() => handleDeleteInvoice(inv.id)} style={S.deleteBtn}>✕</button>
                   </div>
-                  <span style={{ ...S.badge, ...S.badgeGray }}>{f.statut}</span>
-                </div>
-              ))}
+                );
+              })}
             </div>
+            {invoicesList.length > 0 && (
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, textAlign: "center" }}>
+                Seules les factures « Payée » comptent dans votre CA encaissé.
+              </p>
+            )}
           </div>
         )}
 
@@ -2053,9 +2226,10 @@ export default function App() {
                 <button style={{ ...S.btnPrimary, marginTop: 12 }} onClick={() => { setContacts(c => [...c, { ...contactForm, id: Date.now() }]); setContactForm({ nom: "", email: "", siret: "", adresse: "" }); setShowAddContact(false); }}>Enregistrer</button>
               </div>
             )}
-            {factures.length > 0 && (() => {
+            {invoicesList.filter(i => i.statut === "payee").length > 0 && (() => {
+              const payees = invoicesList.filter(i => i.statut === "payee");
               const parClient = {};
-              factures.forEach(f => { parClient[f.client_nom] = (parClient[f.client_nom] || 0) + f.total; });
+              payees.forEach(f => { parClient[f.client_nom] = (parClient[f.client_nom] || 0) + f.montant; });
               const totalCa = Object.values(parClient).reduce((a, b) => a + b, 0);
               const meilleur = Object.entries(parClient).sort((a, b) => b[1] - a[1])[0];
               const concentration = meilleur && totalCa > 0 ? Math.round((meilleur[1] / totalCa) * 100) : 0;
