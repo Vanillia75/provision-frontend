@@ -115,6 +115,10 @@ export default function App() {
   const [profilSiret, setProfilSiret] = useState(() => localStorage.getItem("profilSiret") || "");
   const [outilsOpen, setOutilsOpen] = useState(false);
   const [montantCopie, setMontantCopie] = useState(false);
+  const [caCopie, setCaCopie] = useState(false);
+  const [declarationPeriode, setDeclarationPeriode] = useState("");
+  const [declarationCa, setDeclarationCa] = useState("");
+  const [declarationCotisations, setDeclarationCotisations] = useState("");
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [achatMontant, setAchatMontant] = useState("");
   const [tarifMontant, setTarifMontant] = useState("");
@@ -1012,56 +1016,79 @@ export default function App() {
           </div>
         )}
 
-        {nav === "declaration" && estimateData && estimateData.disponible !== false && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout ce qu'il faut, prêt en 5 secondes</p></div>
-            </div>
-
-            <div style={{ ...S.card, textAlign: "center", padding: "28px 24px" }}>
-              <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5 }}>Prochaine déclaration</div>
-              <div style={{ fontSize: 18, fontWeight: 600, color: INK, marginTop: 6 }}>{estimateData.periode_courante?.label}</div>
-              <div style={{ fontSize: 13, color: "#854F0B", marginTop: 4 }}>à déclarer avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)} ({estimateData.periode_courante?.jours_restants}j restants)</div>
-            </div>
-
-            <div style={{ ...S.card, marginTop: 14 }}>
-              <div style={S.paniqueLine}>
-                <span style={S.paniqueLineLabel}><i className="ti ti-chart-bar" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CA à déclarer</span>
-                <span style={{ fontWeight: 700, fontSize: 16 }}>{formatEUR(estimateData.ca_periode_courante)}</span>
+        {nav === "declaration" && estimateData && estimateData.disponible !== false && (() => {
+          const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
+          const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : estimateData.ca_periode_courante;
+          const cotisationsAffichees = declarationCotisations !== "" ? parseFloat(declarationCotisations) || 0 : estimateData.montant_a_provisionner;
+          return (
+            <div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout est pré-rempli, modifiez si besoin</p></div>
               </div>
-              <div style={S.paniqueLine}>
-                <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Cotisations estimées <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>({estimateData.taux_global_pct}%)</span></span>
-                <span style={{ fontWeight: 700, fontSize: 16, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</span>
+
+              <div style={{ ...S.card, textAlign: "center", padding: "20px 24px" }}>
+                <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Période de déclaration</div>
+                <input style={{ ...S.input, textAlign: "center", fontWeight: 600 }} type="text" placeholder={estimateData.periode_courante?.label} value={declarationPeriode} onChange={e => setDeclarationPeriode(e.target.value)} />
+                <div style={{ fontSize: 13, color: "#854F0B", marginTop: 8 }}>à déclarer avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)} ({estimateData.periode_courante?.jours_restants}j restants)</div>
               </div>
-            </div>
 
-            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
-              <button
-                style={{ ...S.btnSecondary, flex: 1, justifyContent: "center", display: "flex", alignItems: "center", gap: 6 }}
-                onClick={() => {
-                  navigator.clipboard?.writeText(String(estimateData.montant_a_provisionner));
-                  setMontantCopie(true);
-                  setTimeout(() => setMontantCopie(false), 2000);
-                }}
-              >
-                <i className={`ti ${montantCopie ? "ti-check" : "ti-copy"}`} aria-hidden="true" style={{ fontSize: 16 }} />
-                {montantCopie ? "Copié !" : "Copier le montant"}
-              </button>
-              <a
-                href="https://www.autoentrepreneur.urssaf.fr"
-                target="_blank" rel="noopener noreferrer"
-                style={{ ...S.btnPrimarySmall, flex: 1, justifyContent: "center", display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}
-              >
-                <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 16 }} />
-                Ouvrir URSSAF
-              </a>
-            </div>
+              <div style={{ ...S.card, marginTop: 14 }}>
+                <div style={S.paniqueLine}>
+                  <span style={S.paniqueLineLabel}><i className="ti ti-chart-bar" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CA à déclarer</span>
+                  <input style={S.inlineEditValue} type="number" step="0.01" placeholder={String(estimateData.ca_periode_courante)} value={declarationCa} onChange={e => setDeclarationCa(e.target.value)} />
+                </div>
+                <div style={S.paniqueLine}>
+                  <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Cotisations estimées <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>({estimateData.taux_global_pct}%)</span></span>
+                  <input style={S.inlineEditValue} type="number" step="0.01" placeholder={String(estimateData.montant_a_provisionner)} value={declarationCotisations} onChange={e => setDeclarationCotisations(e.target.value)} />
+                </div>
+                <div style={S.paniqueLine}>
+                  <span style={S.paniqueLineLabel}><i className="ti ti-id" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Activité / statut</span>
+                  <span style={{ fontSize: 12, color: "#6B7A8D" }}>{ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · {profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut}</span>
+                </div>
+                {(declarationCa !== "" || declarationCotisations !== "" || declarationPeriode !== "") && (
+                  <button style={{ ...S.linkBtn, marginTop: 8 }} onClick={() => { setDeclarationCa(""); setDeclarationCotisations(""); setDeclarationPeriode(""); }}>↺ Revenir aux valeurs calculées par H€CTOR</button>
+                )}
+              </div>
 
-            <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
-              H€CTOR prépare les montants, mais ne déclare pas à votre place — vérifiez toujours avant de valider sur le site officiel.
-            </p>
-          </div>
-        )}
+              <div style={{ display: "flex", gap: 10, marginTop: 14, flexWrap: "wrap" }}>
+                <button
+                  style={{ ...S.btnSecondary, flex: "1 1 140px", justifyContent: "center", display: "flex", alignItems: "center", gap: 6 }}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(String(caAffiche));
+                    setCaCopie(true);
+                    setTimeout(() => setCaCopie(false), 2000);
+                  }}
+                >
+                  <i className={`ti ${caCopie ? "ti-check" : "ti-copy"}`} aria-hidden="true" style={{ fontSize: 16 }} />
+                  {caCopie ? "CA copié !" : "Copier le CA"}
+                </button>
+                <button
+                  style={{ ...S.btnSecondary, flex: "1 1 140px", justifyContent: "center", display: "flex", alignItems: "center", gap: 6 }}
+                  onClick={() => {
+                    navigator.clipboard?.writeText(String(cotisationsAffichees));
+                    setMontantCopie(true);
+                    setTimeout(() => setMontantCopie(false), 2000);
+                  }}
+                >
+                  <i className={`ti ${montantCopie ? "ti-check" : "ti-copy"}`} aria-hidden="true" style={{ fontSize: 16 }} />
+                  {montantCopie ? "Cotisations copiées !" : "Copier les cotisations"}
+                </button>
+                <a
+                  href="https://www.autoentrepreneur.urssaf.fr"
+                  target="_blank" rel="noopener noreferrer"
+                  style={{ ...S.btnPrimarySmall, flex: "1 1 140px", justifyContent: "center", display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+                >
+                  <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 16 }} />
+                  Ouvrir URSSAF
+                </a>
+              </div>
+
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
+                H€CTOR prépare les montants, mais ne déclare pas à votre place — vérifiez toujours avant de valider sur le site officiel.
+              </p>
+            </div>
+          );
+        })()}
 
         {nav === "achat" && (() => {
           const solde = soldeNum;
