@@ -98,6 +98,12 @@ export default function App() {
   const [contactForm, setContactForm] = useState({ nom: "", email: "", siret: "", adresse: "" });
   const [invoicesList, setInvoicesList] = useState([]);
   const [invoicesSummary, setInvoicesSummary] = useState(null);
+  const [expensesList, setExpensesList] = useState([]);
+  const [expensesSummary, setExpensesSummary] = useState(null);
+  const [expensesLoading, setExpensesLoading] = useState(false);
+  const [showAddExpense, setShowAddExpense] = useState(false);
+  const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "" });
+  const [uploadingExpenseFile, setUploadingExpenseFile] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [showNewFacture, setShowNewFacture] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState(null);
@@ -187,9 +193,10 @@ export default function App() {
       const p = await apiFetch("/profile");
       setProfile(p);
       if (p.onboarding_complete) {
-        const [est, inc] = await Promise.all([apiFetch("/estimate"), apiFetch("/income")]);
+        const [est, inc, expSummary] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary")]);
         setEstimateData(est);
         setIncomeList(inc);
+        setExpensesSummary(expSummary);
       }
     } catch (err) {
       setError(err.message);
@@ -516,6 +523,95 @@ export default function App() {
     if ((nav === "factures" || nav === "contacts") && token) loadInvoices();
   }, [nav, token]);
 
+  // ────────────────────────────────────────────────────────────
+  // Frais d'entreprise
+  // ────────────────────────────────────────────────────────────
+
+  const CATEGORIES_FRAIS = [
+    { id: "logiciels", label: "Logiciels" },
+    { id: "abonnements", label: "Abonnements" },
+    { id: "taxi", label: "Taxi" },
+    { id: "repas", label: "Repas" },
+    { id: "materiel", label: "Matériel" },
+    { id: "coworking", label: "Coworking" },
+    { id: "telephone_internet", label: "Téléphone / Internet" },
+    { id: "autre", label: "Autre" },
+  ];
+
+  function labelCategorie(id) {
+    return CATEGORIES_FRAIS.find(c => c.id === id)?.label || "Autre";
+  }
+
+  async function loadExpenses() {
+    setExpensesLoading(true);
+    try {
+      const [list, summary] = await Promise.all([apiFetch("/expenses"), apiFetch("/expenses/summary")]);
+      setExpensesList(list);
+      setExpensesSummary(summary);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setExpensesLoading(false);
+    }
+  }
+
+  async function handleAddExpense(e) {
+    e.preventDefault();
+    try {
+      await apiFetch("/expenses", {
+        method: "POST",
+        body: JSON.stringify({
+          date: expenseForm.date,
+          montant: parseFloat(expenseForm.montant) || 0,
+          categorie: expenseForm.categorie,
+          description: expenseForm.description || null,
+        }),
+      });
+      setExpenseForm({ date: "", montant: "", categorie: "autre", description: "" });
+      setShowAddExpense(false);
+      await loadExpenses();
+      await loadEverything();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleDeleteExpense(id) {
+    try {
+      await apiFetch(`/expenses/${id}`, { method: "DELETE" });
+      await loadExpenses();
+      await loadEverything();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleUploadExpenseInvoice(file) {
+    setUploadingExpenseFile(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const data = await apiFetch("/expenses/extract", { method: "POST", body: form });
+      setExpenseForm({
+        date: data.date,
+        montant: String(data.amount),
+        categorie: "autre",
+        description: data.description || "",
+      });
+      setShowAddExpense(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setUploadingExpenseFile(false);
+    }
+  }
+
+  useEffect(() => {
+    if (nav === "frais" && token) loadExpenses();
+  }, [nav, token]);
+
+
   async function askAI(e) {
     e.preventDefault();
     if (!aiInput.trim() || aiLoading) return;
@@ -558,7 +654,8 @@ export default function App() {
   const impotsAnnuelEstime = Math.round(revenuImposableAnnuel * (parseFloat(tmi) / 100));
   const impotsNum = profile?.versement_liberatoire ? 0 : Math.round((impotsAnnuelEstime / 12) * 100) / 100;
   const cfeNum = parseFloat(panique.cfe) || 0;
-  const totalChargesAVenir = urssafProvision + impotsNum + cfeNum;
+  const fraisMoisNum = expensesSummary?.frais_mois || 0;
+  const totalChargesAVenir = urssafProvision + impotsNum + cfeNum + fraisMoisNum;
   const securiteNum = parseFloat(objectifSecurite) || 0;
   const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
   // Argent reellement sur le compte apres charges, AVANT reserve - ne doit jamais etre clampe a 0 a tort
@@ -900,6 +997,7 @@ export default function App() {
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
           { id: "factures", icon: "ti-file", label: "Factures" },
+          { id: "frais", icon: "ti-receipt-2", label: "Frais" },
           { id: "assistant", icon: "ti-message", label: "Assistant IA" },
           { id: "profil", icon: "ti-user", label: "Profil" },
         ].map(item => (
@@ -1041,6 +1139,10 @@ export default function App() {
                         />
                         <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
                       </span>
+                    </div>
+                    <div style={S.heroDetailRow}>
+                      <span style={{ color: "#FAC775" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4 }} onClick={() => setNav("frais")}>voir détail →</button></span>
+                      <span style={{ color: "#FAC775" }}>{formatEUR(fraisMoisNum)}</span>
                     </div>
                     <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 2 }}>
                       <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
@@ -2208,6 +2310,90 @@ export default function App() {
             )}
           </div>
         )}
+
+        {nav === "frais" && (() => {
+          const plusGrosPoste = expensesSummary?.par_categorie?.[0] || null;
+          const totalAnnee = expensesSummary?.frais_annee || 0;
+          return (
+            <div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                <div><h1 style={S.pageTitle}>Frais d'entreprise</h1><p style={S.pageSub}>Vos dépenses professionnelles</p></div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <label style={{ ...S.btnSecondary, cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
+                    <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadExpenseInvoice(e.target.files[0])} style={{ display: "none" }} />
+                    {uploadingExpenseFile ? "Lecture…" : "📄 Importer une facture"}
+                  </label>
+                  <button style={S.btnPrimarySmall} onClick={() => setShowAddExpense(!showAddExpense)}>+ Ajouter un frais</button>
+                </div>
+              </div>
+
+              {expensesSummary && (
+                <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr" } : { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr 1fr" }}>
+                  <div style={S.kpiCard}><span style={S.kpiLabel}>Frais du mois</span><span style={S.kpiValue}>{formatEUR(expensesSummary.frais_mois)}</span></div>
+                  <div style={S.kpiCard}><span style={S.kpiLabel}>Frais de l'année</span><span style={S.kpiValue}>{formatEUR(totalAnnee)}</span></div>
+                  <div style={S.kpiCard}><span style={S.kpiLabel}>Plus gros poste</span><span style={{ ...S.kpiValue, fontSize: 16 }}>{plusGrosPoste ? `${labelCategorie(plusGrosPoste.categorie)} (${formatEUR(plusGrosPoste.montant)})` : "—"}</span></div>
+                </div>
+              )}
+
+              {expensesSummary?.par_categorie?.length > 0 && (
+                <div style={{ ...S.card, marginBottom: 16 }}>
+                  <div style={S.cardTitle}>Répartition par catégorie (cette année)</div>
+                  {expensesSummary.par_categorie.map(c => {
+                    const pct = totalAnnee > 0 ? Math.round((c.montant / totalAnnee) * 100) : 0;
+                    return (
+                      <div key={c.categorie} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                        <span style={{ fontSize: 13, color: INK, width: 140, flexShrink: 0 }}>{labelCategorie(c.categorie)}</span>
+                        <div style={{ flex: 1, height: 8, background: "#EEF2F7", borderRadius: 4, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${pct}%`, background: ACCENT }} />
+                        </div>
+                        <span style={{ fontSize: 12, color: "#8BA5C0", width: 36, textAlign: "right", flexShrink: 0 }}>{pct}%</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: INK, width: 70, textAlign: "right", flexShrink: 0 }}>{formatEUR(c.montant)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {showAddExpense && (
+                <div style={{ ...S.card, marginBottom: 16 }}>
+                  <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>Nouveau frais</h3>
+                  <form style={{ display: "flex", flexDirection: "column", gap: 10 }} onSubmit={handleAddExpense}>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                      <input style={S.input} type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} required />
+                      <input style={S.input} type="number" step="0.01" placeholder="Montant €" value={expenseForm.montant} onChange={e => setExpenseForm({ ...expenseForm, montant: e.target.value })} required />
+                    </div>
+                    <select style={S.input} value={expenseForm.categorie} onChange={e => setExpenseForm({ ...expenseForm, categorie: e.target.value })}>
+                      {CATEGORIES_FRAIS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
+                    </select>
+                    <input style={S.input} type="text" placeholder="Description (optionnel, ex : Adobe Creative Cloud)" value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button style={S.btnPrimary} type="submit">Ajouter</button>
+                      <button type="button" style={S.btnSecondary} onClick={() => setShowAddExpense(false)}>Annuler</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              <div style={S.card}>
+                {expensesLoading ? (
+                  <p style={S.empty}>Chargement…</p>
+                ) : expensesList.length === 0 ? (
+                  <p style={S.empty}>Aucun frais enregistré.</p>
+                ) : expensesList.map(exp => (
+                  <div key={exp.id} style={{ display: "flex", alignItems: "center", gap: 12, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 15, fontWeight: 500, color: INK }}>{exp.description || labelCategorie(exp.categorie)}</div>
+                      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>{formatDate(exp.date)}</div>
+                    </div>
+                    <span style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{labelCategorie(exp.categorie)}</span>
+                    <span style={{ fontSize: 16, fontWeight: 600, color: INK, minWidth: 60, textAlign: "right", flexShrink: 0 }}>{formatEUR(exp.montant)}</span>
+                    <button aria-label="Supprimer" onClick={() => handleDeleteExpense(exp.id)} style={S.deleteBtn}>✕</button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
 
         {nav === "contacts" && (
           <div>
