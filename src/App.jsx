@@ -1060,7 +1060,7 @@ function AppInner() {
   const securiteNum = parseFloat(objectifSecurite) || 0;
   const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
   // Argent reellement sur le compte apres charges, AVANT reserve - ne doit jamais etre clampe a 0 a tort
-  const argentDisponibleBrut = panique.solde !== "" ? Math.max(0, Math.round((soldeNum - totalChargesAVenir) * 100) / 100) : null;
+  const argentDisponibleBrut = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir) * 100) / 100 : null;
   const reserveAtteinte = panique.solde !== "" ? (soldeNum - totalChargesAVenir) >= securiteNum : null;
   const manqueReserveDashboard = (panique.solde !== "" && !reserveAtteinte) ? Math.round((securiteNum - Math.max(0, soldeNum - totalChargesAVenir)) * 100) / 100 : 0;
 
@@ -1503,111 +1503,143 @@ function AppInner() {
             )}
 
             {/* ─── LA STAR : Argent réellement disponible, jamais masqué par la réserve ─── */}
-            <div style={S.heroDispo}>
-              <div style={S.heroDispoLabel}>💰 Argent disponible</div>
-              {argentDisponibleBrut !== null ? (
-                <div style={{ ...S.heroDispoValue, color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
-              ) : (
-                <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
-              )}
-              {argentDisponibleBrut !== null && (
-                <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3, alignItems: "center", fontSize: 13 }}>
-                  <div style={{ color: "rgba(255,255,255,0.85)" }}>
-                    🛡️ Réserve de sécurité : <strong>{formatEUR(securiteNum)}</strong>
-                    <span style={{ fontSize: 11, color: "#7A93AD", marginLeft: 4 }}>
-                      {securitePrecise
-                        ? "(basé sur vos dépenses)"
-                        : baseMensuelleSecurite > 0 && securiteNum > 0
-                          ? `(${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois de sécurité estimé)`
-                          : "(réserve personnalisée)"}
-                    </span>
-                  </div>
-                  <div style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775", fontWeight: 600 }}>
-                    ➡️ Marge prudente : {formatEUR(Math.max(0, disponibleAujourdhui))}
-                    {!reserveAtteinte && (
-                      <span style={{ fontSize: 11, fontWeight: 400, color: "#FAC775", marginLeft: 4 }}>
-                        (il manque {formatEUR(manqueReserveDashboard)} pour atteindre la réserve)
-                      </span>
-                    )}
-                  </div>
+            {argentDisponibleBrut !== null && argentDisponibleBrut < 0 ? (
+              <div style={{ ...S.heroDispo, background: "#5C1A1A" }}>
+                <div style={S.heroDispoLabel}>🔴 Vous êtes en déficit</div>
+                <div style={{ ...S.heroDispoValue, color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
+                <div style={{ marginTop: 10, fontSize: 13, color: "#F7C1C1", maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+                  Vos charges à venir ({formatEUR(totalChargesAVenir)}) dépassent votre solde actuel ({formatEUR(soldeNum)}). Il vous manque <strong>{formatEUR(Math.abs(argentDisponibleBrut))}</strong> pour les couvrir.
                 </div>
-              )}
-              {moisSurvie !== null && (
-                <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
-                  🕐 soit environ {moisSurvie} mois de sécurité
-                  {!securitePrecise && <span style={{ fontSize: 10, color: "#7A93AD" }}> (estimation sur votre CA — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("frais")}>ajoutez vos frais réels</button>)</span>}
-                </div>
-              )}
-              {disponibleAujourdhui !== null && (
                 <details style={{ marginTop: 16, textAlign: "left" }}>
-                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Voir d'où vient ce chiffre</summary>
-                  <div style={{ marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 16px" }}>
+                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#F0997B", textAlign: "center" }}>Voir le détail</summary>
+                  <div style={{ marginTop: 12, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px" }}>
+                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>Solde bancaire actuel</span><span style={{ color: "#F7C1C1" }}>{formatEUR(soldeNum)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>− URSSAF</span><span style={{ color: "#F7C1C1" }}>{formatEUR(urssafProvision)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>− Impôts</span><span style={{ color: "#F7C1C1" }}>{formatEUR(impotsNum)}</span></div>
+                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>− CFE</span><span style={{ color: "#F7C1C1" }}>{formatEUR(cfeNum)}</span></div>
                     <div style={S.heroDetailRow}>
-                      <span>CA encaissé (année)</span>
-                      <span>{estimateData.ca_annuel === 0 ? <span style={{ color: "#7A93AD", fontStyle: "italic", fontSize: 12 }}>Aucun revenu enregistré pour le moment</span> : formatEUR(estimateData.ca_annuel)}</span>
-                    </div>
-                    <div style={S.heroDetailRow}><span>Solde bancaire actuel</span><span>{formatEUR(soldeNum)}</span></div>
-                    <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
-                    <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
-                    <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                      <span style={{ color: "#FAC775" }}>− Cotisation Foncière des Entreprises <span title="Impôt local annuel dû par la plupart des entreprises, même sans local professionnel dédié. Souvent autour de 200€/an pour un auto-entrepreneur, mais variable selon la commune." style={{ cursor: "help", borderBottom: "1px dotted #7A93AD" }}>(CFE) ⓘ</span> <span style={{ fontSize: 10, color: "#7A93AD" }}>{cfeNum === 0 ? "(souvent ~200€/an, à renseigner)" : "(forfait, modifiable)"}</span></span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        <input
-                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FAC775", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                          type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
-                        />
-                        <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
-                      </span>
-                    </div>
-                    <div style={S.heroDetailRow}>
-                      <span style={{ color: "#FAC775" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4 }} onClick={() => setNav("frais")}>voir détail →</button></span>
-                      <span style={{ color: "#FAC775" }}>{formatEUR(fraisMoisNum)}</span>
-                    </div>
-                    <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 2 }}>
-                      <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
-                    </div>
-                    <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                      <span style={{ color: "#B5D4F4" }}>− Réserve cible <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "en €"})</span></span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        <input
-                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#B5D4F4", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                          type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)}
-                        />
-                        <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
-                      </span>
+                      <span style={{ color: "#F7C1C1" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4, color: "#F0997B" }} onClick={() => setNav("frais")}>voir détail →</button></span>
+                      <span style={{ color: "#F7C1C1" }}>{formatEUR(fraisMoisNum)}</span>
                     </div>
                     <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
-                      <span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>= Disponible prudent (réserve gardée)</span><span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
-                    </div>
-
-                    <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: "white", marginBottom: 2 }}>Combien de mois de sécurité voulez-vous garder ?</div>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Choisissez une durée pour fixer votre réserve cible {securitePrecise ? "(basé sur vos dépenses réelles)" : "(estimation sur votre CA)"}</div>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        {[1, 3, 6].map(m => (
-                          <button key={m} type="button"
-                            onClick={() => setObjectifSecurite(String(Math.round(baseMensuelleSecurite * m)))}
-                            style={{ ...S.toggleBtn, background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.2)", color: "white", flex: "0 1 auto", padding: "6px 12px" }}>
-                            {m} mois
-                          </button>
-                        ))}
-                      </div>
-                      {moyenneMensuelleFrais === 0 && (
-                        <div style={{ fontSize: 10, color: "#7A93AD", marginTop: 6 }}>
-                          Sans vos frais réels, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 11, fontWeight: 700, textDecoration: "underline" }} onClick={() => setNav("frais")}>ajouter mes frais →</button>
-                        </div>
-                      )}
+                      <span style={{ color: "#F09595" }}>= Manque</span><span style={{ color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</span>
                     </div>
                   </div>
                 </details>
-              )}
-            </div>
+              </div>
+            ) : (
+              <div style={S.heroDispo}>
+                <div style={S.heroDispoLabel}>💰 Argent disponible</div>
+                {argentDisponibleBrut !== null ? (
+                  <div style={{ ...S.heroDispoValue, color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
+                ) : (
+                  <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
+                )}
+                {argentDisponibleBrut !== null && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3, alignItems: "center", fontSize: 13 }}>
+                    <div style={{ color: "rgba(255,255,255,0.85)" }}>
+                      🛡️ Réserve de sécurité : <strong>{formatEUR(securiteNum)}</strong>
+                      <span style={{ fontSize: 11, color: "#7A93AD", marginLeft: 4 }}>
+                        {securitePrecise
+                          ? "(basé sur vos dépenses)"
+                          : baseMensuelleSecurite > 0 && securiteNum > 0
+                            ? `(${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois de sécurité estimé)`
+                            : "(réserve personnalisée)"}
+                      </span>
+                    </div>
+                    <div style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775", fontWeight: 600 }}>
+                      ➡️ Marge prudente : {formatEUR(Math.max(0, disponibleAujourdhui))}
+                      {!reserveAtteinte && (
+                        <span style={{ fontSize: 11, fontWeight: 400, color: "#FAC775", marginLeft: 4 }}>
+                          (il manque {formatEUR(manqueReserveDashboard)} pour atteindre la réserve)
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
+                {moisSurvie !== null && (
+                  <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
+                    🕐 soit environ {moisSurvie} mois de sécurité
+                    {!securitePrecise && <span style={{ fontSize: 10, color: "#7A93AD" }}> (estimation sur votre CA — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("frais")}>ajoutez vos frais réels</button>)</span>}
+                  </div>
+                )}
+                {disponibleAujourdhui !== null && (
+                  <details style={{ marginTop: 16, textAlign: "left" }}>
+                    <summary style={{ cursor: "pointer", fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Voir d'où vient ce chiffre</summary>
+                    <div style={{ marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 16px" }}>
+                      <div style={S.heroDetailRow}>
+                        <span>CA encaissé (année)</span>
+                        <span>{estimateData.ca_annuel === 0 ? <span style={{ color: "#7A93AD", fontStyle: "italic", fontSize: 12 }}>Aucun revenu enregistré pour le moment</span> : formatEUR(estimateData.ca_annuel)}</span>
+                      </div>
+                      <div style={S.heroDetailRow}><span>Solde bancaire actuel</span><span>{formatEUR(soldeNum)}</span></div>
+                      <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
+                      <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
+                      <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
+                        <span style={{ color: "#FAC775" }}>− Cotisation Foncière des Entreprises <span title="Impôt local annuel dû par la plupart des entreprises, même sans local professionnel dédié. Souvent autour de 200€/an pour un auto-entrepreneur, mais variable selon la commune." style={{ cursor: "help", borderBottom: "1px dotted #7A93AD" }}>(CFE) ⓘ</span> <span style={{ fontSize: 10, color: "#7A93AD" }}>{cfeNum === 0 ? "(souvent ~200€/an, à renseigner)" : "(forfait, modifiable)"}</span></span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          <input
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FAC775", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
+                            type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
+                          />
+                          <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
+                        </span>
+                      </div>
+                      <div style={S.heroDetailRow}>
+                        <span style={{ color: "#FAC775" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4 }} onClick={() => setNav("frais")}>voir détail →</button></span>
+                        <span style={{ color: "#FAC775" }}>{formatEUR(fraisMoisNum)}</span>
+                      </div>
+                      <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 2 }}>
+                        <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
+                      </div>
+                      <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
+                        <span style={{ color: "#B5D4F4" }}>− Réserve cible <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "en €"})</span></span>
+                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          <input
+                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#B5D4F4", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
+                            type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)}
+                          />
+                          <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
+                        </span>
+                      </div>
+                      <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
+                        <span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>= Disponible prudent (réserve gardée)</span><span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
+                      </div>
+
+                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: "white", marginBottom: 2 }}>Combien de mois de sécurité voulez-vous garder ?</div>
+                        <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Choisissez une durée pour fixer votre réserve cible {securitePrecise ? "(basé sur vos dépenses réelles)" : "(estimation sur votre CA)"}</div>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          {[1, 3, 6].map(m => (
+                            <button key={m} type="button"
+                              onClick={() => setObjectifSecurite(String(Math.round(baseMensuelleSecurite * m)))}
+                              style={{ ...S.toggleBtn, background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.2)", color: "white", flex: "0 1 auto", padding: "6px 12px" }}>
+                              {m} mois
+                            </button>
+                          ))}
+                        </div>
+                        {moyenneMensuelleFrais === 0 && (
+                          <div style={{ fontSize: 10, color: "#7A93AD", marginTop: 6 }}>
+                            Sans vos frais réels, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 11, fontWeight: 700, textDecoration: "underline" }} onClick={() => setNav("frais")}>ajouter mes frais →</button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
 
             {argentDisponibleBrut !== null && (
-              <div style={S.explainBanner}>
-                Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve, votre marge prudente est de <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>{" "}
-                <span style={{ fontSize: 11, color: "#5B82A8" }}>— c'est ce 2ème chiffre qu'utilisent Mode Achat et Mode Salaire.</span>
-              </div>
+              argentDisponibleBrut < 0 ? (
+                <div style={{ ...S.explainBanner, background: "#FCEBEB", border: "1px solid #F7C1C1" }}>
+                  <span style={{ color: "#A32D2D" }}>Vous êtes actuellement en déficit de <strong>{formatEUR(Math.abs(argentDisponibleBrut))}</strong> par rapport à vos charges prévues. Évitez toute dépense non essentielle tant que ce chiffre n'est pas revenu positif.</span>
+                </div>
+              ) : (
+                <div style={S.explainBanner}>
+                  Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve, votre marge prudente est de <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>{" "}
+                  <span style={{ fontSize: 11, color: "#5B82A8" }}>— c'est ce 2ème chiffre qu'utilisent Mode Achat et Mode Salaire.</span>
+                </div>
+              )
             )}
 
             {/* ─── 4 choses en 5 secondes : mettre de côté / objectifs / projections / sécurité ─── */}
