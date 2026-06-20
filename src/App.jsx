@@ -1,4 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import * as Sentry from "@sentry/react";
+
+Sentry.init({
+  dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
+  integrations: [Sentry.browserTracingIntegration()],
+  tracesSampleRate: 0.2,
+  environment: "production",
+});
+
+if (typeof window !== "undefined") {
+  window.Sentry = Sentry;
+}
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
@@ -345,7 +357,7 @@ function LogoIcon({ size = 32 }) {
   );
 }
 
-export default function App() {
+function AppInner() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [legalPage, setLegalPage] = useState(null);
   const [authMode, setAuthMode] = useState("login");
@@ -3179,6 +3191,18 @@ export default function App() {
     </div>
   );
 }
+
+export default Sentry.withErrorBoundary(AppInner, {
+  fallback: ({ resetError }) => (
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
+      <p style={{ fontSize: 18, fontWeight: 600, color: "#0A2540" }}>Une erreur inattendue est survenue</p>
+      <p style={{ fontSize: 14, color: "#6B7A8D", maxWidth: 380 }}>L'équipe H€CTOR a été automatiquement prévenue. Vous pouvez réessayer ou recharger la page.</p>
+      <button onClick={() => { resetError(); window.location.reload(); }} style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
+        Recharger la page
+      </button>
+    </div>
+  ),
+});
 
 const INK = "#0A2540";
 const ACCENT = "#378ADD";
