@@ -796,6 +796,19 @@ export default function App() {
               {panique.solde !== "" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
             </div>
 
+            {estimateData.ca_annuel === 0 && (
+              <div style={S.onboardingNotice}>
+                <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>2 infos pour profiter de H€CTOR à 100%</div>
+                  <div style={{ fontSize: 12, color: "#5B6573", marginTop: 2 }}>
+                    Le <strong>solde</strong> ci-dessus sert à calculer votre disponible immédiat. Vos <strong>revenus encaissés</strong> (factures, virements clients) servent à calculer ce que vous devez mettre de côté et suivre vos objectifs — ce sont deux choses différentes, à renseigner toutes les deux.
+                  </div>
+                </div>
+                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
+              </div>
+            )}
+
             {/* ─── LA STAR : Argent réellement disponible, jamais masqué par la réserve ─── */}
             <div style={S.heroDispo}>
               <div style={S.heroDispoLabel}>💰 Argent disponible</div>
@@ -2107,6 +2120,7 @@ const S = {
   heroDispoValue: { fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 },
   heroDispoSub: { fontSize: 14, color: "#B5D4F4", marginTop: 10 },
   soldeInputCard: { display: "flex", alignItems: "center", gap: 14, background: "white", border: "1px solid #DDE5EE", borderRadius: 12, padding: "12px 16px", marginBottom: 14 },
+  onboardingNotice: { display: "flex", alignItems: "center", gap: 14, background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 12, padding: "14px 16px", marginBottom: 14, flexWrap: "wrap" },
   soldeInput: { border: "none", outline: "none", fontSize: 18, fontWeight: 600, color: INK, width: "100%", padding: 0 },
   sidebarGreeting: { padding: "0 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 8 },
   profilAvatar: { width: 52, height: 52, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, color: "#0C447C", flexShrink: 0 },
