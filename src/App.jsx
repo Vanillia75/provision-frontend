@@ -353,7 +353,7 @@ export default function App() {
   const [authPassword, setAuthPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [nav, setNav] = useState("dashboard");
+  const [nav, setNav] = useState(() => localStorage.getItem("nav") || "dashboard");
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
   const [estimateData, setEstimateData] = useState(null);
@@ -556,6 +556,7 @@ export default function App() {
   useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
   useEffect(() => { localStorage.setItem("depensesMensuelles", depensesMensuelles); }, [depensesMensuelles]);
   useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
+  useEffect(() => { localStorage.setItem("nav", nav); }, [nav]);
 
   useEffect(() => {
     if (token) loadEverything();
