@@ -108,6 +108,13 @@ export default function App() {
   const [simActivite, setSimActivite] = useState("services");
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
   const [objectifMensuel, setObjectifMensuel] = useState(() => localStorage.getItem("objectifMensuel") || "4200");
+  const [profilPrenom, setProfilPrenom] = useState(() => localStorage.getItem("profilPrenom") || "");
+  const [profilNom, setProfilNom] = useState(() => localStorage.getItem("profilNom") || "");
+  const [profilTelephone, setProfilTelephone] = useState(() => localStorage.getItem("profilTelephone") || "");
+  const [profilEntreprise, setProfilEntreprise] = useState(() => localStorage.getItem("profilEntreprise") || "");
+  const [profilSiret, setProfilSiret] = useState(() => localStorage.getItem("profilSiret") || "");
+  const [outilsOpen, setOutilsOpen] = useState(false);
+  const [montantCopie, setMontantCopie] = useState(false);
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [achatMontant, setAchatMontant] = useState("");
   const [tarifMontant, setTarifMontant] = useState("");
@@ -178,6 +185,11 @@ export default function App() {
 
   useEffect(() => { localStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
   useEffect(() => { localStorage.setItem("objectifMensuel", objectifMensuel); }, [objectifMensuel]);
+  useEffect(() => { localStorage.setItem("profilPrenom", profilPrenom); }, [profilPrenom]);
+  useEffect(() => { localStorage.setItem("profilNom", profilNom); }, [profilNom]);
+  useEffect(() => { localStorage.setItem("profilTelephone", profilTelephone); }, [profilTelephone]);
+  useEffect(() => { localStorage.setItem("profilEntreprise", profilEntreprise); }, [profilEntreprise]);
+  useEffect(() => { localStorage.setItem("profilSiret", profilSiret); }, [profilSiret]);
   useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
   useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
 
@@ -666,32 +678,54 @@ export default function App() {
             </button>
           )}
         </div>
+
+        {(isMobile || sidebarOpen) && (profilPrenom || profilEntreprise) && (
+          <div style={S.sidebarGreeting}>
+            {profilPrenom && <div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profilPrenom} 👋</div>}
+            {profilEntreprise && <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>{profilEntreprise}{profile?.statut === "auto_entrepreneur" ? " · Auto-entrepreneur" : ""}</div>}
+          </div>
+        )}
+
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
-          { id: "panique", icon: "ti-radar-2", label: "Scanner Financier" },
-          { id: "simvie", icon: "ti-target", label: "Combien dois-je gagner ?" },
-          { id: "salaire", icon: "ti-cash", label: "Combien me verser ?" },
+          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
+          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
-          { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
-          { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
+          { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
           { id: "factures", icon: "ti-file", label: "Factures" },
-          { id: "contacts", icon: "ti-user", label: "Contacts" },
-          { id: "coach", icon: "ti-target-arrow", label: "Coach prix" },
-          { id: "societe", icon: "ti-building", label: "Passage société" },
-          { id: "modeles", icon: "ti-template", label: "Modèles" },
-          { id: "banque", icon: "ti-building-bank", label: "Connexion bancaire" },
-          { id: "echeances", icon: "ti-calendar", label: "Échéances" },
-          { id: "actualites", icon: "ti-bell", label: "Actualités" },
-          { id: "conseils", icon: "ti-star", label: "Conseils" },
           { id: "assistant", icon: "ti-message", label: "Assistant IA" },
-          { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
+          { id: "profil", icon: "ti-user", label: "Profil" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
             {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
           </button>
         ))}
+
+        <button style={{ ...S.navItem, borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 14 }} onClick={() => setOutilsOpen(!outilsOpen)}>
+          <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Outils</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${outilsOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {outilsOpen && (isMobile || sidebarOpen) && [
+          { id: "declaration", icon: "ti-clipboard-check", label: "Préparer ma déclaration" },
+          { id: "coach", icon: "ti-target-arrow", label: "Coach prix" },
+          { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
+          { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
+          { id: "contacts", icon: "ti-user", label: "Contacts" },
+          { id: "actualites", icon: "ti-bell", label: "Actualités" },
+          { id: "conseils", icon: "ti-star", label: "Conseils" },
+          { id: "modeles", icon: "ti-template", label: "Modèles" },
+          { id: "societe", icon: "ti-building", label: "Passage société" },
+          { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          </button>
+        ))}
         <div style={S.sidebarBottom}>
+
           {!isMobile && (
             <button style={S.navItem} onClick={() => setSidebarOpen(!sidebarOpen)}>
               <i className={`ti ${sidebarOpen ? "ti-layout-sidebar-left-collapse" : "ti-layout-sidebar-left-expand"}`} aria-hidden="true" style={{ fontSize: 18 }} />
@@ -722,13 +756,21 @@ export default function App() {
               )}
             </div>
 
+            <div style={S.soldeInputCard}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7A8D" }}>💳 Solde actuel de votre compte</span>
+                <input style={S.soldeInput} type="number" step="0.01" placeholder="Ex : 7842" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+              </label>
+              {panique.solde !== "" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
+            </div>
+
             {/* ─── LA STAR : Disponible réel, en grand, avec le temps de sécurité juste à côté ─── */}
             <div style={S.heroDispo}>
               <div style={S.heroDispoLabel}>💰 Vous pouvez dépenser</div>
               {disponibleAujourdhui !== null ? (
                 <div style={{ ...S.heroDispoValue, color: disponibleAujourdhui < 0 ? "#FF8A80" : "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</div>
               ) : (
-                <div style={S.dispoEmpty}>Renseignez votre solde dans <button style={S.linkBtnLight} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce chiffre</div>
+                <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
               )}
               {moisSurvie !== null && (
                 <div style={S.heroDispoSub}>🛡️ soit environ <strong style={{ color: "white" }}>{moisSurvie} mois de sécurité</strong></div>
@@ -814,9 +856,39 @@ export default function App() {
                 <span style={{ fontSize: 13, fontWeight: 600, color: STATUT_INFO[statut].color }}>
                   {STATUT_INFO[statut].emoji} {STATUT_INFO[statut].label}
                 </span>
-                <button style={S.linkBtn} onClick={() => setNav("panique")}>voir pourquoi →</button>
               </div>
             )}
+
+            {panique.solde !== "" && (() => {
+              const manque = (disponibleAujourdhui ?? 0) < 0 ? Math.abs(disponibleAujourdhui) : 0;
+              const recos = [];
+              if (manque > 0) {
+                recos.push({ icon: "ti-alert-triangle", text: `Mettre ${formatEUR(manque)} de côté pour couvrir vos charges et votre réserve de sécurité.`, urgent: true });
+              }
+              if (urssafProvision > 0 && estimateData?.periode_courante?.jours_restants <= 14) {
+                recos.push({ icon: "ti-calendar-due", text: `Déclarer et payer vos cotisations URSSAF avant le ${formatDate(estimateData.periode_courante.date_limite_declaration)} (${estimateData.periode_courante.jours_restants}j restants).`, urgent: estimateData.periode_courante.jours_restants <= 7 });
+              }
+              if ((disponibleAujourdhui ?? 0) > securiteNum * 0.5 && (disponibleAujourdhui ?? 0) > 0) {
+                recos.push({ icon: "ti-cash", text: `Vous avez de la marge — vous pourriez vous verser jusqu'à ${formatEUR(salaireRecommande)} sans risque (voir Mode Salaire).`, urgent: false });
+              }
+              if (tvaProche) {
+                recos.push({ icon: "ti-receipt-tax", text: `Vous approchez du seuil de TVA (${pourcentageSeuilTva}%) — anticipez ce changement.`, urgent: tvaDepasse });
+              }
+              if (recos.length === 0) {
+                recos.push({ icon: "ti-check", text: "Rien à signaler pour l'instant — votre situation est stable.", urgent: false });
+              }
+              return (
+                <div style={{ ...S.card, marginBottom: 14 }}>
+                  <div style={S.cardTitle}>🎯 Que faire maintenant ?</div>
+                  {recos.map((r, i) => (
+                    <div key={i} style={S.recoRow}>
+                      <span style={{ ...S.recoNum, background: r.urgent ? "#FCEBEB" : "#E6F1FB", color: r.urgent ? "#A32D2D" : "#0C447C" }}>{i + 1}</span>
+                      <span style={{ fontSize: 13, color: INK, lineHeight: 1.5 }}>{r.text}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             <button style={S.askHectorBtn} onClick={() => {
               setQuickAskQuestions([
@@ -842,17 +914,20 @@ export default function App() {
                     Déclaration URSSAF dans {estimateData.periode_courante.jours_restants} jours
                   </div>
                 </div>
-                <a href="https://www.autoentrepreneur.urssaf.fr" target="_blank" rel="noopener noreferrer"
-                  style={{ fontSize: 12, fontWeight: 600, color: "inherit", textDecoration: "none", whiteSpace: "nowrap" }}>
-                  Déclarer →
-                </a>
+                <button onClick={() => setNav("declaration")}
+                  style={{ fontSize: 12, fontWeight: 600, color: "inherit", background: "none", border: "none", cursor: "pointer", whiteSpace: "nowrap" }}>
+                  Préparer →
+                </button>
               </div>
             )}
 
             <div style={{ ...S.card, marginBottom: 20 }}>
               <div style={S.cardTitle}>
                 <span><i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Simulation rapide</span>
-                {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
+                <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button style={S.linkBtn} onClick={() => setNav("revenus")}>+ Ajouter un revenu →</button>
+                  {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
+                </span>
               </div>
               <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
@@ -937,180 +1012,77 @@ export default function App() {
           </div>
         )}
 
-        {nav === "panique" && (() => {
+        {nav === "declaration" && estimateData && estimateData.disponible !== false && (
+          <div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+              <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout ce qu'il faut, prêt en 5 secondes</p></div>
+            </div>
+
+            <div style={{ ...S.card, textAlign: "center", padding: "28px 24px" }}>
+              <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5 }}>Prochaine déclaration</div>
+              <div style={{ fontSize: 18, fontWeight: 600, color: INK, marginTop: 6 }}>{estimateData.periode_courante?.label}</div>
+              <div style={{ fontSize: 13, color: "#854F0B", marginTop: 4 }}>à déclarer avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)} ({estimateData.periode_courante?.jours_restants}j restants)</div>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.paniqueLine}>
+                <span style={S.paniqueLineLabel}><i className="ti ti-chart-bar" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CA à déclarer</span>
+                <span style={{ fontWeight: 700, fontSize: 16 }}>{formatEUR(estimateData.ca_periode_courante)}</span>
+              </div>
+              <div style={S.paniqueLine}>
+                <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Cotisations estimées <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>({estimateData.taux_global_pct}%)</span></span>
+                <span style={{ fontWeight: 700, fontSize: 16, color: "#854F0B" }}>{formatEUR(estimateData.montant_a_provisionner)}</span>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", gap: 10, marginTop: 14 }}>
+              <button
+                style={{ ...S.btnSecondary, flex: 1, justifyContent: "center", display: "flex", alignItems: "center", gap: 6 }}
+                onClick={() => {
+                  navigator.clipboard?.writeText(String(estimateData.montant_a_provisionner));
+                  setMontantCopie(true);
+                  setTimeout(() => setMontantCopie(false), 2000);
+                }}
+              >
+                <i className={`ti ${montantCopie ? "ti-check" : "ti-copy"}`} aria-hidden="true" style={{ fontSize: 16 }} />
+                {montantCopie ? "Copié !" : "Copier le montant"}
+              </button>
+              <a
+                href="https://www.autoentrepreneur.urssaf.fr"
+                target="_blank" rel="noopener noreferrer"
+                style={{ ...S.btnPrimarySmall, flex: 1, justifyContent: "center", display: "flex", alignItems: "center", gap: 6, textDecoration: "none" }}
+              >
+                <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 16 }} />
+                Ouvrir URSSAF
+              </a>
+            </div>
+
+            <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
+              H€CTOR prépare les montants, mais ne déclare pas à votre place — vérifiez toujours avant de valider sur le site officiel.
+            </p>
+          </div>
+        )}
+
+        {nav === "achat" && (() => {
           const solde = soldeNum;
-          const urssaf = urssafProvision; // calcule automatiquement par H€CTOR
-          const impots = impotsNum; // deja inclus dans le taux si versement liberatoire
+          const urssaf = urssafProvision;
           const cfe = cfeNum;
           const chargesFutures = totalChargesAVenir;
           const apresReserve = disponibleAujourdhui ?? 0;
-
-          const score = statut || "vert"; // meme source que le Score H€CTOR et le Dashboard
-          const c = { ...STATUT_INFO[score], dot: STATUT_INFO[score].border, text: STATUT_INFO[score].color };
-          const scoreLabel = c.label;
-          const manque = apresReserve < 0 ? Math.abs(apresReserve) : 0;
+          const score = statut || "vert";
 
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>🔍 Scanner Financier</h1><p style={S.pageSub}>H€CTOR scanne toute votre situation en un coup d'œil</p></div>
+                <div><h1 style={S.pageTitle}>🛒 Mode Achat</h1><p style={S.pageSub}>Puis-je acheter ça sans me mettre en danger ?</p></div>
               </div>
 
-              <div style={S.card}>
-                <label style={S.label}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>💳 Quel est le solde de votre compte ?</span>
-                  <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="0.01" placeholder="Ex : 1224" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
-                </label>
-                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "10px 0 0" }}>
-                  H€CTOR connaît déjà votre CA, votre activité, votre taux URSSAF et votre réserve cible — rien d'autre à remplir.
-                </p>
-              </div>
-
-              {panique.solde !== "" && (
+              {panique.solde === "" ? (
+                <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde sur le <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour utiliser ce simulateur.</p></div>
+              ) : (
                 <>
-                  {/* ─── DIAGNOSTIC H€CTOR : la decision, en premier, en 5 secondes ─── */}
-                  {(() => {
-                    const urssafOk = soldeNum >= urssaf;
-                    const reserveOk = (soldeNum - chargesFutures) >= securiteNum;
-                    const risques = [];
-                    if (!urssafOk) risques.push("URSSAF non provisionnée");
-                    if (!reserveOk) risques.push("réserve de sécurité non atteinte");
-                    if (moisSurvie !== null && moisSurvie < 3) risques.push("trésorerie sous 3 mois d'autonomie");
-                    return (
-                      <div style={{ ...S.card, marginTop: 14, background: INK, border: "none" }}>
-                        <div style={{ fontSize: 11, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 14, textAlign: "center" }}>Diagnostic H€CTOR</div>
-                        <div style={{ display: "flex", justifyContent: "center", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 20 }}>{c.emoji}</span>
-                          <span style={{ fontSize: 16, fontWeight: 600, color: "white" }}>Santé financière : {scoreSante ?? "—"}/100</span>
-                        </div>
-                        <div style={{ textAlign: "center", marginTop: 18, marginBottom: 18 }}>
-                          <div style={{ fontSize: 11, color: "#8BA5C0" }}>💰 Disponible réel</div>
-                          <div style={{ fontSize: 44, fontWeight: 700, color: apresReserve > 0 ? "#5DCAA5" : "#FF8A80" }}>{formatEUR(Math.max(0, apresReserve))}</div>
-                        </div>
-                        <div style={S.diagGrid}>
-                          <div>
-                            <div style={{ fontSize: 11, color: "#8BA5C0" }}>📅 Autonomie</div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: "white" }}>{moisSurvie !== null ? `${moisSurvie} mois sans revenus` : "—"}</div>
-                          </div>
-                          <div>
-                            <div style={{ fontSize: 11, color: "#8BA5C0" }}>⚠️ Risques</div>
-                            <div style={{ fontSize: 15, fontWeight: 600, color: risques.length ? "#FAC775" : "#5DCAA5" }}>{risques.length ? risques.join(", ") : "Aucun"}</div>
-                          </div>
-                        </div>
-                        <div style={{ marginTop: 16, paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
-                          <div style={{ fontSize: 11, color: "#8BA5C0" }}>🎯 Recommandation</div>
-                          <div style={{ fontSize: 14, fontWeight: 600, color: "white", marginTop: 4 }}>
-                            {apresReserve > 0 ? <>Vous pouvez vous verser jusqu'à {formatEUR(salaireRecommande)}</> : <>Mettez {formatEUR(manque)} de côté avant toute dépense</>}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* ─── Détail du calcul : pour ceux qui veulent comprendre le pourquoi ─── */}
-                  <details style={{ ...S.card, marginTop: 14 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>📋 Voir le détail du calcul</summary>
-                    <div style={{ marginTop: 14 }}>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Solde actuel</span>
-                        <span style={{ fontWeight: 600 }}>{formatEUR(solde)}</span>
-                      </div>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-shield" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Réserve de sécurité <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(votre objectif)</span></span>
-                        <input style={S.inlineEditValue} type="number" step="100" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
-                      </div>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />URSSAF à payer <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(calculé sur votre CA réel)</span></span>
-                        <span style={{ color: "#854F0B", fontWeight: 600 }}>{formatEUR(urssaf)}</span>
-                      </div>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-percentage" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Impôts estimés {profile?.versement_liberatoire ? <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(inclus dans le taux URSSAF)</span> : <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(TMI {tmi}%)</span>}</span>
-                        <span style={{ color: "#854F0B", fontWeight: 600 }}>{formatEUR(impots)}</span>
-                      </div>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-home" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />CFE estimée <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>(estimation, modifiable)</span></span>
-                        <input style={S.inlineEditValue} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} />
-                      </div>
-                      <div style={S.paniqueResult}>
-                        <span style={S.paniqueResultLabel}>Disponible immédiatement</span>
-                        <span style={{ ...S.paniqueResultValue, fontSize: 32, color: apresReserve > 0 ? c.text : "#A32D2D" }}>{formatEUR(Math.max(0, apresReserve))}</span>
-                        <span style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6 }}>
-                          {formatEUR(solde)} − {formatEUR(securiteNum)} (réserve) − {formatEUR(urssaf)} (URSSAF) − {formatEUR(impots)} (impôts) − {formatEUR(cfe)} (CFE)
-                        </span>
-                      </div>
-                      {!profile?.versement_liberatoire && (
-                        <details style={{ marginTop: 10 }}>
-                          <summary style={{ cursor: "pointer", fontSize: 11, color: "#8BA5C0" }}>Modifier ma tranche d'imposition (TMI)</summary>
-                          <select style={{ ...S.input, marginTop: 8 }} value={tmi} onChange={e => setTmi(e.target.value)}>
-                            {TMI_OPTIONS.map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
-                          </select>
-                        </details>
-                      )}
-                    </div>
-                  </details>
-
-                  {(() => {
-                    const recos = [];
-                    if (manque > 0) {
-                      recos.push({ icon: "ti-alert-triangle", text: `Mettre ${formatEUR(manque)} de côté pour couvrir vos charges et votre réserve de sécurité.`, urgent: true });
-                    }
-                    if (urssaf > 0 && estimateData?.periode_courante?.jours_restants <= 14) {
-                      recos.push({ icon: "ti-calendar-due", text: `Déclarer et payer vos cotisations URSSAF avant le ${formatDate(estimateData.periode_courante.date_limite_declaration)} (${estimateData.periode_courante.jours_restants}j restants).`, urgent: estimateData.periode_courante.jours_restants <= 7 });
-                    }
-                    if (apresReserve > securiteNum * 0.5 && apresReserve > 0) {
-                      recos.push({ icon: "ti-cash", text: `Vous avez de la marge — vous pourriez vous verser jusqu'à ${formatEUR(salaireRecommande)} sans risque (voir Mode Salaire).`, urgent: false });
-                    }
-                    if (tvaProche) {
-                      recos.push({ icon: "ti-receipt-tax", text: `Vous approchez du seuil de TVA (${pourcentageSeuilTva}%) — anticipez ce changement.`, urgent: tvaDepasse });
-                    }
-                    if (recos.length === 0) {
-                      recos.push({ icon: "ti-check", text: "Rien à signaler pour l'instant — votre situation est stable.", urgent: false });
-                    }
-                    return (
-                      <div style={{ ...S.card, marginTop: 14 }}>
-                        <div style={S.cardTitle}>🎯 Que faire maintenant ?</div>
-                        {recos.map((r, i) => (
-                          <div key={i} style={S.recoRow}>
-                            <span style={{ ...S.recoNum, background: r.urgent ? "#FCEBEB" : "#E6F1FB", color: r.urgent ? "#A32D2D" : "#0C447C" }}>{i + 1}</span>
-                            <span style={{ fontSize: 13, color: INK, lineHeight: 1.5 }}>{r.text}</span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-
-                  <details style={{ ...S.card, marginTop: 14 }}>
-                    <summary style={{ cursor: "pointer", fontSize: 13, fontWeight: 600, color: "#5B6573" }}>⚙️ Dettes / emprunts en cours <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour le Score H€CTOR)</span></summary>
-                    <div style={{ marginTop: 14 }}>
-                      <div style={S.paniqueLine}>
-                        <span style={S.paniqueLineLabel}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Dettes / emprunts en cours</span>
-                        <input style={S.inlineEditValue} type="number" step="0.01" value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e.target.value })} />
-                      </div>
-                    </div>
-                  </details>
-
-                  {moisSurvie !== null && (
-                    <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "24px" }}>
-                      <div style={S.cardTitle}>💀 Si votre activité s'arrête demain</div>
-                      <div style={{ fontSize: 36, fontWeight: 700, color: moisSurvie >= 6 ? "#1D9E75" : moisSurvie >= 3 ? "#EF9F27" : "#A32D2D" }}>
-                        {moisSurvie} mois
-                      </div>
-                      <div style={{ fontSize: 13, color: "#5B6573", marginTop: 4 }}>
-                        soit environ {joursSurvie} jours · rupture estimée vers le {dateRupture?.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>
-                        de trésorerie restante (après charges dues), au rythme de votre CA mensuel moyen actuel
-                      </div>
-                      <div style={{ marginTop: 12 }}>
-                        <span style={{ ...S.badge, ...(score === "vert" ? S.badgeGreen : score === "orange" ? S.badgeOrange : { background: "#FCEBEB", color: "#A32D2D" }) }}>
-                          Niveau de risque : {STATUT_INFO[score].emoji} {STATUT_INFO[score].label}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
-                    <div style={S.cardTitle}>🛒 Mode Achat — Puis-je me permettre cette dépense ?</div>
+                  <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
+                    <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                       <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Ex : Jaguar E-PACE → tapez 18000" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
                     </div>
@@ -1244,7 +1216,7 @@ export default function App() {
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
             {panique.solde === "" ? (
-              <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("panique")}>Scanner Financier</button> pour voir ce calcul.</p></div>
+              <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour voir ce calcul.</p></div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
@@ -1359,9 +1331,10 @@ export default function App() {
                       <span style={{ fontSize: 12, color: "#6B7A8D", width: 50, textAlign: "right" }}>{f.pts}/{f.max}</span>
                     </div>
                   ))}
-                  <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
-                    Dettes prises en compte : {formatEUR(parseFloat(panique.dettes) || 0)} · <button style={S.linkBtn} onClick={() => setNav("panique")}>modifier</button>
-                  </p>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "0.5px solid #EEF2F7" }}>
+                    <span style={{ fontSize: 12, color: "#6B7A8D" }}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 14, marginRight: 6 }} />Dettes / emprunts en cours</span>
+                    <input style={S.inlineEditValue} type="number" step="0.01" value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e.target.value })} />
+                  </div>
                 </div>
               )}
             </div>
@@ -1674,87 +1647,55 @@ export default function App() {
           </div>
         )}
 
-        {nav === "banque" && (
+        {nav === "profil" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>Connexion bancaire</h1><p style={S.pageSub}>Fini la saisie manuelle</p></div>
+              <div><h1 style={S.pageTitle}>👤 Profil</h1><p style={S.pageSub}>Personnalisez H€CTOR</p></div>
             </div>
 
-            <div style={S.bankHero}>
-              <i className="ti ti-plug-connected" aria-hidden="true" style={{ fontSize: 28, color: ACCENT, marginBottom: 12 }} />
-              <h2 style={{ fontSize: 17, fontWeight: 600, color: INK, margin: "0 0 8px" }}>Bientôt : connectez votre banque en 30 secondes</h2>
-              <p style={{ fontSize: 13, color: "#5B6573", lineHeight: 1.6, maxWidth: 520, margin: "0 auto" }}>
-                Aujourd'hui, vous ajoutez vos revenus à la main ou via une facture. Une fois cette fonction activée, H€CTOR ira chercher directement vos encaissements sur votre compte bancaire — votre dashboard se remplira tout seul, chaque jour, sans rien faire.
+            <div style={S.card}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
+                <div style={S.profilAvatar}>{(profilPrenom?.[0] || profile?.email?.[0] || "?").toUpperCase()}{profilNom?.[0]?.toUpperCase() || ""}</div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{profilPrenom || profilNom ? `${profilPrenom} ${profilNom}`.trim() : "Complétez votre profil"}</div>
+                  <div style={{ fontSize: 12, color: "#8BA5C0" }}>{profile?.email}</div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <label style={S.label}>Prénom
+                  <input style={S.input} type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Camille" />
+                </label>
+                <label style={S.label}>Nom
+                  <input style={S.input} type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Gardereau" />
+                </label>
+                <label style={S.label}>Téléphone
+                  <input style={S.input} type="tel" value={profilTelephone} onChange={e => setProfilTelephone(e.target.value)} placeholder="06 12 34 56 78" />
+                </label>
+                <label style={S.label}>Entreprise
+                  <input style={S.input} type="text" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} placeholder="VANILLA" />
+                </label>
+                <label style={S.label}>SIRET
+                  <input style={S.input} type="text" value={profilSiret} onChange={e => setProfilSiret(e.target.value)} placeholder="123 456 789 00012" />
+                </label>
+                <label style={S.label}>Statut juridique
+                  <input style={{ ...S.input, background: "#FAFBFC", color: "#8BA5C0" }} type="text" value={profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut || "—"} readOnly />
+                </label>
+              </div>
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
+                Activité : {ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · pour changer de statut ou d'activité, contactez le support.
               </p>
             </div>
 
-            <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
-              <div style={S.card}>
-                <div style={S.cardTitle}>Comment ça marchera</div>
-                {[
-                  { n: "1", t: "Vous choisissez votre banque", d: "Qonto, Shine, Revolut Business, ou n'importe quelle banque classique." },
-                  { n: "2", t: "Vous autorisez l'accès en lecture seule", d: "Comme sur l'appli officielle de votre banque — H€CTOR ne peut rien dépenser, juste lire vos encaissements." },
-                  { n: "3", t: "Vos revenus se remplissent automatiquement", d: "Chaque virement reçu apparaît dans votre dashboard, et le calcul URSSAF se met à jour en temps réel." },
-                ].map(s => (
-                  <div key={s.n} style={S.conseilItem}>
-                    <div style={{ ...S.conseilIcon, background: "#E6F1FB", color: "#0C447C", fontWeight: 600, fontSize: 13 }}>{s.n}</div>
-                    <div>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: INK, marginBottom: 2 }}>{s.t}</div>
-                      <div style={{ fontSize: 12, color: "#6B7A8D", lineHeight: 1.5 }}>{s.d}</div>
-                    </div>
-                  </div>
-                ))}
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>🔗 Banque connectée</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                <span style={{ fontSize: 13, color: "#5B6573" }}>Aucune banque connectée pour l'instant</span>
+                <span style={{ ...S.badge, background: "#FCEBEB", color: "#A32D2D" }}>🔴 Non connectée</span>
               </div>
-
-              <div style={S.card}>
-                <div style={S.cardTitle}>Banques prévues au lancement</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                  {[
-                    { nom: "Qonto", icon: "ti-building-bank" },
-                    { nom: "Shine", icon: "ti-sun" },
-                    { nom: "Revolut Business", icon: "ti-credit-card" },
-                    { nom: "Banque classique", icon: "ti-building-bank" },
-                  ].map(b => (
-                    <div key={b.nom} style={S.bankCard}>
-                      <i className={`ti ${b.icon}`} aria-hidden="true" style={{ fontSize: 22, color: "#8BA5C0" }} />
-                      <span style={{ fontSize: 12, color: "#6B7A8D", marginTop: 6, textAlign: "center" }}>{b.nom}</span>
-                    </div>
-                  ))}
-                </div>
-                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "14px 0 0", textAlign: "center" }}>
-                  Connexion sécurisée via un prestataire agréé (Open Banking / DSP2)
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {nav === "echeances" && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Échéances</h1><p style={S.pageSub}>Ne manquez aucune date importante</p></div></div>
-            <div style={{ display: "flex", gap: 16, marginBottom: 14, fontSize: 12, color: "#6B7A8D" }}>
-              <span>🔴 ≤ 7 jours</span><span>🟠 ≤ 15 jours</span><span>🟢 30+ jours</span>
-            </div>
-            <div style={S.card}>
-              {[
-                { date: "31 juillet 2026", label: "Déclaration URSSAF T2 2026", type: "URSSAF", urgence: estimateData?.periode_courante?.jours_restants },
-                { date: "31 octobre 2026", label: "Déclaration URSSAF T3 2026", type: "URSSAF", urgence: null },
-                { date: "15 décembre 2026", label: "CFE (Cotisation Foncière des Entreprises)", type: "Impôts", urgence: null },
-                { date: "31 janvier 2027", label: "Déclaration URSSAF T4 2026", type: "URSSAF", urgence: null },
-              ].map((e, i) => {
-                const dotColor = e.urgence == null ? "#8BA5C0" : e.urgence <= 7 ? "#E24B4A" : e.urgence <= 15 ? "#EF9F27" : "#1D9E75";
-                return (
-                  <div key={i} style={{ ...S.newsItem, display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 13, fontWeight: 500, color: INK }}>{e.label}</div>
-                      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>{e.date}</div>
-                    </div>
-                    {e.urgence != null && <span style={{ ...S.alertChip, background: dotColor + "22", color: dotColor }}>{e.urgence}j restants</span>}
-                    <span style={{ ...S.badge, ...(e.type === "URSSAF" ? S.badgeBlue : S.badgeOrange) }}>{e.type}</span>
-                  </div>
-                );
-              })}
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, lineHeight: 1.5 }}>
+                Bientôt : connectez Qonto, Shine, Revolut Business ou une banque classique pour que vos revenus se remplissent automatiquement, sans saisie manuelle.
+              </p>
             </div>
           </div>
         )}
@@ -1982,6 +1923,10 @@ const S = {
   heroDispoLabel: { fontSize: 13, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 },
   heroDispoValue: { fontSize: 52, fontWeight: 700, fontVariantNumeric: "tabular-nums", lineHeight: 1.1 },
   heroDispoSub: { fontSize: 14, color: "#B5D4F4", marginTop: 10 },
+  soldeInputCard: { display: "flex", alignItems: "center", gap: 14, background: "white", border: "1px solid #DDE5EE", borderRadius: 12, padding: "12px 16px", marginBottom: 14 },
+  soldeInput: { border: "none", outline: "none", fontSize: 18, fontWeight: 600, color: INK, width: "100%", padding: 0 },
+  sidebarGreeting: { padding: "0 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 8 },
+  profilAvatar: { width: 52, height: 52, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, color: "#0C447C", flexShrink: 0 },
   heroDetailRow: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4", padding: "4px 0" },
   projRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "10px 0", borderBottom: "0.5px solid #EEF2F7" },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#3D4452", marginBottom: 14 },
