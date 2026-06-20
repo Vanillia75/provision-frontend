@@ -889,7 +889,7 @@ export default function App() {
                         ? "(basé sur vos dépenses)"
                         : baseMensuelleSecurite > 0 && securiteNum > 0
                           ? `(${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois de sécurité estimé)`
-                          : "(montant personnalisé)"}
+                          : "(réserve personnalisée)"}
                     </span>
                   </div>
                   <div style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775", fontWeight: 600 }}>
@@ -960,7 +960,7 @@ export default function App() {
                       </div>
                       {depensesMensuellesNum === 0 && (
                         <div style={{ fontSize: 10, color: "#7A93AD", marginTop: 6 }}>
-                          Sans vos dépenses réelles, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("profil")}>préciser mes dépenses</button>
+                          Sans vos dépenses réelles, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 11, fontWeight: 700, textDecoration: "underline" }} onClick={() => setNav("profil")}>préciser mes dépenses →</button>
                         </div>
                       )}
                     </div>
