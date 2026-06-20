@@ -883,27 +883,23 @@ export default function App() {
               {argentDisponibleBrut !== null && (
                 <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3, alignItems: "center", fontSize: 13 }}>
                   <div style={{ color: "rgba(255,255,255,0.85)" }}>
-                    🛡️ Réserve cible : <strong>{formatEUR(securiteNum)}</strong>
+                    🛡️ Réserve de sécurité : <strong>{formatEUR(securiteNum)}</strong>
                     <span style={{ fontSize: 11, color: "#7A93AD", marginLeft: 4 }}>
                       {securitePrecise
-                        ? "(calculée sur vos dépenses)"
+                        ? "(basé sur vos dépenses)"
                         : baseMensuelleSecurite > 0 && securiteNum > 0
-                          ? `(≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois, estimée sur votre CA)`
+                          ? `(${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois de sécurité estimé)`
                           : "(montant personnalisé)"}
                     </span>
                   </div>
                   <div style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775", fontWeight: 600 }}>
                     ➡️ Marge prudente : {formatEUR(Math.max(0, disponibleAujourdhui))}
+                    {!reserveAtteinte && (
+                      <span style={{ fontSize: 11, fontWeight: 400, color: "#FAC775", marginLeft: 4 }}>
+                        (il manque {formatEUR(manqueReserveDashboard)} pour atteindre la réserve)
+                      </span>
+                    )}
                   </div>
-                </div>
-              )}
-              {argentDisponibleBrut !== null && (
-                <div style={S.heroDispoSub}>
-                  {reserveAtteinte ? (
-                    <>🛡️ <strong style={{ color: "#5DCAA5" }}>Réserve de sécurité atteinte</strong></>
-                  ) : (
-                    <>⚠️ Réserve cible non atteinte — il manque <strong style={{ color: "#FAC775" }}>{formatEUR(manqueReserveDashboard)}</strong></>
-                  )}
                 </div>
               )}
               {moisSurvie !== null && (
