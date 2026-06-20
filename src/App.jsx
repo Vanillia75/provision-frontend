@@ -335,7 +335,7 @@ export default function App() {
 
   function saveFacture() {
     const num = `F-${new Date().getFullYear()}-${String(factures.length + 1).padStart(3, "0")}`;
-    const f = { ...factureForm, numero: num, date: new Date().toISOString().split("T")[0], total: totalFacture(), statut: "envoyée" };
+    const f = { ...factureForm, numero: num, date: new Date().toISOString().split("T")[0], total: totalFacture(), statut: "Brouillon enregistré" };
     setFactures(prev => [f, ...prev]);
     setShowNewFacture(false);
     setFactureForm({ client_nom: "", client_email: "", client_adresse: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
@@ -889,6 +889,13 @@ export default function App() {
               )}
             </div>
 
+            {argentDisponibleBrut !== null && (
+              <div style={S.explainBanner}>
+                Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve, votre marge prudente est de <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>{" "}
+                <span style={{ fontSize: 11, color: "#5B82A8" }}>— c'est ce 2ème chiffre qu'utilisent Mode Achat et Mode Salaire.</span>
+              </div>
+            )}
+
             {/* ─── 4 choses en 5 secondes : mettre de côté / objectifs / projections / sécurité ─── */}
             <div style={isMobile ? { ...S.row2, gridTemplateColumns: "1fr" } : S.row2}>
               <div style={S.card}>
@@ -1267,6 +1274,11 @@ export default function App() {
                 <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde sur le <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour utiliser ce simulateur.</p></div>
               ) : (
                 <>
+                  <div style={S.explainBanner}>
+                    Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve de sécurité, votre marge prudente est de <strong>{formatEUR(Math.max(0, apresReserve))}</strong>.
+                    <span style={{ display: "block", fontSize: 11, color: "#5B82A8", marginTop: 4 }}>C'est cette marge prudente que H€CTOR utilise pour ses recommandations d'achat ci-dessous.</span>
+                  </div>
+
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
                     <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
@@ -1764,9 +1776,12 @@ export default function App() {
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
-                  <button style={S.btnPrimary} onClick={saveFacture}>Enregistrer et envoyer</button>
+                  <button style={S.btnPrimary} onClick={saveFacture}>Enregistrer</button>
                   <button style={S.btnSecondary} onClick={() => setShowNewFacture(false)}>Annuler</button>
                 </div>
+                <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
+                  La facture est enregistrée dans H€CTOR. <strong>L'envoi par email arrive bientôt</strong> — pour l'instant, téléchargez ou copiez les informations pour l'envoyer vous-même à votre client.
+                </p>
               </div>
             )}
             <div style={S.card}>
@@ -1776,7 +1791,7 @@ export default function App() {
                     <span style={S.incomeAmt}>{f.numero} — {f.client_nom}</span>
                     <span style={S.incomeMeta}>{formatDate(f.date)} · {formatEUR(f.total)}</span>
                   </div>
-                  <span style={{ ...S.badge, ...S.badgeGreen }}>{f.statut}</span>
+                  <span style={{ ...S.badge, ...S.badgeGray }}>{f.statut}</span>
                 </div>
               ))}
             </div>
@@ -1957,10 +1972,10 @@ export default function App() {
 
         {nav === "abonnement" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Choisissez la formule adaptée à vos besoins</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Le système de paiement arrive prochainement — voici ce qui est prévu</p></div></div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
               {PLANS.map((p, i) => (
-                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
+                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative", opacity: i === 0 ? 1 : 0.85 }}>
                   {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
                   <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 4 }}>{p.nom}</div>
                   <div style={{ marginBottom: 16 }}>
@@ -1972,9 +1987,15 @@ export default function App() {
                       <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
                     </div>
                   ))}
-                  <button style={{ ...S.btnPrimary, marginTop: 16, ...(i !== 1 ? { background: "white", color: ACCENT, border: `1px solid ${ACCENT}` } : {}) }}>
-                    {i === 0 ? "Continuer gratuitement" : "Choisir ce plan"}
-                  </button>
+                  {i === 0 ? (
+                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "white", color: ACCENT, border: `1px solid ${ACCENT}` }} onClick={() => setNav("dashboard")}>
+                      Continuer gratuitement
+                    </button>
+                  ) : (
+                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "#EEF2F7", color: "#9098A6", cursor: "not-allowed", border: "1px solid #DDE5EE" }} disabled>
+                      🔒 Bientôt disponible
+                    </button>
+                  )}
                 </div>
               ))}
             </div>
@@ -2121,6 +2142,7 @@ const S = {
   heroDispoSub: { fontSize: 14, color: "#B5D4F4", marginTop: 10 },
   soldeInputCard: { display: "flex", alignItems: "center", gap: 14, background: "white", border: "1px solid #DDE5EE", borderRadius: 12, padding: "12px 16px", marginBottom: 14 },
   onboardingNotice: { display: "flex", alignItems: "center", gap: 14, background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 12, padding: "14px 16px", marginBottom: 14, flexWrap: "wrap" },
+  explainBanner: { background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#28425E", marginBottom: 14, lineHeight: 1.5 },
   soldeInput: { border: "none", outline: "none", fontSize: 18, fontWeight: 600, color: INK, width: "100%", padding: 0 },
   sidebarGreeting: { padding: "0 18px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", marginBottom: 8 },
   profilAvatar: { width: 52, height: 52, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, fontWeight: 600, color: "#0C447C", flexShrink: 0 },
