@@ -192,6 +192,11 @@ export default function App() {
     try {
       const p = await apiFetch("/profile");
       setProfile(p);
+      if (p.prenom != null) setProfilPrenom(p.prenom);
+      if (p.nom != null) setProfilNom(p.nom);
+      if (p.telephone != null) setProfilTelephone(p.telephone);
+      if (p.entreprise != null) setProfilEntreprise(p.entreprise);
+      if (p.depenses_mensuelles != null) setDepensesMensuelles(String(p.depenses_mensuelles));
       if (p.onboarding_complete) {
         const [est, inc, expSummary] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary")]);
         setEstimateData(est);
@@ -317,6 +322,31 @@ export default function App() {
     } catch (err) {
       setSiretLookupStatus("error");
       setSiretLookupMessage(err.message);
+    }
+  }
+
+  const [profileDetailsSaving, setProfileDetailsSaving] = useState(false);
+  const [profileDetailsSaved, setProfileDetailsSaved] = useState(false);
+
+  async function handleSaveProfileDetails() {
+    setProfileDetailsSaving(true);
+    try {
+      await apiFetch("/profile/details", {
+        method: "POST",
+        body: JSON.stringify({
+          prenom: profilPrenom || null,
+          nom: profilNom || null,
+          telephone: profilTelephone || null,
+          entreprise: profilEntreprise || null,
+          depenses_mensuelles: depensesMensuelles !== "" ? parseFloat(depensesMensuelles) : null,
+        }),
+      });
+      setProfileDetailsSaved(true);
+      setTimeout(() => setProfileDetailsSaved(false), 2000);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setProfileDetailsSaving(false);
     }
   }
 
@@ -2463,16 +2493,16 @@ export default function App() {
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                 <label style={S.label}>Prénom
-                  <input style={S.input} type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Camille" />
+                  <input style={S.input} type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Ex : Jean" />
                 </label>
                 <label style={S.label}>Nom
-                  <input style={S.input} type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Gardereau" />
+                  <input style={S.input} type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Ex : Dupont" />
                 </label>
                 <label style={S.label}>Téléphone
-                  <input style={S.input} type="tel" value={profilTelephone} onChange={e => setProfilTelephone(e.target.value)} placeholder="06 12 34 56 78" />
+                  <input style={S.input} type="tel" value={profilTelephone} onChange={e => setProfilTelephone(e.target.value)} placeholder="Ex : 06 12 34 56 78" />
                 </label>
                 <label style={S.label}>Entreprise
-                  <input style={S.input} type="text" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} placeholder="VANILLA" />
+                  <input style={S.input} type="text" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} placeholder="Ex : Mon Entreprise" />
                 </label>
                 <label style={S.label}>SIRET
                   <div style={{ display: "flex", gap: 8 }}>
@@ -2491,6 +2521,12 @@ export default function App() {
                   <input style={{ ...S.input, background: "#FAFBFC", color: "#8BA5C0" }} type="text" value={profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut || "—"} readOnly />
                 </label>
               </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 6 }}>
+                <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "10px 20px" }} onClick={handleSaveProfileDetails} disabled={profileDetailsSaving}>
+                  {profileDetailsSaving ? "…" : "Enregistrer"}
+                </button>
+                {profileDetailsSaved && <span style={{ fontSize: 12, color: "#1D9E75", fontWeight: 600 }}>✓ Enregistré</span>}
+              </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
                 Activité : {ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · pour changer de statut ou d'activité, contactez le support.
               </p>
@@ -2501,7 +2537,12 @@ export default function App() {
               <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 10px", lineHeight: 1.5 }}>
                 Sans cette info, H€CTOR estime votre "réserve de sécurité" sur votre CA moyen — ce qui peut être trompeur si vous facturez beaucoup mais dépensez peu (ou l'inverse). Indiquez vos vraies dépenses pour un calcul fiable.
               </p>
-              <input style={S.input} type="number" step="50" placeholder="Ex : 2000" value={depensesMensuelles} onChange={e => setDepensesMensuelles(e.target.value)} />
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <input style={S.input} type="number" step="50" placeholder="Ex : 2000" value={depensesMensuelles} onChange={e => setDepensesMensuelles(e.target.value)} />
+                <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "10px 20px", whiteSpace: "nowrap" }} onClick={handleSaveProfileDetails} disabled={profileDetailsSaving}>
+                  {profileDetailsSaving ? "…" : "Enregistrer"}
+                </button>
+              </div>
               {depensesMensuelles !== "" && <p style={{ fontSize: 11, color: "#1D9E75", marginTop: 8 }}>✓ Vos mois de sécurité sont maintenant calculés sur ce montant, pas sur votre CA.</p>}
             </div>
 
