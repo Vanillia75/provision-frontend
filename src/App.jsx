@@ -1999,27 +1999,63 @@ function AppInner() {
               {rows.length === 0 ? (
                 <div style={S.card}><p style={S.empty}>Aucun événement prévu sur les {timelineRange} prochains jours.</p></div>
               ) : (
-                <div style={{ position: "relative", paddingLeft: 24, borderLeft: "2px solid #DDE5EE", marginLeft: 4 }}>
+                <div>
+                  {/* ─── Point de départ ─── */}
+                  <div style={{ textAlign: "center", marginBottom: 4 }}>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Aujourd'hui</div>
+                    <div style={{ fontSize: 22, fontWeight: 700, color: INK, marginTop: 2 }}>{formatEUR(soldeNum)}</div>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "center", margin: "6px 0" }}>
+                    <div style={{ width: 2, height: 22, background: "#DDE5EE" }} />
+                  </div>
+
                   {rows.map((e, i) => {
                     const st = STYLES[e.type];
+                    const isLast = i === rows.length - 1;
                     return (
-                      <div key={i} style={{ position: "relative", paddingBottom: 22 }}>
-                        <div style={{ position: "absolute", left: -33, top: 2, width: 16, height: 16, borderRadius: "50%", background: st.bg, display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid white" }}>
-                          <i className={`ti ${ICONS[e.type]}`} aria-hidden="true" style={{ fontSize: 9, color: st.fg }} />
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>{e.label}</div>
-                            <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{joursLabel(e.date)}</div>
-                          </div>
-                          <div style={{ textAlign: "right", flexShrink: 0 }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 600, color: e.amount > 0 ? "#0F6E56" : INK }}>{e.amount > 0 ? "+" : ""}{formatEUR(e.amount)}</div>
-                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>solde : {formatEUR(e.running)}</div>
+                      <div key={i}>
+                        <div style={{ display: "flex", justifyContent: "center" }}>
+                          <div style={{ width: 14, height: 14, borderRadius: "50%", background: st.bg, border: "3px solid white", boxShadow: "0 0 0 2px #DDE5EE", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, position: "relative", zIndex: 1, marginTop: -8 }}>
+                            <i className={`ti ${ICONS[e.type]}`} aria-hidden="true" style={{ fontSize: 8, color: st.fg }} />
                           </div>
                         </div>
+
+                        <div style={{ background: "white", border: `1.5px solid ${e.running < 0 ? "#F0997B" : "#DDE5EE"}`, borderRadius: 14, padding: "16px 20px", margin: "0 0 0", boxShadow: "0 1px 3px rgba(10,37,64,0.04)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: st.fg, background: st.bg, padding: "3px 10px", borderRadius: 20, textTransform: "uppercase", letterSpacing: 0.3 }}>{joursLabel(e.date)}</span>
+                            {e.running < 0 && <span style={{ fontSize: 10, fontWeight: 700, color: "#A32D2D" }}>⚠ SOLDE NÉGATIF</span>}
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 34, height: 34, borderRadius: 10, background: st.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <i className={`ti ${ICONS[e.type]}`} aria-hidden="true" style={{ fontSize: 16, color: st.fg }} />
+                              </div>
+                              <div style={{ fontSize: 15, fontWeight: 600, color: INK, lineHeight: 1.3 }}>{e.label}</div>
+                            </div>
+                            <div style={{ fontSize: 22, fontWeight: 700, color: e.amount > 0 ? "#0F6E56" : "#A32D2D", whiteSpace: "nowrap" }}>{e.amount > 0 ? "+" : ""}{formatEUR(e.amount)}</div>
+                          </div>
+                          <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px dashed #EEF2F7", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <span style={{ fontSize: 12, color: "#8BA5C0" }}>Solde après impact</span>
+                            <span style={{ fontSize: 15, fontWeight: 700, color: e.running < 0 ? "#A32D2D" : e.running < securiteNum ? "#854F0B" : INK }}>{formatEUR(e.running)}</span>
+                          </div>
+                        </div>
+
+                        {!isLast && (
+                          <div style={{ display: "flex", justifyContent: "center", margin: "6px 0" }}>
+                            <div style={{ width: 2, height: 22, background: "#DDE5EE" }} />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
+
+                  <div style={{ display: "flex", justifyContent: "center", margin: "6px 0" }}>
+                    <div style={{ width: 2, height: 22, background: "#DDE5EE" }} />
+                  </div>
+                  <div style={{ ...S.card, textAlign: "center", background: INK, border: "none" }}>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>Solde projeté dans {timelineRange} jours</div>
+                    <div style={{ fontSize: 30, fontWeight: 700, color: endBalance < 0 ? "#F09595" : "#5DCAA5", marginTop: 6 }}>{formatEUR(endBalance)}</div>
+                  </div>
                 </div>
               )}
 
