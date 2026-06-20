@@ -363,8 +363,54 @@ export default function App() {
   const [uploadingFile, setUploadingFile] = useState(false);
   const [factureExtraite, setFactureExtraite] = useState(null);
   const [contacts, setContacts] = useState([]);
+  const [contactsLoading, setContactsLoading] = useState(false);
   const [showAddContact, setShowAddContact] = useState(false);
   const [contactForm, setContactForm] = useState({ nom: "", email: "", siret: "", adresse: "" });
+
+  async function loadContacts() {
+    setContactsLoading(true);
+    try {
+      const list = await apiFetch("/contacts");
+      setContacts(list);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setContactsLoading(false);
+    }
+  }
+
+  async function handleAddContact() {
+    if (!contactForm.nom) return;
+    try {
+      await apiFetch("/contacts", {
+        method: "POST",
+        body: JSON.stringify({
+          nom: contactForm.nom,
+          email: contactForm.email || null,
+          siret: contactForm.siret || null,
+          adresse: contactForm.adresse || null,
+        }),
+      });
+      setContactForm({ nom: "", email: "", siret: "", adresse: "" });
+      setShowAddContact(false);
+      await loadContacts();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleDeleteContact(id) {
+    try {
+      await apiFetch(`/contacts/${id}`, { method: "DELETE" });
+      await loadContacts();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (nav === "contacts" && token) loadContacts();
+  }, [nav, token]);
   const [invoicesList, setInvoicesList] = useState([]);
   const [invoicesSummary, setInvoicesSummary] = useState(null);
   const [expensesList, setExpensesList] = useState([]);
@@ -2766,7 +2812,7 @@ export default function App() {
                   <input style={S.input} placeholder="SIRET (optionnel)" value={contactForm.siret} onChange={e => setContactForm({ ...contactForm, siret: e.target.value })} />
                   <input style={S.input} placeholder="Adresse" value={contactForm.adresse} onChange={e => setContactForm({ ...contactForm, adresse: e.target.value })} />
                 </div>
-                <button style={{ ...S.btnPrimary, marginTop: 12 }} onClick={() => { setContacts(c => [...c, { ...contactForm, id: Date.now() }]); setContactForm({ nom: "", email: "", siret: "", adresse: "" }); setShowAddContact(false); }}>Enregistrer</button>
+                <button style={{ ...S.btnPrimary, marginTop: 12 }} onClick={handleAddContact}>Enregistrer</button>
               </div>
             )}
             {invoicesList.filter(i => i.statut === "payee").length > 0 && (() => {
@@ -2790,13 +2836,14 @@ export default function App() {
               );
             })()}
             <div style={S.card}>
-              {contacts.length === 0 ? <p style={S.empty}>Aucun contact. Ajoutez vos clients pour pré-remplir vos factures.</p> : contacts.map(c => (
+              {contactsLoading ? <p style={S.empty}>Chargement…</p> : contacts.length === 0 ? <p style={S.empty}>Aucun contact. Ajoutez vos clients pour pré-remplir vos factures.</p> : contacts.map(c => (
                 <div key={c.id} style={S.incomeRow}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "#0C447C", flexShrink: 0 }}>{c.nom.slice(0, 2).toUpperCase()}</div>
                   <div style={{ flex: 1, marginLeft: 10 }}>
                     <span style={S.incomeAmt}>{c.nom}</span>
                     <span style={S.incomeMeta}>{c.email}{c.siret ? ` · SIRET ${c.siret}` : ""}</span>
                   </div>
+                  <button aria-label="Supprimer" onClick={() => handleDeleteContact(c.id)} style={S.deleteBtn}>✕</button>
                 </div>
               ))}
             </div>
