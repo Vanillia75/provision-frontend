@@ -444,12 +444,14 @@ function AppInner() {
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("3000");
   const [simActivite, setSimActivite] = useState("services");
-  const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "50000");
-  const [objectifMensuel, setObjectifMensuel] = useState(() => localStorage.getItem("objectifMensuel") || "4200");
+  const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "");
+  const [objectifMensuel, setObjectifMensuel] = useState(() => localStorage.getItem("objectifMensuel") || "");
   const [objectifSaved, setObjectifSaved] = useState(false);
   const objectifMounted = useRef(false);
   const [objectifAnnuelSaved, setObjectifAnnuelSaved] = useState(false);
   const objectifAnnuelMounted = useRef(false);
+  const [editingObjectifMensuel, setEditingObjectifMensuel] = useState(false);
+  const [editingObjectifAnnuel, setEditingObjectifAnnuel] = useState(false);
   const [profilPrenom, setProfilPrenom] = useState(() => localStorage.getItem("profilPrenom") || "");
   const [profilNom, setProfilNom] = useState(() => localStorage.getItem("profilNom") || "");
   const [profilTelephone, setProfilTelephone] = useState(() => localStorage.getItem("profilTelephone") || "");
@@ -1064,19 +1066,12 @@ function AppInner() {
   const reserveAtteinte = panique.solde !== "" ? (soldeNum - totalChargesAVenir) >= securiteNum : null;
   const manqueReserveDashboard = (panique.solde !== "" && !reserveAtteinte) ? Math.round((securiteNum - Math.max(0, soldeNum - totalChargesAVenir)) * 100) / 100 : 0;
 
-  // --- Statut unifie (memes seuils que Mode Panique : >0 vert, 0 a -1000 orange, <-1000 rouge) ---
-  function statutFinancier() {
-    if (disponibleAujourdhui === null) return null;
-    if (disponibleAujourdhui > 0) return "vert";
-    if (disponibleAujourdhui >= -1000) return "orange";
-    return "rouge";
-  }
-  const statut = statutFinancier();
-  const STATUT_INFO = {
-    vert: { emoji: "🟢", label: "Situation saine", color: "#1D9E75", bg: "#E1F5EE", border: "#1D9E75" },
-    orange: { emoji: "🟠", label: "Situation fragile", color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27" },
-    rouge: { emoji: "🔴", label: "Situation critique", color: "#A32D2D", bg: "#FCEBEB", border: "#E24B4A" },
-  };
+  // --- Niveau unifié : une seule source de vérité pour le statut financier ---
+  // rouge = déficit réel (avant même la réserve) · orange = réserve entamée · vert = situation saine
+  const niveauFinancier = argentDisponibleBrut === null ? null
+    : argentDisponibleBrut < 0 ? "rouge"
+    : disponibleAujourdhui < 0 ? "orange"
+    : "vert";
 
   // --- Score sante HECTOR /100 : 5 composantes ponderees ---
   function calculScoreSante() {
@@ -1505,57 +1500,54 @@ function AppInner() {
             {/* ─── LA STAR : Argent réellement disponible, jamais masqué par la réserve ─── */}
             {argentDisponibleBrut !== null && argentDisponibleBrut < 0 ? (
               <div style={{ ...S.heroDispo, background: "#5C1A1A" }}>
-                <div style={S.heroDispoLabel}>🔴 Vous êtes en déficit</div>
+                <div style={S.heroDispoLabel}>🔴 Déficit</div>
                 <div style={{ ...S.heroDispoValue, color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
                 <div style={{ marginTop: 10, fontSize: 13, color: "#F7C1C1", maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
-                  Vos charges à venir ({formatEUR(totalChargesAVenir)}) dépassent votre solde actuel ({formatEUR(soldeNum)}). Il vous manque <strong>{formatEUR(Math.abs(argentDisponibleBrut))}</strong> pour les couvrir.
+                  Il manque <strong>{formatEUR(Math.abs(argentDisponibleBrut))}</strong> pour couvrir les charges prévues.
                 </div>
-                <details style={{ marginTop: 16, textAlign: "left" }}>
-                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#F0997B", textAlign: "center" }}>Voir le détail</summary>
+                <div style={{ marginTop: 20, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "14px 18px", textAlign: "left", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#F0997B", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>Charges prises en compte</div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>URSSAF</span><span style={{ color: "#F7C1C1" }}>{formatEUR(urssafProvision)}</span></div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>Impôts</span><span style={{ color: "#F7C1C1" }}>{formatEUR(impotsNum)}</span></div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>CFE</span><span style={{ color: "#F7C1C1" }}>{formatEUR(cfeNum)}</span></div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>Frais d'entreprise (ce mois)</span><span style={{ color: "#F7C1C1" }}>{formatEUR(fraisMoisNum)}</span></div>
+                  <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 6, fontWeight: 700 }}>
+                    <span style={{ color: "white" }}>Total charges</span><span style={{ color: "white" }}>{formatEUR(totalChargesAVenir)}</span>
+                  </div>
+                  <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 8, marginTop: 6 }}>
+                    <span style={{ color: "#F7C1C1" }}>Solde bancaire</span><span style={{ color: "#F7C1C1" }}>{formatEUR(soldeNum)}</span>
+                  </div>
+                  <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 6, fontWeight: 700 }}>
+                    <span style={{ color: "#F09595" }}>Déficit</span><span style={{ color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</span>
+                  </div>
+                </div>
+                <details style={{ marginTop: 14, textAlign: "left" }}>
+                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#F0997B", textAlign: "center" }}>Voir le calcul avancé (modifier CFE...)</summary>
                   <div style={{ marginTop: 12, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px" }}>
-                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>Solde bancaire actuel</span><span style={{ color: "#F7C1C1" }}>{formatEUR(soldeNum)}</span></div>
-                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>− URSSAF</span><span style={{ color: "#F7C1C1" }}>{formatEUR(urssafProvision)}</span></div>
-                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>− Impôts</span><span style={{ color: "#F7C1C1" }}>{formatEUR(impotsNum)}</span></div>
-                    <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>− CFE</span><span style={{ color: "#F7C1C1" }}>{formatEUR(cfeNum)}</span></div>
-                    <div style={S.heroDetailRow}>
-                      <span style={{ color: "#F7C1C1" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4, color: "#F0997B" }} onClick={() => setNav("frais")}>voir détail →</button></span>
-                      <span style={{ color: "#F7C1C1" }}>{formatEUR(fraisMoisNum)}</span>
-                    </div>
-                    <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
-                      <span style={{ color: "#F09595" }}>= Manque</span><span style={{ color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</span>
+                    <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
+                      <span style={{ color: "#F7C1C1" }}>CFE <span style={{ fontSize: 10, color: "#F0997B" }}>(souvent ~200€/an, à renseigner)</span></span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        <input
+                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#F7C1C1", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
+                          type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
+                        />
+                        <span style={{ fontSize: 11, color: "#F0997B" }}>€</span>
+                      </span>
                     </div>
                   </div>
                 </details>
               </div>
             ) : (
               <div style={S.heroDispo}>
-                <div style={S.heroDispoLabel}>💰 Argent disponible</div>
+                <div style={S.heroDispoLabel}>{niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "🟠 Situation fragile" : "🟢 Situation saine"}</div>
+                {niveauFinancier !== null && <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: -4, marginBottom: 8 }}>Disponible</div>}
                 {argentDisponibleBrut !== null ? (
-                  <div style={{ ...S.heroDispoValue, color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
+                  <div style={{ ...S.heroDispoValue, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
                 ) : (
                   <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
                 )}
-                {argentDisponibleBrut !== null && (
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 3, alignItems: "center", fontSize: 13 }}>
-                    <div style={{ color: "rgba(255,255,255,0.85)" }}>
-                      🛡️ Réserve de sécurité : <strong>{formatEUR(securiteNum)}</strong>
-                      <span style={{ fontSize: 11, color: "#7A93AD", marginLeft: 4 }}>
-                        {securitePrecise
-                          ? "(basé sur vos dépenses)"
-                          : baseMensuelleSecurite > 0 && securiteNum > 0
-                            ? `(${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois de sécurité estimé)`
-                            : "(réserve personnalisée)"}
-                      </span>
-                    </div>
-                    <div style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775", fontWeight: 600 }}>
-                      ➡️ Marge prudente : {formatEUR(Math.max(0, disponibleAujourdhui))}
-                      {!reserveAtteinte && (
-                        <span style={{ fontSize: 11, fontWeight: 400, color: "#FAC775", marginLeft: 4 }}>
-                          (il manque {formatEUR(manqueReserveDashboard)} pour atteindre la réserve)
-                        </span>
-                      )}
-                    </div>
-                  </div>
+                {niveauFinancier === "orange" && (
+                  <div style={{ marginTop: 8, fontSize: 13, color: "#FAC775", fontWeight: 600 }}>🛡️ Réserve de sécurité entamée</div>
                 )}
                 {moisSurvie !== null && (
                   <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
@@ -1629,17 +1621,10 @@ function AppInner() {
               </div>
             )}
 
-            {argentDisponibleBrut !== null && (
-              argentDisponibleBrut < 0 ? (
-                <div style={{ ...S.explainBanner, background: "#FCEBEB", border: "1px solid #F7C1C1" }}>
-                  <span style={{ color: "#A32D2D" }}>Vous êtes actuellement en déficit de <strong>{formatEUR(Math.abs(argentDisponibleBrut))}</strong> par rapport à vos charges prévues. Évitez toute dépense non essentielle tant que ce chiffre n'est pas revenu positif.</span>
-                </div>
-              ) : (
-                <div style={S.explainBanner}>
-                  Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve, votre marge prudente est de <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>{" "}
-                  <span style={{ fontSize: 11, color: "#5B82A8" }}>— c'est ce 2ème chiffre qu'utilisent Mode Achat et Mode Salaire.</span>
-                </div>
-              )
+            {argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && (
+              <div style={S.explainBanner}>
+                Mode Achat et Mode Salaire utilisent votre <strong>marge prudente</strong> (réserve de sécurité déduite) : <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>.
+              </div>
             )}
 
             {/* ─── 4 choses en 5 secondes : mettre de côté / objectifs / projections / sécurité ─── */}
@@ -1684,64 +1669,100 @@ function AppInner() {
             </div>
 
             {(() => {
-              const objM = parseFloat(objectifMensuel) || 1;
-              const pctM = Math.min(100, Math.round((caCeMoisCi / objM) * 100));
-              const objA = parseFloat(objectifAnnuel) || 1;
-              const pctA = Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100));
+              const objM = parseFloat(objectifMensuel) || 0;
+              const pctM = objM > 0 ? Math.min(100, Math.round((caCeMoisCi / objM) * 100)) : 0;
+              const objA = parseFloat(objectifAnnuel) || 0;
+              const pctA = objA > 0 ? Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100)) : 0;
+              const PRESETS_MENSUEL = [2000, 4000, 6000];
+              const PRESETS_ANNUEL = [10000, 25000, 50000, 100000];
               return (
                 <>
                   <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>
+                      {objectifMensuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>}
                     </div>
-                    <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                      <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
-                      <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
-                      <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
-                      <input style={S.objectifInputBig} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
-                      <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
-                    </div>
-                    <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
-                    {caCeMoisCi === 0 ? (
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
-                    ) : pctM >= 100 ? (
-                      <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
+                    {objectifMensuel === "" && !editingObjectifMensuel ? (
+                      <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
+                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
+                        <button style={S.btnSecondary} onClick={() => setEditingObjectifMensuel(true)}>Définir mon objectif</button>
+                      </div>
+                    ) : objectifMensuel === "" && editingObjectifMensuel ? (
+                      <div style={{ padding: "8px 0 4px" }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                          {PRESETS_MENSUEL.map(v => (
+                            <button key={v} type="button" style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }} onClick={() => { setObjectifMensuel(String(v)); setEditingObjectifMensuel(false); }}>{formatEUR(v)}</button>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifMensuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifMensuel(e.target.value); }} />
+                          <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifMensuel(false)}>Annuler</button>
+                        </div>
+                      </div>
                     ) : (
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
+                      <>
+                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
+                          <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
+                          <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
+                          <input style={S.objectifInputBig} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
+                          <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
+                        </div>
+                        <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
+                        {caCeMoisCi === 0 ? (
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                        ) : pctM >= 100 ? (
+                          <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
+                        ) : (
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
+                        )}
+                      </>
                     )}
                   </div>
 
                   <div style={{ ...S.card, marginTop: 14, marginBottom: 20, border: "1.5px solid #5DCAA5" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>
+                      {objectifAnnuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>}
                     </div>
-                    <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                      <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
-                      <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
-                      <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
-                      <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
-                      <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
-                    </div>
-                    <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
-                    {estimateData.ca_annuel === 0 && (
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                    {objectifAnnuel === "" && !editingObjectifAnnuel ? (
+                      <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
+                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
+                        <button style={S.btnSecondary} onClick={() => setEditingObjectifAnnuel(true)}>Définir mon objectif</button>
+                      </div>
+                    ) : objectifAnnuel === "" && editingObjectifAnnuel ? (
+                      <div style={{ padding: "8px 0 4px" }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                          {PRESETS_ANNUEL.map(v => (
+                            <button key={v} type="button" style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }} onClick={() => { setObjectifAnnuel(String(v)); setEditingObjectifAnnuel(false); }}>{formatEUR(v)}</button>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifAnnuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifAnnuel(e.target.value); }} />
+                          <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifAnnuel(false)}>Annuler</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
+                          <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
+                          <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
+                          <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
+                          <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
+                        </div>
+                        <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
+                        {estimateData.ca_annuel === 0 && (
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                        )}
+                      </>
                     )}
                   </div>
                 </>
               );
             })()}
-
-            {statut && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
-                <span style={{ fontSize: 13, fontWeight: 600, color: STATUT_INFO[statut].color }}>
-                  {STATUT_INFO[statut].emoji} {STATUT_INFO[statut].label}
-                </span>
-              </div>
-            )}
 
             {panique.solde !== "" && (() => {
               const manque = (disponibleAujourdhui ?? 0) < 0 ? Math.abs(disponibleAujourdhui) : 0;
@@ -2356,7 +2377,6 @@ function AppInner() {
           const cfe = cfeNum;
           const chargesFutures = totalChargesAVenir;
           const apresReserve = disponibleAujourdhui ?? 0;
-          const score = statut || "vert";
 
           return (
             <div>
