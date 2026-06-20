@@ -102,7 +102,7 @@ export default function App() {
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "200", dettes: "0" });
+  const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("3000");
   const [simActivite, setSimActivite] = useState("services");
@@ -386,6 +386,10 @@ export default function App() {
   const totalChargesAVenir = urssafProvision + impotsNum + cfeNum;
   const securiteNum = parseFloat(objectifSecurite) || 0;
   const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
+  // Argent reellement sur le compte apres charges, AVANT reserve - ne doit jamais etre clampe a 0 a tort
+  const argentDisponibleBrut = panique.solde !== "" ? Math.max(0, Math.round((soldeNum - totalChargesAVenir) * 100) / 100) : null;
+  const reserveAtteinte = panique.solde !== "" ? (soldeNum - totalChargesAVenir) >= securiteNum : null;
+  const manqueReserveDashboard = (panique.solde !== "" && !reserveAtteinte) ? Math.round((securiteNum - Math.max(0, soldeNum - totalChargesAVenir)) * 100) / 100 : 0;
 
   // --- Statut unifie (memes seuils que Mode Panique : >0 vert, 0 a -1000 orange, <-1000 rouge) ---
   function statutFinancier() {
@@ -792,17 +796,26 @@ export default function App() {
               {panique.solde !== "" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
             </div>
 
-            {/* ─── LA STAR : Disponible réel, en grand, avec le temps de sécurité juste à côté ─── */}
+            {/* ─── LA STAR : Argent réellement disponible, jamais masqué par la réserve ─── */}
             <div style={S.heroDispo}>
-              <div style={S.heroDispoLabel}>💰 Vous pouvez dépenser</div>
-              {disponibleAujourdhui !== null ? (
-                <div style={{ ...S.heroDispoValue, color: disponibleAujourdhui < 0 ? "#FF8A80" : "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</div>
+              <div style={S.heroDispoLabel}>💰 Argent disponible</div>
+              {argentDisponibleBrut !== null ? (
+                <div style={{ ...S.heroDispoValue, color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
               ) : (
                 <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
               )}
-              {moisSurvie !== null && (
+              {argentDisponibleBrut !== null && (
                 <div style={S.heroDispoSub}>
-                  🛡️ soit environ <strong style={{ color: "white" }}>{moisSurvie} mois de sécurité</strong>
+                  {reserveAtteinte ? (
+                    <>🛡️ <strong style={{ color: "#5DCAA5" }}>Réserve de sécurité atteinte</strong></>
+                  ) : (
+                    <>⚠️ Réserve cible non atteinte — il manque <strong style={{ color: "#FAC775" }}>{formatEUR(manqueReserveDashboard)}</strong></>
+                  )}
+                </div>
+              )}
+              {moisSurvie !== null && (
+                <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
+                  🕐 soit environ {moisSurvie} mois de sécurité
                   {!securitePrecise && <span style={{ fontSize: 10, color: "#7A93AD" }}> (estimation sur votre CA — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("profil")}>indiquez vos dépenses réelles</button>)</span>}
                 </div>
               )}
@@ -815,21 +828,30 @@ export default function App() {
                     <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
                     <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
                     <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                      <span style={{ color: "#FAC775" }}>− CFE estimée <span style={{ fontSize: 10, color: "#7A93AD" }}>(forfait, modifiable)</span></span>
-                      <input
-                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FAC775", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                        type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
-                      />
+                      <span style={{ color: "#FAC775" }}>− CFE estimée <span style={{ fontSize: 10, color: "#7A93AD" }}>{cfeNum === 0 ? "(souvent ~200€/an, à renseigner)" : "(forfait, modifiable)"}</span></span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        <input
+                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FAC775", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
+                          type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
+                        />
+                        <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
+                      </span>
+                    </div>
+                    <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 2 }}>
+                      <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
                     </div>
                     <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                      <span style={{ color: "#B5D4F4" }}>− Réserve de sécurité</span>
-                      <input
-                        style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#B5D4F4", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                        type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)}
-                      />
+                      <span style={{ color: "#B5D4F4" }}>− Réserve cible <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "en €"})</span></span>
+                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                        <input
+                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#B5D4F4", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
+                          type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)}
+                        />
+                        <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
+                      </span>
                     </div>
                     <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
-                      <span style={{ color: "#5DCAA5" }}>= Disponible réel</span><span style={{ color: "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
+                      <span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>= Disponible prudent (réserve gardée)</span><span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
                     </div>
 
                     <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
