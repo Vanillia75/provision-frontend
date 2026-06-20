@@ -1395,6 +1395,7 @@ export default function App() {
 
         {[
           { id: "dashboard", icon: "ti-home", label: "Dashboard" },
+          { id: "echeances", icon: "ti-calendar-due", label: "Échéances" },
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
           { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
@@ -1847,6 +1848,110 @@ export default function App() {
             </div>
           </div>
         )}
+
+        {nav === "echeances" && (() => {
+          const today = new Date();
+          const joursEntre = (d) => Math.round((d - today) / 86400000);
+
+          const echeances = [];
+
+          // URSSAF — dynamique, basé sur estimateData
+          if (estimateData && estimateData.disponible !== false && estimateData.periode_courante) {
+            const jUrssaf = estimateData.periode_courante.jours_restants;
+            echeances.push({
+              id: "urssaf",
+              label: "Déclaration URSSAF",
+              montant: estimateData.montant_a_provisionner || 0,
+              estime: false,
+              dateLabel: formatDate(estimateData.periode_courante.date_limite_declaration),
+              jours: jUrssaf,
+            });
+          }
+
+          // CFE — date fixe (15 décembre), montant = ce que l'utilisateur a renseigné
+          let dateCfe = new Date(today.getFullYear(), 11, 15);
+          if (dateCfe < today) dateCfe = new Date(today.getFullYear() + 1, 11, 15);
+          echeances.push({
+            id: "cfe",
+            label: "CFE",
+            montant: parseFloat(panique.cfe) || 0,
+            estime: !panique.cfe || parseFloat(panique.cfe) === 0,
+            dateLabel: formatDate(dateCfe),
+            jours: joursEntre(dateCfe),
+          });
+
+          // Impôts — date fixe (15 mai), uniquement si pas de versement libératoire
+          if (!profile?.versement_liberatoire) {
+            let dateImpots = new Date(today.getFullYear(), 4, 15);
+            if (dateImpots < today) dateImpots = new Date(today.getFullYear() + 1, 4, 15);
+            echeances.push({
+              id: "impots",
+              label: "Déclaration de revenus",
+              montant: impotsAnnuelEstime || 0,
+              estime: true,
+              dateLabel: formatDate(dateImpots),
+              jours: joursEntre(dateImpots),
+            });
+          }
+
+          echeances.sort((a, b) => a.jours - b.jours);
+
+          function statutEcheance(j) {
+            if (j < 0) return { color: "#A32D2D", bg: "#FCEBEB", border: "#E24B4A", label: `En retard de ${Math.abs(j)} jour${Math.abs(j) > 1 ? "s" : ""}` };
+            if (j <= 30) return { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27", label: `Dans ${j} jour${j > 1 ? "s" : ""}` };
+            return { color: "#0F6E56", bg: "#E1F5EE", border: "#1D9E75", label: `Dans ${j} jours` };
+          }
+
+          const totalProche = echeances.filter(e => e.jours <= 30).reduce((s, e) => s + e.montant, 0);
+
+          return (
+            <div>
+              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                <div><h1 style={S.pageTitle}>📅 Échéances</h1><p style={S.pageSub}>Ce que vous devez, et avant quand</p></div>
+              </div>
+
+              {echeances.length === 0 ? (
+                <div style={S.card}><p style={S.empty}>Renseignez votre profil pour voir vos échéances.</p></div>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {echeances.map(e => {
+                    const st = statutEcheance(e.jours);
+                    return (
+                      <div key={e.id} style={{ ...S.card, display: "flex", alignItems: "center", gap: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+                        <div style={{ width: 10, height: 10, borderRadius: "50%", background: st.color, flexShrink: 0 }} />
+                        <div style={{ flex: 1, minWidth: 140 }}>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>{e.label}</div>
+                          <div style={{ fontSize: 13, color: st.color, marginTop: 2 }}>{st.label}</div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>{e.estime ? "~ " : ""}{formatEUR(e.montant)}</div>
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>échéance {e.dateLabel}</div>
+                        </div>
+                        <button
+                          style={{ ...S.btnPrimarySmall, flexShrink: 0, ...(e.jours < 0 ? { background: "#A32D2D" } : {}) }}
+                          onClick={() => setNav("declaration")}
+                        >
+                          {e.id === "urssaf" ? "Préparer" : "Comprendre"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {echeances.length > 0 && (
+                <div style={{ marginTop: 14, padding: "14px 18px", background: "#F7F9F5", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                  <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 18, color: "#6B7A8D", flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: "#5B6573" }}>Total à provisionner sur les 30 prochains jours : <strong style={{ color: INK }}>{formatEUR(totalProche)}</strong></span>
+                </div>
+              )}
+
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
+                Les dates CFE et impôts sont des estimations basées sur les échéances habituelles — vérifiez toujours sur le site officiel.
+              </p>
+            </div>
+          );
+        })()}
 
         {nav === "declaration" && estimateData && estimateData.disponible !== false && (() => {
           const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
