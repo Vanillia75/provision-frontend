@@ -451,6 +451,14 @@ function AppInner() {
   const [sendInvoiceStatus, setSendInvoiceStatus] = useState(""); // "", "sent", "error"
   const [sendInvoiceError, setSendInvoiceError] = useState("");
   const [sendInvoiceMessage, setSendInvoiceMessage] = useState("");
+
+  useEffect(() => {
+    if (viewingInvoice && sendInvoiceStatus !== "sent") {
+      setSendInvoiceMessage(
+        `Bonjour ${viewingInvoice.client_nom || ""},\n\nVeuillez trouver ci-dessous le détail de la facture ${viewingInvoice.numero || ""}.\n\nCordialement,\n${profilPrenom || profilEntreprise || ""}`
+      );
+    }
+  }, [viewingInvoice?.id]);
   const todayISO = new Date().toISOString().split("T")[0];
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Bonjour ! Je suis H€CTOR, votre assistant fiscal. Posez-moi vos questions sur l'URSSAF, la TVA, l'ACRE, vos cotisations..." }]);
