@@ -511,6 +511,8 @@ function AppInner() {
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
+  const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
+  const soldeMounted = useRef(false);
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("");
   const [simActivite, setSimActivite] = useState("services");
@@ -597,6 +599,7 @@ function AppInner() {
       if (p.telephone != null) setProfilTelephone(p.telephone);
       if (p.entreprise != null) setProfilEntreprise(p.entreprise);
       if (p.depenses_mensuelles != null) setDepensesMensuelles(String(p.depenses_mensuelles));
+      if (p.solde_bancaire != null) setPanique(prev => ({ ...prev, solde: String(p.solde_bancaire) }));
       if (p.email_verified != null) setEmailVerified(p.email_verified);
       if (p.siret != null) setProfilSiret(p.siret);
       if (p.onboarding_complete) {
@@ -631,6 +634,9 @@ function AppInner() {
     setDepensesMensuelles("");
     setTmi("0");
     setHistoriqueDeclarations([]);
+    setPanique(prev => ({ ...prev, solde: "" }));
+    setSoldeSaveStatus("");
+    soldeMounted.current = false;
   }
 
   function handleGoogleCredential(response) {
@@ -670,6 +676,24 @@ function AppInner() {
   useEffect(() => {
     if (token) loadEverything();
   }, [token]);
+
+  useEffect(() => {
+    if (!soldeMounted.current) { soldeMounted.current = true; return; }
+    if (!token) return;
+    setSoldeSaveStatus("saving");
+    const t = setTimeout(async () => {
+      try {
+        await apiFetch("/profile/solde", {
+          method: "POST",
+          body: JSON.stringify({ solde: panique.solde !== "" ? parseFloat(panique.solde) : null }),
+        });
+        setSoldeSaveStatus("saved");
+      } catch (err) {
+        setSoldeSaveStatus("error");
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [panique.solde, token]);
 
   useEffect(() => {
     if (estimateData && estimateData.disponible !== false) {
@@ -2045,7 +2069,9 @@ function AppInner() {
                   Ce solde sert de base à tous les calculs de H€CTOR : argent réellement disponible, déficit éventuel, Mode Achat, Mode Salaire... Mettez-le à jour régulièrement pour des résultats fiables.
                 </span>
               </label>
-              {panique.solde !== "" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
+              {soldeSaveStatus === "saving" && <span style={{ ...S.badge, background: "#F1F2EE", color: "#5B6573", flexShrink: 0 }}>⏳ Enregistrement…</span>}
+              {soldeSaveStatus === "saved" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
+              {soldeSaveStatus === "error" && <span style={{ ...S.badge, background: "#FCEBEB", color: "#A32D2D", flexShrink: 0 }}>⚠️ Non enregistré</span>}
             </div>
 
             {estimateData.ca_annuel === 0 && (
