@@ -528,6 +528,7 @@ function AppInner() {
       if (p.telephone != null) setProfilTelephone(p.telephone);
       if (p.entreprise != null) setProfilEntreprise(p.entreprise);
       if (p.depenses_mensuelles != null) setDepensesMensuelles(String(p.depenses_mensuelles));
+      if (p.siret != null) setProfilSiret(p.siret);
       if (p.onboarding_complete) {
         const [est, inc, expSummary] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary")]);
         setEstimateData(est);
@@ -541,11 +542,32 @@ function AppInner() {
     }
   }
 
+  // Efface les données locales propres à un compte (SIRET, adresse, objectifs...) pour éviter
+  // qu'elles ne "fuitent" d'un compte à un autre sur le même navigateur — appelée à CHAQUE
+  // changement de session (connexion, inscription, déconnexion), pas seulement à la déconnexion.
+  function clearLocalAccountData() {
+    ["profilPrenom", "profilNom", "profilTelephone", "profilEntreprise", "profilSiret", "profilAdresse",
+     "objectifAnnuel", "objectifMensuel", "objectifSecurite", "depensesMensuelles", "tmi",
+     "historiqueDeclarations", "nav"].forEach(key => localStorage.removeItem(key));
+    setProfilPrenom("");
+    setProfilNom("");
+    setProfilTelephone("");
+    setProfilEntreprise("");
+    setProfilSiret("");
+    setProfilAdresse("");
+    setObjectifAnnuel("");
+    setObjectifMensuel("");
+    setObjectifSecurite("3000");
+    setDepensesMensuelles("");
+    setTmi("0");
+    setHistoriqueDeclarations([]);
+  }
+
   function handleGoogleCredential(response) {
     setError("");
     setLoading(true);
     apiFetch("/auth/google", { method: "POST", body: JSON.stringify({ credential: response.credential }) })
-      .then(data => { localStorage.setItem("token", data.token); setToken(data.token); })
+      .then(data => { clearLocalAccountData(); localStorage.setItem("token", data.token); setToken(data.token); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }
@@ -609,6 +631,7 @@ function AppInner() {
         method: "POST",
         body: JSON.stringify({ email: authEmail, password: authPassword }),
       });
+      clearLocalAccountData();
       localStorage.setItem("token", data.token);
       setToken(data.token);
     } catch (err) {
@@ -620,27 +643,11 @@ function AppInner() {
 
   function handleLogout() {
     localStorage.removeItem("token");
-    // Efface les données locales propres à ce compte pour éviter qu'elles
-    // ne "fuitent" vers un autre compte connecté ensuite sur ce même navigateur.
-    ["profilPrenom", "profilNom", "profilTelephone", "profilEntreprise", "profilSiret", "profilAdresse",
-     "objectifAnnuel", "objectifMensuel", "objectifSecurite", "depensesMensuelles", "tmi",
-     "historiqueDeclarations", "nav"].forEach(key => localStorage.removeItem(key));
+    clearLocalAccountData();
     setToken(null);
     setProfile(null);
     setEstimateData(null);
     setIncomeList([]);
-    setProfilPrenom("");
-    setProfilNom("");
-    setProfilTelephone("");
-    setProfilEntreprise("");
-    setProfilSiret("");
-    setProfilAdresse("");
-    setObjectifAnnuel("");
-    setObjectifMensuel("");
-    setObjectifSecurite("3000");
-    setDepensesMensuelles("");
-    setTmi("0");
-    setHistoriqueDeclarations([]);
   }
 
   const [exportingData, setExportingData] = useState(false);
