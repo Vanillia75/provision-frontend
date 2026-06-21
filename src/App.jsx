@@ -2149,6 +2149,9 @@ function AppInner() {
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
                       {objectifMensuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>}
                     </div>
+                    <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
+                      Le montant de chiffre d'affaires que vous visez à encaisser ce mois-ci. Sert juste à suivre votre progression — aucune incidence sur vos calculs financiers.
+                    </p>
                     {objectifMensuel === "" && !editingObjectifMensuel ? (
                       <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
                         <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
@@ -2193,6 +2196,9 @@ function AppInner() {
                       <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
                       {objectifAnnuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>}
                     </div>
+                    <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
+                      Le chiffre d'affaires que vous visez sur l'année complète. Une simple jauge de motivation — ne modifie aucun calcul de cotisations ou de disponible.
+                    </p>
                     {objectifAnnuel === "" && !editingObjectifAnnuel ? (
                       <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
                         <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
