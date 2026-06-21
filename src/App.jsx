@@ -3995,6 +3995,24 @@ function AppInner() {
             </div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>🛡️ Réserve de sécurité & fiscalité</div>
+              <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-8px 0 14px" }}>
+                Modifiable ici à tout moment — y compris en cas de déficit, où ce réglage n'apparaît pas ailleurs.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
+                <label style={S.label}>Réserve de sécurité
+                  <input style={S.input} type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} placeholder="Ex : 3000" />
+                </label>
+                <label style={S.label}>Tranche marginale d'imposition (TMI)
+                  <select style={S.input} value={tmi} onChange={e => setTmi(e.target.value)}>
+                    {TMI_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                  </select>
+                </label>
+              </div>
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous vos appareils.</p>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔗 Banque connectée</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                 <span style={{ fontSize: 13, color: "#5B6573" }}>Aucune banque connectée pour l'instant</span>
