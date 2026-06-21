@@ -1779,7 +1779,13 @@ function AppInner() {
         </div>
         <div style={S.authRight}>
           <form style={S.authCard} onSubmit={handleSaveProfile}>
-            <h2 style={S.authTitle}>Votre situation</h2>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <h2 style={{ ...S.authTitle, marginBottom: 0 }}>Votre situation</h2>
+              <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#8BA5C0", whiteSpace: "nowrap" }} onClick={handleLogout}>
+                {profile?.email ? `Pas ${profile.email} ?` : "Ce n'est pas vous ?"} Déconnexion
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: "#B0B6C0", margin: "0 0 16px" }}>Connecté en tant que <strong>{profile?.email || "—"}</strong></p>
             {error && <div style={S.errorBanner}>{error}</div>}
 
             {/* ─── 1. SIRET/SIREN avec auto-remplissage INSEE ─── */}
