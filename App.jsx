@@ -434,6 +434,7 @@ function AppInner() {
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [showNewFacture, setShowNewFacture] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState(null);
+  const [viewingInvoice, setViewingInvoice] = useState(null);
   const todayISO = new Date().toISOString().split("T")[0];
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Bonjour ! Je suis H€CTOR, votre assistant fiscal. Posez-moi vos questions sur l'URSSAF, la TVA, l'ACRE, vos cotisations..." }]);
@@ -2775,7 +2776,7 @@ function AppInner() {
                 const overdue = invoiceIsOverdue(inv);
                 const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
                 return (
-                  <div key={inv.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", background: overdue ? "#FCEBEB" : "transparent", margin: overdue ? "0 -20px" : 0, paddingLeft: overdue ? 20 : 0, paddingRight: overdue ? 20 : 0 }}>
+                  <div key={inv.id} onClick={() => setViewingInvoice(inv)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", background: overdue ? "#FCEBEB" : "transparent", margin: overdue ? "0 -20px" : 0, paddingLeft: overdue ? 20 : 0, paddingRight: overdue ? 20 : 0, cursor: "pointer" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{inv.client_nom}</div>
                       {overdue ? (
@@ -2790,7 +2791,7 @@ function AppInner() {
                     </div>
                     <span style={{ fontSize: 18, fontWeight: 600, color: INK, minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(inv.montant)}</span>
                     {inv.statut === "envoyee" || inv.statut === "impayee" ? (
-                      <select style={{ ...S.toggleBtn, flex: "0 0 auto", padding: "5px 8px", fontSize: 11 }} value={inv.statut} onChange={e => handleInvoiceStatus(inv.id, e.target.value)}>
+                      <select onClick={e => e.stopPropagation()} style={{ ...S.toggleBtn, flex: "0 0 auto", padding: "5px 8px", fontSize: 11 }} value={inv.statut} onChange={e => handleInvoiceStatus(inv.id, e.target.value)}>
                         <option value="envoyee">Envoyée</option>
                         <option value="impayee">Impayée</option>
                         <option value="payee">Marquer payée</option>
@@ -2799,12 +2800,15 @@ function AppInner() {
                       <span style={{ background: info.bg, color: info.color, fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{info.label}</span>
                     )}
                     {inv.statut === "brouillon" && (
-                      <button style={{ ...S.linkBtn, fontSize: 11, whiteSpace: "nowrap" }} onClick={() => handleInvoiceStatus(inv.id, "envoyee")}>Marquer envoyée</button>
+                      <button onClick={e => { e.stopPropagation(); handleInvoiceStatus(inv.id, "envoyee"); }} style={{ ...S.linkBtn, fontSize: 11, whiteSpace: "nowrap" }}>Marquer envoyée</button>
                     )}
-                    <button aria-label="Modifier" onClick={() => startEditInvoice(inv)} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                    <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                      <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} />
+                    </button>
+                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
-                    <button aria-label="Supprimer" onClick={() => handleDeleteInvoice(inv.id)} style={S.deleteBtn}>✕</button>
+                    <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteInvoice(inv.id); }} style={S.deleteBtn}>✕</button>
                   </div>
                 );
               })}
@@ -2814,6 +2818,86 @@ function AppInner() {
                 Seules les factures « Payée » comptent dans votre CA encaissé.
               </p>
             )}
+
+            {viewingInvoice && (() => {
+              const inv = viewingInvoice;
+              const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
+              const lignes = inv.lignes && inv.lignes.length > 0 ? inv.lignes : [];
+              const totalHT = lignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
+              return (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(10,37,64,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 90, padding: 16 }} onClick={() => setViewingInvoice(null)}>
+                  <div style={{ background: "white", borderRadius: 16, maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto", padding: "28px 28px 24px" }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                      <div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: INK }}>{inv.numero}</div>
+                        <span style={{ background: info.bg, color: info.color, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 8, display: "inline-block", marginTop: 6 }}>{info.label}</span>
+                      </div>
+                      <button aria-label="Fermer" onClick={() => setViewingInvoice(null)} style={{ background: "none", border: "none", fontSize: 20, color: "#8BA5C0", cursor: "pointer", padding: 4 }}>✕</button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", marginBottom: 6 }}>Émetteur</div>
+                        <div style={{ fontSize: 13, color: INK, lineHeight: 1.6 }}>
+                          <strong>{profilEntreprise || `${profilPrenom} ${profilNom}`.trim() || "—"}</strong><br />
+                          {profilAdresse || <span style={{ color: "#C0392B" }}>Adresse manquante</span>}<br />
+                          {profilSiret ? `SIRET : ${profilSiret}` : <span style={{ color: "#C0392B" }}>SIRET manquant</span>}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", marginBottom: 6 }}>Client</div>
+                        <div style={{ fontSize: 13, color: INK, lineHeight: 1.6 }}>
+                          <strong>{inv.client_nom}</strong><br />
+                          {inv.client_adresse || "—"}<br />
+                          {inv.client_email || ""}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 24, marginBottom: 20, fontSize: 13 }}>
+                      <div><span style={{ color: "#8BA5C0" }}>Émise le </span><strong>{formatDate(inv.date_emission)}</strong></div>
+                      {inv.date_echeance && <div><span style={{ color: "#8BA5C0" }}>Échéance </span><strong>{formatDate(inv.date_echeance)}</strong></div>}
+                    </div>
+
+                    <div style={{ border: "1px solid #EEF2F7", borderRadius: 10, overflow: "hidden", marginBottom: 16 }}>
+                      <div style={{ display: "flex", gap: 8, padding: "8px 12px", background: "#F7F9F5", fontSize: 11, color: "#6B7A8D", fontWeight: 600 }}>
+                        <span style={{ flex: 3 }}>Description</span>
+                        <span style={{ flex: 1, textAlign: "center" }}>Qté</span>
+                        <span style={{ flex: 1, textAlign: "right" }}>PU</span>
+                        <span style={{ flex: 1, textAlign: "right" }}>Total</span>
+                      </div>
+                      {lignes.map((l, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, padding: "10px 12px", fontSize: 13, borderTop: "1px solid #EEF2F7" }}>
+                          <span style={{ flex: 3, color: INK }}>{l.description}</span>
+                          <span style={{ flex: 1, textAlign: "center", color: "#6B7A8D" }}>{l.quantite}</span>
+                          <span style={{ flex: 1, textAlign: "right", color: "#6B7A8D" }}>{formatEUR(l.prix_unitaire)}</span>
+                          <span style={{ flex: 1, textAlign: "right", fontWeight: 600, color: INK }}>{formatEUR((parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0))}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalHT)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }}><span>Total TTC</span><span>{formatEUR(inv.montant)}</span></div>
+                    </div>
+
+                    {inv.notes && (
+                      <div style={{ fontSize: 12, color: "#6B7A8D", marginBottom: 16, lineHeight: 1.5 }}>
+                        <strong>Notes :</strong> {inv.notes}
+                      </div>
+                    )}
+
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button style={S.btnPrimary} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>
+                        <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
+                      </button>
+                      <button style={S.btnSecondary} onClick={() => setViewingInvoice(null)}>Fermer</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         )}
 
