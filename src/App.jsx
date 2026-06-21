@@ -447,6 +447,10 @@ function AppInner() {
   const [showNewFacture, setShowNewFacture] = useState(false);
   const [editingInvoiceId, setEditingInvoiceId] = useState(null);
   const [viewingInvoice, setViewingInvoice] = useState(null);
+  const [sendingInvoice, setSendingInvoice] = useState(false);
+  const [sendInvoiceStatus, setSendInvoiceStatus] = useState(""); // "", "sent", "error"
+  const [sendInvoiceError, setSendInvoiceError] = useState("");
+  const [sendInvoiceMessage, setSendInvoiceMessage] = useState("");
   const todayISO = new Date().toISOString().split("T")[0];
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Bonjour ! Je suis H€CTOR, votre assistant fiscal. Posez-moi vos questions sur l'URSSAF, la TVA, l'ACRE, vos cotisations..." }]);
@@ -938,6 +942,31 @@ function AppInner() {
     });
     setEditingInvoiceId(inv.id);
     setShowNewFacture(true);
+  }
+
+  async function handleSendInvoice(inv) {
+    setSendingInvoice(true);
+    setSendInvoiceStatus("");
+    setSendInvoiceError("");
+    try {
+      const updated = await apiFetch(`/invoices/${inv.id}/send`, {
+        method: "POST",
+        body: JSON.stringify({
+          emitter_nom: profilEntreprise || `${profilPrenom} ${profilNom}`.trim() || null,
+          emitter_adresse: profilAdresse || null,
+          emitter_siret: profilSiret || null,
+          message: sendInvoiceMessage || null,
+        }),
+      });
+      setSendInvoiceStatus("sent");
+      setViewingInvoice(updated);
+      await loadInvoices();
+    } catch (err) {
+      setSendInvoiceStatus("error");
+      setSendInvoiceError(err.message);
+    } finally {
+      setSendingInvoice(false);
+    }
   }
 
   async function saveFacture(statutVoulu) {
@@ -3110,11 +3139,38 @@ function AppInner() {
                       </div>
                     )}
 
+                    <div style={{ background: "#F7F9F5", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 8 }}>
+                        <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Envoyer au client
+                      </div>
+                      {!inv.client_email ? (
+                        <p style={{ fontSize: 12, color: "#854F0B", margin: 0 }}>
+                          Aucun email renseigné pour ce client. <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>Ajouter un email →</button>
+                        </p>
+                      ) : sendInvoiceStatus === "sent" ? (
+                        <p style={{ fontSize: 12, color: "#0F6E56", fontWeight: 600, margin: 0 }}>✓ Facture envoyée à {inv.client_email}</p>
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyée à <strong>{inv.client_email}</strong></p>
+                          <textarea
+                            style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
+                            placeholder="Message personnalisé (optionnel)"
+                            value={sendInvoiceMessage}
+                            onChange={e => setSendInvoiceMessage(e.target.value)}
+                          />
+                          {sendInvoiceStatus === "error" && <p style={{ fontSize: 12, color: "#A32D2D", margin: "0 0 8px" }}>{sendInvoiceError}</p>}
+                          <button style={S.btnSecondary} onClick={() => handleSendInvoice(inv)} disabled={sendingInvoice}>
+                            {sendingInvoice ? "Envoi…" : <><i className="ti ti-send" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Envoyer la facture</>}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
                     <div style={{ display: "flex", gap: 10 }}>
                       <button style={S.btnPrimary} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>
                         <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
                       </button>
-                      <button style={S.btnSecondary} onClick={() => setViewingInvoice(null)}>Fermer</button>
+                      <button style={S.btnSecondary} onClick={() => { setViewingInvoice(null); setSendInvoiceStatus(""); setSendInvoiceMessage(""); }}>Fermer</button>
                     </div>
                   </div>
                 </div>
