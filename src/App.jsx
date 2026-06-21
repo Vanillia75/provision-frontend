@@ -1686,11 +1686,11 @@ function AppInner() {
         <div style={S.authLeft}>
           <Logo size={36} />
           <h1 style={S.authHero}>Votre assistant fiscal<br />intelligent</h1>
-          <p style={S.authSub}>H€CTOR calcule vos cotisations URSSAF, crée vos factures et répond à toutes vos questions fiscales en temps réel.</p>
+          <p style={S.authSub}>H€CTOR calcule vos cotisations URSSAF, crée vos devis et factures, et répond à toutes vos questions fiscales en temps réel.</p>
           <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
             {[
               { icon: "ti-calculator", t: "Calcul URSSAF automatique", d: "Cotisations recalculées en temps réel selon vos revenus" },
-              { icon: "ti-file-invoice", t: "Factures professionnelles", d: "Créez, numérotez et envoyez vos factures en 2 minutes" },
+              { icon: "ti-file-invoice", t: "Devis & factures", d: "Créez, numérotez, envoyez par email et téléchargez en PDF" },
               { icon: "ti-radar-2", t: "Scanner Financier", d: "Sachez en un clic ce qu'il vous reste vraiment disponible" },
               { icon: "ti-message-circle", t: "Assistant IA fiscal", d: "Posez vos questions URSSAF, TVA, ACRE 24h/24" },
               { icon: "ti-bell", t: "Actualités & échéances", d: "Alertes avant chaque déclaration, zéro oubli" },
