@@ -466,6 +466,37 @@ function AppInner() {
   const [sendQuoteMessage, setSendQuoteMessage] = useState("");
   const [convertingQuote, setConvertingQuote] = useState(false);
 
+  const [onboardingSiretStatus, setOnboardingSiretStatus] = useState(""); // "", "loading", "success", "error"
+  const [onboardingSiretMessage, setOnboardingSiretMessage] = useState("");
+  const [onboardingNafCode, setOnboardingNafCode] = useState("");
+  const [onboardingNafLabel, setOnboardingNafLabel] = useState("");
+  const [onboardingSiretLater, setOnboardingSiretLater] = useState(false);
+
+  async function handleOnboardingSiretLookup() {
+    if (!profilSiret) return;
+    setOnboardingSiretStatus("loading");
+    setOnboardingSiretMessage("");
+    try {
+      const data = await apiFetch(`/siret/lookup?siret=${encodeURIComponent(profilSiret)}`);
+      if (data.raison_sociale) setProfilEntreprise(data.raison_sociale);
+      const adresseComplete = data.adresse
+        ? `${data.adresse}${data.code_postal || data.commune ? ", " : ""}${data.code_postal || ""} ${data.commune || ""}`.trim()
+        : "";
+      if (adresseComplete) setProfilAdresse(adresseComplete);
+      setOnboardingNafCode(data.code_ape || "");
+      setOnboardingNafLabel(data.libelle_activite || "");
+      await apiFetch("/profile/siret", {
+        method: "POST",
+        body: JSON.stringify({ siret: data.siret, raison_sociale: data.raison_sociale, adresse: adresseComplete || null }),
+      });
+      setOnboardingSiretStatus("success");
+      setOnboardingSiretMessage(data.raison_sociale ? `${data.raison_sociale} — synchronisé avec votre profil` : "Établissement trouvé et synchronisé");
+    } catch (err) {
+      setOnboardingSiretStatus("error");
+      setOnboardingSiretMessage(err.message);
+    }
+  }
+
   useEffect(() => {
     if (viewingInvoice && sendInvoiceStatus !== "sent") {
       setSendInvoiceMessage(
@@ -1721,12 +1752,46 @@ function AppInner() {
         <div style={S.authLeft}>
           <Logo size={36} />
           <h1 style={S.authHero}>Configurons votre profil</h1>
-          <p style={S.authSub}>H€CTOR s'adapte à votre situation pour calculer exactement ce que vous devez mettre de côté.</p>
+          <p style={S.authSub}>Configurez H€CTOR en moins d'une minute. Ces informations lui permettent de calculer automatiquement vos charges, vos impôts et votre argent réellement disponible.</p>
         </div>
         <div style={S.authRight}>
           <form style={S.authCard} onSubmit={handleSaveProfile}>
             <h2 style={S.authTitle}>Votre situation</h2>
             {error && <div style={S.errorBanner}>{error}</div>}
+
+            {/* ─── 1. SIRET/SIREN avec auto-remplissage INSEE ─── */}
+            {!onboardingSiretLater && (
+              <div style={{ background: "#F7F9F5", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#6B7A8D", textTransform: "uppercase", letterSpacing: 0.4, margin: "0 0 8px" }}>
+                  Votre entreprise <span style={{ fontWeight: 400, textTransform: "none" }}>(optionnel, mais gagne du temps)</span>
+                </p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input style={{ ...S.input, flex: 1 }} type="text" placeholder="SIRET ou SIREN" value={profilSiret} onChange={e => { setProfilSiret(e.target.value); setOnboardingSiretStatus(""); }} />
+                  <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "0 18px", whiteSpace: "nowrap" }} onClick={handleOnboardingSiretLookup} disabled={!profilSiret || onboardingSiretStatus === "loading"}>
+                    {onboardingSiretStatus === "loading" ? "…" : "Vérifier"}
+                  </button>
+                </div>
+                {onboardingSiretMessage && (
+                  <p style={{ fontSize: 12, marginTop: 8, color: onboardingSiretStatus === "error" ? "#C0392B" : "#2E8B57" }}>
+                    {onboardingSiretStatus === "error" ? "⚠️ " : "✓ "}{onboardingSiretMessage}
+                  </p>
+                )}
+                {onboardingSiretStatus === "success" && (
+                  <div style={{ marginTop: 10, fontSize: 12, color: "#3D4452", lineHeight: 1.7 }}>
+                    {profilEntreprise && <div><strong>Raison sociale :</strong> {profilEntreprise}</div>}
+                    {profilAdresse && <div><strong>Adresse :</strong> {profilAdresse}</div>}
+                    <div><strong>Activité :</strong> {onboardingNafLabel || (onboardingNafCode ? `Code NAF ${onboardingNafCode}` : "—")}</div>
+                  </div>
+                )}
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, marginTop: 8 }} onClick={() => setOnboardingSiretLater(true)}>Je le renseignerai plus tard</button>
+              </div>
+            )}
+            {onboardingSiretLater && (
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 18 }}>
+                Pas de souci — vous pourrez renseigner votre SIRET depuis votre profil à tout moment. <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setOnboardingSiretLater(false)}>Le faire maintenant →</button>
+              </p>
+            )}
+
             <p style={S.sectionLabel}>Statut juridique</p>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
               {STATUTS.map(s => (
@@ -1749,15 +1814,27 @@ function AppInner() {
                     <option value="trimestrielle">Trimestrielle</option>
                   </select>
                 </label>
-                <label style={S.checkboxLabel}><input type="checkbox" checked={profileForm.acre} onChange={e => setProfileForm({ ...profileForm, acre: e.target.checked })} />Je bénéficie de l'ACRE (1ère année, -50%)</label>
-                <label style={S.checkboxLabel}><input type="checkbox" checked={profileForm.versement_liberatoire} onChange={e => setProfileForm({ ...profileForm, versement_liberatoire: e.target.checked })} />Versement libératoire de l'impôt</label>
 
-                <p style={S.sectionLabel}>Réserve de sécurité souhaitée</p>
+                <label style={S.checkboxLabel}><input type="checkbox" checked={profileForm.acre} onChange={e => setProfileForm({ ...profileForm, acre: e.target.checked })} />Je bénéficie de l'ACRE (1ère année, -50%)</label>
+                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-8px 0 12px 24px", lineHeight: 1.5 }}>Réduction temporaire des cotisations sociales pour les nouveaux auto-entrepreneurs.</p>
+
+                <label style={S.checkboxLabel}><input type="checkbox" checked={profileForm.versement_liberatoire} onChange={e => setProfileForm({ ...profileForm, versement_liberatoire: e.target.checked })} />Versement libératoire de l'impôt</label>
+                <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-8px 0 16px 24px", lineHeight: 1.5 }}>Vous payez votre impôt directement avec vos cotisations URSSAF, au lieu d'une déclaration annuelle séparée.</p>
+
+                <p style={S.sectionLabel}>Réserve de sécurité</p>
+                <p style={{ fontSize: 12, color: "#5B6573", margin: "0 0 12px", lineHeight: 1.5 }}>
+                  Combien souhaitez-vous toujours conserver sur votre compte avant de considérer l'argent comme réellement disponible ?
+                </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 16 }}>
-                  {[1000, 3000, 5000].map(v => (
+                  {[
+                    { v: 1000, label: "Réserve minimale" },
+                    { v: 3000, label: "Réserve confortable", reco: true },
+                    { v: 5000, label: "Réserve prudente" },
+                  ].map(({ v, label, reco }) => (
                     <button type="button" key={v} onClick={() => setObjectifSecurite(String(v))}
-                      style={{ ...S.statutCard, ...(objectifSecurite === String(v) ? S.statutCardActive : {}) }}>
-                      {formatEUR(v)}
+                      style={{ ...S.statutCard, ...(objectifSecurite === String(v) ? S.statutCardActive : {}), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <span><strong>{formatEUR(v)}</strong> <span style={{ fontWeight: 400, color: "#6B7A8D" }}>→ {label}</span></span>
+                      {reco && <span style={{ fontSize: 10, fontWeight: 700, color: "#854F0B", background: "#FAEEDA", padding: "2px 8px", borderRadius: 20 }}>⭐ Recommandée</span>}
                     </button>
                   ))}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
@@ -1773,6 +1850,23 @@ function AppInner() {
               </>
             )}
             <button style={S.btnPrimary} type="submit" disabled={loading}>{loading ? "…" : "Valider"}</button>
+
+            <div style={{ marginTop: 18, padding: "14px 16px", background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 10 }}>
+              <p style={{ fontSize: 12, fontWeight: 600, color: "#0A2540", margin: "0 0 8px" }}>Une fois configuré, H€CTOR pourra :</p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {[
+                  "Calculer automatiquement vos charges",
+                  "Estimer vos impôts",
+                  "Vous indiquer combien vous pouvez réellement dépenser",
+                  "Préparer vos déclarations",
+                  "Suivre vos échéances importantes",
+                ].map(t => (
+                  <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "#28425E" }}>
+                    <span style={{ color: "#1D9E75", flexShrink: 0 }}>✓</span>{t}
+                  </div>
+                ))}
+              </div>
+            </div>
           </form>
         </div>
       </div>
