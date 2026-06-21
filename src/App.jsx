@@ -361,6 +361,18 @@ function AppInner() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [legalPage, setLegalPage] = useState(null);
   const [authMode, setAuthMode] = useState("login");
+  const [forgotMode, setForgotMode] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const [forgotStatus, setForgotStatus] = useState(""); // "", "loading", "sent"
+  const [resetToken] = useState(() => new URLSearchParams(window.location.search).get("reset_token"));
+  const [resetPassword1, setResetPassword1] = useState("");
+  const [resetPassword2, setResetPassword2] = useState("");
+  const [resetStatus, setResetStatus] = useState(""); // "", "loading", "success", "error"
+  const [resetMessage, setResetMessage] = useState("");
+  const [verifyToken] = useState(() => new URLSearchParams(window.location.search).get("verify_token"));
+  const [verifyStatus, setVerifyStatus] = useState(""); // "", "loading", "success", "error"
+  const [emailVerified, setEmailVerified] = useState(true);
+  const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -528,6 +540,7 @@ function AppInner() {
       if (p.telephone != null) setProfilTelephone(p.telephone);
       if (p.entreprise != null) setProfilEntreprise(p.entreprise);
       if (p.depenses_mensuelles != null) setDepensesMensuelles(String(p.depenses_mensuelles));
+      if (p.email_verified != null) setEmailVerified(p.email_verified);
       if (p.siret != null) setProfilSiret(p.siret);
       if (p.onboarding_complete) {
         const [est, inc, expSummary] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary")]);
@@ -638,6 +651,67 @@ function AppInner() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleForgotPassword(e) {
+    e.preventDefault();
+    setForgotStatus("loading");
+    try {
+      await apiFetch("/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email: forgotEmail }),
+      });
+      setForgotStatus("sent");
+    } catch (err) {
+      // Meme en cas d'erreur reseau, on affiche le meme message generique
+      // pour ne jamais reveler si un compte existe ou non avec cet email.
+      setForgotStatus("sent");
+    }
+  }
+
+  async function handleResetPassword(e) {
+    e.preventDefault();
+    setResetMessage("");
+    if (resetPassword1.length < 8) {
+      setResetStatus("error");
+      setResetMessage("Le mot de passe doit contenir au moins 8 caracteres.");
+      return;
+    }
+    if (resetPassword1 !== resetPassword2) {
+      setResetStatus("error");
+      setResetMessage("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
+    setResetStatus("loading");
+    try {
+      await apiFetch("/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token: resetToken, new_password: resetPassword1 }),
+      });
+      setResetStatus("success");
+    } catch (err) {
+      setResetStatus("error");
+      setResetMessage(err.message);
+    }
+  }
+
+  useEffect(() => {
+    if (!verifyToken) return;
+    setVerifyStatus("loading");
+    apiFetch(`/auth/verify-email?token=${encodeURIComponent(verifyToken)}`)
+      .then(() => setVerifyStatus("success"))
+      .catch(err => { setVerifyStatus("error"); setResetMessage(err.message); });
+  }, [verifyToken]);
+
+  async function handleResendVerification() {
+    setResendVerifStatus("sending");
+    try {
+      await apiFetch("/auth/send-verification", { method: "POST" });
+      setResendVerifStatus("sent");
+    } catch (err) {
+      setError(err.message);
+      setResendVerifStatus("");
     }
   }
 
@@ -1231,6 +1305,76 @@ function AppInner() {
     return <LegalPageView page={legalPage} onBack={() => setLegalPage(null)} />;
   }
 
+  if (resetToken) {
+    return (
+      <div style={S.authPage}>
+        <style>{CSS}</style>
+        <div style={S.authLeft}>
+          <Logo size={36} />
+          <h1 style={S.authHero}>Nouveau mot de passe</h1>
+          <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
+        </div>
+        <div style={S.authRight}>
+          <div style={S.authCard}>
+            {resetStatus === "success" ? (
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+                <h2 style={S.authTitle}>Mot de passe mis à jour</h2>
+                <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20 }}>Vous pouvez maintenant vous connecter avec votre nouveau mot de passe.</p>
+                <button style={S.btnPrimary} onClick={() => { window.location.href = "/"; }}>Aller à la connexion</button>
+              </div>
+            ) : (
+              <form onSubmit={handleResetPassword}>
+                <h2 style={S.authTitle}>Nouveau mot de passe</h2>
+                {resetStatus === "error" && <div style={S.errorBanner}>{resetMessage}</div>}
+                <label style={S.label}>Nouveau mot de passe
+                  <input style={S.input} type="password" value={resetPassword1} onChange={e => setResetPassword1(e.target.value)} minLength={8} required />
+                </label>
+                <label style={S.label}>Confirmer le mot de passe
+                  <input style={S.input} type="password" value={resetPassword2} onChange={e => setResetPassword2(e.target.value)} minLength={8} required />
+                </label>
+                <button style={S.btnPrimary} type="submit" disabled={resetStatus === "loading"}>{resetStatus === "loading" ? "…" : "Valider le nouveau mot de passe"}</button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (verifyToken) {
+    return (
+      <div style={S.authPage}>
+        <style>{CSS}</style>
+        <div style={S.authLeft}>
+          <Logo size={36} />
+          <h1 style={S.authHero}>Vérification de votre email</h1>
+        </div>
+        <div style={S.authRight}>
+          <div style={{ ...S.authCard, textAlign: "center" }}>
+            {verifyStatus === "loading" && <p style={{ fontSize: 13, color: "#6B7A8D" }}>Vérification en cours…</p>}
+            {verifyStatus === "success" && (
+              <>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
+                <h2 style={S.authTitle}>Email confirmé !</h2>
+                <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20 }}>Votre adresse email est maintenant vérifiée.</p>
+                <button style={S.btnPrimary} onClick={() => { window.location.href = "/"; }}>Continuer vers H€CTOR</button>
+              </>
+            )}
+            {verifyStatus === "error" && (
+              <>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+                <h2 style={S.authTitle}>Lien invalide ou expiré</h2>
+                <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20 }}>Reconnectez-vous à H€CTOR, vous pourrez demander un nouveau lien depuis votre profil.</p>
+                <button style={S.btnPrimary} onClick={() => { window.location.href = "/"; }}>Aller à la connexion</button>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (!token) {
     const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
     const caSim = parseFloat(simCa) || 0;
@@ -1289,31 +1433,60 @@ function AppInner() {
           </div>
         </div>
         <div style={S.authRight}>
-          <form style={S.authCard} onSubmit={handleAuth}>
-            <h2 style={S.authTitle}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
-            {error && <div style={S.errorBanner}>{error}</div>}
-            <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
-            <p style={S.orDivider}>ou avec un email</p>
-            <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-            <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
-            <button style={S.btnPrimary} type="submit" disabled={loading}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte"}</button>
-            <p style={S.switchAuth}>
-              {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
-              <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button>
-            </p>
-            {authMode === "register" && (
-              <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center", marginTop: 4 }}>
-                En créant un compte, vous acceptez les <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("cgu")}>CGU</button> et la <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("confidentialite")}>Politique de confidentialité</button>.
+          {forgotMode ? (
+            <div style={S.authCard}>
+              <h2 style={S.authTitle}>Mot de passe oublié</h2>
+              {forgotStatus === "sent" ? (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>📧</div>
+                  <p style={{ fontSize: 13, color: "#3D4452", marginBottom: 20, lineHeight: 1.6 }}>
+                    Si un compte existe avec l'adresse <strong>{forgotEmail}</strong>, vous allez recevoir un email avec un lien pour réinitialiser votre mot de passe.
+                  </p>
+                  <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword}>
+                  <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email, nous vous enverrons un lien pour le réinitialiser.</p>
+                  <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
+                  <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
+                  <p style={S.switchAuth}>
+                    <button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button>
+                  </p>
+                </form>
+              )}
+            </div>
+          ) : (
+            <form style={S.authCard} onSubmit={handleAuth}>
+              <h2 style={S.authTitle}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
+              {error && <div style={S.errorBanner}>{error}</div>}
+              <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+              <p style={S.orDivider}>ou avec un email</p>
+              <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
+              <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+              {authMode === "login" && (
+                <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
+                  <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
+                </p>
+              )}
+              <button style={S.btnPrimary} type="submit" disabled={loading}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte"}</button>
+              <p style={S.switchAuth}>
+                {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
+                <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button>
               </p>
-            )}
-            <p style={{ fontSize: 11, color: "#B0B6C0", textAlign: "center", marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
-              <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
-              <span>·</span>
-              <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("cgu")}>CGU</button>
-              <span>·</span>
-              <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
-            </p>
-          </form>
+              {authMode === "register" && (
+                <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center", marginTop: 4 }}>
+                  En créant un compte, vous acceptez les <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("cgu")}>CGU</button> et la <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("confidentialite")}>Politique de confidentialité</button>.
+                </p>
+              )}
+              <p style={{ fontSize: 11, color: "#B0B6C0", textAlign: "center", marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
+                <span>·</span>
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("cgu")}>CGU</button>
+                <span>·</span>
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+              </p>
+            </form>
+          )}
         </div>
       </div>
     );
@@ -1483,6 +1656,22 @@ function AppInner() {
 
       <main style={isMobile ? { ...S.mainContent, padding: "16px 14px" } : S.mainContent}>
         {error && <div style={S.errorBanner}>{error}</div>}
+
+        {!emailVerified && profile?.onboarding_complete && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, color: "#0C447C", display: "flex", alignItems: "center", gap: 8 }}>
+              <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16 }} />
+              Pensez à vérifier votre adresse email.
+            </span>
+            {resendVerifStatus === "sent" ? (
+              <span style={{ fontSize: 12, color: "#0F6E56", fontWeight: 600 }}>✓ Email envoyé</span>
+            ) : (
+              <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}>
+                {resendVerifStatus === "sending" ? "Envoi…" : "Renvoyer l'email de vérification"}
+              </button>
+            )}
+          </div>
+        )}
 
         {nav === "dashboard" && estimateData && (
           <div>
@@ -1692,7 +1881,7 @@ function AppInner() {
               </div>
               <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="J'encaisse..." value={simCa} onChange={e => setSimCa(e.target.value)} />
+                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Ex : 3000 €" value={simCa} onChange={e => setSimCa(e.target.value)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
                   <option value="vente">Vente de marchandises (12,3%)</option>
                   <option value="services">Prestations de services (21,2%)</option>
