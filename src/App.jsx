@@ -997,6 +997,29 @@ function AppInner() {
     setShowNewFacture(true);
   }
 
+  const [loadingPdf, setLoadingPdf] = useState(false);
+
+  async function handleViewInvoicePdf(inv) {
+    setLoadingPdf(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/invoices/${inv.id}/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || "Impossible de générer le PDF");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingPdf(false);
+    }
+  }
+
   async function handleSendInvoice(inv) {
     setSendingInvoice(true);
     setSendInvoiceStatus("");
@@ -1831,16 +1854,19 @@ function AppInner() {
                     { v: 3000, label: "Réserve confortable", reco: true },
                     { v: 5000, label: "Réserve prudente" },
                   ].map(({ v, label, reco }) => (
-                    <button type="button" key={v} onClick={() => setObjectifSecurite(String(v))}
-                      style={{ ...S.statutCard, ...(objectifSecurite === String(v) ? S.statutCardActive : {}), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span><strong>{formatEUR(v)}</strong> <span style={{ fontWeight: 400, color: "#6B7A8D" }}>→ {label}</span></span>
-                      {reco && <span style={{ fontSize: 10, fontWeight: 700, color: "#854F0B", background: "#FAEEDA", padding: "2px 8px", borderRadius: 20 }}>⭐ Recommandée</span>}
-                    </button>
+                    <div key={v}>
+                      <button type="button" onClick={() => setObjectifSecurite(String(v))}
+                        style={{ ...S.statutCard, ...(objectifSecurite === String(v) ? S.statutCardActive : {}), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span><strong>{formatEUR(v)}</strong> <span style={{ fontWeight: 400, color: "#6B7A8D" }}>→ {label}</span></span>
+                        {reco && <span style={{ fontSize: 10, fontWeight: 700, color: "#854F0B", background: "#FAEEDA", padding: "2px 8px", borderRadius: 20 }}>⭐ Recommandée</span>}
+                      </button>
+                      {reco && <p style={{ fontSize: 10.5, color: "#8BA5C0", margin: "4px 0 0 4px" }}>Recommandée pour la plupart des indépendants.</p>}
+                    </div>
                   ))}
                   <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                     <button type="button" onClick={() => setObjectifSecurite("")}
                       style={{ ...S.statutCard, flex: 1, ...(![1000, 3000, 5000].includes(parseFloat(objectifSecurite)) ? S.statutCardActive : {}) }}>
-                      Personnalisée
+                      Montant personnalisé
                     </button>
                     {![1000, 3000, 5000].includes(parseFloat(objectifSecurite)) && (
                       <input style={{ ...S.input, width: 100 }} type="number" placeholder="€" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} />
@@ -3353,6 +3379,9 @@ function AppInner() {
                     <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
+                    <button aria-label="PDF" onClick={e => { e.stopPropagation(); handleViewInvoicePdf(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                      <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 15 }} />
+                    </button>
                     <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
@@ -3463,8 +3492,11 @@ function AppInner() {
                       )}
                     </div>
 
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button style={S.btnPrimary} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <button style={S.btnPrimary} onClick={() => handleViewInvoicePdf(inv)} disabled={loadingPdf}>
+                        <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />{loadingPdf ? "Génération…" : "Voir / Télécharger le PDF"}
+                      </button>
+                      <button style={S.btnSecondary} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>
                         <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
                       </button>
                       <button style={S.btnSecondary} onClick={() => { setViewingInvoice(null); setSendInvoiceStatus(""); setSendInvoiceMessage(""); }}>Fermer</button>
