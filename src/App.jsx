@@ -513,6 +513,8 @@ function AppInner() {
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const soldeMounted = useRef(false);
+  const reserveMounted = useRef(false);
+  const tmiMounted = useRef(false);
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("");
   const [simActivite, setSimActivite] = useState("services");
@@ -602,6 +604,9 @@ function AppInner() {
       if (p.solde_bancaire != null) setPanique(prev => ({ ...prev, solde: String(p.solde_bancaire) }));
       if (p.email_verified != null) setEmailVerified(p.email_verified);
       if (p.siret != null) setProfilSiret(p.siret);
+      if (p.adresse != null) setProfilAdresse(p.adresse);
+      if (p.reserve_securite != null) setObjectifSecurite(String(p.reserve_securite));
+      if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
         const [est, inc, expSummary] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary")]);
         setEstimateData(est);
@@ -637,6 +642,8 @@ function AppInner() {
     setPanique(prev => ({ ...prev, solde: "" }));
     setSoldeSaveStatus("");
     soldeMounted.current = false;
+    reserveMounted.current = false;
+    tmiMounted.current = false;
   }
 
   function handleGoogleCredential(response) {
@@ -694,6 +701,31 @@ function AppInner() {
     }, 600);
     return () => clearTimeout(t);
   }, [panique.solde, token]);
+
+  useEffect(() => {
+    if (!reserveMounted.current) { reserveMounted.current = true; return; }
+    if (!token) return;
+    const t = setTimeout(async () => {
+      try {
+        await apiFetch("/profile/settings", {
+          method: "POST",
+          body: JSON.stringify({ reserve_securite: objectifSecurite !== "" ? parseFloat(objectifSecurite) : null }),
+        });
+      } catch (err) {
+        // best-effort, ne bloque pas l'usage si la sauvegarde echoue ponctuellement
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [objectifSecurite, token]);
+
+  useEffect(() => {
+    if (!tmiMounted.current) { tmiMounted.current = true; return; }
+    if (!token) return;
+    apiFetch("/profile/settings", {
+      method: "POST",
+      body: JSON.stringify({ tmi }),
+    }).catch(() => {});
+  }, [tmi, token]);
 
   useEffect(() => {
     if (estimateData && estimateData.disponible !== false) {
