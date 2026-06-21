@@ -452,6 +452,20 @@ function AppInner() {
   const [sendInvoiceError, setSendInvoiceError] = useState("");
   const [sendInvoiceMessage, setSendInvoiceMessage] = useState("");
 
+  // ─── Devis ───
+  const [quotesList, setQuotesList] = useState([]);
+  const [quotesSummary, setQuotesSummary] = useState(null);
+  const [quotesLoading, setQuotesLoading] = useState(false);
+  const [showNewQuote, setShowNewQuote] = useState(false);
+  const [editingQuoteId, setEditingQuoteId] = useState(null);
+  const [quoteForm, setQuoteForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: "", date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  const [viewingQuote, setViewingQuote] = useState(null);
+  const [sendingQuote, setSendingQuote] = useState(false);
+  const [sendQuoteStatus, setSendQuoteStatus] = useState("");
+  const [sendQuoteError, setSendQuoteError] = useState("");
+  const [sendQuoteMessage, setSendQuoteMessage] = useState("");
+  const [convertingQuote, setConvertingQuote] = useState(false);
+
   useEffect(() => {
     if (viewingInvoice && sendInvoiceStatus !== "sent") {
       setSendInvoiceMessage(
@@ -977,6 +991,165 @@ function AppInner() {
     }
   }
 
+  // ─── Devis ───
+
+  async function loadQuotes() {
+    setQuotesLoading(true);
+    try {
+      const [list, summary] = await Promise.all([apiFetch("/quotes"), apiFetch("/quotes/summary")]);
+      setQuotesList(list);
+      setQuotesSummary(summary);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setQuotesLoading(false);
+    }
+  }
+
+  function resetQuoteForm() {
+    setQuoteForm({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setEditingQuoteId(null);
+  }
+
+  function startEditQuote(q) {
+    setQuoteForm({
+      client_nom: q.client_nom || "",
+      client_email: q.client_email || "",
+      client_adresse: q.client_adresse || "",
+      date_emission: q.date_emission || todayISO,
+      date_validite: q.date_validite || "",
+      lignes: (q.lignes && q.lignes.length > 0) ? q.lignes : [{ description: "", quantite: 1, prix_unitaire: "" }],
+      notes: q.notes || "",
+    });
+    setEditingQuoteId(q.id);
+    setShowNewQuote(true);
+  }
+
+  function addQuoteLigne() {
+    setQuoteForm(f => ({ ...f, lignes: [...f.lignes, { description: "", quantite: 1, prix_unitaire: "" }] }));
+  }
+
+  function updateQuoteLigne(i, field, value) {
+    setQuoteForm(f => {
+      const lignes = [...f.lignes];
+      lignes[i] = { ...lignes[i], [field]: value };
+      return { ...f, lignes };
+    });
+  }
+
+  function totalQuote() {
+    return quoteForm.lignes.reduce((sum, l) => sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
+  }
+
+  async function saveQuote(statutVoulu) {
+    const lignes = quoteForm.lignes.map(l => ({
+      description: l.description,
+      quantite: parseFloat(l.quantite) || 0,
+      prix_unitaire: parseFloat(l.prix_unitaire) || 0,
+    }));
+    try {
+      if (editingQuoteId) {
+        await apiFetch(`/quotes/${editingQuoteId}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            client_nom: quoteForm.client_nom,
+            client_email: quoteForm.client_email || null,
+            client_adresse: quoteForm.client_adresse || null,
+            date_emission: quoteForm.date_emission,
+            date_validite: quoteForm.date_validite || null,
+            lignes,
+            notes: quoteForm.notes || null,
+          }),
+        });
+      } else {
+        await apiFetch("/quotes", {
+          method: "POST",
+          body: JSON.stringify({
+            client_nom: quoteForm.client_nom,
+            client_email: quoteForm.client_email || null,
+            client_adresse: quoteForm.client_adresse || null,
+            date_emission: quoteForm.date_emission,
+            date_validite: quoteForm.date_validite || null,
+            lignes,
+            notes: quoteForm.notes || null,
+            statut: statutVoulu || "brouillon",
+          }),
+        });
+      }
+      setShowNewQuote(false);
+      resetQuoteForm();
+      await loadQuotes();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleQuoteStatus(id, statut) {
+    try {
+      await apiFetch(`/quotes/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut }) });
+      await loadQuotes();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleDeleteQuote(id) {
+    try {
+      await apiFetch(`/quotes/${id}`, { method: "DELETE" });
+      await loadQuotes();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  async function handleSendQuote(q) {
+    setSendingQuote(true);
+    setSendQuoteStatus("");
+    setSendQuoteError("");
+    try {
+      const updated = await apiFetch(`/quotes/${q.id}/send`, {
+        method: "POST",
+        body: JSON.stringify({
+          emitter_nom: profilEntreprise || `${profilPrenom} ${profilNom}`.trim() || null,
+          emitter_adresse: profilAdresse || null,
+          emitter_siret: profilSiret || null,
+          message: sendQuoteMessage || null,
+        }),
+      });
+      setSendQuoteStatus("sent");
+      setViewingQuote(updated);
+      await loadQuotes();
+    } catch (err) {
+      setSendQuoteStatus("error");
+      setSendQuoteError(err.message);
+    } finally {
+      setSendingQuote(false);
+    }
+  }
+
+  async function handleConvertQuote(q) {
+    setConvertingQuote(true);
+    try {
+      await apiFetch(`/quotes/${q.id}/convert`, { method: "POST" });
+      setViewingQuote(null);
+      await loadQuotes();
+      setNav("factures");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setConvertingQuote(false);
+    }
+  }
+
+  const QUOTE_STATUT_INFO = {
+    brouillon: { label: "Brouillon", bg: "#F1F2EE", color: "#5B6573" },
+    envoye: { label: "Envoyé", bg: "#E6F1FB", color: "#0C447C" },
+    accepte: { label: "Accepté", bg: "#E1F5EE", color: "#0F6E56" },
+    refuse: { label: "Refusé", bg: "#FCEBEB", color: "#A32D2D" },
+    expire: { label: "Expiré", bg: "#FAEEDA", color: "#854F0B" },
+  };
+
+
   async function saveFacture(statutVoulu) {
     const lignes = factureForm.lignes.map(l => ({
       description: l.description,
@@ -1061,6 +1234,18 @@ function AppInner() {
   useEffect(() => {
     if ((nav === "factures" || nav === "contacts") && token) loadInvoices();
   }, [nav, token]);
+
+  useEffect(() => {
+    if (nav === "devis" && token) loadQuotes();
+  }, [nav, token]);
+
+  useEffect(() => {
+    if (viewingQuote && sendQuoteStatus !== "sent") {
+      setSendQuoteMessage(
+        `Bonjour ${viewingQuote.client_nom || ""},\n\nVeuillez trouver ci-dessous notre devis ${viewingQuote.numero || ""}.\n\nCordialement,\n${profilPrenom || profilEntreprise || ""}`
+      );
+    }
+  }, [viewingQuote?.id]);
 
   // ────────────────────────────────────────────────────────────
   // Frais d'entreprise
@@ -1646,6 +1831,7 @@ function AppInner() {
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
           { id: "factures", icon: "ti-file", label: "Factures" },
+          { id: "devis", icon: "ti-file-description", label: "Devis" },
           { id: "frais", icon: "ti-receipt-2", label: "Frais" },
           { id: "assistant", icon: "ti-message", label: "Assistant IA" },
           { id: "profil", icon: "ti-user", label: "Profil" },
@@ -3179,6 +3365,232 @@ function AppInner() {
                         <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
                       </button>
                       <button style={S.btnSecondary} onClick={() => { setViewingInvoice(null); setSendInvoiceStatus(""); setSendInvoiceMessage(""); }}>Fermer</button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+        )}
+
+        {nav === "devis" && (
+          <div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+              <div><h1 style={S.pageTitle}>Devis</h1><p style={S.pageSub}>Préparez vos propositions commerciales</p></div>
+              <button style={S.btnPrimarySmall} onClick={() => { resetQuoteForm(); setShowNewQuote(!showNewQuote); }}>+ Nouveau devis</button>
+            </div>
+
+            {quotesSummary && (
+              <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : S.kpiGrid}>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Total devis</span><span style={S.kpiValue}>{formatEUR(quotesSummary.total)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Acceptés</span><span style={{ ...S.kpiValue, color: "#1D9E75" }}>{formatEUR(quotesSummary.accepte_total)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>En attente</span><span style={{ ...S.kpiValue, color: "#854F0B" }}>{formatEUR(quotesSummary.en_attente_total)}</span></div>
+                <div style={S.kpiCard}><span style={S.kpiLabel}>Taux de conversion</span><span style={S.kpiValue}>{quotesSummary.taux_conversion !== null ? `${quotesSummary.taux_conversion}%` : "—"}</span></div>
+              </div>
+            )}
+
+            {showNewQuote && (
+              <div style={{ ...S.card, marginBottom: 16 }}>
+                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>{editingQuoteId ? "Modifier le devis" : "Nouveau devis"}</h3>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+                  <input style={S.input} placeholder="Nom du client" value={quoteForm.client_nom} onChange={e => setQuoteForm({ ...quoteForm, client_nom: e.target.value })} />
+                  <input style={S.input} placeholder="Email du client" type="email" value={quoteForm.client_email} onChange={e => setQuoteForm({ ...quoteForm, client_email: e.target.value })} />
+                </div>
+                <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={quoteForm.client_adresse} onChange={e => setQuoteForm({ ...quoteForm, client_adresse: e.target.value })} />
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
+                  <label style={{ ...S.label, marginBottom: 0 }}>Date d'émission
+                    <input style={S.input} type="date" value={quoteForm.date_emission} onChange={e => setQuoteForm({ ...quoteForm, date_emission: e.target.value })} />
+                  </label>
+                  <label style={{ ...S.label, marginBottom: 0 }}>Valable jusqu'au (optionnel)
+                    <input style={S.input} type="date" value={quoteForm.date_validite} onChange={e => setQuoteForm({ ...quoteForm, date_validite: e.target.value })} />
+                  </label>
+                </div>
+                <div style={S.factureHeaderRow}>
+                  <span style={{ flex: 3, fontSize: 12, color: "#6B7A8D" }}>Description</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "center" }}>Qté</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "right" }}>Prix unitaire</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "right" }}>Total</span>
+                </div>
+                {quoteForm.lignes.map((l, i) => (
+                  <div key={i} style={S.factureRow}>
+                    <input style={{ ...S.input, flex: 3 }} placeholder="Prestation" value={l.description} onChange={e => updateQuoteLigne(i, "description", e.target.value)} />
+                    <input style={{ ...S.input, flex: 1, textAlign: "center" }} type="number" min="1" value={l.quantite} onChange={e => updateQuoteLigne(i, "quantite", e.target.value)} />
+                    <input style={{ ...S.input, flex: 1, textAlign: "right" }} type="number" step="0.01" placeholder="0,00" value={l.prix_unitaire} onChange={e => updateQuoteLigne(i, "prix_unitaire", e.target.value)} />
+                    <span style={{ flex: 1, textAlign: "right", fontSize: 13, fontWeight: 500, padding: "0 8px" }}>{formatEUR((parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0))}</span>
+                  </div>
+                ))}
+                <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addQuoteLigne}>+ Ajouter une ligne</button>
+                <div style={{ ...S.netPreview, marginBottom: 12 }}>
+                  <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalQuote())}</span></div>
+                  <div style={{ ...S.netRow, fontSize: 11, color: "#6B7A8D" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                  <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalQuote())}</span></div>
+                </div>
+                <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={quoteForm.notes} onChange={e => setQuoteForm({ ...quoteForm, notes: e.target.value })} />
+                <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
+                  <button style={S.btnPrimary} onClick={() => saveQuote(editingQuoteId ? undefined : "brouillon")}>{editingQuoteId ? "Enregistrer les modifications" : "Enregistrer en brouillon"}</button>
+                  {!editingQuoteId && <button style={S.btnSecondary} onClick={() => saveQuote("envoye")}>Enregistrer et marquer envoyé</button>}
+                  <button style={S.btnSecondary} onClick={() => { setShowNewQuote(false); resetQuoteForm(); }}>Annuler</button>
+                </div>
+              </div>
+            )}
+
+            <div style={S.card}>
+              {quotesLoading ? (
+                <p style={S.empty}>Chargement…</p>
+              ) : quotesList.length === 0 ? (
+                <p style={S.empty}>Aucun devis créé. Commencez par en créer un !</p>
+              ) : quotesList.map(q => {
+                const info = QUOTE_STATUT_INFO[q.statut] || QUOTE_STATUT_INFO.brouillon;
+                return (
+                  <div key={q.id} onClick={() => setViewingQuote(q)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", cursor: "pointer" }}>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{q.client_nom}</div>
+                      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>
+                        {q.numero} · émis le {formatDate(q.date_emission)}{q.date_validite ? ` · valable jusqu'au ${formatDate(q.date_validite)}` : ""}
+                        {q.converted_invoice_id && <span style={{ color: "#0F6E56", fontWeight: 600 }}> · converti en facture</span>}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: INK, minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(q.montant)}</span>
+                    {q.statut === "envoye" ? (
+                      <select onClick={e => e.stopPropagation()} style={{ ...S.toggleBtn, flex: "0 0 auto", padding: "5px 8px", fontSize: 11 }} value={q.statut} onChange={e => handleQuoteStatus(q.id, e.target.value)}>
+                        <option value="envoye">Envoyé</option>
+                        <option value="accepte">Marquer accepté</option>
+                        <option value="refuse">Marquer refusé</option>
+                        <option value="expire">Marquer expiré</option>
+                      </select>
+                    ) : (
+                      <span style={{ background: info.bg, color: info.color, fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{info.label}</span>
+                    )}
+                    <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                      <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} />
+                    </button>
+                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                      <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
+                    </button>
+                    <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteQuote(q.id); }} style={S.deleteBtn}>✕</button>
+                  </div>
+                );
+              })}
+            </div>
+
+            {viewingQuote && (() => {
+              const q = viewingQuote;
+              const info = QUOTE_STATUT_INFO[q.statut] || QUOTE_STATUT_INFO.brouillon;
+              const lignes = q.lignes && q.lignes.length > 0 ? q.lignes : [];
+              const totalHT = lignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
+              return (
+                <div style={{ position: "fixed", inset: 0, background: "rgba(10,37,64,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 90, padding: 16 }} onClick={() => setViewingQuote(null)}>
+                  <div style={{ background: "white", borderRadius: 16, maxWidth: 560, width: "100%", maxHeight: "90vh", overflowY: "auto", padding: "28px 28px 24px" }} onClick={e => e.stopPropagation()}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+                      <div>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: INK }}>{q.numero}</div>
+                        <span style={{ background: info.bg, color: info.color, fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 8, display: "inline-block", marginTop: 6 }}>{info.label}</span>
+                      </div>
+                      <button aria-label="Fermer" onClick={() => setViewingQuote(null)} style={{ background: "none", border: "none", fontSize: 20, color: "#8BA5C0", cursor: "pointer", padding: 4 }}>✕</button>
+                    </div>
+
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", marginBottom: 6 }}>Émetteur</div>
+                        <div style={{ fontSize: 13, color: INK, lineHeight: 1.6 }}>
+                          <strong>{profilEntreprise || `${profilPrenom} ${profilNom}`.trim() || "—"}</strong><br />
+                          {profilAdresse || <span style={{ color: "#C0392B" }}>Adresse manquante</span>}<br />
+                          {profilSiret ? `SIRET : ${profilSiret}` : <span style={{ color: "#C0392B" }}>SIRET manquant</span>}
+                        </div>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", marginBottom: 6 }}>Client</div>
+                        <div style={{ fontSize: 13, color: INK, lineHeight: 1.6 }}>
+                          <strong>{q.client_nom}</strong><br />
+                          {q.client_adresse || "—"}<br />
+                          {q.client_email || ""}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 24, marginBottom: 20, fontSize: 13 }}>
+                      <div><span style={{ color: "#8BA5C0" }}>Émis le </span><strong>{formatDate(q.date_emission)}</strong></div>
+                      {q.date_validite && <div><span style={{ color: "#8BA5C0" }}>Valable jusqu'au </span><strong>{formatDate(q.date_validite)}</strong></div>}
+                    </div>
+
+                    <div style={{ border: "1px solid #EEF2F7", borderRadius: 10, overflow: "hidden", marginBottom: 16 }}>
+                      <div style={{ display: "flex", gap: 8, padding: "8px 12px", background: "#F7F9F5", fontSize: 11, color: "#6B7A8D", fontWeight: 600 }}>
+                        <span style={{ flex: 3 }}>Description</span>
+                        <span style={{ flex: 1, textAlign: "center" }}>Qté</span>
+                        <span style={{ flex: 1, textAlign: "right" }}>PU</span>
+                        <span style={{ flex: 1, textAlign: "right" }}>Total</span>
+                      </div>
+                      {lignes.map((l, i) => (
+                        <div key={i} style={{ display: "flex", gap: 8, padding: "10px 12px", fontSize: 13, borderTop: "1px solid #EEF2F7" }}>
+                          <span style={{ flex: 3, color: INK }}>{l.description}</span>
+                          <span style={{ flex: 1, textAlign: "center", color: "#6B7A8D" }}>{l.quantite}</span>
+                          <span style={{ flex: 1, textAlign: "right", color: "#6B7A8D" }}>{formatEUR(l.prix_unitaire)}</span>
+                          <span style={{ flex: 1, textAlign: "right", fontWeight: 600, color: INK }}>{formatEUR((parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0))}</span>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalHT)}</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }}><span>Total TTC</span><span>{formatEUR(q.montant)}</span></div>
+                    </div>
+
+                    {q.notes && (
+                      <div style={{ fontSize: 12, color: "#6B7A8D", marginBottom: 16, lineHeight: 1.5 }}>
+                        <strong>Notes :</strong> {q.notes}
+                      </div>
+                    )}
+
+                    {q.converted_invoice_id ? (
+                      <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+                        <i className="ti ti-circle-check" aria-hidden="true" style={{ fontSize: 18, color: "#0F6E56" }} />
+                        <span style={{ fontSize: 13, color: "#0F6E56", fontWeight: 600 }}>Déjà converti en facture</span>
+                      </div>
+                    ) : (
+                      <div style={{ background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 6 }}>
+                          <i className="ti ti-arrow-right-circle" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Devis accepté ?
+                        </div>
+                        <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 10px" }}>Convertissez-le en facture sans tout retaper.</p>
+                        <button style={S.btnPrimary} onClick={() => handleConvertQuote(q)} disabled={convertingQuote}>
+                          {convertingQuote ? "Conversion…" : "Convertir en facture"}
+                        </button>
+                      </div>
+                    )}
+
+                    <div style={{ background: "#F7F9F5", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 8 }}>
+                        <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Envoyer au client
+                      </div>
+                      {!q.client_email ? (
+                        <p style={{ fontSize: 12, color: "#854F0B", margin: 0 }}>
+                          Aucun email renseigné pour ce client. <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => { setViewingQuote(null); startEditQuote(q); }}>Ajouter un email →</button>
+                        </p>
+                      ) : sendQuoteStatus === "sent" ? (
+                        <p style={{ fontSize: 12, color: "#0F6E56", fontWeight: 600, margin: 0 }}>✓ Devis envoyé à {q.client_email}</p>
+                      ) : (
+                        <>
+                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyé à <strong>{q.client_email}</strong></p>
+                          <textarea
+                            style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
+                            placeholder="Message personnalisé (optionnel)"
+                            value={sendQuoteMessage}
+                            onChange={e => setSendQuoteMessage(e.target.value)}
+                          />
+                          {sendQuoteStatus === "error" && <p style={{ fontSize: 12, color: "#A32D2D", margin: "0 0 8px" }}>{sendQuoteError}</p>}
+                          <button style={S.btnSecondary} onClick={() => handleSendQuote(q)} disabled={sendingQuote}>
+                            {sendingQuote ? "Envoi…" : <><i className="ti ti-send" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Envoyer le devis</>}
+                          </button>
+                        </>
+                      )}
+                    </div>
+
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button style={S.btnPrimary} onClick={() => { setViewingQuote(null); startEditQuote(q); }}>
+                        <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
+                      </button>
+                      <button style={S.btnSecondary} onClick={() => { setViewingQuote(null); setSendQuoteStatus(""); setSendQuoteMessage(""); }}>Fermer</button>
                     </div>
                   </div>
                 </div>
