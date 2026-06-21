@@ -455,7 +455,7 @@ function AppInner() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
-  const [simCa, setSimCa] = useState("3000");
+  const [simCa, setSimCa] = useState("");
   const [simActivite, setSimActivite] = useState("services");
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "");
   const [objectifMensuel, setObjectifMensuel] = useState(() => localStorage.getItem("objectifMensuel") || "");
@@ -1881,7 +1881,7 @@ function AppInner() {
               </div>
               <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Ex : 3000 €" value={simCa} onChange={e => setSimCa(e.target.value)} />
+                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e.target.value)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
                   <option value="vente">Vente de marchandises (12,3%)</option>
                   <option value="services">Prestations de services (21,2%)</option>
