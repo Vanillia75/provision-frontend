@@ -1914,7 +1914,10 @@ function AppInner() {
             <div style={S.soldeInputCard}>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
                 <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7A8D" }}>💳 Solde actuel de votre compte</span>
-                <input style={S.soldeInput} type="number" step="0.01" placeholder="Ex : 7842" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+                <input style={S.soldeInput} type="number" step="0.01" placeholder="Exemple : 1750€" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+                <span style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.5 }}>
+                  Ce solde sert de base à tous les calculs de H€CTOR : argent réellement disponible, déficit éventuel, Mode Achat, Mode Salaire... Mettez-le à jour régulièrement pour des résultats fiables.
+                </span>
               </label>
               {panique.solde !== "" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
             </div>
