@@ -1883,16 +1883,20 @@ function AppInner() {
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met de côté ce que tu devras à l'URSSAF, aux impôts et à la TVA, et te dit ce qu'il te reste vraiment — sans jamais se connecter à ta banque.</p>
 
-          {/* Démo visuelle : le chiffre-promesse, le super-pouvoir montré plutôt que décrit */}
-          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 28px", margin: "8px auto", maxWidth: 460, width: "100%" }}>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#5DCAA5", marginBottom: 4 }}>🟢 Tu peux dépenser sans risque jusqu'à</div>
-            <div style={{ fontSize: isMobile ? 40 : 48, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums", lineHeight: 1.1, marginBottom: 12 }}>2 843 €</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5, textAlign: "left", maxWidth: 240, margin: "0 auto" }}>
-              <div style={{ fontSize: 12.5, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "#5DCAA5" }}>✅</span> URSSAF mise de côté</div>
-              <div style={{ fontSize: 12.5, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "#5DCAA5" }}>✅</span> TVA anticipée</div>
-              <div style={{ fontSize: 12.5, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "#5DCAA5" }}>✅</span> Impôts anticipés</div>
+          {/* Démo visuelle : la TRANSFORMATION (brut → disponible), pas juste le résultat */}
+          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 16, padding: isMobile ? "16px" : "20px 28px", margin: "8px auto", maxWidth: 440, width: "100%" }}>
+            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 10px", borderRadius: 999, marginBottom: 14 }}>EXEMPLE DE CALCUL</div>
+            <div style={{ fontSize: 14, color: "#EAF2FB", marginBottom: 2 }}>Pour un indépendant ayant encaissé</div>
+            <div style={{ fontSize: 26, fontWeight: 700, color: "white", marginBottom: 12 }}>5 000 €</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "left", maxWidth: 260, margin: "0 auto 14px" }}>
+              <div style={{ fontSize: 13, color: "#F0A9A0", display: "flex", justifyContent: "space-between" }}><span>− URSSAF</span><span>−1 050 €</span></div>
+              <div style={{ fontSize: 13, color: "#F0A9A0", display: "flex", justifyContent: "space-between" }}><span>− TVA anticipée</span><span>−833 €</span></div>
+              <div style={{ fontSize: 13, color: "#F0A9A0", display: "flex", justifyContent: "space-between" }}><span>− Impôts estimés</span><span>−274 €</span></div>
             </div>
-            <div style={{ fontSize: 10, color: "#7A93AD", marginTop: 12, fontStyle: "italic" }}>Exemple — ton vrai chiffre s'affiche dès que tu entres ton solde</div>
+            <div style={{ fontSize: 18, color: "#5DCAA5", marginBottom: 8 }}>⬇️</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#5DCAA5" }}>🟢 Tu peux vraiment dépenser</div>
+            <div style={{ fontSize: isMobile ? 38 : 46, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>2 843 €</div>
+            <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, lineHeight: 1.5 }}>C'est tout l'intérêt : sur 5 000 € encaissés, une grande partie n'est pas vraiment à toi. H€CTOR te dit ce qui l'est.</div>
           </div>
 
           {/* Bande compagnon (compacte) : Hector qui prépare les devis quand on lui parle */}
