@@ -363,25 +363,18 @@ function formatDate(d) {
 }
 
 function Logo({ size = 28 }) {
-  const h = size;
-  const ratio = 160 / 44;
-  const w = h * ratio;
+  // Logo image (hauteur = size, largeur auto pour garder les proportions). Net en retina (image 2x).
+  const ratio = 1348 / 358;
   return (
-    <svg width={w} height={h} viewBox="0 0 160 44" fill="none">
-      <rect width="160" height="44" rx="8" fill="#378ADD"/>
-      <text x="12" y="31" fontFamily="Georgia,serif" fontSize="24" fontWeight="700" fill="white" letterSpacing="2">H</text>
-      <text x="33" y="31" fontFamily="Georgia,serif" fontSize="24" fontWeight="700" fill="#0A2540" letterSpacing="2">€</text>
-      <text x="52" y="31" fontFamily="Georgia,serif" fontSize="24" fontWeight="700" fill="white" letterSpacing="2">CTOR</text>
-    </svg>
+    <img src="/hector-logo.png" alt="H€CTOR" height={size} width={Math.round(size * ratio)}
+         style={{ height: size, width: "auto", display: "block" }} />
   );
 }
 
 function LogoIcon({ size = 32 }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 44 44" fill="none">
-      <rect width="44" height="44" rx="8" fill="#378ADD"/>
-      <text x="5" y="32" fontFamily="Georgia,serif" fontSize="28" fontWeight="700" fill="white">€</text>
-    </svg>
+    <img src="/hector-icon.png" alt="H€CTOR" height={size} width={size}
+         style={{ height: size, width: size, display: "block", borderRadius: size * 0.22 }} />
   );
 }
 
