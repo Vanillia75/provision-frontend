@@ -533,6 +533,8 @@ function AppInner() {
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
+  const [devisCreating, setDevisCreating] = useState(null);
+  const [devisCreated, setDevisCreated] = useState({});
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
@@ -1532,6 +1534,47 @@ function AppInner() {
     }
   }
 
+  // --- Hector prépare un devis : parse le bloc [[DEVIS:{...}]] d'un message ---
+  function parseDevisBlock(content) {
+    if (!content) return null;
+    const m = content.match(/\[\[DEVIS:(\{.*?\})\]\]/s);
+    if (!m) return null;
+    try {
+      const data = JSON.parse(m[1]);
+      if (!data.client_nom || !Array.isArray(data.lignes) || data.lignes.length === 0) return null;
+      const montant = data.lignes.reduce((s, l) => s + (Number(l.quantite) || 1) * (Number(l.prix_unitaire) || 0), 0);
+      return { data, montant, cleanText: content.replace(/\[\[DEVIS:\{.*?\}\]\]/s, "").trim() };
+    } catch {
+      return null;
+    }
+  }
+
+  async function handleCreateQuoteFromAssistant(devis, msgIndex) {
+    setDevisCreating(msgIndex);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const created = await apiFetch("/quotes", {
+        method: "POST",
+        body: JSON.stringify({
+          client_nom: devis.data.client_nom,
+          client_email: devis.data.client_email || null,
+          client_adresse: devis.data.client_adresse || null,
+          date_emission: today,
+          date_validite: null,
+          lignes: devis.data.lignes.map(l => ({ description: l.description || "", quantite: Number(l.quantite) || 1, prix_unitaire: Number(l.prix_unitaire) || 0 })),
+          notes: devis.data.notes || null,
+          statut: "brouillon",
+        }),
+      });
+      setDevisCreated(prev => ({ ...prev, [msgIndex]: created.numero || true }));
+      loadQuotes && loadQuotes();
+    } catch (err) {
+      setAiMessages(m => [...m, { role: "assistant", content: `Je n'ai pas réussi à créer le devis : ${err.message}. Tu peux le faire à la main dans Facturer ▸ Mes devis.` }]);
+    } finally {
+      setDevisCreating(null);
+    }
+  }
+
   const revenusParMois = Array.from({ length: 12 }, (_, i) => {
     const total = incomeList.filter(e => new Date(e.date).getMonth() === i && new Date(e.date).getFullYear() === new Date().getFullYear()).reduce((s, e) => s + e.amount, 0);
     const taux = estimateData?.taux_global_pct ? estimateData.taux_global_pct / 100 : 0.214;
@@ -2278,15 +2321,12 @@ function AppInner() {
                 <details style={{ marginTop: 14, textAlign: "left" }}>
                   <summary style={{ cursor: "pointer", fontSize: 12, color: "#F0997B", textAlign: "center" }}>Voir le calcul avancé (modifier CFE...)</summary>
                   <div style={{ marginTop: 12, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px" }}>
-                    <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                      <span style={{ color: "#F7C1C1" }}>CFE <span style={{ fontSize: 10, color: "#F0997B" }}>(souvent ~200€/an, à renseigner)</span></span>
-                      <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                        <input
-                          style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#F7C1C1", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                          type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
-                        />
-                        <span style={{ fontSize: 11, color: "#F0997B" }}>€</span>
-                      </span>
+                    <div style={S.heroDetailRow}>
+                      <span style={{ color: "#F7C1C1" }}>CFE</span>
+                      <span style={{ color: "#F7C1C1" }}>{formatEUR(cfeNum)}</span>
+                    </div>
+                    <div style={{ textAlign: "center", marginTop: 8 }}>
+                      <button style={{ ...S.linkBtnLight, fontSize: 11 }} onClick={() => setNav("profil")}>⚙️ Régler la CFE et ma réserve dans mon profil →</button>
                     </div>
                   </div>
                 </details>
@@ -2341,15 +2381,9 @@ function AppInner() {
                       <div style={S.heroDetailRow}><span>Argent sur le compte</span><span>{formatEUR(soldeNum)}</span></div>
                       <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
                       <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
-                      <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                        <span style={{ color: "#FAC775" }}>− Cotisation Foncière des Entreprises <span title="Impôt local annuel dû par la plupart des entreprises, même sans local professionnel dédié. Souvent autour de 200€/an pour un auto-entrepreneur, mais variable selon la commune." style={{ cursor: "help", borderBottom: "1px dotted #7A93AD" }}>(CFE) ⓘ</span> <span style={{ fontSize: 10, color: "#7A93AD" }}>{cfeNum === 0 ? "(souvent ~200€/an, à renseigner)" : "(forfait, modifiable)"}</span></span>
-                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                          <input
-                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#FAC775", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                            type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })}
-                          />
-                          <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
-                        </span>
+                      <div style={S.heroDetailRow}>
+                        <span style={{ color: "#FAC775" }}>− Cotisation Foncière des Entreprises <span title="Impôt local annuel dû par la plupart des entreprises, même sans local professionnel dédié. Souvent autour de 200€/an pour un auto-entrepreneur, mais variable selon la commune." style={{ cursor: "help", borderBottom: "1px dotted #7A93AD" }}>(CFE) ⓘ</span></span>
+                        <span style={{ color: "#FAC775" }}>{formatEUR(cfeNum)}</span>
                       </div>
                       <div style={S.heroDetailRow}>
                         <span style={{ color: "#FAC775" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4 }} onClick={() => setNav("frais")}>voir détail →</button></span>
@@ -2358,15 +2392,9 @@ function AppInner() {
                       <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 2 }}>
                         <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
                       </div>
-                      <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                        <span style={{ color: "#B5D4F4" }}>− Objectif de réserve <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "en €"})</span></span>
-                        <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
-                          <input
-                            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#B5D4F4", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
-                            type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)}
-                          />
-                          <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
-                        </span>
+                      <div style={S.heroDetailRow}>
+                        <span style={{ color: "#B5D4F4" }}>− Objectif de réserve <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "modifiable dans ton profil"})</span></span>
+                        <span style={{ color: "#B5D4F4" }}>{formatEUR(securiteNum)}</span>
                       </div>
                       {reserveAtteinte ? (
                         <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
@@ -2384,23 +2412,10 @@ function AppInner() {
                         </div>
                       )}
 
-                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                        <div style={{ fontSize: 13, fontWeight: 600, color: "white", marginBottom: 2 }}>Combien de mois de sécurité voulez-vous garder ?</div>
-                        <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Choisissez une durée pour fixer votre réserve cible {securitePrecise ? "(basé sur vos dépenses réelles)" : "(estimation sur votre CA)"}</div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {[1, 3, 6].map(m => (
-                            <button key={m} type="button"
-                              onClick={() => setObjectifSecurite(String(Math.round(baseMensuelleSecurite * m)))}
-                              style={{ ...S.toggleBtn, background: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.2)", color: "white", flex: "0 1 auto", padding: "6px 12px" }}>
-                              {m} mois
-                            </button>
-                          ))}
-                        </div>
-                        {moyenneMensuelleFrais === 0 && (
-                          <div style={{ fontSize: 10, color: "#7A93AD", marginTop: 6 }}>
-                            Sans vos frais réels, ces boutons utilisent votre CA moyen ({formatEUR(moyenneMensuelleCA)}/mois) comme approximation — <button style={{ ...S.linkBtnLight, fontSize: 11, fontWeight: 700, textDecoration: "underline" }} onClick={() => setNav("frais")}>ajouter mes frais →</button>
-                          </div>
-                        )}
+                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                        <button style={{ ...S.linkBtnLight, fontSize: 12 }} onClick={() => setNav("profil")}>
+                          ⚙️ Régler ma réserve de sécurité et la CFE dans mon profil →
+                        </button>
                       </div>
                     </div>
                   </details>
@@ -4194,8 +4209,24 @@ function AppInner() {
                     {TMI_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                   </select>
                 </label>
+                <label style={S.label}>Cotisation Foncière des Entreprises (CFE)
+                  <input style={S.input} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} placeholder="Souvent ~200 €/an" />
+                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Impôt local annuel dû par la plupart des entreprises, même sans local. Variable selon la commune.</span>
+                </label>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous vos appareils.</p>
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #EEF2F7" }}>
+                <div style={{ fontSize: 12, fontWeight: 600, color: INK, marginBottom: 6 }}>Fixer ma réserve en mois de sécurité</div>
+                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {[1, 3, 6].map(m => (
+                    <button key={m} type="button"
+                      onClick={() => setObjectifSecurite(String(Math.round(baseMensuelleSecurite * m)))}
+                      style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }}>
+                      {m} mois
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
@@ -4314,11 +4345,47 @@ function AppInner() {
             )}
             <div style={{ ...S.card, display: "flex", flexDirection: "column", height: "calc(100vh - 260px)" }}>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}>
-                {aiMessages.map((m, i) => (
-                  <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
-                    <div style={{ ...S.aiMsg, ...(m.role === "user" ? S.aiMsgUser : S.aiMsgBot) }}>{m.content}</div>
-                  </div>
-                ))}
+                {aiMessages.map((m, i) => {
+                  const devis = m.role === "assistant" ? parseDevisBlock(m.content) : null;
+                  return (
+                    <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: m.role === "user" ? "flex-end" : "flex-start", gap: 8 }}>
+                      <div style={{ ...S.aiMsg, ...(m.role === "user" ? S.aiMsgUser : S.aiMsgBot) }}>{devis ? devis.cleanText : m.content}</div>
+                      {devis && (
+                        <div style={{ background: "#F4F9FF", border: `1px solid ${ACCENT}`, borderRadius: 12, padding: 16, maxWidth: 380, width: "100%" }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: ACCENT, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                            <i className="ti ti-file-description" aria-hidden="true" style={{ fontSize: 16 }} /> Devis préparé par Hector
+                          </div>
+                          <div style={{ fontSize: 13, color: INK, marginBottom: 4 }}><strong>Client :</strong> {devis.data.client_nom}</div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 2, margin: "8px 0", paddingLeft: 4 }}>
+                            {devis.data.lignes.map((l, j) => (
+                              <div key={j} style={{ fontSize: 12.5, color: "#42566B", display: "flex", justifyContent: "space-between", gap: 10 }}>
+                                <span>{l.description || "Prestation"}{(Number(l.quantite) || 1) > 1 ? ` × ${l.quantite}` : ""}</span>
+                                <span style={{ whiteSpace: "nowrap" }}>{formatEUR((Number(l.quantite) || 1) * (Number(l.prix_unitaire) || 0))}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <div style={{ borderTop: "1px solid #D6E8FA", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: INK }}>
+                            <span>Total</span><span>{formatEUR(devis.montant)}</span>
+                          </div>
+                          {devisCreated[i] ? (
+                            <div style={{ marginTop: 12, textAlign: "center", fontSize: 13, fontWeight: 600, color: "#1D9E75" }}>
+                              ✅ Devis créé{typeof devisCreated[i] === "string" ? ` (${devisCreated[i]})` : ""} — <button style={{ ...S.linkBtn, fontSize: 13 }} onClick={() => setNav("devis")}>le voir →</button>
+                            </div>
+                          ) : (
+                            <button
+                              style={{ ...S.btnPrimary, marginTop: 12, opacity: devisCreating === i ? 0.6 : 1 }}
+                              disabled={devisCreating === i}
+                              onClick={() => handleCreateQuoteFromAssistant(devis, i)}
+                            >
+                              {devisCreating === i ? "Création…" : "Créer ce devis ✓"}
+                            </button>
+                          )}
+                          <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 8, textAlign: "center" }}>Tu pourras le modifier ou l'envoyer ensuite dans Mes devis.</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
                 {aiLoading && <div style={{ ...S.aiMsg, ...S.aiMsgBot, color: "#8BA5C0" }}>H€CTOR réfléchit…</div>}
               </div>
               <form style={{ display: "flex", gap: 10, borderTop: "1px solid #DDE5EE", paddingTop: 14 }} onSubmit={askAI}>
