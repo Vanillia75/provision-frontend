@@ -2138,7 +2138,7 @@ function AppInner() {
                     <span style={{ color: "white" }}>Total charges</span><span style={{ color: "white" }}>{formatEUR(totalChargesAVenir)}</span>
                   </div>
                   <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 8, marginTop: 6 }}>
-                    <span style={{ color: "#F7C1C1" }}>Solde bancaire</span><span style={{ color: "#F7C1C1" }}>{formatEUR(soldeNum)}</span>
+                    <span style={{ color: "#F7C1C1" }}>Argent sur le compte</span><span style={{ color: "#F7C1C1" }}>{formatEUR(soldeNum)}</span>
                   </div>
                   <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 6, fontWeight: 700 }}>
                     <span style={{ color: "#F09595" }}>Déficit</span><span style={{ color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</span>
@@ -2162,27 +2162,36 @@ function AppInner() {
               </div>
             ) : (
               <div style={S.heroDispo}>
-                <div style={S.heroDispoLabel}>{niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "🟠 Réserve de sécurité incomplète" : "🟢 Situation saine"}</div>
                 {niveauFinancier !== null && (
-                  <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: -4, marginBottom: 8 }}>
-                    {niveauFinancier === "orange" ? "Disponible aujourd'hui" : "Disponible"}
+                  <div style={{ fontSize: 14, fontWeight: 700, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5", marginBottom: 10 }}>
+                    ✅ Votre activité est saine
                   </div>
                 )}
+                <div style={S.heroDispoLabel}>
+                  {niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "Disponible aujourd'hui" : "🟢 Disponible — réserve atteinte"}
+                </div>
                 {argentDisponibleBrut !== null ? (
                   <div style={{ ...S.heroDispoValue, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
                 ) : (
                   <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
                 )}
                 {niveauFinancier === "orange" && (
-                  <div style={{ marginTop: 10, fontSize: 13, color: "#F4DCA8", maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
-                    Votre activité est saine — vous n'avez aucune charge en attente. Vous n'avez simplement pas encore atteint votre <strong>réserve de sécurité</strong> de {formatEUR(securiteNum)}.
-                    {manqueReserveDashboard > 0 && <> Il manque <strong>{formatEUR(manqueReserveDashboard)}</strong> pour l'atteindre.</>}
+                  <div style={{ marginTop: 14, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
+                    <p style={{ fontSize: 13, color: "#F4DCA8", lineHeight: 1.5, margin: "0 0 10px" }}>
+                      Votre réserve de sécurité n'est simplement pas encore atteinte.
+                    </p>
+                    <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#F4DCA8" }}><span>Objectif de réserve</span><strong>{formatEUR(securiteNum)}</strong></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#F4DCA8" }}><span>Réserve actuelle</span><strong>{formatEUR(argentDisponibleBrut)}</strong></div>
+                      {manqueReserveDashboard > 0 && (
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#FAC775", fontWeight: 700, borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 4, marginTop: 2 }}><span>Il manque</span><span>{formatEUR(manqueReserveDashboard)}</span></div>
+                      )}
+                    </div>
                   </div>
                 )}
-                {moisSurvie !== null && (
+                {moisSurvie !== null && securitePrecise && (
                   <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
                     🕐 soit environ {moisSurvie} mois de sécurité
-                    {!securitePrecise && <span style={{ fontSize: 10, color: "#7A93AD" }}> (estimation sur votre CA — <button style={{ ...S.linkBtnLight, fontSize: 10 }} onClick={() => setNav("frais")}>ajoutez vos frais réels</button>)</span>}
                   </div>
                 )}
                 {disponibleAujourdhui !== null && (
@@ -2190,10 +2199,10 @@ function AppInner() {
                     <summary style={{ cursor: "pointer", fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Voir d'où vient ce chiffre</summary>
                     <div style={{ marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 16px" }}>
                       <div style={S.heroDetailRow}>
-                        <span>CA encaissé (année)</span>
+                        <span>CA encaissé cette année</span>
                         <span>{estimateData.ca_annuel === 0 ? <span style={{ color: "#7A93AD", fontStyle: "italic", fontSize: 12 }}>Aucun revenu enregistré pour le moment</span> : formatEUR(estimateData.ca_annuel)}</span>
                       </div>
-                      <div style={S.heroDetailRow}><span>Solde bancaire actuel</span><span>{formatEUR(soldeNum)}</span></div>
+                      <div style={S.heroDetailRow}><span>Argent sur le compte</span><span>{formatEUR(soldeNum)}</span></div>
                       <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
                       <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
                       <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
@@ -2214,7 +2223,7 @@ function AppInner() {
                         <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
                       </div>
                       <div style={{ ...S.heroDetailRow, alignItems: "center" }}>
-                        <span style={{ color: "#B5D4F4" }}>− Réserve cible <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "en €"})</span></span>
+                        <span style={{ color: "#B5D4F4" }}>− Objectif de réserve <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "en €"})</span></span>
                         <span style={{ display: "flex", alignItems: "center", gap: 3 }}>
                           <input
                             style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 6, color: "#B5D4F4", fontSize: 12, padding: "3px 6px", width: 70, textAlign: "right" }}
@@ -2224,7 +2233,7 @@ function AppInner() {
                         </span>
                       </div>
                       <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
-                        <span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>= Disponible prudent (réserve gardée)</span><span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
+                        <span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>= Argent réellement disponible</span><span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
                       </div>
 
                       <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
