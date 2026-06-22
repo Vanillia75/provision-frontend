@@ -865,6 +865,8 @@ function AppInner() {
     setProfile(null);
     setEstimateData(null);
     setIncomeList([]);
+    setMobileMenuOpen(false);
+    setNav("dashboard");
   }
 
   const [exportingData, setExportingData] = useState(false);
@@ -902,6 +904,8 @@ function AppInner() {
       setProfile(null);
       setEstimateData(null);
       setIncomeList([]);
+      setMobileMenuOpen(false);
+      setNav("dashboard");
     } catch (err) {
       setError(err.message);
       setDeletingAccount(false);
@@ -1881,7 +1885,7 @@ function AppInner() {
         <div style={S.authLeft}>
           <Logo size={36} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
-          <p style={S.authSub}>H€CTOR met automatiquement de côté tes cotisations, tes impôts et ta réserve de sécurité, pour te montrer ce que tu peux vraiment dépenser — sans jamais se connecter à ta banque.</p>
+          <p style={S.authSub}>H€CTOR met de côté tes cotisations, tes impôts et ta réserve — et te montre ce que tu peux vraiment dépenser. Sans connexion bancaire.</p>
 
           {/* Démo visuelle compacte : la transformation brut → disponible */}
           <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
