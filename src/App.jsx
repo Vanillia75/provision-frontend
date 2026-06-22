@@ -1881,7 +1881,7 @@ function AppInner() {
         <div style={S.authLeft}>
           <Logo size={36} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
-          <p style={S.authSub}>H€CTOR met de côté ce que tu devras à l'URSSAF, aux impôts et à la TVA, et te dit ce qu'il te reste vraiment — sans jamais se connecter à ta banque.</p>
+          <p style={S.authSub}>H€CTOR met automatiquement de côté tes cotisations, tes impôts et ta réserve de sécurité, pour te montrer ce que tu peux vraiment dépenser — sans jamais se connecter à ta banque.</p>
 
           {/* Démo visuelle : la TRANSFORMATION (brut → disponible), sans chiffres fiscaux contestables */}
           <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 16, padding: isMobile ? "16px" : "20px 28px", margin: "8px auto", maxWidth: 440, width: "100%" }}>
@@ -1901,18 +1901,18 @@ function AppInner() {
             <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, lineHeight: 1.5 }}>Une partie de ce que tu encaisses n'est pas vraiment à toi. H€CTOR te dit ce qui l'est.</div>
           </div>
 
-          {/* Bande compagnon (compacte) : Hector qui prépare les devis quand on lui parle */}
-          <div style={{ background: "linear-gradient(135deg, #0E2E4F 0%, #1B4068 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 14, padding: isMobile ? "14px 14px" : "16px 20px", margin: "4px auto 8px", maxWidth: 560, width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
-              <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
-              <span style={{ fontSize: 13.5, fontWeight: 700, color: "white" }}>Et tu n'es plus seul·e : Hector prépare tes devis quand tu lui parles</span>
+          {/* Bande compagnon (discrète, argument secondaire) */}
+          <div style={{ background: "rgba(14,46,79,0.5)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 12, padding: isMobile ? "12px" : "12px 18px", margin: "4px auto 8px", maxWidth: 520, width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
+              <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#EAF2FB" }}>Et Hector prépare tes devis quand tu lui parles</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-              <div style={{ alignSelf: "flex-end", background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "6px 11px", fontSize: 12, maxWidth: "85%" }}>
-                « Hector, prépare un devis pour Martin, 500 € de consulting »
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ alignSelf: "flex-end", background: ACCENT, color: "white", borderRadius: "10px 10px 3px 10px", padding: "5px 10px", fontSize: 11.5, maxWidth: "85%" }}>
+                « Prépare un devis pour Martin, 500 € de consulting »
               </div>
-              <div style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.08)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "6px 11px", fontSize: 12, maxWidth: "85%" }}>
-                « C'est noté — voilà ton devis prêt. On le relit ensemble ? » ✓
+              <div style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "10px 10px 10px 3px", padding: "5px 10px", fontSize: 11.5, maxWidth: "85%" }}>
+                « Voilà ton devis prêt. On le relit ensemble ? » ✓
               </div>
             </div>
           </div>
