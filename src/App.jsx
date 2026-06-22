@@ -560,6 +560,7 @@ function AppInner() {
   const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [outilsOpen, setOutilsOpen] = useState(false);
   const [prepareOpen, setPrepareOpen] = useState(false);
+  const [facturerOpen, setFacturerOpen] = useState(false);
   const [montantCopie, setMontantCopie] = useState(false);
   const [caCopie, setCaCopie] = useState(false);
   const [declarationPeriode, setDeclarationPeriode] = useState("");
@@ -2069,12 +2070,30 @@ function AppInner() {
         {[
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
           { id: "assistant", icon: "ti-message-2", label: "Assistant" },
-          { id: "factures", icon: "ti-file-invoice", label: "Facturer" },
           { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
             {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
+          </button>
+        ))}
+
+        {/* Groupe "Facturer" : factures + devis (même flux commercial). */}
+        <button
+          style={{ ...S.navItem, ...((nav === "factures" || nav === "devis") ? S.navItemActive : {}) }}
+          onClick={() => setFacturerOpen(!facturerOpen)}
+        >
+          <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Facturer</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${facturerOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {facturerOpen && (isMobile || sidebarOpen) && [
+          { id: "factures", icon: "ti-file-invoice", label: "Mes factures" },
+          { id: "devis", icon: "ti-file-description", label: "Mes devis" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
           </button>
         ))}
 
@@ -2106,7 +2125,6 @@ function AppInner() {
           {(isMobile || sidebarOpen) && <i className={`ti ${outilsOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
         </button>
         {outilsOpen && (isMobile || sidebarOpen) && [
-          { id: "devis", icon: "ti-file-description", label: "Devis" },
           { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
           { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
