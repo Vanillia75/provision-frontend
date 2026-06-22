@@ -76,7 +76,7 @@ const PLANS = [
       "Factures illimitées + envoi par email au client",
       "Devis et conversion en facture",
       "Carnet de contacts clients",
-      "Assistant fiscal IA",
+      "Hector, ton compagnon financier (assistant IA)",
       "Scan automatique de tes factures de frais",
       "Export complet de tes données (RGPD)",
     ],
@@ -1806,7 +1806,7 @@ function AppInner() {
               { icon: "ti-radar-2", t: "Ce que tu peux vraiment dépenser", d: "En un coup d'œil, sans te mettre en danger" },
               { icon: "ti-calculator", t: "URSSAF, impôts & TVA anticipés", d: "Recalculés en temps réel selon tes revenus encaissés" },
               { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF" },
-              { icon: "ti-message-circle", t: "Assistant fiscal IA", d: "Tes questions URSSAF, TVA, ACRE, à toute heure" },
+              { icon: "ti-message-circle", t: "Hector, ton compagnon", d: "Il connaît tes chiffres, veille sur ton argent et te conseille pour de vrai" },
               { icon: "ti-receipt-2", t: "Scan de tes frais", d: "Photographie une facture, H€CTOR en extrait le montant" },
               { icon: "ti-lock", t: "Tes données restent chez toi", d: "Aucune connexion bancaire, aucun accès à ton compte" },
             ].map(f => (
