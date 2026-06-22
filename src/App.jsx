@@ -2379,44 +2379,6 @@ function AppInner() {
               );
             })()}
 
-            <div style={{ ...S.card, marginBottom: 20 }}>
-              <div style={S.cardTitle}>
-                <span><i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Simulation rapide</span>
-                <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                  <button style={S.linkBtn} onClick={() => setNav("revenus")}>+ Ajouter un revenu →</button>
-                  {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
-                </span>
-              </div>
-              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
-              <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e.target.value)} />
-                <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
-                  <option value="vente">Vente de marchandises (12,3%)</option>
-                  <option value="services">Prestations de services (21,2%)</option>
-                  <option value="bnc">Profession libérale (25,6%)</option>
-                </select>
-              </div>
-              {(() => {
-                const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
-                const caSim = parseFloat(simCa) || 0;
-                const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
-                const netSim = Math.round((caSim - urssafSim) * 100) / 100;
-                if (caSim <= 0) return null;
-                return (
-                  <div style={{ display: "flex", gap: 24 }}>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>À mettre de côté</div>
-                      <div style={{ fontSize: 22, fontWeight: 600, color: "#854F0B" }}>{formatEUR(urssafSim)}</div>
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>Argent réellement disponible</div>
-                      <div style={{ fontSize: 22, fontWeight: 600, color: ACCENT }}>{formatEUR(netSim)}</div>
-                    </div>
-                  </div>
-                );
-              })()}
-            </div>
-
             <div style={S.card}>
               <div style={S.cardTitle}>Seuil annuel
                 <span style={S.cardSub}>{formatEUR(estimateData.ca_annuel)} / {formatEUR(estimateData.plafond)}</span>
@@ -2934,6 +2896,44 @@ function AppInner() {
                 <div style={S.kpiCard}><span style={S.kpiLabel}>Impôts estimés</span><span style={{ ...S.kpiValue, color: "#A32D2D" }}>{formatEUR(impotsSim)}</span></div>
                 <div style={S.kpiCard}><span style={S.kpiLabel}>Revenu réellement disponible</span><span style={{ ...S.kpiValue, color: "#1D9E75" }}>{formatEUR(disponibleSim)}</span></div>
               </div>
+              {/* ─── TEST RAPIDE — déplacé du Cockpit (Étape 4) ─── */}
+            <div style={{ ...S.card, marginBottom: 20 }}>
+              <div style={S.cardTitle}>
+                <span><i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 16, marginRight: 6, verticalAlign: -2 }} />Test rapide d'un autre montant</span>
+                <span style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <button style={S.linkBtn} onClick={() => setNav("revenus")}>+ Ajouter un revenu →</button>
+                  {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
+                </span>
+              </div>
+              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
+              <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e.target.value)} />
+                <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
+                  <option value="vente">Vente de marchandises (12,3%)</option>
+                  <option value="services">Prestations de services (21,2%)</option>
+                  <option value="bnc">Profession libérale (25,6%)</option>
+                </select>
+              </div>
+              {(() => {
+                const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
+                const caSim = parseFloat(simCa) || 0;
+                const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
+                const netSim = Math.round((caSim - urssafSim) * 100) / 100;
+                if (caSim <= 0) return null;
+                return (
+                  <div style={{ display: "flex", gap: 24 }}>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>À mettre de côté</div>
+                      <div style={{ fontSize: 22, fontWeight: 600, color: "#854F0B" }}>{formatEUR(urssafSim)}</div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>Argent réellement disponible</div>
+                      <div style={{ fontSize: 22, fontWeight: 600, color: ACCENT }}>{formatEUR(netSim)}</div>
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
             </div>
           );
         })()}
