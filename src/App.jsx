@@ -2075,6 +2075,7 @@ function AppInner() {
             changent. "Préparer" est un groupe qui ouvre declaration + echeances. */}
         {[
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
+          { id: "assistant", icon: "ti-message-2", label: "Assistant" },
           { id: "factures", icon: "ti-file-invoice", label: "Facturer" },
           { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
         ].map(item => (
@@ -2103,14 +2104,7 @@ function AppInner() {
           </button>
         ))}
 
-        {[
-          { id: "assistant", icon: "ti-message-2", label: "Assistant" },
-        ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-            {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
-          </button>
-        ))}
+        {/* (Assistant remonté en 2e position dans le groupe principal ci-dessus) */}
 
         {/* ─── OUTILS — tout le reste, accessible mais secondaire. Rien n'est supprimé. ─── */}
         <button style={{ ...S.navItem, borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 14 }} onClick={() => setOutilsOpen(!outilsOpen)}>
@@ -2464,18 +2458,38 @@ function AppInner() {
               </div>
             )}
 
-            <button style={{ ...S.askHectorBtn, marginTop: 20 }} onClick={() => {
-              setQuickAskQuestions([
-                "Combien puis-je me verser ?",
-                "Puis-je faire un achat important ?",
-                "Combien dois-je mettre de côté ce mois-ci ?",
-                "Suis-je en sécurité financièrement ce mois-ci ?",
-              ]);
-              setNav("assistant");
-            }}>
-              <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 20 }} />
-              💬 Demander à H€CTOR — "Puis-je acheter ça ?", "Combien me verser ?"...
-            </button>
+            {/* ─── ASSISTANT mis en avant : carte copilote avec questions cliquables ─── */}
+            <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(135deg, #0A2540 0%, #1B4068 100%)", border: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5" }} />
+                <span style={{ fontSize: 16, fontWeight: 700, color: "white" }}>Demande à H€CTOR</span>
+              </div>
+              <p style={{ fontSize: 12.5, color: "#B5D4F4", margin: "0 0 14px", lineHeight: 1.5 }}>
+                Ton copilote connaît tes chiffres. Pose-lui une vraie question, il te répond avec ta situation à toi.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  "Combien je peux me verser ?",
+                  "Je peux me faire ce resto ?",
+                  "Combien mettre de côté ce mois ?",
+                  "Suis-je en sécurité ?",
+                ].map(q => (
+                  <button key={q}
+                    style={{ background: "rgba(255,255,255,0.10)", color: "white", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 20, padding: "8px 14px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}
+                    onClick={() => {
+                      setQuickAskQuestions([
+                        q,
+                        "Combien puis-je me verser ?",
+                        "Puis-je faire un achat important ?",
+                        "Combien dois-je mettre de côté ce mois-ci ?",
+                      ]);
+                      setNav("assistant");
+                    }}>
+                    {q}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
