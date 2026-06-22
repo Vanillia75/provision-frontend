@@ -2417,108 +2417,6 @@ function AppInner() {
               })()}
             </div>
 
-            {(() => {
-              const objM = parseFloat(objectifMensuel) || 0;
-              const pctM = objM > 0 ? Math.min(100, Math.round((caCeMoisCi / objM) * 100)) : 0;
-              const objA = parseFloat(objectifAnnuel) || 0;
-              const pctA = objA > 0 ? Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100)) : 0;
-              const PRESETS_MENSUEL = [2000, 4000, 6000];
-              const PRESETS_ANNUEL = [10000, 25000, 50000, 100000];
-              return (
-                <>
-                  <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
-                      {objectifMensuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>}
-                    </div>
-                    <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
-                      Le montant de chiffre d'affaires que vous visez à encaisser ce mois-ci. Sert juste à suivre votre progression — aucune incidence sur vos calculs financiers.
-                    </p>
-                    {objectifMensuel === "" && !editingObjectifMensuel ? (
-                      <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
-                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
-                        <button style={S.btnSecondary} onClick={() => setEditingObjectifMensuel(true)}>Définir mon objectif</button>
-                      </div>
-                    ) : objectifMensuel === "" && editingObjectifMensuel ? (
-                      <div style={{ padding: "8px 0 4px" }}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                          {PRESETS_MENSUEL.map(v => (
-                            <button key={v} type="button" style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }} onClick={() => { setObjectifMensuel(String(v)); setEditingObjectifMensuel(false); }}>{formatEUR(v)}</button>
-                          ))}
-                        </div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifMensuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifMensuel(e.target.value); }} />
-                          <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifMensuel(false)}>Annuler</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
-                          <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
-                          <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
-                          <input style={S.objectifInputBig} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
-                          <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
-                        </div>
-                        <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
-                        {caCeMoisCi === 0 ? (
-                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
-                        ) : pctM >= 100 ? (
-                          <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
-                        ) : (
-                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
-                        )}
-                      </>
-                    )}
-                  </div>
-
-                  <div style={{ ...S.card, marginTop: 14, marginBottom: 20, border: "1.5px solid #5DCAA5" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
-                      {objectifAnnuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>}
-                    </div>
-                    <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
-                      Le chiffre d'affaires que vous visez sur l'année complète. Une simple jauge de motivation — ne modifie aucun calcul de cotisations ou de disponible.
-                    </p>
-                    {objectifAnnuel === "" && !editingObjectifAnnuel ? (
-                      <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
-                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
-                        <button style={S.btnSecondary} onClick={() => setEditingObjectifAnnuel(true)}>Définir mon objectif</button>
-                      </div>
-                    ) : objectifAnnuel === "" && editingObjectifAnnuel ? (
-                      <div style={{ padding: "8px 0 4px" }}>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
-                          {PRESETS_ANNUEL.map(v => (
-                            <button key={v} type="button" style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }} onClick={() => { setObjectifAnnuel(String(v)); setEditingObjectifAnnuel(false); }}>{formatEUR(v)}</button>
-                          ))}
-                        </div>
-                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifAnnuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifAnnuel(e.target.value); }} />
-                          <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifAnnuel(false)}>Annuler</button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
-                          <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
-                          <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
-                          <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
-                          <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
-                        </div>
-                        <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
-                        {estimateData.ca_annuel === 0 && (
-                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                </>
-              );
-            })()}
-
             <div style={S.card}>
               <div style={S.cardTitle}>Seuil annuel
                 <span style={S.cardSub}>{formatEUR(estimateData.ca_annuel)} / {formatEUR(estimateData.plafond)}</span>
@@ -3257,6 +3155,110 @@ function AppInner() {
                 <div style={S.kpiCard}><span style={S.kpiLabel}>Meilleur client</span><span style={{ ...S.kpiValue, fontSize: 16 }}>{meilleurClientRevenus?.[0] || "—"}</span></div>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-12px 0 16px" }}>≈ {formatEUR(urssafAProvisionner)} à provisionner d'URSSAF sur le CA de ce mois.</p>
+
+              {/* ─── PROGRESSION & OBJECTIFS — déplacés du Cockpit (Étape 3) ─── */}
+            {(() => {
+              const objM = parseFloat(objectifMensuel) || 0;
+              const pctM = objM > 0 ? Math.min(100, Math.round((caCeMoisCi / objM) * 100)) : 0;
+              const objA = parseFloat(objectifAnnuel) || 0;
+              const pctA = objA > 0 ? Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100)) : 0;
+              const PRESETS_MENSUEL = [2000, 4000, 6000];
+              const PRESETS_ANNUEL = [10000, 25000, 50000, 100000];
+              return (
+                <>
+                  <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
+                      {objectifMensuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>}
+                    </div>
+                    <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
+                      Le montant de chiffre d'affaires que vous visez à encaisser ce mois-ci. Sert juste à suivre votre progression — aucune incidence sur vos calculs financiers.
+                    </p>
+                    {objectifMensuel === "" && !editingObjectifMensuel ? (
+                      <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
+                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
+                        <button style={S.btnSecondary} onClick={() => setEditingObjectifMensuel(true)}>Définir mon objectif</button>
+                      </div>
+                    ) : objectifMensuel === "" && editingObjectifMensuel ? (
+                      <div style={{ padding: "8px 0 4px" }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                          {PRESETS_MENSUEL.map(v => (
+                            <button key={v} type="button" style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }} onClick={() => { setObjectifMensuel(String(v)); setEditingObjectifMensuel(false); }}>{formatEUR(v)}</button>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifMensuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifMensuel(e.target.value); }} />
+                          <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifMensuel(false)}>Annuler</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
+                          <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
+                          <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
+                          <input style={S.objectifInputBig} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
+                          <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
+                        </div>
+                        <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
+                        {caCeMoisCi === 0 ? (
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                        ) : pctM >= 100 ? (
+                          <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
+                        ) : (
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>encore {formatEUR(Math.max(0, objM - caCeMoisCi))} pour l'atteindre</div>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  <div style={{ ...S.card, marginTop: 14, marginBottom: 20, border: "1.5px solid #5DCAA5" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
+                      {objectifAnnuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>}
+                    </div>
+                    <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
+                      Le chiffre d'affaires que vous visez sur l'année complète. Une simple jauge de motivation — ne modifie aucun calcul de cotisations ou de disponible.
+                    </p>
+                    {objectifAnnuel === "" && !editingObjectifAnnuel ? (
+                      <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
+                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
+                        <button style={S.btnSecondary} onClick={() => setEditingObjectifAnnuel(true)}>Définir mon objectif</button>
+                      </div>
+                    ) : objectifAnnuel === "" && editingObjectifAnnuel ? (
+                      <div style={{ padding: "8px 0 4px" }}>
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10 }}>
+                          {PRESETS_ANNUEL.map(v => (
+                            <button key={v} type="button" style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "6px 14px" }} onClick={() => { setObjectifAnnuel(String(v)); setEditingObjectifAnnuel(false); }}>{formatEUR(v)}</button>
+                          ))}
+                        </div>
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifAnnuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifAnnuel(e.target.value); }} />
+                          <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifAnnuel(false)}>Annuler</button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
+                          <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
+                          <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
+                          <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
+                          <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
+                        </div>
+                        <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
+                        {estimateData.ca_annuel === 0 && (
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                </>
+              );
+            })()}
+
 
               {showAddIncome && !factureExtraite && (
                 <div style={{ ...S.card, marginBottom: 16 }}>
