@@ -535,6 +535,7 @@ function AppInner() {
   const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
   const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [outilsOpen, setOutilsOpen] = useState(false);
+  const [prepareOpen, setPrepareOpen] = useState(false);
   const [montantCopie, setMontantCopie] = useState(false);
   const [caCopie, setCaCopie] = useState(false);
   const [declarationPeriode, setDeclarationPeriode] = useState("");
@@ -1474,6 +1475,23 @@ function AppInner() {
   });
   const maxRevenu = Math.max(...revenusParMois.map(m => m.total), 1);
 
+  // --- Fraîcheur du solde (rituel sans connexion bancaire) ---
+  // Stockée en localStorage, zéro dépendance backend. Le solde est "périmé" au-delà de 7 jours.
+  const soldeUpdatedAt = localStorage.getItem("soldeUpdatedAt") || "";
+  const soldeJours = (() => {
+    if (!soldeUpdatedAt || panique.solde === "") return null;
+    const diff = Date.now() - new Date(soldeUpdatedAt).getTime();
+    return Math.max(0, Math.floor(diff / (1000 * 60 * 60 * 24)));
+  })();
+  const soldePerime = soldeJours !== null && soldeJours >= 7;
+  const soldeFraicheur = (() => {
+    if (panique.solde === "") return null;
+    if (soldeJours === null) return null;
+    if (soldeJours === 0) return "à jour aujourd'hui";
+    if (soldeJours === 1) return "mis à jour hier";
+    return `mis à jour il y a ${soldeJours} jours`;
+  })();
+
   // --- Calcul central : "Disponible aujourd'hui" ---
   // Source unique de verite, reutilisee partout : dashboard, simulateur d'achat, mode panique, score sante
   const soldeNum = parseFloat(panique.solde) || 0;
@@ -2004,19 +2022,15 @@ function AppInner() {
           </div>
         )}
 
+        {/* ─── NAVIGATION PRINCIPALE — 5 entrées cockpit ───
+            Les ids techniques (dashboard, factures, frais, declaration, echeances,
+            assistant) sont INCHANGÉS : tous les `nav === "..."` et `setNav("...")`
+            existants continuent de fonctionner. Seuls les labels et le regroupement
+            changent. "Préparer" est un groupe qui ouvre declaration + echeances. */}
         {[
-          { id: "dashboard", icon: "ti-home", label: "Dashboard" },
-          { id: "echeances", icon: "ti-calendar-due", label: "Échéances" },
-          { id: "declaration", icon: "ti-clipboard-check", label: "Préparer ma déclaration" },
-          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
-          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
-          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
-          { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
-          { id: "factures", icon: "ti-file", label: "Factures" },
-          { id: "devis", icon: "ti-file-description", label: "Devis" },
-          { id: "frais", icon: "ti-receipt-2", label: "Frais" },
-          { id: "assistant", icon: "ti-message", label: "Assistant IA" },
-          { id: "profil", icon: "ti-user", label: "Profil" },
+          { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
+          { id: "factures", icon: "ti-file-invoice", label: "Facturer" },
+          { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
@@ -2024,21 +2038,56 @@ function AppInner() {
           </button>
         ))}
 
+        {/* Groupe "Préparer" : déclaration + échéances. Actif si l'un des deux est ouvert. */}
+        <button
+          style={{ ...S.navItem, ...((nav === "declaration" || nav === "echeances") ? S.navItemActive : {}) }}
+          onClick={() => setPrepareOpen(!prepareOpen)}
+        >
+          <i className="ti ti-clipboard-check" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Préparer</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${prepareOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {prepareOpen && (isMobile || sidebarOpen) && [
+          { id: "declaration", icon: "ti-clipboard-check", label: "Ma déclaration" },
+          { id: "echeances", icon: "ti-calendar-due", label: "Mes échéances" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          </button>
+        ))}
+
+        {[
+          { id: "assistant", icon: "ti-message-2", label: "Assistant" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+            {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
+          </button>
+        ))}
+
+        {/* ─── OUTILS — tout le reste, accessible mais secondaire. Rien n'est supprimé. ─── */}
         <button style={{ ...S.navItem, borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 14 }} onClick={() => setOutilsOpen(!outilsOpen)}>
-          <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          <i className="ti ti-dots" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
           {(isMobile || sidebarOpen) && <span style={S.navLabel}>Outils</span>}
           {(isMobile || sidebarOpen) && <i className={`ti ${outilsOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
         </button>
         {outilsOpen && (isMobile || sidebarOpen) && [
+          { id: "devis", icon: "ti-file-description", label: "Devis" },
+          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
+          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
+          { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
+          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "coach", icon: "ti-target-arrow", label: "Coach prix" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
-          { id: "contacts", icon: "ti-user", label: "Contacts" },
+          { id: "contacts", icon: "ti-address-book", label: "Contacts" },
           { id: "actualites", icon: "ti-bell", label: "Actualités" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
           { id: "modeles", icon: "ti-template", label: "Modèles" },
           { id: "societe", icon: "ti-building", label: "Passage société" },
           { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
+          { id: "profil", icon: "ti-user", label: "Profil" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -2093,18 +2142,46 @@ function AppInner() {
               )}
             </div>
 
-            <div style={S.soldeInputCard}>
+            {/* ─── RITUEL DU SOLDE — le cœur de H€CTOR sans connexion bancaire ───
+                Saisie en 10 secondes, fraîcheur affichée en permanence, recalcul instantané.
+                La fraîcheur est gérée en localStorage (soldeUpdatedAt) — aucune dépendance backend. */}
+            <div style={{ ...S.soldeInputCard, ...(soldePerime ? { border: "1px solid #F0C36D", background: "#FFF8EC" } : {}) }}>
               <label style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
-                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7A8D" }}>💳 Solde actuel de votre compte</span>
-                <input style={S.soldeInput} type="number" step="0.01" placeholder="Exemple : 1750€" value={panique.solde} onChange={e => setPanique({ ...panique, solde: e.target.value })} />
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7A8D", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  💳 Combien y a-t-il sur ton compte, là, maintenant ?
+                  {soldeFraicheur && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: soldePerime ? "#B7791F" : "#1D9E75" }}>
+                      · {soldeFraicheur}
+                    </span>
+                  )}
+                </span>
+                <input
+                  style={S.soldeInput}
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Exemple : 1750"
+                  value={panique.solde}
+                  onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                />
                 <span style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.5 }}>
-                  Ce solde sert de base à tous les calculs de H€CTOR : argent réellement disponible, déficit éventuel, Mode Achat, Mode Salaire... Mettez-le à jour régulièrement pour des résultats fiables.
+                  H€CTOR ne se connecte jamais à ta banque — tes données restent chez toi. Ouvre l'appli de ta banque, lis le solde, recopie-le ici. 10 secondes, et tu sais exactement ce que tu peux dépenser.
                 </span>
               </label>
               {soldeSaveStatus === "saving" && <span style={{ ...S.badge, background: "#F1F2EE", color: "#5B6573", flexShrink: 0 }}>⏳ Enregistrement…</span>}
               {soldeSaveStatus === "saved" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
               {soldeSaveStatus === "error" && <span style={{ ...S.badge, background: "#FCEBEB", color: "#A32D2D", flexShrink: 0 }}>⚠️ Non enregistré</span>}
             </div>
+
+            {/* Rappel doux : le check hebdo. N'apparaît que si le solde est saisi mais périmé. */}
+            {soldePerime && panique.solde !== "" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFF8EC", border: "1px solid #F0C36D", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+                <i className="ti ti-clock-hour-4" aria-hidden="true" style={{ fontSize: 18, color: "#B7791F", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: "#8A5A1A", lineHeight: 1.5 }}>
+                  Ton solde date de {soldeJours} jours. 10 secondes pour le remettre à jour, et ton chiffre redevient fiable.
+                </span>
+              </div>
+            )}
 
             {estimateData.ca_annuel === 0 && (
               <div style={S.onboardingNotice}>
@@ -2168,10 +2245,10 @@ function AppInner() {
                   </div>
                 )}
                 <div style={S.heroDispoLabel}>
-                  {niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "Argent disponible aujourd'hui" : "🟢 Disponible — réserve atteinte"}
+                  {niveauFinancier === null ? "💰 Ce que tu peux dépenser" : niveauFinancier === "orange" ? "Ce que tu peux dépenser aujourd'hui" : "🟢 Disponible — réserve de sécurité atteinte"}
                 </div>
                 {argentDisponibleBrut !== null ? (
-                  <div style={{ ...S.heroDispoValue, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
+                  <div style={{ ...S.heroDispoValue, color: soldePerime ? "#6E8199" : (niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5"), opacity: soldePerime ? 0.55 : 1 }}>{formatEUR(argentDisponibleBrut)}</div>
                 ) : (
                   <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
                 )}
