@@ -2168,27 +2168,32 @@ function AppInner() {
                   </div>
                 )}
                 <div style={S.heroDispoLabel}>
-                  {niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "Disponible aujourd'hui" : "🟢 Disponible — réserve atteinte"}
+                  {niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "Argent disponible aujourd'hui" : "🟢 Disponible — réserve atteinte"}
                 </div>
                 {argentDisponibleBrut !== null ? (
                   <div style={{ ...S.heroDispoValue, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
                 ) : (
                   <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
                 )}
-                {niveauFinancier === "orange" && (
-                  <div style={{ marginTop: 14, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
-                    <p style={{ fontSize: 13, color: "#F4DCA8", lineHeight: 1.5, margin: "0 0 10px" }}>
-                      Votre réserve de sécurité n'est simplement pas encore atteinte.
-                    </p>
-                    <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px", display: "flex", flexDirection: "column", gap: 4 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#F4DCA8" }}><span>Objectif de réserve</span><strong>{formatEUR(securiteNum)}</strong></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#F4DCA8" }}><span>Réserve actuelle</span><strong>{formatEUR(argentDisponibleBrut)}</strong></div>
-                      {manqueReserveDashboard > 0 && (
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#FAC775", fontWeight: 700, borderTop: "1px solid rgba(255,255,255,0.12)", paddingTop: 4, marginTop: 2 }}><span>Il manque</span><span>{formatEUR(manqueReserveDashboard)}</span></div>
-                      )}
+                {niveauFinancier === "orange" && (() => {
+                  const pctReserve = securiteNum > 0 ? Math.max(0, Math.min(100, Math.round((argentDisponibleBrut / securiteNum) * 100))) : 0;
+                  return (
+                    <div style={{ marginTop: 14, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
+                      <p style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, margin: "0 0 10px" }}>
+                        Vous construisez votre réserve de sécurité.
+                      </p>
+                      <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: "#B5D4F4", marginBottom: 8 }}>
+                          <span>Réserve de sécurité</span>
+                          <span><strong style={{ color: "white" }}>{formatEUR(argentDisponibleBrut)} / {formatEUR(securiteNum)}</strong> <span style={{ color: "#5DCAA5", fontWeight: 700 }}>· {pctReserve}%</span></span>
+                        </div>
+                        <div style={{ height: 8, background: "rgba(255,255,255,0.12)", borderRadius: 999, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${Math.max(pctReserve, pctReserve > 0 ? 2 : 0)}%`, background: ACCENT, borderRadius: 999 }} />
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
                 {moisSurvie !== null && securitePrecise && (
                   <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
                     🕐 soit environ {moisSurvie} mois de sécurité
