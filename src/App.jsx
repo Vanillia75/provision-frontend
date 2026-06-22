@@ -537,7 +537,7 @@ function AppInner() {
   }, [viewingInvoice?.id]);
   const todayISO = new Date().toISOString().split("T")[0];
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
-  const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Bonjour ! Je suis H€CTOR, votre assistant fiscal. Posez-moi vos questions sur l'URSSAF, la TVA, l'ACRE, vos cotisations..." }]);
+  const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut ! Je suis H€CTOR, ton copilote. Je connais tes chiffres — demande-moi combien tu peux dépenser, combien mettre de côté, ou n'importe quelle question sur l'URSSAF, la TVA, l'ACRE..." }]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -4293,7 +4293,7 @@ function AppInner() {
 
         {nav === "assistant" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Assistant IA</h1><p style={S.pageSub}>Posez toutes vos questions fiscales</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Ton copilote</h1><p style={S.pageSub}>Il connaît tes chiffres et te conseille pour de vrai</p></div></div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
@@ -4311,7 +4311,7 @@ function AppInner() {
                 {aiLoading && <div style={{ ...S.aiMsg, ...S.aiMsgBot, color: "#8BA5C0" }}>H€CTOR réfléchit…</div>}
               </div>
               <form style={{ display: "flex", gap: 10, borderTop: "1px solid #DDE5EE", paddingTop: 14 }} onSubmit={askAI}>
-                <input style={{ ...S.input, flex: 1 }} placeholder="Posez votre question fiscale…" value={aiInput} onChange={e => setAiInput(e.target.value)} />
+                <input style={{ ...S.input, flex: 1 }} placeholder="Pose ta question à H€CTOR…" value={aiInput} onChange={e => setAiInput(e.target.value)} />
                 <button style={S.btnPrimarySmall} type="submit" disabled={aiLoading}>Envoyer</button>
               </form>
             </div>
