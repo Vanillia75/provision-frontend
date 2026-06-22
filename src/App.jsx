@@ -530,7 +530,7 @@ function AppInner() {
   }, [viewingInvoice?.id]);
   const todayISO = new Date().toISOString().split("T")[0];
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
-  const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut, content de te voir. Je suis Hector — je connais tes chiffres et je veille sur ton argent avec toi. Demande-moi ce que tu peux dépenser, combien mettre de côté, ou n'importe quelle question sur l'URSSAF, la TVA, l'ACRE. Je suis là." }]);
+  const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
