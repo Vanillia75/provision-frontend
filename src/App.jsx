@@ -2127,7 +2127,7 @@ function AppInner() {
         {outilsOpen && (isMobile || sidebarOpen) && [
           { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
-          { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
+          { id: "simvie", icon: "ti-target", label: "Combien gagner ?" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
@@ -2294,17 +2294,17 @@ function AppInner() {
             ) : (
               <div style={S.heroDispo}>
                 {niveauFinancier !== null && (
-                  <div style={{ fontSize: 14, fontWeight: 700, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5", marginBottom: 10 }}>
-                    ✅ Votre activité est saine
+                  <div style={{ fontSize: 14, fontWeight: 700, color: niveauFinancier === "orange" ? "#5DA9E8" : "#5DCAA5", marginBottom: 10 }}>
+                    {niveauFinancier === "orange" ? "🔵 Tout va bien — tu construis ta réserve" : "✅ Ton activité est saine"}
                   </div>
                 )}
                 <div style={S.heroDispoLabel}>
-                  {niveauFinancier === null ? "💰 Ce que tu peux dépenser" : niveauFinancier === "orange" ? "Ce que tu peux dépenser aujourd'hui" : "🟢 Disponible — réserve de sécurité atteinte"}
+                  {argentDisponibleBrut === null ? "💰 Ce que tu peux dépenser" : niveauFinancier === "rouge" ? "Attention à ta trésorerie" : "🟢 Tu peux dépenser sans risque jusqu'à"}
                 </div>
                 {argentDisponibleBrut !== null ? (
-                  <div style={{ ...S.heroDispoValue, color: soldePerime ? "#6E8199" : (niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5"), opacity: soldePerime ? 0.55 : 1 }}>{formatEUR(argentDisponibleBrut)}</div>
+                  <div style={{ ...S.heroDispoValue, color: soldePerime ? "#6E8199" : (niveauFinancier === "orange" ? "#5DA9E8" : "#5DCAA5"), opacity: soldePerime ? 0.55 : 1 }}>{formatEUR(argentDisponibleBrut)}</div>
                 ) : (
-                  <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
+                  <div style={S.dispoEmpty}>Renseigne ton solde ci-dessus pour voir ce chiffre</div>
                 )}
                 {niveauFinancier === "orange" && (() => {
                   const pctReserve = securiteNum > 0 ? Math.max(0, Math.min(100, Math.round((argentDisponibleBrut / securiteNum) * 100))) : 0;
@@ -2845,7 +2845,7 @@ function AppInner() {
         {nav === "simvie" && estimateData && estimateData.disponible !== false && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>🎯 Combien dois-je gagner ?</h1><p style={S.pageSub}>Pour vivre comme vous voulez, combien faut-il facturer ?</p></div>
+              <div><h1 style={S.pageTitle}>🎯 Combien dois-je gagner ?</h1><p style={S.pageSub}>Pour vivre comme tu veux, combien faut-il facturer ?</p></div>
             </div>
 
             <div style={S.card}>
