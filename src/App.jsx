@@ -1883,22 +1883,21 @@ function AppInner() {
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met automatiquement de côté tes cotisations, tes impôts et ta réserve de sécurité, pour te montrer ce que tu peux vraiment dépenser — sans jamais se connecter à ta banque.</p>
 
-          {/* Démo visuelle : la TRANSFORMATION (brut → disponible), sans chiffres fiscaux contestables */}
-          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 16, padding: isMobile ? "16px" : "20px 28px", margin: "8px auto", maxWidth: 440, width: "100%" }}>
-            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 10, fontWeight: 700, letterSpacing: 1, padding: "3px 10px", borderRadius: 999, marginBottom: 14 }}>EXEMPLE</div>
-            <div style={{ fontSize: 14, color: "#EAF2FB", marginBottom: 2 }}>Tu as encaissé</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: "white", marginBottom: 12 }}>5 000 €</div>
-            <div style={{ fontSize: 18, color: "#5DCAA5", marginBottom: 10 }}>⬇️</div>
-            <div style={{ fontSize: 12.5, color: "#B5D4F4", marginBottom: 8 }}>H€CTOR met automatiquement de côté :</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, textAlign: "left", maxWidth: 250, margin: "0 auto 14px" }}>
-              <div style={{ fontSize: 13, color: "#EAF2FB", display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "#5DCAA5" }}>✅</span> Tes cotisations sociales</div>
-              <div style={{ fontSize: 13, color: "#EAF2FB", display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "#5DCAA5" }}>✅</span> Tes impôts estimés</div>
-              <div style={{ fontSize: 13, color: "#EAF2FB", display: "flex", alignItems: "center", gap: 7 }}><span style={{ color: "#5DCAA5" }}>✅</span> Ta réserve de sécurité</div>
+          {/* Démo visuelle compacte : la transformation brut → disponible */}
+          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
+            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 10 }}>EXEMPLE</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "white", marginBottom: 8 }}>5 000 € encaissés</div>
+            <div style={{ fontSize: 12, color: "#B5D4F4", marginBottom: 6 }}>↓ Hector met de côté :</div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>
+              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Cotisations</span>
+              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Impôts</span>
+              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Réserve</span>
             </div>
-            <div style={{ fontSize: 18, color: "#5DCAA5", marginBottom: 8 }}>⬇️</div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: "#5DCAA5" }}>🟢 Il te reste vraiment</div>
-            <div style={{ fontSize: isMobile ? 38 : 46, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>2 843 €</div>
-            <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, lineHeight: 1.5 }}>Une partie de ce que tu encaisses n'est pas vraiment à toi. H€CTOR te dit ce qui l'est.</div>
+            <div style={{ borderTop: "1px solid rgba(93,202,165,0.25)", paddingTop: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#5DCAA5" }}>= </span>
+              <span style={{ fontSize: isMobile ? 30 : 34, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums" }}>2 843 €</span>
+              <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>réellement disponibles</div>
+            </div>
           </div>
 
           {/* Bande compagnon (discrète, argument secondaire) */}
