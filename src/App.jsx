@@ -1534,16 +1534,17 @@ function AppInner() {
     }
   }
 
-  // --- Hector prépare un devis : parse le bloc [[DEVIS:{...}]] d'un message ---
+  // --- Hector prépare un devis ou une facture : parse le bloc [[DOC:{...}]] d'un message ---
   function parseDevisBlock(content) {
     if (!content) return null;
-    const m = content.match(/\[\[DEVIS:(\{.*?\})\]\]/s);
+    const m = content.match(/\[\[DOC:(\{.*?\})\]\]/s);
     if (!m) return null;
     try {
       const data = JSON.parse(m[1]);
       if (!data.client_nom || !Array.isArray(data.lignes) || data.lignes.length === 0) return null;
+      const type = data.type === "facture" ? "facture" : "devis";
       const montant = data.lignes.reduce((s, l) => s + (Number(l.quantite) || 1) * (Number(l.prix_unitaire) || 0), 0);
-      return { data, montant, cleanText: content.replace(/\[\[DEVIS:\{.*?\}\]\]/s, "").trim() };
+      return { data, type, montant, cleanText: content.replace(/\[\[DOC:\{.*?\}\]\]/s, "").trim() };
     } catch {
       return null;
     }
@@ -1553,23 +1554,25 @@ function AppInner() {
     setDevisCreating(msgIndex);
     try {
       const today = new Date().toISOString().slice(0, 10);
-      const created = await apiFetch("/quotes", {
-        method: "POST",
-        body: JSON.stringify({
-          client_nom: devis.data.client_nom,
-          client_email: devis.data.client_email || null,
-          client_adresse: devis.data.client_adresse || null,
-          date_emission: today,
-          date_validite: null,
-          lignes: devis.data.lignes.map(l => ({ description: l.description || "", quantite: Number(l.quantite) || 1, prix_unitaire: Number(l.prix_unitaire) || 0 })),
-          notes: devis.data.notes || null,
-          statut: "brouillon",
-        }),
-      });
+      const isFacture = devis.type === "facture";
+      const endpoint = isFacture ? "/invoices" : "/quotes";
+      const payload = {
+        client_nom: devis.data.client_nom,
+        client_email: devis.data.client_email || null,
+        client_adresse: devis.data.client_adresse || null,
+        date_emission: today,
+        lignes: devis.data.lignes.map(l => ({ description: l.description || "", quantite: Number(l.quantite) || 1, prix_unitaire: Number(l.prix_unitaire) || 0 })),
+        notes: devis.data.notes || null,
+        statut: "brouillon",
+      };
+      if (isFacture) payload.date_echeance = null;
+      else payload.date_validite = null;
+      const created = await apiFetch(endpoint, { method: "POST", body: JSON.stringify(payload) });
       setDevisCreated(prev => ({ ...prev, [msgIndex]: created.numero || true }));
-      loadQuotes && loadQuotes();
+      if (isFacture) { loadInvoices && loadInvoices(); }
+      else { loadQuotes && loadQuotes(); }
     } catch (err) {
-      setAiMessages(m => [...m, { role: "assistant", content: `Je n'ai pas réussi à créer le devis : ${err.message}. Tu peux le faire à la main dans Facturer ▸ Mes devis.` }]);
+      setAiMessages(m => [...m, { role: "assistant", content: `Je n'ai pas réussi à créer le document : ${err.message}. Tu peux le faire à la main dans Facturer.` }]);
     } finally {
       setDevisCreating(null);
     }
@@ -4353,7 +4356,7 @@ function AppInner() {
                       {devis && (
                         <div style={{ background: "#F4F9FF", border: `1px solid ${ACCENT}`, borderRadius: 12, padding: 16, maxWidth: 380, width: "100%" }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: ACCENT, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                            <i className="ti ti-file-description" aria-hidden="true" style={{ fontSize: 16 }} /> Devis préparé par Hector
+                            <i className={`ti ${devis.type === "facture" ? "ti-file-invoice" : "ti-file-description"}`} aria-hidden="true" style={{ fontSize: 16 }} /> {devis.type === "facture" ? "Facture préparée" : "Devis préparé"} par Hector
                           </div>
                           <div style={{ fontSize: 13, color: INK, marginBottom: 4 }}><strong>Client :</strong> {devis.data.client_nom}</div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 2, margin: "8px 0", paddingLeft: 4 }}>
@@ -4369,7 +4372,7 @@ function AppInner() {
                           </div>
                           {devisCreated[i] ? (
                             <div style={{ marginTop: 12, textAlign: "center", fontSize: 13, fontWeight: 600, color: "#1D9E75" }}>
-                              ✅ Devis créé{typeof devisCreated[i] === "string" ? ` (${devisCreated[i]})` : ""} — <button style={{ ...S.linkBtn, fontSize: 13 }} onClick={() => setNav("devis")}>le voir →</button>
+                              ✅ {devis.type === "facture" ? "Facture créée" : "Devis créé"}{typeof devisCreated[i] === "string" ? ` (${devisCreated[i]})` : ""} — <button style={{ ...S.linkBtn, fontSize: 13 }} onClick={() => setNav(devis.type === "facture" ? "factures" : "devis")}>le voir →</button>
                             </div>
                           ) : (
                             <button
@@ -4377,10 +4380,10 @@ function AppInner() {
                               disabled={devisCreating === i}
                               onClick={() => handleCreateQuoteFromAssistant(devis, i)}
                             >
-                              {devisCreating === i ? "Création…" : "Créer ce devis ✓"}
+                              {devisCreating === i ? "Création…" : `Créer ${devis.type === "facture" ? "cette facture" : "ce devis"} ✓`}
                             </button>
                           )}
-                          <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 8, textAlign: "center" }}>Tu pourras le modifier ou l'envoyer ensuite dans Mes devis.</div>
+                          <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 8, textAlign: "center" }}>Tu pourras le modifier ou l'envoyer ensuite dans {devis.type === "facture" ? "Mes factures" : "Mes devis"}.</div>
                         </div>
                       )}
                     </div>
