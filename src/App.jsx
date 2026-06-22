@@ -57,7 +57,7 @@ const PLANS = [
     couleur: "#E6F1FB",
     couleurTexte: "#0C447C",
     features: [
-      "Ton vrai disponible, calculé en temps réel",
+      "Ce que tu peux vraiment dépenser, calculé en temps réel",
       "Calcul automatique URSSAF, impôts et seuil TVA",
       "Suivi de tes revenus encaissés",
       "3 factures par mois (PDF inclus)",
@@ -1809,7 +1809,7 @@ function AppInner() {
           <p style={S.authSub}>H€CTOR met de côté ce que tu devras à l'URSSAF, aux impôts et à la TVA, et te dit ce qu'il te reste vraiment — sans jamais se connecter à ta banque.</p>
           <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
             {[
-              { icon: "ti-radar-2", t: "Ton vrai disponible", d: "En un coup d'œil, ce que tu peux dépenser sans danger" },
+              { icon: "ti-radar-2", t: "Ce que tu peux vraiment dépenser", d: "En un coup d'œil, sans te mettre en danger" },
               { icon: "ti-calculator", t: "URSSAF, impôts & TVA anticipés", d: "Recalculés en temps réel selon tes revenus encaissés" },
               { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF" },
               { icon: "ti-message-circle", t: "Assistant fiscal IA", d: "Tes questions URSSAF, TVA, ACRE, à toute heure" },
@@ -2234,11 +2234,11 @@ function AppInner() {
                 <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
-                    {panique.solde !== "" ? "Plus qu'une étape" : "Pour obtenir ton vrai disponible"}
+                    {panique.solde !== "" ? "Plus qu'une étape" : "Pour savoir ce que tu peux vraiment dépenser"}
                   </div>
                   <div style={{ fontSize: 12, color: "#5B6573", marginTop: 4, lineHeight: 1.6 }}>
                     {panique.solde !== ""
-                      ? "Ajoute ton premier revenu encaissé : H€CTOR mettra automatiquement de côté ce que tu devras à l'URSSAF, et ce chiffre deviendra ton vrai disponible."
+                      ? "Ajoute ton premier revenu encaissé : H€CTOR mettra automatiquement de côté ce que tu devras à l'URSSAF, et tu sauras vraiment ce que tu peux dépenser."
                       : "Indique ton solde ci-dessus, puis ajoute tes revenus encaissés."}
                   </div>
                 </div>
@@ -2363,9 +2363,21 @@ function AppInner() {
                           <span style={{ fontSize: 11, color: "#7A93AD" }}>€</span>
                         </span>
                       </div>
-                      <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
-                        <span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>= Argent réellement disponible</span><span style={{ color: reserveAtteinte ? "#5DCAA5" : "#FAC775" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
-                      </div>
+                      {reserveAtteinte ? (
+                        <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
+                          <span style={{ color: "#5DCAA5" }}>= Argent réellement disponible</span><span style={{ color: "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
+                        </div>
+                      ) : (
+                        <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 10, marginTop: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, fontWeight: 700, color: "#FAC775", marginBottom: 6 }}>
+                            <span>⚠️ Réserve de sécurité en cours</span>
+                            <span>{formatEUR(Math.max(0, argentDisponibleBrut))} / {formatEUR(securiteNum)}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#B5D4F4", lineHeight: 1.5 }}>
+                            Cet argent n'est pas encore "à toi en sécurité" : H€CTOR te recommande d'atteindre {formatEUR(securiteNum)} de réserve avant de le considérer comme libre. Tu peux ajuster cet objectif plus bas.
+                          </div>
+                        </div>
+                      )}
 
                       <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
                         <div style={{ fontSize: 13, fontWeight: 600, color: "white", marginBottom: 2 }}>Combien de mois de sécurité voulez-vous garder ?</div>
