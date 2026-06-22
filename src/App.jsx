@@ -2124,7 +2124,7 @@ function AppInner() {
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
           { id: "simvie", icon: "ti-target", label: "Simulateur de vie" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
-          { id: "coach", icon: "ti-target-arrow", label: "Coach prix" },
+          { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
           { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
           { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
           { id: "contacts", icon: "ti-address-book", label: "Contacts" },
@@ -2233,10 +2233,13 @@ function AppInner() {
               <div style={S.onboardingNotice}>
                 <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>Pour obtenir des calculs fiables</div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
+                    {panique.solde !== "" ? "Plus qu'une étape" : "Pour obtenir ton vrai disponible"}
+                  </div>
                   <div style={{ fontSize: 12, color: "#5B6573", marginTop: 4, lineHeight: 1.6 }}>
-                    <strong>1.</strong> Indiquez votre solde bancaire (ci-dessus)<br />
-                    <strong>2.</strong> Ajoutez vos revenus encaissés
+                    {panique.solde !== ""
+                      ? "Ajoute ton premier revenu encaissé : H€CTOR mettra automatiquement de côté ce que tu devras à l'URSSAF, et ce chiffre deviendra ton vrai disponible."
+                      : "Indique ton solde ci-dessus, puis ajoute tes revenus encaissés."}
                   </div>
                 </div>
                 <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
@@ -2388,9 +2391,9 @@ function AppInner() {
               </div>
             )}
 
-            {argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && (
+            {argentDisponibleBrut !== null && disponibleAujourdhui > 0 && (
               <div style={S.explainBanner}>
-                Mode Achat et Mode Salaire utilisent votre <strong>marge prudente</strong> (réserve de sécurité déduite) : <strong>{formatEUR(Math.max(0, disponibleAujourdhui))}</strong>.
+                Mode Achat et Mode Salaire utilisent votre <strong>marge prudente</strong> (réserve de sécurité déduite) : <strong>{formatEUR(disponibleAujourdhui)}</strong>.
               </div>
             )}
 
@@ -3022,7 +3025,7 @@ function AppInner() {
 
         {nav === "coach" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Coach prix</h1><p style={S.pageSub}>Est-ce que je suis sous-facturé ?</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Est-ce que je facture assez ?</h1><p style={S.pageSub}>Ton vrai taux horaire, et si tu te sous-vends</p></div></div>
 
             <div style={S.card}>
               <label style={S.label}>
