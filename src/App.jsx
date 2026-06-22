@@ -362,11 +362,11 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
-function Logo({ size = 28 }) {
-  // Logo image (hauteur = size, largeur auto pour garder les proportions). Net en retina (image 2x).
+function Logo({ size = 28, dark = false }) {
+  // dark=true → logo à texte blanc, pour les fonds foncés (page de connexion, sidebar).
   const ratio = 1348 / 358;
   return (
-    <img src="/hector-logo.png" alt="H€CTOR" height={size} width={Math.round(size * ratio)}
+    <img src={dark ? "/hector-logo-white.png" : "/hector-logo.png"} alt="H€CTOR" height={size} width={Math.round(size * ratio)}
          style={{ height: size, width: "auto", display: "block" }} />
   );
 }
@@ -1723,7 +1723,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} />
+          <Logo size={36} dark />
           <h1 style={S.authHero}>Nouveau mot de passe</h1>
           <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
         </div>
@@ -1760,7 +1760,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} />
+          <Logo size={36} dark />
           <h1 style={S.authHero}>Vérification de votre email</h1>
         </div>
         <div style={S.authRight}>
@@ -1797,7 +1797,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} />
+          <Logo size={36} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met de côté ce que tu devras à l'URSSAF, aux impôts et à la TVA, et te dit ce qu'il te reste vraiment — sans jamais se connecter à ta banque.</p>
           <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
@@ -1914,7 +1914,7 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <Logo size={36} />
+            <Logo size={36} dark />
             <h1 style={S.authHero}>C'est prêt.</h1>
             <p style={S.authSub}>Voici ton premier chiffre. Il deviendra de plus en plus précis à mesure que tu ajoutes tes revenus et tes frais.</p>
           </div>
@@ -1961,7 +1961,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} />
+          <Logo size={36} dark />
           <h1 style={S.authHero}>3 questions,<br />et tu sais tout.</h1>
           <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
@@ -2029,7 +2029,7 @@ function AppInner() {
           <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
             <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 24, color: "white" }} />
           </button>
-          <Logo size={22} />
+          <Logo size={22} dark />
           <div style={{ width: 36 }} />
         </div>
       )}
@@ -2046,7 +2046,7 @@ function AppInner() {
         }
       >
         <div style={S.sidebarTop}>
-          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={28} />}
+          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={28} dark />}
           {isMobile && (
             <button style={{ ...S.navItem, padding: "4px 8px", width: "auto", marginLeft: "auto" }} onClick={() => setMobileMenuOpen(false)}>
               <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 20 }} />
