@@ -50,9 +50,37 @@ const CONSEILS = [
 ];
 
 const PLANS = [
-  { nom: "Gratuit", prix: "0€", periode: "/mois", couleur: "#E6F1FB", couleurTexte: "#0C447C", features: ["Dashboard & calcul URSSAF", "Ajout manuel de revenus", "3 factures/mois", "Actualités fiscales", "Conseils de base"] },
-  { nom: "Pro", prix: "9€", periode: "/mois", couleur: "#378ADD", couleurTexte: "white", badge: "Populaire", features: ["Tout Gratuit +", "Factures illimitées", "Envoi email au client", "Carnet de contacts", "Assistant IA (50 questions/mois)", "Export PDF comptable", "Rappels URSSAF par email"] },
-  { nom: "Expert", prix: "19€", periode: "/mois", couleur: "#0A2540", couleurTexte: "white", features: ["Tout Pro +", "Assistant IA illimité", "Multi-activités", "Scan factures fournisseurs", "Historique 3 ans", "Support prioritaire", "Bientôt : connexion bancaire"] },
+  {
+    nom: "Gratuit",
+    prix: "0€",
+    periode: "/mois",
+    couleur: "#E6F1FB",
+    couleurTexte: "#0C447C",
+    features: [
+      "Ton vrai disponible, calculé en temps réel",
+      "Calcul automatique URSSAF, impôts et seuil TVA",
+      "Suivi de tes revenus encaissés",
+      "3 factures par mois (PDF inclus)",
+      "On ne se connecte jamais à ta banque",
+    ],
+  },
+  {
+    nom: "Pro",
+    prix: "9€",
+    periode: "/mois",
+    couleur: "#378ADD",
+    couleurTexte: "white",
+    badge: "Prix prévu",
+    features: [
+      "Tout le plan Gratuit, sans limite",
+      "Factures illimitées + envoi par email au client",
+      "Devis et conversion en facture",
+      "Carnet de contacts clients",
+      "Assistant fiscal IA",
+      "Scan automatique de tes factures de frais",
+      "Export complet de tes données (RGPD)",
+    ],
+  },
 ];
 
 const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
@@ -1735,16 +1763,16 @@ function AppInner() {
         <style>{CSS}</style>
         <div style={S.authLeft}>
           <Logo size={36} />
-          <h1 style={S.authHero}>Votre assistant fiscal<br />intelligent</h1>
-          <p style={S.authSub}>H€CTOR calcule vos cotisations URSSAF, crée vos devis et factures, et répond à toutes vos questions fiscales en temps réel.</p>
+          <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
+          <p style={S.authSub}>H€CTOR met de côté ce que tu devras à l'URSSAF, aux impôts et à la TVA, et te dit ce qu'il te reste vraiment — sans jamais se connecter à ta banque.</p>
           <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
             {[
-              { icon: "ti-calculator", t: "Calcul URSSAF automatique", d: "Cotisations recalculées en temps réel selon vos revenus" },
-              { icon: "ti-file-invoice", t: "Devis & factures", d: "Créez, numérotez, envoyez par email et téléchargez en PDF" },
-              { icon: "ti-radar-2", t: "Scanner Financier", d: "Sachez en un clic ce qu'il vous reste vraiment disponible" },
-              { icon: "ti-message-circle", t: "Assistant IA fiscal", d: "Posez vos questions URSSAF, TVA, ACRE 24h/24" },
-              { icon: "ti-bell", t: "Actualités & échéances", d: "Alertes avant chaque déclaration, zéro oubli" },
-              { icon: "ti-building-bank", t: "Connexion bancaire", d: "Qonto, Shine, Revolut... bientôt 100% automatique" },
+              { icon: "ti-radar-2", t: "Ton vrai disponible", d: "En un coup d'œil, ce que tu peux dépenser sans danger" },
+              { icon: "ti-calculator", t: "URSSAF, impôts & TVA anticipés", d: "Recalculés en temps réel selon tes revenus encaissés" },
+              { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF" },
+              { icon: "ti-message-circle", t: "Assistant fiscal IA", d: "Tes questions URSSAF, TVA, ACRE, à toute heure" },
+              { icon: "ti-receipt-2", t: "Scan de tes frais", d: "Photographie une facture, H€CTOR en extrait le montant" },
+              { icon: "ti-lock", t: "Tes données restent chez toi", d: "Aucune connexion bancaire, aucun accès à ton compte" },
             ].map(f => (
               <div key={f.t} style={S.authFeatureCard}>
                 <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
@@ -3364,7 +3392,7 @@ function AppInner() {
                         <div style={S.impactRowDark}>✓ Apparaît dans votre historique de revenus</div>
                       </div>
                       <p style={{ fontSize: 10, color: "#7A93AD", marginTop: 12 }}>
-                        Le "Disponible réel" ci-dessus suppose que ce montant arrive sur votre compte. Tant que la connexion bancaire n'existe pas, pensez à mettre à jour votre solde sur le Dashboard une fois le virement reçu.
+                        Le "Disponible réel" ci-dessus suppose que ce montant arrive sur ton compte. Pense à mettre à jour ton solde sur le Cockpit une fois le virement reçu — c'est ce qui garde ton chiffre fiable.
                       </p>
                     </div>
 
@@ -4113,13 +4141,13 @@ function AppInner() {
             </div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
-              <div style={S.cardTitle}>🔗 Banque connectée</div>
+              <div style={S.cardTitle}>🔒 Tes données bancaires</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: "#5B6573" }}>Aucune banque connectée pour l'instant</span>
-                <span style={{ ...S.badge, background: "#FCEBEB", color: "#A32D2D" }}>🔴 Non connectée</span>
+                <span style={{ fontSize: 13, color: "#5B6573" }}>H€CTOR ne se connecte jamais à ta banque</span>
+                <span style={{ ...S.badge, ...S.badgeGreen }}>🟢 Privé par conception</span>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, lineHeight: 1.5 }}>
-                Bientôt : connectez Qonto, Shine, Revolut Business ou une banque classique pour que vos revenus se remplissent automatiquement, sans saisie manuelle.
+                Tes identifiants bancaires ne nous sont jamais demandés et tes transactions ne quittent jamais ta banque. Tu mets ton solde à jour en 10 secondes sur le Cockpit, et H€CTOR fait le reste. C'est plus simple, et c'est toi qui gardes le contrôle.
               </p>
             </div>
 
@@ -4246,10 +4274,10 @@ function AppInner() {
 
         {nav === "abonnement" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>Le système de paiement arrive prochainement — voici ce qui est prévu</p></div></div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: 16 }}>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>H€CTOR est gratuit pendant la bêta. Voici ce qui est prévu — tu ne paies rien pour l'instant.</p></div></div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 360px))", gap: 16, justifyContent: "center" }}>
               {PLANS.map((p, i) => (
-                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative", opacity: i === 0 ? 1 : 0.85 }}>
+                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
                   {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
                   <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 4 }}>{p.nom}</div>
                   <div style={{ marginBottom: 16 }}>
@@ -4267,7 +4295,7 @@ function AppInner() {
                     </button>
                   ) : (
                     <button style={{ ...S.btnPrimary, marginTop: 16, background: "#EEF2F7", color: "#9098A6", cursor: "not-allowed", border: "1px solid #DDE5EE" }} disabled>
-                      🔒 Bientôt disponible
+                      Gratuit pendant la bêta
                     </button>
                   )}
                 </div>
