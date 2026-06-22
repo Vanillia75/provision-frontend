@@ -535,6 +535,8 @@ function AppInner() {
   const [aiLoading, setAiLoading] = useState(false);
   const [devisCreating, setDevisCreating] = useState(null);
   const [devisCreated, setDevisCreated] = useState({});
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
@@ -1576,6 +1578,39 @@ function AppInner() {
     } finally {
       setDevisCreating(null);
     }
+  }
+
+  // --- Dictée vocale : parle à Hector, ça remplit la barre (tu relis avant d'envoyer) ---
+  const speechSupported = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+  function toggleVoiceInput() {
+    if (!speechSupported) return;
+    // Si on écoute déjà, on arrête.
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SR();
+    recognition.lang = "fr-FR";
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognitionRef.current = recognition;
+
+    let finalText = "";
+    recognition.onresult = (event) => {
+      let interim = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) finalText += transcript;
+        else interim += transcript;
+      }
+      setAiInput((finalText + interim).trim());
+    };
+    recognition.onerror = () => { setIsListening(false); };
+    recognition.onend = () => { setIsListening(false); recognitionRef.current = null; };
+    setIsListening(true);
+    recognition.start();
   }
 
   const revenusParMois = Array.from({ length: 12 }, (_, i) => {
@@ -4392,7 +4427,25 @@ function AppInner() {
                 {aiLoading && <div style={{ ...S.aiMsg, ...S.aiMsgBot, color: "#8BA5C0" }}>H€CTOR réfléchit…</div>}
               </div>
               <form style={{ display: "flex", gap: 10, borderTop: "1px solid #DDE5EE", paddingTop: 14 }} onSubmit={askAI}>
-                <input style={{ ...S.input, flex: 1 }} placeholder="Pose ta question à H€CTOR…" value={aiInput} onChange={e => setAiInput(e.target.value)} />
+                <input style={{ ...S.input, flex: 1 }} placeholder={isListening ? "🎤 Je t'écoute…" : "Pose ta question à H€CTOR…"} value={aiInput} onChange={e => setAiInput(e.target.value)} />
+                {speechSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleVoiceInput}
+                    title={isListening ? "Arrêter" : "Parler à Hector"}
+                    style={{
+                      ...S.btnPrimarySmall,
+                      background: isListening ? "#E0533D" : "#EAF2FB",
+                      color: isListening ? "white" : ACCENT,
+                      border: `1px solid ${isListening ? "#E0533D" : "#CFE0F2"}`,
+                      minWidth: 44,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      animation: isListening ? "pulse 1.2s infinite" : "none",
+                    }}
+                  >
+                    <i className={`ti ${isListening ? "ti-microphone-filled" : "ti-microphone"}`} aria-hidden="true" style={{ fontSize: 18 }} />
+                  </button>
+                )}
                 <button style={S.btnPrimarySmall} type="submit" disabled={aiLoading}>Envoyer</button>
               </form>
             </div>
@@ -4454,6 +4507,7 @@ const PAPER = "#F0F4F8";
 
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,83,61,0.5); } 50% { box-shadow: 0 0 0 6px rgba(224,83,61,0); } }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
   button { font-family: inherit; }
