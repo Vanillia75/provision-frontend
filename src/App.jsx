@@ -2162,15 +2162,22 @@ function AppInner() {
               </div>
             ) : (
               <div style={S.heroDispo}>
-                <div style={S.heroDispoLabel}>{niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "🟠 Situation fragile" : "🟢 Situation saine"}</div>
-                {niveauFinancier !== null && <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: -4, marginBottom: 8 }}>Disponible</div>}
+                <div style={S.heroDispoLabel}>{niveauFinancier === null ? "💰 Argent disponible" : niveauFinancier === "orange" ? "🟠 Réserve de sécurité incomplète" : "🟢 Situation saine"}</div>
+                {niveauFinancier !== null && (
+                  <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: -4, marginBottom: 8 }}>
+                    {niveauFinancier === "orange" ? "Disponible aujourd'hui" : "Disponible"}
+                  </div>
+                )}
                 {argentDisponibleBrut !== null ? (
                   <div style={{ ...S.heroDispoValue, color: niveauFinancier === "orange" ? "#FAC775" : "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</div>
                 ) : (
                   <div style={S.dispoEmpty}>Renseignez votre solde ci-dessus pour voir ce chiffre</div>
                 )}
                 {niveauFinancier === "orange" && (
-                  <div style={{ marginTop: 8, fontSize: 13, color: "#FAC775", fontWeight: 600 }}>🛡️ Réserve de sécurité entamée</div>
+                  <div style={{ marginTop: 10, fontSize: 13, color: "#F4DCA8", maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+                    Votre activité est saine — vous n'avez aucune charge en attente. Vous n'avez simplement pas encore atteint votre <strong>réserve de sécurité</strong> de {formatEUR(securiteNum)}.
+                    {manqueReserveDashboard > 0 && <> Il manque <strong>{formatEUR(manqueReserveDashboard)}</strong> pour l'atteindre.</>}
+                  </div>
                 )}
                 {moisSurvie !== null && (
                   <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
