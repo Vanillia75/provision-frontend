@@ -1882,12 +1882,32 @@ function AppInner() {
           <Logo size={36} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met de côté ce que tu devras à l'URSSAF, aux impôts et à la TVA, et te dit ce qu'il te reste vraiment — sans jamais se connecter à ta banque.</p>
+
+          {/* Bande compagnon : met en scène Hector qui prépare les devis quand on lui parle */}
+          <div style={{ background: "linear-gradient(135deg, #0E2E4F 0%, #1B4068 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px", margin: "4px auto 8px", maxWidth: 560, width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+              <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 20, color: "#5DCAA5" }} />
+              <span style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Et tu n'es plus seul·e pour gérer tout ça</span>
+            </div>
+            <p style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.55, margin: "0 0 14px" }}>
+              Hector est ton compagnon : il connaît tes chiffres, veille sur ton argent, et prépare tes devis et factures quand tu lui demandes — à l'écrit ou à la voix.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ alignSelf: "flex-end", background: ACCENT, color: "white", borderRadius: "14px 14px 4px 14px", padding: "8px 13px", fontSize: 12.5, maxWidth: "85%" }}>
+                « Hector, prépare un devis pour Martin, 500 € de consulting »
+              </div>
+              <div style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.08)", color: "#EAF2FB", borderRadius: "14px 14px 14px 4px", padding: "8px 13px", fontSize: 12.5, maxWidth: "85%" }}>
+                « C'est noté — voilà ton devis prêt à envoyer. On le relit ensemble ? » ✓
+              </div>
+            </div>
+          </div>
+
           <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
             {[
               { icon: "ti-radar-2", t: "Ce que tu peux vraiment dépenser", d: "En un coup d'œil, sans te mettre en danger" },
               { icon: "ti-calculator", t: "URSSAF, impôts & TVA anticipés", d: "Recalculés en temps réel selon tes revenus encaissés" },
-              { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF" },
-              { icon: "ti-message-circle", t: "Hector, ton compagnon", d: "Il connaît tes chiffres, veille sur ton argent et te conseille pour de vrai" },
+              { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF — ou demande à Hector" },
+              { icon: "ti-message-circle", t: "Hector, ton compagnon", d: "Il connaît tes chiffres et prépare tes devis quand tu lui parles" },
               { icon: "ti-receipt-2", t: "Scan de tes frais", d: "Photographie une facture, H€CTOR en extrait le montant" },
               { icon: "ti-lock", t: "Tes données restent chez toi", d: "Aucune connexion bancaire, aucun accès à ton compte" },
             ].map(f => (
