@@ -2062,183 +2062,271 @@ function AppInner() {
   }
 
   if (!token) {
-    const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
-    const caSim = parseFloat(simCa) || 0;
-    const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
-    const netSim = Math.round((caSim - urssafSim) * 100) / 100;
+    const scrollToAuth = () => { document.getElementById("hector-auth-section")?.scrollIntoView({ behavior: "smooth" }); };
     return (
-      <div style={S.authPage}>
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
         <style>{CSS}</style>
-        <div style={S.authLeft}>
-          <Logo size={110} dark />
-          <h1 style={S.authHero}>Enfin savoir<br />ce que tu peux vraiment dépenser.</h1>
-          <p style={S.authSub}>H€CTOR calcule automatiquement tes charges, prépare tes devis et tes factures, puis te montre ce qui est réellement disponible. Sans connexion bancaire.</p>
 
-          {/* LE PROBLÈME — court et percutant, juste assez pour faire écho à la douleur */}
-          <div style={{ background: "rgba(226,75,74,0.06)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "14px 16px" : "14px 22px", margin: "20px auto 8px", maxWidth: 440, width: "100%", textAlign: "left" }}>
-            <div style={{ display: "inline-block", background: "rgba(226,75,74,0.15)", color: "#F09595", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "3px 10px", borderRadius: 999, marginBottom: 10 }}>LE PROBLÈME</div>
-            <div style={{ fontSize: 14.5, color: "#EAF2FB", lineHeight: 1.55 }}>
-              Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>. 6 mois plus tard, l'URSSAF en réclame <strong style={{ color: "#F09595" }}>1 060 €</strong>. Surprise. Tu es à découvert.
-            </div>
+        {/* ===== NAVBAR ===== */}
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Logo size={32} dark />
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button onClick={() => { setAuthMode("login"); scrollToAuth(); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: 8, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+              Se connecter
+            </button>
+            <button onClick={() => { setAuthMode("register"); scrollToAuth(); }} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              Créer un compte
+            </button>
           </div>
+        </nav>
 
-          {/* Démo visuelle compacte : la transformation brut → disponible */}
-          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
-            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 12 }}>1. HECTOR CALCULE TOUT</div>
-            <div style={{ fontSize: 13.5, color: "#B5D4F4", marginBottom: 10, lineHeight: 1.5 }}>
-              Sur ce revenu, Hector met de côté :
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: "10px 14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> URSSAF</span><span style={{ color: "#FAC775" }}>1 060 €</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> Réserve</span><span style={{ color: "#FAC775" }}>800 €</span></div>
-            </div>
-            <div style={{ borderTop: "1px solid rgba(93,202,165,0.25)", paddingTop: 10, textAlign: "center" }}>
-              <div style={{ fontSize: 11, color: "#B5D4F4", marginBottom: 2 }}>Ce que tu peux dépenser :</div>
-              <span style={{ fontSize: isMobile ? 32 : 38, fontWeight: 700, color: "#5DCAA5", fontVariantNumeric: "tabular-nums" }}>3 140 €</span>
-            </div>
-          </div>
-
-          {/* Démo conversationnelle : Hector qui PRÉPARE devis + facture en 3 messages */}
-          <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 22px", margin: "12px auto", maxWidth: 400, width: "100%" }}>
-            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 12 }}>2. HECTOR PRÉPARE TES DEVIS & FACTURES</div>
-
-            {/* Message utilisateur 1 */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
-              <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%", fontWeight: 500 }}>
-                Prépare un devis pour Martin, 500 € de consulting
-              </div>
-            </div>
-
-            {/* Réponse Hector 1 */}
-            <div style={{ display: "flex", justifyContent: "flex-start", gap: 6, marginBottom: 12 }}>
-              <div style={{ background: "rgba(255,255,255,0.08)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%" }}>
-                ✓ Devis prêt &nbsp;·&nbsp; ✓ PDF généré
-              </div>
-            </div>
-
-            {/* Message utilisateur 2 */}
-            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
-              <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%", fontWeight: 500 }}>
-                Martin a accepté, transforme-le en facture
-              </div>
-            </div>
-
-            {/* Réponse Hector 2 */}
-            <div style={{ display: "flex", justifyContent: "flex-start", gap: 6 }}>
-              <div style={{ background: "rgba(255,255,255,0.08)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%" }}>
-                ✓ Facture créée &nbsp;·&nbsp; ✓ Prête à envoyer
-              </div>
-            </div>
-
-            <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(55,138,221,0.2)", fontSize: 11.5, color: "#B5D4F4", textAlign: "center" }}>
-              <span style={{ color: ACCENT, fontWeight: 700 }}>15 secondes</span> · sans remplir un seul formulaire
-            </div>
-          </div>
-
-
-          <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
-            {[
-              { icon: "ti-radar-2", t: "Ce que tu peux vraiment dépenser", d: "En un coup d'œil, sans te mettre en danger" },
-              { icon: "ti-calculator", t: "URSSAF, impôts & TVA anticipés", d: "Recalculés en temps réel selon tes revenus encaissés" },
-              { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF — ou demande à Hector" },
-              { icon: "ti-message-circle", t: "Hector, ton compagnon", d: "Il connaît tes chiffres et prépare tes devis quand tu lui parles" },
-              { icon: "ti-receipt-2", t: "Scan de tes frais", d: "Photographie une facture, H€CTOR en extrait le montant" },
-              { icon: "ti-lock", t: "Tes données restent chez toi", d: "Aucune connexion bancaire, aucun accès à ton compte" },
-            ].map((f, idx) => (
-              <div key={f.t} style={isMobile
-                ? { display: "flex", alignItems: "flex-start", gap: 10, padding: "11px 2px", borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.08)" }
-                : S.authFeatureCard}>
-                <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                <div>
-                  <div style={S.authFeatureTitle}>{f.t}</div>
-                  <div style={S.authFeatureDesc}>{f.d}</div>
+        {/* ===== HERO ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px 32px" : "72px 40px 48px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 40, alignItems: "center" }}>
+          {/* Gauche */}
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", marginBottom: 20, textTransform: "uppercase" }}>Ton cockpit financier</div>
+            <h1 style={{ fontSize: isMobile ? 38 : 54, fontWeight: 800, lineHeight: 1.1, margin: "0 0 20px", color: "white" }}>
+              Enfin savoir ce que tu peux{" "}
+              <span style={{ color: "#5DCAA5" }}>vraiment dépenser.</span>
+            </h1>
+            <p style={{ fontSize: 17, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 460 }}>
+              H€CTOR calcule automatiquement tes charges, prépare tes devis et tes factures, puis te montre ce qui est réellement à toi.
+            </p>
+            <button onClick={() => { setAuthMode("register"); scrollToAuth(); }} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+              Créer mon compte gratuitement <i className="ti ti-arrow-right" />
+            </button>
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+              {[
+                { icon: "ti-credit-card-off", t: "Aucune carte bancaire" },
+                { icon: "ti-circle-check", t: "Sans engagement" },
+                { icon: "ti-clock", t: "Setup en 2 minutes" },
+              ].map(r => (
+                <div key={r.t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8BA5C0" }}>
+                  <i className={`ti ${r.icon}`} style={{ color: "#5DCAA5", fontSize: 14 }} />
+                  {r.t}
                 </div>
+              ))}
+            </div>
+          </div>
+          {/* Droite — photo Hector */}
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", position: "relative" }}>
+            <img src="/hector-panier.png" alt="Hector dans son panier" style={{ width: "100%", maxWidth: 480, objectFit: "contain", borderRadius: 16 }} />
+          </div>
+        </section>
+
+        {/* ===== BLOC PROBLÈME ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto 0", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
+          <div style={{ background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "18px 20px" : "22px 32px", display: "flex", alignItems: "flex-start", gap: 18 }}>
+            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(226,75,74,0.15)", border: "1px solid rgba(226,75,74,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+              <i className="ti ti-x" style={{ color: "#F09595", fontSize: 18 }} />
+            </div>
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#F09595", marginBottom: 10, textTransform: "uppercase" }}>Le problème</div>
+              <div style={{ fontSize: isMobile ? 15 : 17, color: "#EAF2FB", lineHeight: 1.6 }}>
+                Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>.<br />
+                Tu crois pouvoir les dépenser.<br />
+                Puis l'URSSAF arrive.
               </div>
-            ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== DEUX DÉMOS CÔTE À CÔTE ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 48px" : "0 40px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
+          {/* Démo calcul */}
+          <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "24px 28px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#5DCAA5", marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+              <i className="ti ti-check" style={{ fontSize: 14 }} /> H€CTOR calcule pour toi
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 20, textAlign: "center" }}>5 000 € encaissés</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+              {[
+                { icon: "ti-shield", label: "URSSAF", val: "- 1 060 €" },
+                { icon: "ti-building-bank", label: "Impôts", val: "- 300 €" },
+                { icon: "ti-lock", label: "Réserve de sécurité", val: "- 500 €" },
+              ].map(r => (
+                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "#B5D4F4" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <i className={`ti ${r.icon}`} style={{ color: "#5DCAA5", fontSize: 15 }} /> {r.label}
+                  </span>
+                  <span style={{ color: "#FAC775", fontWeight: 600 }}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: "1px solid rgba(93,202,165,0.2)", paddingTop: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 4 }}>= réellement disponibles</div>
+              <div style={{ fontSize: 42, fontWeight: 800, color: "#5DCAA5" }}>3 140 €</div>
+            </div>
           </div>
 
-          <div style={S.simWidget}>
-            <div style={{ fontSize: 12, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
-              Essayez sans créer de compte
+          {/* Démo chat */}
+          <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "24px 28px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: ACCENT, marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+              <i className="ti ti-message-chatbot" style={{ fontSize: 14 }} /> Parle à H€CTOR
             </div>
-            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-              <input style={S.simInput} type="number" placeholder="CA encaissé" value={simCa} onChange={e => setSimCa(e.target.value)} />
-              <select style={S.simSelect} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
-                <option value="vente">Vente (12,3%)</option>
-                <option value="services">Services (21,2%)</option>
-                <option value="bnc">Libéral (25,6%)</option>
-              </select>
-            </div>
-            {caSim > 0 && (
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                <div>
-                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>À mettre de côté URSSAF</div>
-                  <div style={{ fontSize: 20, fontWeight: 600, color: "#FAC775" }}>{formatEUR(urssafSim)}</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500, lineHeight: 1.45 }}>
+                  Prépare un devis pour Martin,<br />500 € de consulting
                 </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>Dans votre poche</div>
-                  <div style={{ fontSize: 20, fontWeight: 600, color: "#5DCAA5" }}>{formatEUR(netSim)}</div>
-                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:42</div>
               </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: "#5DCAA5" }}>✓</span> Devis créé
+                  <span style={{ marginLeft: 8, color: ACCENT, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}><i className="ti ti-file-type-pdf" style={{ fontSize: 13 }} /> Voir le PDF</span>
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:42</div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500 }}>
+                  Transforme-le en facture
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:45</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, display: "flex", alignItems: "center", gap: 10 }}>
+                  <span style={{ color: "#5DCAA5" }}>✓</span> Facture créée
+                  <span style={{ marginLeft: 8, color: "#8BA5C0", fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}><i className="ti ti-file" style={{ fontSize: 13 }} /></span>
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:45</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== GRILLE FEATURES ===== */}
+        <section style={{ background: "rgba(255,255,255,0.025)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "40px 20px" : "52px 40px" }}>
+          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", textAlign: "center", marginBottom: 36, textTransform: "uppercase" }}>Tout ce qu'H€CTOR fait pour toi</div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(6, 1fr)", gap: 24 }}>
+              {[
+                { icon: "ti-radar-2", t: "Disponible réel", d: "Saisis tes entrées, Hector calcule le reste." },
+                { icon: "ti-file-invoice", t: "Devis & factures automatiques", d: "Créés en quelques secondes." },
+                { icon: "ti-camera", t: "Scan de frais", d: "Prends une photo, Hector l'enregistre et la classe." },
+                { icon: "ti-shield-check", t: "Réserve de sécurité", d: "Hector met de côté ce qu'il faut pour que tu sois tranquille." },
+                { icon: "ti-chart-bar", t: "Suivi simple et clair", d: "Tableaux de bord pensés pour les indépendants." },
+                { icon: "ti-lock", t: "Sans connexion bancaire", d: "Tes données restent privées et en sécurité, toujours." },
+              ].map(f => (
+                <div key={f.t} style={{ textAlign: "center" }}>
+                  <div style={{ width: 44, height: 44, borderRadius: "50%", background: "rgba(55,138,221,0.12)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+                    <i className={`ti ${f.icon}`} style={{ fontSize: 20, color: ACCENT }} />
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 6, lineHeight: 1.3 }}>{f.t}</div>
+                  <div style={{ fontSize: 11.5, color: "#6B8299", lineHeight: 1.5 }}>{f.d}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== CTA FINAL + FORMULAIRE ===== */}
+        <section id="hector-auth-section" style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px" : "64px 40px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 48, alignItems: "center" }}>
+          {/* Gauche — social proof sobre */}
+          <div>
+            <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 16px" }}>
+              Rejoins les indépendants<br />qui reprennent le contrôle.
+            </h2>
+            <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 24px" }}>
+              5 auto-entrepreneurs utilisent déjà H€CTOR en beta.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                "Zéro surprise à la déclaration URSSAF",
+                "Devis et factures professionnels en quelques secondes",
+                "Toujours savoir ce que tu peux vraiment dépenser",
+              ].map(t => (
+                <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#B5D4F4" }}>
+                  <i className="ti ti-check" style={{ color: "#5DCAA5", fontSize: 16, marginTop: 1, flexShrink: 0 }} />
+                  {t}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Droite — formulaire */}
+          <div style={{ background: "white", borderRadius: 16, padding: "32px 28px", boxSizing: "border-box" }}>
+            {forgotMode ? (
+              <div>
+                <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
+                {forgotStatus === "sent" ? (
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
+                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>
+                      Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.
+                    </p>
+                    <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword}>
+                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                    <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
+                    <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
+                    <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleAuth}>
+                <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
+                {error && <div style={S.errorBanner}>{error}</div>}
+                <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                <p style={S.orDivider}>ou avec un email</p>
+                <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
+                <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+                {authMode === "login" && (
+                  <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
+                    <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
+                  </p>
+                )}
+                <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>
+                  {loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}
+                </button>
+                {authMode === "register" && (
+                  <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 12 }}>
+                    {[
+                      { icon: "ti-credit-card-off", t: "Sans engagement" },
+                      { icon: "ti-circle-check", t: "Annulation en 1 clic" },
+                    ].map(r => (
+                      <div key={r.t} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#8BA5C0" }}>
+                        <i className={`ti ${r.icon}`} style={{ color: "#5DCAA5", fontSize: 13 }} /> {r.t}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <p style={S.switchAuth}>
+                  {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
+                  <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button>
+                </p>
+                {authMode === "register" && (
+                  <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center", marginTop: 4 }}>
+                    En créant un compte, vous acceptez les <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("cgu")}>CGU</button> et la <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("confidentialite")}>Politique de confidentialité</button>.
+                  </p>
+                )}
+              </form>
             )}
           </div>
-        </div>
-        <div style={S.authRight}>
-          {forgotMode ? (
-            <div style={S.authCard}>
-              <h2 style={S.authTitle}>Mot de passe oublié</h2>
-              {forgotStatus === "sent" ? (
-                <div style={{ textAlign: "center" }}>
-                  <div style={{ fontSize: 36, marginBottom: 10 }}>📧</div>
-                  <p style={{ fontSize: 13, color: "#3D4452", marginBottom: 20, lineHeight: 1.6 }}>
-                    Si un compte existe avec l'adresse <strong>{forgotEmail}</strong>, vous allez recevoir un email avec un lien pour réinitialiser votre mot de passe.
-                  </p>
-                  <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
-                </div>
-              ) : (
-                <form onSubmit={handleForgotPassword}>
-                  <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email, nous vous enverrons un lien pour le réinitialiser.</p>
-                  <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
-                  <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
-                  <p style={S.switchAuth}>
-                    <button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button>
-                  </p>
-                </form>
-              )}
-            </div>
-          ) : (
-            <form style={S.authCard} onSubmit={handleAuth}>
-              <h2 style={S.authTitle}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
-              {error && <div style={S.errorBanner}>{error}</div>}
-              <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
-              <p style={S.orDivider}>ou avec un email</p>
-              <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-              <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
-              {authMode === "login" && (
-                <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
-                  <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
-                </p>
-              )}
-              <button style={S.btnPrimary} type="submit" disabled={loading}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte"}</button>
-              <p style={S.switchAuth}>
-                {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
-                <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button>
-              </p>
-              {authMode === "register" && (
-                <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center", marginTop: 4 }}>
-                  En créant un compte, vous acceptez les <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("cgu")}>CGU</button> et la <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("confidentialite")}>Politique de confidentialité</button>.
-                </p>
-              )}
-              <p style={{ fontSize: 11, color: "#B0B6C0", textAlign: "center", marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
-                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
-                <span>·</span>
-                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("cgu")}>CGU</button>
-                <span>·</span>
-                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
-              </p>
-            </form>
-          )}
-        </div>
+        </section>
+
+        {/* ===== FOOTER ===== */}
+        <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "24px 20px" : "28px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between", maxWidth: 1160, margin: "0 auto" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Logo size={24} dark />
+            <span style={{ fontSize: 11, color: "#4A6280" }}>L'assistant financier des indépendants.</span>
+          </div>
+          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+            {[
+              { label: "Mentions légales", page: "mentions" },
+              { label: "CGU", page: "cgu" },
+              { label: "Confidentialité", page: "confidentialite" },
+            ].map(l => (
+              <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: "#4A6280" }}>Fait avec 🐾 pour les indépendants</div>
+        </footer>
       </div>
     );
   }
