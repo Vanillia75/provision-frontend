@@ -615,6 +615,8 @@ function AppInner() {
   };
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
+  const [simCaLanding, setSimCaLanding] = useState("3000");
+  const [simActLanding, setSimActLanding] = useState("0.212");
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
   const tmiMounted = useRef(false);
@@ -2137,8 +2139,6 @@ function AppInner() {
             </div>
             {/* Simulateur mini */}
             {(() => {
-              const [simCaLanding, setSimCaLanding] = useState("3000");
-              const [simActLanding, setSimActLanding] = useState("0.212");
               const caNum = Math.max(0, parseFloat(simCaLanding) || 0);
               const taux = parseFloat(simActLanding);
               const urssaf = Math.round(caNum * taux);
