@@ -2118,24 +2118,70 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== BLOC PROBLÈME ===== */}
+        {/* ===== BLOC PROBLÈME + SIMULATEUR CÔTE À CÔTE ===== */}
         <section style={{ maxWidth: 1160, margin: "0 auto 0", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
-          <div style={{ background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "18px 20px" : "22px 32px", display: "flex", alignItems: "flex-start", gap: 18 }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(226,75,74,0.15)", border: "1px solid rgba(226,75,74,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F09595" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </div>
-            <div>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#F09595", marginBottom: 10, textTransform: "uppercase" }}>Le problème</div>
-              <div style={{ fontSize: isMobile ? 15 : 17, color: "#EAF2FB", lineHeight: 1.6 }}>
-                Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>.<br />
-                Tu crois pouvoir les dépenser.<br />
-                Puis l'URSSAF arrive.
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "stretch" }}>
+            {/* Bloc problème */}
+            <div style={{ background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "18px 20px" : "22px 32px", display: "flex", alignItems: "flex-start", gap: 18 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(226,75,74,0.15)", border: "1px solid rgba(226,75,74,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F09595" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#F09595", marginBottom: 10, textTransform: "uppercase" }}>Le problème</div>
+                <div style={{ fontSize: isMobile ? 15 : 17, color: "#EAF2FB", lineHeight: 1.6 }}>
+                  Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>.<br />
+                  Tu crois pouvoir les dépenser.<br />
+                  Puis l'URSSAF arrive.
+                </div>
               </div>
             </div>
+            {/* Simulateur mini */}
+            {(() => {
+              const [simCaLanding, setSimCaLanding] = useState("3000");
+              const [simActLanding, setSimActLanding] = useState("0.212");
+              const caNum = Math.max(0, parseFloat(simCaLanding) || 0);
+              const taux = parseFloat(simActLanding);
+              const urssaf = Math.round(caNum * taux);
+              const dispo = Math.max(0, Math.round(caNum * (1 - taux)));
+              const fmt = n => n.toLocaleString("fr-FR") + " €";
+              return (
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "22px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 12 }}>Essaie avec ton propre CA</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    <div style={{ flex: 1, position: "relative" }}>
+                      <input
+                        type="number" value={simCaLanding} min="0"
+                        onChange={e => setSimCaLanding(e.target.value)}
+                        style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 28px 8px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }}
+                      />
+                      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 13, fontWeight: 700 }}>€</span>
+                    </div>
+                    <select
+                      value={simActLanding} onChange={e => setSimActLanding(e.target.value)}
+                      style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 10px", fontSize: 11, color: "white", outline: "none", boxSizing: "border-box" }}
+                    >
+                      <option value="0.212">Services (21,2%)</option>
+                      <option value="0.256">Libéral BNC (25,6%)</option>
+                      <option value="0.123">Vente (12,3%)</option>
+                    </select>
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ flex: 1, background: "#0d2440", borderRadius: 8, padding: "10px 14px", border: "1px solid #1e3a5f" }}>
+                      <div style={{ fontSize: 9, color: "#8BA5C0", marginBottom: 3 }}>URSSAF à mettre de côté</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#FAC775" }}>{fmt(urssaf)}</div>
+                    </div>
+                    <div style={{ flex: 1, background: "rgba(93,202,165,0.07)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(93,202,165,0.25)" }}>
+                      <div style={{ fontSize: 9, color: "#5DCAA5", marginBottom: 3 }}>Il te reste</div>
+                      <div style={{ fontSize: 18, fontWeight: 800, color: "#5DCAA5" }}>{fmt(dispo)}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </section>
 
-        {/* ===== DEUX DÉMOS CÔTE À CÔTE ===== */}
+
         <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 48px" : "0 40px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
           {/* Démo calcul */}
           <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "24px 28px" }}>
@@ -2198,52 +2244,6 @@ function AppInner() {
               </div>
             </div>
           </div>
-        </section>
-
-        {/* ===== MINI SIMULATEUR URSSAF ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
-          {(() => {
-            const [simCaLanding, setSimCaLanding] = useState("3000");
-            const [simActLanding, setSimActLanding] = useState("0.212");
-            const caNum = Math.max(0, parseFloat(simCaLanding) || 0);
-            const taux = parseFloat(simActLanding);
-            const urssaf = Math.round(caNum * taux);
-            const dispo = Math.max(0, Math.round(caNum * (1 - taux)));
-            const fmt = n => n.toLocaleString("fr-FR") + " €";
-            return (
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "14px 18px", maxWidth: 480 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 10 }}>Essaie sans créer de compte</div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
-                  <div style={{ flex: 1, position: "relative" }}>
-                    <input
-                      type="number" value={simCaLanding} min="0"
-                      onChange={e => setSimCaLanding(e.target.value)}
-                      style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "7px 24px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }}
-                    />
-                    <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 12, fontWeight: 700 }}>€</span>
-                  </div>
-                  <select
-                    value={simActLanding} onChange={e => setSimActLanding(e.target.value)}
-                    style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "7px 8px", fontSize: 11, color: "white", outline: "none", boxSizing: "border-box" }}
-                  >
-                    <option value="0.212">Services (21,2%)</option>
-                    <option value="0.256">Libéral BNC (25,6%)</option>
-                    <option value="0.123">Vente (12,3%)</option>
-                  </select>
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <div style={{ flex: 1, background: "#0d2440", borderRadius: 7, padding: "10px 12px", border: "1px solid #1e3a5f" }}>
-                    <div style={{ fontSize: 9, color: "#8BA5C0", marginBottom: 3 }}>URSSAF à mettre de côté</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#FAC775" }}>{fmt(urssaf)}</div>
-                  </div>
-                  <div style={{ flex: 1, background: "rgba(93,202,165,0.07)", borderRadius: 7, padding: "10px 12px", border: "1px solid rgba(93,202,165,0.25)" }}>
-                    <div style={{ fontSize: 9, color: "#5DCAA5", marginBottom: 3 }}>Il te reste</div>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: "#5DCAA5" }}>{fmt(dispo)}</div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
         </section>
 
         {/* ===== GRILLE FEATURES ===== */}
