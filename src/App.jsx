@@ -2081,7 +2081,7 @@ function AppInner() {
           <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
             <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 12 }}>1. HECTOR CALCULE TOUT</div>
             <div style={{ fontSize: 13.5, color: "#B5D4F4", marginBottom: 10, lineHeight: 1.5 }}>
-              Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>. Hector met de côté :
+              Sur ce revenu, Hector met de côté :
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: "10px 14px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> URSSAF</span><span style={{ color: "#FAC775" }}>1 060 €</span></div>
