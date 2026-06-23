@@ -1905,7 +1905,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>Nouveau mot de passe</h1>
           <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
         </div>
@@ -1942,7 +1942,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>Vérification de votre email</h1>
         </div>
         <div style={S.authRight}>
@@ -1979,7 +1979,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met de côté tes cotisations, tes impôts et ta réserve — et te montre ce que tu peux vraiment dépenser. Sans connexion bancaire.</p>
 
@@ -2135,7 +2135,7 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <Logo size={36} dark />
+            <Logo size={56} dark />
             <h1 style={S.authHero}>C'est prêt.</h1>
             <p style={S.authSub}>Voici ton premier chiffre. Il deviendra de plus en plus précis à mesure que tu ajoutes tes revenus et tes frais.</p>
           </div>
@@ -2182,7 +2182,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={36} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>3 questions,<br />et tu sais tout.</h1>
           <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
