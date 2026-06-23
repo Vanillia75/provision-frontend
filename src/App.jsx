@@ -2066,41 +2066,68 @@ function AppInner() {
         <style>{CSS}</style>
         <div style={S.authLeft}>
           <Logo size={110} dark />
-          <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
-          <p style={S.authSub}>H€CTOR met de côté tes cotisations, tes impôts et ta réserve — et te montre ce que tu peux vraiment dépenser. Sans connexion bancaire.</p>
+          <h1 style={S.authHero}>Enfin savoir<br />ce que tu peux vraiment dépenser.</h1>
+          <p style={S.authSub}>H€CTOR calcule automatiquement tes charges, prépare tes devis et tes factures, puis te montre ce qui est réellement disponible. Sans connexion bancaire.</p>
 
-          {/* Démo visuelle compacte : la transformation brut → disponible */}
-          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
-            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 10 }}>EXEMPLE</div>
-            <div style={{ fontSize: 17, fontWeight: 700, color: "white", marginBottom: 8 }}>5 000 € encaissés</div>
-            <div style={{ fontSize: 12, color: "#B5D4F4", marginBottom: 6 }}>↓ Hector met de côté :</div>
-            <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>
-              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Cotisations</span>
-              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Impôts</span>
-              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Réserve</span>
-            </div>
-            <div style={{ borderTop: "1px solid rgba(93,202,165,0.25)", paddingTop: 10 }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: "#5DCAA5" }}>= </span>
-              <span style={{ fontSize: isMobile ? 30 : 34, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums" }}>2 843 €</span>
-              <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>réellement disponibles</div>
+          {/* LE PROBLÈME — court et percutant, juste assez pour faire écho à la douleur */}
+          <div style={{ background: "rgba(226,75,74,0.06)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "14px 16px" : "14px 22px", margin: "20px auto 8px", maxWidth: 440, width: "100%", textAlign: "left" }}>
+            <div style={{ display: "inline-block", background: "rgba(226,75,74,0.15)", color: "#F09595", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "3px 10px", borderRadius: 999, marginBottom: 10 }}>LE PROBLÈME</div>
+            <div style={{ fontSize: 14.5, color: "#EAF2FB", lineHeight: 1.55 }}>
+              Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>. 6 mois plus tard, l'URSSAF en réclame <strong style={{ color: "#F09595" }}>1 060 €</strong>. Surprise. Tu es à découvert.
             </div>
           </div>
 
-          {/* Bande compagnon (sans cadre sur mobile, pour alléger) */}
-          <div style={isMobile
-            ? { padding: "4px 2px 8px", margin: "8px auto", maxWidth: 520, width: "100%" }
-            : { background: "rgba(14,46,79,0.5)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 12, padding: "12px 18px", margin: "4px auto 8px", maxWidth: 520, width: "100%" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
-              <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
-              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#EAF2FB" }}>Et Hector prépare tes devis quand tu lui parles</span>
+          {/* Démo visuelle compacte : la transformation brut → disponible */}
+          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
+            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 12 }}>1. HECTOR CALCULE TOUT</div>
+            <div style={{ fontSize: 13.5, color: "#B5D4F4", marginBottom: 10, lineHeight: 1.5 }}>
+              Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>. Hector met de côté :
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
-              <div style={{ alignSelf: "flex-end", background: ACCENT, color: "white", borderRadius: "10px 10px 3px 10px", padding: "5px 10px", fontSize: 11.5, maxWidth: "85%" }}>
-                « Prépare un devis pour Martin, 500 € de consulting »
+            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: "10px 14px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> URSSAF</span><span style={{ color: "#FAC775" }}>1 060 €</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> Impôts</span><span style={{ color: "#FAC775" }}>300 €</span></div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> Réserve</span><span style={{ color: "#FAC775" }}>800 €</span></div>
+            </div>
+            <div style={{ borderTop: "1px solid rgba(93,202,165,0.25)", paddingTop: 10, textAlign: "center" }}>
+              <div style={{ fontSize: 11, color: "#B5D4F4", marginBottom: 2 }}>Ce que tu peux dépenser :</div>
+              <span style={{ fontSize: isMobile ? 32 : 38, fontWeight: 700, color: "#5DCAA5", fontVariantNumeric: "tabular-nums" }}>2 843 €</span>
+            </div>
+          </div>
+
+          {/* Démo conversationnelle : Hector qui PRÉPARE devis + facture en 3 messages */}
+          <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 22px", margin: "12px auto", maxWidth: 400, width: "100%" }}>
+            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 12 }}>2. HECTOR PRÉPARE TES DEVIS & FACTURES</div>
+
+            {/* Message utilisateur 1 */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+              <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%", fontWeight: 500 }}>
+                Prépare un devis pour Martin, 500 € de consulting
               </div>
-              <div style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "10px 10px 10px 3px", padding: "5px 10px", fontSize: 11.5, maxWidth: "85%" }}>
-                « Voilà ton devis prêt. On le relit ensemble ? » ✓
+            </div>
+
+            {/* Réponse Hector 1 */}
+            <div style={{ display: "flex", justifyContent: "flex-start", gap: 6, marginBottom: 12 }}>
+              <div style={{ background: "rgba(255,255,255,0.08)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%" }}>
+                ✓ Devis prêt &nbsp;·&nbsp; ✓ PDF généré
               </div>
+            </div>
+
+            {/* Message utilisateur 2 */}
+            <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 6 }}>
+              <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%", fontWeight: 500 }}>
+                Martin a accepté, transforme-le en facture
+              </div>
+            </div>
+
+            {/* Réponse Hector 2 */}
+            <div style={{ display: "flex", justifyContent: "flex-start", gap: 6 }}>
+              <div style={{ background: "rgba(255,255,255,0.08)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "7px 12px", fontSize: 12.5, maxWidth: "85%" }}>
+                ✓ Facture créée &nbsp;·&nbsp; ✓ Prête à envoyer
+              </div>
+            </div>
+
+            <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(55,138,221,0.2)", fontSize: 11.5, color: "#B5D4F4", textAlign: "center" }}>
+              <span style={{ color: ACCENT, fontWeight: 700 }}>15 secondes</span> · sans remplir un seul formulaire
             </div>
           </div>
 
