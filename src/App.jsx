@@ -4810,7 +4810,18 @@ function AppInner() {
 
         {nav === "assistant" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><HectorTete size={44} /><div><h1 style={S.pageTitle}>Ton copilote</h1><p style={S.pageSub}>Il connaît tes chiffres et te conseille pour de vrai</p></div></div></div>
+            {/* Header premium : grande tête d'Hector, titre fort, ambiance copilote */}
+            <div style={{ background: "linear-gradient(135deg, #0A2540 0%, #1B4068 100%)", borderRadius: 16, padding: isMobile ? "20px 18px" : "24px 28px", marginBottom: 16, display: "flex", alignItems: "center", gap: isMobile ? 14 : 22, flexWrap: isMobile ? "wrap" : "nowrap" }}>
+              <HectorTete size={isMobile ? 80 : 110} />
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white", margin: 0, lineHeight: 1.15 }}>Hector, ton copilote</h1>
+                <p style={{ fontSize: isMobile ? 13 : 14, color: "#B5D4F4", margin: "6px 0 0", lineHeight: 1.5 }}>Il connaît tes chiffres, prépare tes devis, et te dit ce que tu peux vraiment dépenser.</p>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 999, padding: "3px 10px" }}>
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#5DCAA5", display: "inline-block", animation: "pulse 2s infinite" }} />
+                  <span style={{ fontSize: 11, fontWeight: 600, color: "#5DCAA5" }}>En ligne</span>
+                </div>
+              </div>
+            </div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
