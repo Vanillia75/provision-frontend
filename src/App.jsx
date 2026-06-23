@@ -2112,8 +2112,10 @@ function AppInner() {
           <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", position: "relative" }}>
             <div style={{ position: "relative", width: "100%", maxWidth: 520 }}>
               <img src="/hector-panier.png" alt="Hector dans son panier" style={{ width: "100%", display: "block", objectFit: "contain" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, transparent 50%, #07192E 95%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, transparent 60%, #07192E 100%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,25,46,0.1) 30%, #07192E 90%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(7,25,46,0) 40%, #07192E 100%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(7,25,46,0) 50%, #07192E 100%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,25,46,0) 70%, #07192E 100%)" }} />
             </div>
           </div>
         </section>
@@ -2215,8 +2217,8 @@ function AppInner() {
                 { icon: "ti-lock", t: "Sans connexion bancaire", d: "Tes données restent privées et en sécurité, toujours." },
               ].map(f => (
                 <div key={f.t} style={{ textAlign: "center" }}>
-                  <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.25)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
-                    <i className={`ti ${f.icon}`} style={{ fontSize: 24, color: ACCENT }} />
+                  <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#112840", border: "1.5px solid #378ADD", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", flexShrink: 0 }}>
+                    <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 26, color: "#378ADD", lineHeight: 1 }} />
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 6, lineHeight: 1.3 }}>{f.t}</div>
                   <div style={{ fontSize: 11.5, color: "#6B8299", lineHeight: 1.5 }}>{f.d}</div>
