@@ -2086,8 +2086,9 @@ function AppInner() {
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", marginBottom: 20, textTransform: "uppercase" }}>Ton cockpit financier</div>
             <h1 style={{ fontSize: isMobile ? 38 : 54, fontWeight: 800, lineHeight: 1.1, margin: "0 0 20px", color: "white" }}>
-              Enfin savoir ce que tu peux{" "}
-              <span style={{ color: "#5DCAA5" }}>vraiment dépenser.</span>
+              Sache{" "}
+              <span style={{ color: "#5DCAA5" }}>exactement</span>
+              {" "}ce que tu peux dépenser.
             </h1>
             <p style={{ fontSize: 17, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 460 }}>
               H€CTOR calcule automatiquement tes charges, prépare tes devis et tes factures, puis te montre ce qui est réellement à toi.
@@ -2112,10 +2113,8 @@ function AppInner() {
           <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", position: "relative" }}>
             <div style={{ position: "relative", width: "100%", maxWidth: 520 }}>
               <img src="/hector-panier.png" alt="Hector dans son panier" style={{ width: "100%", display: "block", objectFit: "contain" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,25,46,0.1) 30%, #07192E 90%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(7,25,46,0) 40%, #07192E 100%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, rgba(7,25,46,0) 50%, #07192E 100%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, rgba(7,25,46,0) 70%, #07192E 100%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,25,46,0) 60%, #07192E 98%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(7,25,46,0) 55%, #07192E 100%)" }} />
             </div>
           </div>
         </section>
@@ -2147,13 +2146,12 @@ function AppInner() {
             <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 20, textAlign: "center" }}>5 000 € encaissés</div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
               {[
-                { icon: "ti-shield", label: "URSSAF", val: "- 1 060 €" },
-                { icon: "ti-building-bank", label: "Impôts", val: "- 300 €" },
-                { icon: "ti-lock", label: "Réserve de sécurité", val: "- 500 €" },
+                { label: "URSSAF", val: "- 1 060 €" },
+                { label: "Réserve de sécurité", val: "- 800 €" },
               ].map(r => (
                 <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "#B5D4F4" }}>
                   <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <i className={`ti ${r.icon}`} style={{ color: "#5DCAA5", fontSize: 15 }} /> {r.label}
+                    <span style={{ color: "#5DCAA5", fontSize: 15 }}>✓</span> {r.label}
                   </span>
                   <span style={{ color: "#FAC775", fontWeight: 600 }}>{r.val}</span>
                 </div>
@@ -2209,16 +2207,16 @@ function AppInner() {
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", textAlign: "center", marginBottom: 36, textTransform: "uppercase" }}>Tout ce qu'H€CTOR fait pour toi</div>
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(6, 1fr)", gap: 24 }}>
               {[
-                { icon: "ti-radar-2", t: "Disponible réel", d: "Saisis tes entrées, Hector calcule le reste." },
-                { icon: "ti-file-invoice", t: "Devis & factures automatiques", d: "Créés en quelques secondes." },
-                { icon: "ti-camera", t: "Scan de frais", d: "Prends une photo, Hector l'enregistre et la classe." },
-                { icon: "ti-shield-check", t: "Réserve de sécurité", d: "Hector met de côté ce qu'il faut pour que tu sois tranquille." },
-                { icon: "ti-chart-bar", t: "Suivi simple et clair", d: "Tableaux de bord pensés pour les indépendants." },
-                { icon: "ti-lock", t: "Sans connexion bancaire", d: "Tes données restent privées et en sécurité, toujours." },
+                { svg: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2z"/><path d="M12 6v6l4 2"/></svg>, t: "Disponible réel", d: "Saisis tes entrées, Hector calcule le reste." },
+                { svg: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/></svg>, t: "Devis & factures automatiques", d: "Créés en quelques secondes." },
+                { svg: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M20.188 10.934c.2.4.312.84.312 1.288v.556a2 2 0 0 1-1.098 1.786l-.392.196a2 2 0 0 0-.814.814l-.196.392A2 2 0 0 1 16.214 17h-.556a2 2 0 0 0-1.232.424l-.332.266a2 2 0 0 1-2.188 0l-.332-.266A2 2 0 0 0 10.342 17h-.556a2 2 0 0 1-1.786-1.098l-.196-.392a2 2 0 0 0-.814-.814l-.392-.196A2 2 0 0 1 5.5 12.778v-.556a2 2 0 0 1 1.098-1.786l.392-.196a2 2 0 0 0 .814-.814l.196-.392A2 2 0 0 1 9.786 7h.556a2 2 0 0 0 1.232-.424l.332-.266a2 2 0 0 1 2.188 0l.332.266A2 2 0 0 0 15.658 7h.556a2 2 0 0 1 1.786 1.098l.196.392a2 2 0 0 0 .814.814l.392.196c.42.21.732.563.886.978"/></svg>, t: "Scan de frais", d: "Prends une photo, Hector l'enregistre et la classe." },
+                { svg: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>, t: "Réserve de sécurité", d: "Hector met de côté ce qu'il faut pour que tu sois tranquille." },
+                { svg: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>, t: "Suivi simple et clair", d: "Tableaux de bord pensés pour les indépendants." },
+                { svg: <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#378ADD" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, t: "Sans connexion bancaire", d: "Tes données restent privées et en sécurité, toujours." },
               ].map(f => (
                 <div key={f.t} style={{ textAlign: "center" }}>
-                  <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#112840", border: "1.5px solid #378ADD", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px", flexShrink: 0 }}>
-                    <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 26, color: "#378ADD", lineHeight: 1 }} />
+                  <div style={{ width: 60, height: 60, borderRadius: "50%", background: "#0d2440", border: "1.5px solid #378ADD", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 14px" }}>
+                    {f.svg}
                   </div>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 6, lineHeight: 1.3 }}>{f.t}</div>
                   <div style={{ fontSize: 11.5, color: "#6B8299", lineHeight: 1.5 }}>{f.d}</div>
