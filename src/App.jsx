@@ -2200,6 +2200,52 @@ function AppInner() {
           </div>
         </section>
 
+        {/* ===== MINI SIMULATEUR URSSAF ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
+          {(() => {
+            const [simCaLanding, setSimCaLanding] = useState("3000");
+            const [simActLanding, setSimActLanding] = useState("0.212");
+            const caNum = Math.max(0, parseFloat(simCaLanding) || 0);
+            const taux = parseFloat(simActLanding);
+            const urssaf = Math.round(caNum * taux);
+            const dispo = Math.max(0, Math.round(caNum * (1 - taux)));
+            const fmt = n => n.toLocaleString("fr-FR") + " €";
+            return (
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "14px 18px", maxWidth: 480 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 10 }}>Essaie sans créer de compte</div>
+                <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                  <div style={{ flex: 1, position: "relative" }}>
+                    <input
+                      type="number" value={simCaLanding} min="0"
+                      onChange={e => setSimCaLanding(e.target.value)}
+                      style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "7px 24px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }}
+                    />
+                    <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 12, fontWeight: 700 }}>€</span>
+                  </div>
+                  <select
+                    value={simActLanding} onChange={e => setSimActLanding(e.target.value)}
+                    style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "7px 8px", fontSize: 11, color: "white", outline: "none", boxSizing: "border-box" }}
+                  >
+                    <option value="0.212">Services (21,2%)</option>
+                    <option value="0.256">Libéral BNC (25,6%)</option>
+                    <option value="0.123">Vente (12,3%)</option>
+                  </select>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <div style={{ flex: 1, background: "#0d2440", borderRadius: 7, padding: "10px 12px", border: "1px solid #1e3a5f" }}>
+                    <div style={{ fontSize: 9, color: "#8BA5C0", marginBottom: 3 }}>URSSAF à mettre de côté</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#FAC775" }}>{fmt(urssaf)}</div>
+                  </div>
+                  <div style={{ flex: 1, background: "rgba(93,202,165,0.07)", borderRadius: 7, padding: "10px 12px", border: "1px solid rgba(93,202,165,0.25)" }}>
+                    <div style={{ fontSize: 9, color: "#5DCAA5", marginBottom: 3 }}>Il te reste</div>
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "#5DCAA5" }}>{fmt(dispo)}</div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </section>
+
         {/* ===== GRILLE FEATURES ===== */}
         <section style={{ background: "rgba(255,255,255,0.025)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "40px 20px" : "52px 40px" }}>
           <div style={{ maxWidth: 1160, margin: "0 auto" }}>
@@ -2233,7 +2279,7 @@ function AppInner() {
               Reprends enfin le contrôle<br />de ta trésorerie.
             </h2>
             <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 24px" }}>
-              5 auto-entrepreneurs utilisent déjà H€CTOR en beta.
+              50 auto-entrepreneurs utilisent déjà H€CTOR en beta.
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
