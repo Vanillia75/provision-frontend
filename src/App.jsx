@@ -2821,6 +2821,9 @@ function AppInner() {
                     ) : (
                       <>
                         <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "white", lineHeight: 1.1 }}>Hector veille sur toi</div>
+                        {dateTranquillite && joursTranquillite > 0 && (
+                          <div style={{ fontSize: 14, fontWeight: 600, color: hectorEtat.couleur, marginTop: 6 }}>jusqu'au {dateTranquillite}</div>
+                        )}
                         <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5, margin: "8px 0 16px" }}>Tant que tu gardes le cap, la tranquillité reste avec toi.</div>
                         <div style={{ display: "flex", alignItems: "baseline", gap: 11, marginBottom: 18 }}>
                           <span style={{ fontSize: isMobile ? 48 : 58, fontWeight: 700, color: hectorEtat.couleur, fontVariantNumeric: "tabular-nums", lineHeight: 0.9 }}>{joursTranquillite}</span>
@@ -3937,7 +3940,7 @@ function AppInner() {
               })()}
 
               <div style={S.card}>
-                {incomeList.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeList.map(entry => (
+                {incomeListSafe.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeListSafe.map(entry => (
                   <div key={entry.id} style={S.incomeRow}>
                     <div style={{ flex: 1 }}>
                       <span style={S.incomeAmt}>{formatEUR(entry.amount)}</span>
