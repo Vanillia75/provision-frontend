@@ -667,10 +667,10 @@ function AppInner() {
   const [simFiscalPeriode, setSimFiscalPeriode] = useState("mensuel");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 900);
 
   useEffect(() => {
-    function handleResize() { setIsMobile(window.innerWidth <= 768); }
+    function handleResize() { setIsMobile(window.innerWidth <= 900); }
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
@@ -2665,7 +2665,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={isMobile ? { ...S.mainContent, padding: "16px 14px" } : S.mainContent}>
+      <main style={isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
         {!emailVerified && profile?.onboarding_complete && (
@@ -5204,7 +5204,7 @@ const S = {
   authCard: { width: "100%", background: "white", borderRadius: 16, border: "0.5px solid #DDE5EE", padding: 32 },
   authTitle: { fontSize: 20, fontWeight: 600, color: INK, margin: "0 0 20px" },
   appWrap: { display: "flex", minHeight: "100vh", background: PAPER },
-  mobileTopbar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: INK, position: "sticky", top: 0, zIndex: 60 },
+  mobileTopbar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56 },
   sidebarBackdrop: { position: "fixed", inset: 0, background: "rgba(10,37,64,0.5)", zIndex: 75 },
   sidebar: { width: 220, background: INK, display: "flex", flexDirection: "column", padding: "20px 0", flexShrink: 0, transition: "width 0.2s" },
   sidebarClosed: { width: 64 },
