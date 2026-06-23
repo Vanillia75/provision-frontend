@@ -2087,7 +2087,7 @@ function AppInner() {
           {/* Gauche */}
           <div>
             <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", marginBottom: 20, textTransform: "uppercase" }}>Ton cockpit financier</div>
-            <h1 style={{ fontSize: isMobile ? 32 : 48, fontWeight: 800, lineHeight: 1.15, margin: "0 0 20px", color: "white" }}>
+            <h1 style={{ fontSize: isMobile ? 26 : 48, fontWeight: 800, lineHeight: 1.15, margin: "0 0 20px", color: "white" }}>
               Ne te demande plus<br />combien tu gagnes.<br />
               <span style={{ color: "#5DCAA5" }}>H€CTOR te montre ce que<br />tu peux vraiment dépenser.</span>
             </h1>
@@ -2284,10 +2284,10 @@ function AppInner() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[
                 "Zéro surprise à la déclaration URSSAF",
-                "Devis et factures professionnels en quelques secondes",
-                "Toujours savoir ce que tu peux vraiment dépenser",
+                "Devis et factures en quelques secondes",
+                "Toujours savoir ce que tu peux dépenser",
               ].map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#B5D4F4" }}>
+                <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: isMobile ? 13 : 14, color: "#B5D4F4", wordBreak: "break-word" }}>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
                   {t}
                 </div>
@@ -2296,7 +2296,7 @@ function AppInner() {
           </div>
 
           {/* Droite — formulaire */}
-          <div style={{ background: "white", borderRadius: 16, padding: "32px 28px", boxSizing: "border-box" }}>
+          <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box", width: "100%" }}>
             {forgotMode ? (
               <div>
                 <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
@@ -2695,93 +2695,153 @@ function AppInner() {
 
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 200px", minHeight: isMobile ? "auto" : 200 }}>
-                {/* Gauche */}
-                <div style={{ padding: isMobile ? "20px 20px 0" : "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  {/* Badge état */}
-                  {hectorEtat && (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
-                    </div>
-                  )}
-
-                  {/* Titre principal */}
-                  {argentDisponibleBrut !== null ? (
-                    <>
-                      <div style={{ fontSize: isMobile ? 13 : 14, color: "#8BA5C0", marginBottom: 6 }}>
-                        {argentDisponibleBrut >= 0 ? "Hector veille sur toi. Tu peux dépenser sereinement jusqu'à" : "Hector veille sur toi. Attention —"}
-                      </div>
-                      <div style={{ fontSize: isMobile ? 36 : 48, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
-                        {argentDisponibleBrut < 0 ? "−" : ""}{formatEUR(Math.abs(argentDisponibleBrut))}
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                        {[
-                          { label: "Cotisations provisionnées", ok: urssafProvision > 0 },
-                          { label: "Réserve constituée", ok: reserveAtteinte },
-                          { label: `URSSAF : ${formatEUR(urssafProvision)}`, ok: true },
-                        ].map(c => (
-                          <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: c.ok ? "#B5D4F4" : "#8BA5C0" }}>
-                            <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "!"}</span> {c.label}
+              {isMobile ? (
+                /* MOBILE : layout horizontal Hector + montant */
+                <div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
+                    {/* Hector mini à droite */}
+                    <div style={{ padding: "16px 16px 0", flex: 1 }}>
+                      {hectorEtat && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "3px 10px" }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                        </div>
+                      )}
+                      {argentDisponibleBrut !== null ? (
+                        <>
+                          <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 4, lineHeight: 1.4 }}>
+                            {argentDisponibleBrut >= 0 ? "Tu peux dépenser jusqu'à" : "Attention —"}
                           </div>
-                        ))}
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: isMobile ? 18 : 22, fontWeight: 700, color: "white", marginBottom: 10 }}>
-                        {panique.solde === "" ? "Dis-moi ton solde pour commencer" : "Ajoute un revenu pour voir ton disponible"}
-                      </div>
-                      <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16 }}>
-                        {panique.solde === "" ? "Ouvre ton appli bancaire, lis le solde, recopie-le ci-dessous. 10 secondes." : "H€CTOR mettra automatiquement de côté l'URSSAF dès ton premier revenu ajouté."}
-                      </div>
-                    </>
-                  )}
-                </div>
-
-                {/* Droite — Hector */}
-                {!isMobile && (
-                  <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                    <HectorImage etat={hectorEtat} size={220} cover />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 30%)" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 20%)" }} />
-                  </div>
-                )}
-              </div>
-
-              {/* Solde bancaire + mode actuel — bande basse */}
-              <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
-                  <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
-                  <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
-                    <input
-                      style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                      type="number" step="0.01" inputMode="decimal"
-                      placeholder="Ex : 3 500"
-                      value={panique.solde}
-                      onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                    />
-                    <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                  </div>
-                  {soldeFraicheur && (
-                    <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>
-                  )}
-                  {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                  {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                </div>
-                <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                  {dateTranquillite && joursTranquillite > 0 && (
-                    <div style={{ fontSize: 11, color: "#8BA5C0" }}>
-                      <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
+                          <div style={{ fontSize: 30, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
+                            {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 14 }}>
+                            {[
+                              { label: "URSSAF provisionnée", ok: urssafProvision > 0 },
+                              { label: "Réserve constituée", ok: reserveAtteinte },
+                            ].map(c => (
+                              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: c.ok ? "#B5D4F4" : "#8BA5C0" }}>
+                                <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "!"}</span> {c.label}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 6 }}>
+                            {panique.solde === "" ? "Dis-moi ton solde" : "Ajoute un revenu"}
+                          </div>
+                          <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 12 }}>
+                            {panique.solde === "" ? "Recopie ton solde bancaire ci-dessous. 10 sec." : "H€CTOR calculera ton disponible automatiquement."}
+                          </div>
+                        </>
+                      )}
                     </div>
-                  )}
-                  {estimateData.periode_courante?.jours_restants <= 30 && (
-                    <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
-                      ⏱ Déclaration dans {estimateData.periode_courante.jours_restants}j
+                    <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                      <HectorImage etat={hectorEtat} size={120} cover />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 40%)" }} />
                     </div>
-                  )}
+                  </div>
+                  {/* Bande solde mobile */}
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <input
+                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                        type="number" step="0.01" inputMode="decimal"
+                        placeholder="Solde bancaire"
+                        value={panique.solde}
+                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                      />
+                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                    </div>
+                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
+                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
+                    {dateTranquillite && joursTranquillite > 0 && (
+                      <span style={{ fontSize: 10, color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>{joursTranquillite}j</span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              ) : (
+                /* DESKTOP : layout grille */
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 200px", minHeight: 200 }}>
+                    <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      {hectorEtat && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                        </div>
+                      )}
+                      {argentDisponibleBrut !== null ? (
+                        <>
+                          <div style={{ fontSize: 14, color: "#8BA5C0", marginBottom: 6 }}>
+                            {argentDisponibleBrut >= 0 ? "Hector veille sur toi. Tu peux dépenser sereinement jusqu'à" : "Hector veille sur toi. Attention —"}
+                          </div>
+                          <div style={{ fontSize: 48, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
+                            {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                            {[
+                              { label: "Cotisations provisionnées", ok: urssafProvision > 0 },
+                              { label: "Réserve constituée", ok: reserveAtteinte },
+                              { label: `URSSAF : ${formatEUR(urssafProvision)}`, ok: true },
+                            ].map(c => (
+                              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: c.ok ? "#B5D4F4" : "#8BA5C0" }}>
+                                <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "!"}</span> {c.label}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      ) : (
+                        <>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>
+                            {panique.solde === "" ? "Dis-moi ton solde pour commencer" : "Ajoute un revenu pour voir ton disponible"}
+                          </div>
+                          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16 }}>
+                            {panique.solde === "" ? "Ouvre ton appli bancaire, lis le solde, recopie-le ci-dessous. 10 secondes." : "H€CTOR mettra automatiquement de côté l'URSSAF dès ton premier revenu ajouté."}
+                          </div>
+                        </>
+                      )}
+                    </div>
+                    <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      <HectorImage etat={hectorEtat} size={220} cover />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 30%)" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 20%)" }} />
+                    </div>
+                  </div>
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
+                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
+                      <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
+                        <input
+                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                          type="number" step="0.01" inputMode="decimal"
+                          placeholder="Ex : 3 500"
+                          value={panique.solde}
+                          onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                        />
+                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                      </div>
+                      {soldeFraicheur && <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>}
+                      {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
+                      {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      {dateTranquillite && joursTranquillite > 0 && (
+                        <div style={{ fontSize: 11, color: "#8BA5C0" }}>
+                          <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
+                        </div>
+                      )}
+                      {estimateData.periode_courante?.jours_restants <= 30 && (
+                        <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
+                          ⏱ Déclaration dans {estimateData.periode_courante.jours_restants}j
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* ── ASSISTANT INLINE ── */}
@@ -2796,11 +2856,18 @@ function AppInner() {
               <div style={{ display: "flex", gap: 8, margin: "12px 0 10px" }}>
                 <input
                   style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit" }}
-                  placeholder="Puis-je m'acheter un ordi à 1 200 € ce mois ?"
+                  placeholder={isMobile ? "Pose ta question..." : "Puis-je m'acheter un ordi à 1 200 € ce mois ?"}
                   value={aiInput}
                   onChange={e => setAiInput(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter" && aiInput.trim()) { setNav("assistant"); } }}
                 />
+                {speechSupported && (
+                  <button
+                    onClick={() => { if (!isListening) { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new SR(); r.lang = "fr-FR"; r.onresult = ev => setAiInput(ev.results[0][0].transcript); r.onend = () => setIsListening(false); r.start(); setIsListening(true); } else setIsListening(false); }}
+                    style={{ width: 40, height: 40, background: isListening ? "#E0533D" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, color: isListening ? "white" : "#8BA5C0", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    🎤
+                  </button>
+                )}
                 <button
                   onClick={() => { if (aiInput.trim()) setNav("assistant"); }}
                   style={{ width: 40, height: 40, background: "#5DCAA5", border: "none", borderRadius: 8, color: "#07192E", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>
@@ -2808,10 +2875,13 @@ function AppInner() {
                 </button>
               </div>
               <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {["💸 Combien je peux me verser ?", "🛒 Je peux faire cet achat ?", "📄 Prépare un devis pour Martin", "🔒 Suis-je en sécurité ?"].map(q => (
+                {(isMobile
+                  ? ["💸 Me verser ?", "🛒 Cet achat ?", "🔒 En sécurité ?"]
+                  : ["💸 Combien je peux me verser ?", "🛒 Je peux faire cet achat ?", "📄 Prépare un devis pour Martin", "🔒 Suis-je en sécurité ?"]
+                ).map(q => (
                   <button key={q}
                     onClick={() => { setAiInput(q.replace(/^[^ ]+ /, "")); setNav("assistant"); }}
-                    style={{ background: "rgba(255,255,255,0.07)", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "6px 12px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
+                    style={{ background: "rgba(255,255,255,0.07)", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "6px 12px", fontSize: isMobile ? 11 : 11.5, cursor: "pointer", fontFamily: "inherit" }}>
                     {q}
                   </button>
                 ))}
