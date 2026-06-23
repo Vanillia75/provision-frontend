@@ -1850,9 +1850,17 @@ function AppInner() {
   // Sans train de vie réaliste, Hector reste en mode accueil et invite à le renseigner.
   const trainDeVieNum = parseFloat(depensesMensuelles) || 0;
   const depenseJournaliere = trainDeVieNum > 0 ? trainDeVieNum / 30 : 0;
-  const joursTranquillite = (argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && depenseJournaliere > 0)
-    ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
-    : null;
+  // Cas 1 : disponible négatif → 0 jour, alerte directe (pas besoin du train de vie pour le savoir).
+  // Cas 2 : train de vie connu + disponible positif → calcul normal.
+  // Cas 3 : ni l'un ni l'autre → null (mode accueil).
+  let joursTranquillite;
+  if (argentDisponibleBrut !== null && argentDisponibleBrut < 0) {
+    joursTranquillite = 0;
+  } else if (argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && depenseJournaliere > 0) {
+    joursTranquillite = Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere));
+  } else {
+    joursTranquillite = null;
+  }
   // Date concrète "jusqu'au ..."
   const dateTranquillite = joursTranquillite !== null
     ? new Date(Date.now() + joursTranquillite * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
