@@ -362,6 +362,17 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function HectorTete({ size = 32 }) {
+  // Tête d'Hector pour l'assistant. Fallback sur une icône si l'image n'est pas déposée.
+  const [ok, setOk] = useState(true);
+  if (ok) {
+    return <img src="/hector-tete.png" alt="Hector" width={size} height={size}
+      onError={() => setOk(false)}
+      style={{ width: size, height: size, objectFit: "contain", display: "block", flexShrink: 0 }} />;
+  }
+  return <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: size * 0.7, color: "#5DCAA5" }} />;
+}
+
 function HectorImage({ etat, size = 200, cover = false }) {
   // Affiche l'illustration IA si elle est présente dans /public, sinon une silhouette SVG de secours.
   const [imgOk, setImgOk] = useState(true);
@@ -2756,7 +2767,7 @@ function AppInner() {
             {/* ─── ASSISTANT mis en avant : carte copilote avec questions cliquables ─── */}
             <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(135deg, #0A2540 0%, #1B4068 100%)", border: "none" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5" }} />
+                <HectorTete size={32} />
                 <span style={{ fontSize: 16, fontWeight: 700, color: "white" }}>Demande à H€CTOR</span>
               </div>
               <p style={{ fontSize: 12.5, color: "#B5D4F4", margin: "0 0 14px", lineHeight: 1.5 }}>
@@ -4608,7 +4619,7 @@ function AppInner() {
 
         {nav === "assistant" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Ton copilote</h1><p style={S.pageSub}>Il connaît tes chiffres et te conseille pour de vrai</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><HectorTete size={44} /><div><h1 style={S.pageTitle}>Ton copilote</h1><p style={S.pageSub}>Il connaît tes chiffres et te conseille pour de vrai</p></div></div></div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
