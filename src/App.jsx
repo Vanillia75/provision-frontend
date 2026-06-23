@@ -2658,12 +2658,6 @@ function AppInner() {
           {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
         </button>
         <div style={S.sidebarBottom}>
-
-          {!isMobile && (
-            <button style={S.navItem} onClick={() => setSidebarOpen(!sidebarOpen)}>
-              <i className={`ti ${sidebarOpen ? "ti-layout-sidebar-left-collapse" : "ti-layout-sidebar-left-expand"}`} aria-hidden="true" style={{ fontSize: 18 }} />
-            </button>
-          )}
           <div style={S.userRow}>
             <div style={S.avatar}>{userInitials}</div>
             {(isMobile || sidebarOpen) && <button style={S.linkBtn} onClick={handleLogout}>Déconnexion</button>}
@@ -2804,8 +2798,12 @@ function AppInner() {
                         </>
                       )}
                     </div>
-                    <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <HectorImage etat={hectorEtat} size={320} cover />
+                    <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center", minHeight: 220 }}>
+                      <img
+                        src={hectorEtat?.img || "/hector-tete.png"}
+                        alt="Hector"
+                        style={{ width: "100%", maxWidth: 300, objectFit: "contain", objectPosition: "center bottom", display: "block" }}
+                      />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 30%)" }} />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 20%)" }} />
                     </div>
