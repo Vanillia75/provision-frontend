@@ -373,6 +373,15 @@ function HectorTete({ size = 32 }) {
   return <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: size * 0.7, color: "#5DCAA5" }} />;
 }
 
+function NiveauImage({ src, fallbackIcon, fallbackColor }) {
+  const [ok, setOk] = useState(true);
+  if (src && ok) {
+    return <img src={src} alt="" onError={() => setOk(false)}
+      style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%", display: "block" }} />;
+  }
+  return <i className={`ti ${fallbackIcon}`} aria-hidden="true" style={{ fontSize: 16, color: fallbackColor }} />;
+}
+
 function HectorImage({ etat, size = 200, cover = false }) {
   // Affiche l'illustration IA si elle est présente dans /public, sinon une silhouette SVG de secours.
   const [imgOk, setImgOk] = useState(true);
@@ -382,7 +391,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
       <img src={src} alt={`Hector ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
-          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block" }
+          ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", display: "block" }
           : { width: size, height: size, objectFit: "contain", display: "block" }} />
     );
   }
@@ -1850,12 +1859,12 @@ function AppInner() {
     : null;
   // Les 6 niveaux-lieux (accomplissements permanents, ne régressent jamais).
   const PALIERS_SERENITE = [
-    { seuil: 7, nom: "Hector arrive", court: "7 jours" },
-    { seuil: 30, nom: "Son panier", court: "30 jours" },
-    { seuil: 90, nom: "Sa niche", court: "90 jours" },
-    { seuil: 180, nom: "Son jardin", court: "180 jours" },
-    { seuil: 365, nom: "Sa maison", court: "365 jours" },
-    { seuil: 730, nom: "Son domaine", court: "730 jours" },
+    { seuil: 7, nom: "Hector arrive", court: "7 jours", img: "/niveau-1.png" },
+    { seuil: 30, nom: "Son panier", court: "30 jours", img: "/niveau-2.png" },
+    { seuil: 90, nom: "Sa niche", court: "90 jours", img: "/niveau-3.png" },
+    { seuil: 180, nom: "Son jardin", court: "180 jours", img: "/niveau-4.png" },
+    { seuil: 365, nom: "Sa maison", court: "365 jours", img: "/niveau-5.png" },
+    { seuil: 730, nom: "Son domaine", court: "730 jours", img: "/niveau-6.png" },
   ];
   const palierRecordRef = useRef(0);
   if (joursTranquillite !== null && joursTranquillite > palierRecordRef.current) {
@@ -2683,7 +2692,9 @@ function AppInner() {
                     <HectorImage etat={hectorEtat} size={isMobile ? 280 : 330} cover />
                     <div style={{ position: "absolute", inset: 0, background: isMobile
                       ? "linear-gradient(to bottom, rgba(10,37,64,0) 50%, #0A2540 100%)"
-                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.55) 24%, rgba(10,37,64,0) 55%)" }} />
+                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.85) 18%, rgba(10,37,64,0.3) 42%, rgba(10,37,64,0) 70%)" }} />
+                    <div style={{ position: "absolute", inset: 0, background: isMobile ? "none" : "linear-gradient(to left, #0A2540 0%, rgba(10,37,64,0) 18%)" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0A2540 0%, rgba(10,37,64,0) 22%), linear-gradient(to bottom, #0A2540 0%, rgba(10,37,64,0) 18%)" }} />
                   </div>
 
                   {/* Texte à gauche */}
@@ -2750,21 +2761,26 @@ function AppInner() {
                         return (
                           <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
                             {i < PALIERS_SERENITE.length - 1 && (
-                              <div style={{ position: "absolute", top: 18, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
+                              <div style={{ position: "absolute", top: 28, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
                             )}
                             {iciMaintenant && (
-                              <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", zIndex: 2 }}>
-                                <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 15, color: hectorEtat.couleur }} />
+                              <div style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", zIndex: 2 }}>
+                                <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 16, color: hectorEtat.couleur }} />
                               </div>
                             )}
-                            <div style={{ position: "relative", zIndex: 1, width: 38, height: 38, borderRadius: "50%", margin: "0 auto 7px", display: "flex", alignItems: "center", justifyContent: "center",
-                              background: iciMaintenant ? hectorEtat.couleur : (acquis ? "#1D6E56" : "#16314E"),
-                              border: iciMaintenant ? "2px solid white" : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.12)"),
-                              opacity: (acquis && !iciMaintenant) ? 0.75 : 1,
+                            <div style={{ position: "relative", zIndex: 1, width: 56, height: 56, borderRadius: "50%", margin: "0 auto 8px", overflow: "hidden",
+                              background: "#16314E",
+                              border: iciMaintenant ? `2px solid ${hectorEtat.couleur}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.14)"),
+                              opacity: (acquis || iciMaintenant) ? 1 : 0.55,
                               boxShadow: iciMaintenant ? `0 0 0 4px ${hectorEtat.couleur}40` : "none" }}>
+                              <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
+                            </div>
+                            {/* Badge coin : ✓ acquis ou 🔒 verrouillé */}
+                            <div style={{ position: "absolute", top: 0, right: "calc(50% - 30px)", zIndex: 3, width: 19, height: 19, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                              background: acquis ? "#5DCAA5" : "#3a4a5f", border: "2px solid #0A2540" }}>
                               {acquis
-                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: iciMaintenant ? "#0A2540" : "white" }} />
-                                : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
+                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 11, color: "#0A2540" }} />
+                                : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 10, color: "#9FB4CC" }} />}
                             </div>
                             <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 1px" }}>{p.nom}</div>
                             <div style={{ fontSize: 9, fontWeight: iciMaintenant ? 700 : 400, color: iciMaintenant ? hectorEtat.couleur : (acquis ? "#9FE1CB" : "#6B86A3") }}>
