@@ -1864,6 +1864,10 @@ function AppInner() {
   const joursRecord = Math.max(joursTranquillite || 0, palierRecordRef.current);
   const palierAcquisIndex = PALIERS_SERENITE.reduce((acc, p, i) => joursRecord >= p.seuil ? i : acc, -1);
   const palierActuel = palierAcquisIndex >= 0 ? PALIERS_SERENITE[palierAcquisIndex] : null;
+  // Niveau ACTUEL (où tu es maintenant, selon tes jours du moment) — distinct du record acquis.
+  const palierActuelIndex = (joursTranquillite !== null)
+    ? PALIERS_SERENITE.reduce((acc, p, i) => joursTranquillite >= p.seuil ? i : acc, -1)
+    : -1;
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
     if (j === null) return { id: "accueil", label: "Ton compagnon", couleur: "#5DA9E8", pastille: "#5DA9E8",
@@ -2736,8 +2740,8 @@ function AppInner() {
                     <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: "#7A93AD", textTransform: "uppercase", marginBottom: 14, paddingLeft: 2 }}>Le foyer d'Hector</div>
                     <div style={{ display: "flex", gap: 0, justifyContent: "space-between", position: "relative" }}>
                       {PALIERS_SERENITE.map((p, i) => {
-                        const acquis = i <= palierAcquisIndex;
-                        const courant = i === palierAcquisIndex;
+                        const acquis = i <= palierAcquisIndex;          // déjà atteint un jour (permanent)
+                        const iciMaintenant = i === palierActuelIndex;  // niveau actuel selon jours du moment
                         const ligneAcquise = i < palierAcquisIndex;
                         return (
                           <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
@@ -2746,15 +2750,20 @@ function AppInner() {
                               <div style={{ position: "absolute", top: 18, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
                             )}
                             <div style={{ position: "relative", zIndex: 1, width: 38, height: 38, borderRadius: "50%", margin: "0 auto 7px", display: "flex", alignItems: "center", justifyContent: "center",
-                              background: courant ? hectorEtat.couleur : (acquis ? "#1D6E56" : "#16314E"),
-                              border: courant ? "2px solid white" : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.12)"),
-                              boxShadow: courant ? `0 0 0 4px ${hectorEtat.couleur}33` : "none" }}>
-                              {acquis
-                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: courant ? "#0A2540" : "white" }} />
-                                : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
+                              background: iciMaintenant ? hectorEtat.couleur : (acquis ? "#1D6E56" : "#16314E"),
+                              border: iciMaintenant ? "2px solid white" : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.12)"),
+                              opacity: (acquis && !iciMaintenant) ? 0.7 : 1,
+                              boxShadow: iciMaintenant ? `0 0 0 4px ${hectorEtat.couleur}40` : "none" }}>
+                              {iciMaintenant
+                                ? <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 17, color: "#0A2540" }} />
+                                : acquis
+                                  ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: "white" }} />
+                                  : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
                             </div>
-                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: acquis ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 2px" }}>{p.nom}</div>
-                            <div style={{ fontSize: 9, color: "#6B86A3" }}>{p.court}</div>
+                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 2px" }}>{p.nom}</div>
+                            <div style={{ fontSize: 9, fontWeight: iciMaintenant ? 700 : 400, color: iciMaintenant ? hectorEtat.couleur : (acquis ? "#9FE1CB" : "#6B86A3") }}>
+                              {iciMaintenant ? "tu es ici" : (acquis ? "atteint" : p.court)}
+                            </div>
                           </div>
                         );
                       })}
