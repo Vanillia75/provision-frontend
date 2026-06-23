@@ -1821,9 +1821,12 @@ function AppInner() {
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
   // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
-  // RÈGLE : on ne calcule les jours QUE sur les vraies dépenses (frais d'entreprise réels).
-  // Le CA n'est JAMAIS utilisé comme proxy de dépenses (ça produirait des résultats absurdes).
-  const depenseJournaliere = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais / 30 : 0;
+  // RÈGLE : on calcule les jours sur le train de vie déclaré en priorité,
+  // sinon sur les vraies dépenses (frais d'entreprise réels).
+  // Le CA n'est JAMAIS utilisé comme proxy de dépenses (résultats absurdes).
+  const trainDeVieNum = parseFloat(depensesMensuelles) || 0;
+  const depenseMensuelleReelle = trainDeVieNum > 0 ? trainDeVieNum : moyenneMensuelleFrais;
+  const depenseJournaliere = depenseMensuelleReelle > 0 ? depenseMensuelleReelle / 30 : 0;
   const joursTranquillite = (argentDisponibleBrut !== null && depenseJournaliere > 0)
     ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
     : null;
@@ -4444,6 +4447,10 @@ function AppInner() {
                 <label style={S.label}>Cotisation Foncière des Entreprises (CFE)
                   <input style={S.input} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} placeholder="Souvent ~200 €/an" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Impôt local annuel dû par la plupart des entreprises, même sans local. Variable selon la commune.</span>
+                </label>
+                <label style={S.label}>Mon train de vie mensuel
+                  <input style={S.input} type="number" step="50" value={depensesMensuelles} onChange={e => setDepensesMensuelles(e.target.value)} placeholder="Ex : 1800 €/mois" />
+                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Ce que tu dépenses environ chaque mois pour vivre. Sert à Hector pour calculer tes jours de tranquillité.</span>
                 </label>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous vos appareils.</p>
