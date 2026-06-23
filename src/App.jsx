@@ -1844,13 +1844,13 @@ function AppInner() {
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
   // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
-  // RÈGLE : on calcule les jours sur le train de vie déclaré en priorité,
-  // sinon sur les vraies dépenses (frais d'entreprise réels).
-  // Le CA n'est JAMAIS utilisé comme proxy de dépenses (résultats absurdes).
+  // RÈGLE STRICTE : on calcule les jours UNIQUEMENT sur le train de vie déclaré.
+  // Pas de fallback (ni CA, ni frais) : ça produisait des résultats absurdes
+  // (ex : 25 € de solde → 216 jours parce que les frais déclarés étaient minuscules).
+  // Sans train de vie réaliste, Hector reste en mode accueil et invite à le renseigner.
   const trainDeVieNum = parseFloat(depensesMensuelles) || 0;
-  const depenseMensuelleReelle = trainDeVieNum > 0 ? trainDeVieNum : moyenneMensuelleFrais;
-  const depenseJournaliere = depenseMensuelleReelle > 0 ? depenseMensuelleReelle / 30 : 0;
-  const joursTranquillite = (argentDisponibleBrut !== null && depenseJournaliere > 0)
+  const depenseJournaliere = trainDeVieNum > 0 ? trainDeVieNum / 30 : 0;
+  const joursTranquillite = (argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && depenseJournaliere > 0)
     ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
     : null;
   // Date concrète "jusqu'au ..."
@@ -1870,7 +1870,9 @@ function AppInner() {
   if (joursTranquillite !== null && joursTranquillite > palierRecordRef.current) {
     palierRecordRef.current = joursTranquillite;
   }
-  const joursRecord = Math.max(joursTranquillite || 0, palierRecordRef.current);
+  // Pour cette V1, les niveaux acquis suivent les jours ACTUELS (cohérent avec la situation
+  // présente). La logique "record permanent" sera réactivée quand elle sera persistée en base.
+  const joursRecord = joursTranquillite || 0;
   const palierAcquisIndex = PALIERS_SERENITE.reduce((acc, p, i) => joursRecord >= p.seuil ? i : acc, -1);
   const palierActuel = palierAcquisIndex >= 0 ? PALIERS_SERENITE[palierAcquisIndex] : null;
   // Niveau ACTUEL (où tu es maintenant, selon tes jours du moment) — distinct du record acquis.
