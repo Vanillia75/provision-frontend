@@ -2765,7 +2765,7 @@ function AppInner() {
               ) : (
                 /* DESKTOP : layout grille */
                 <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 200px", minHeight: 200 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: 200 }}>
                     <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                       {hectorEtat && (
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
@@ -2805,7 +2805,7 @@ function AppInner() {
                       )}
                     </div>
                     <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <HectorImage etat={hectorEtat} size={220} cover />
+                      <HectorImage etat={hectorEtat} size={320} cover />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 30%)" }} />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 20%)" }} />
                     </div>
