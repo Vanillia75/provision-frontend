@@ -371,7 +371,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
       <img src={src} alt={`Hector ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
-          ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "center", display: "block" }
+          ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center", display: "block" }
           : { width: size, height: size, objectFit: "contain", display: "block" }} />
     );
   }
@@ -2660,12 +2660,12 @@ function AppInner() {
             {hectorEtat && (
               <div style={{ ...S.card, marginTop: 20, background: "#0A2540", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
                 {/* Zone haute immersive : image en fond à droite + texte à gauche */}
-                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 230 }}>
+                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 260 }}>
                   {/* Illustration d'Hector — grande, à droite */}
                   <div style={isMobile
-                    ? { width: "100%", height: 180, position: "relative", overflow: "hidden" }
-                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "52%", overflow: "hidden" }}>
-                    <HectorImage etat={hectorEtat} size={isMobile ? 260 : 300} cover />
+                    ? { width: "100%", height: 200, position: "relative", overflow: "hidden" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "56%", overflow: "hidden" }}>
+                    <HectorImage etat={hectorEtat} size={isMobile ? 260 : 320} cover />
                     {/* Dégradé qui fond l'image dans la carte côté texte */}
                     <div style={{ position: "absolute", inset: 0, background: isMobile
                       ? "linear-gradient(to bottom, rgba(10,37,64,0) 55%, #0A2540 100%)"
@@ -2701,9 +2701,19 @@ function AppInner() {
                         </span>
                       </button>
                     ) : (
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px", maxWidth: 360 }}>
-                        <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
-                        <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
+                      <div style={{ marginTop: 14, maxWidth: 380 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px" }}>
+                          <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
+                          <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
+                        </div>
+                        {joursTranquillite !== null && joursTranquillite < 30 && (
+                          <button type="button"
+                            onClick={() => { setAiInput("Ma trésorerie est un peu juste en ce moment. Qu'est-ce que je peux faire concrètement pour renforcer ma réserve et retrouver de la sérénité ?"); setNav("assistant"); }}
+                            style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, background: hectorEtat.couleur, border: "none", borderRadius: 10, padding: "10px 14px", cursor: "pointer", width: "100%", color: "#0A2540", fontWeight: 700, fontSize: 13 }}>
+                            <i className="ti ti-messages" aria-hidden="true" style={{ fontSize: 16 }} />
+                            On regarde ça ensemble →
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
