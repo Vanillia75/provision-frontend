@@ -1821,7 +1821,9 @@ function AppInner() {
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
   // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
-  const depenseJournaliere = baseMensuelleSecurite > 0 ? baseMensuelleSecurite / 30 : 0;
+  // RÈGLE : on ne calcule les jours QUE sur les vraies dépenses (frais d'entreprise réels).
+  // Le CA n'est JAMAIS utilisé comme proxy de dépenses (ça produirait des résultats absurdes).
+  const depenseJournaliere = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais / 30 : 0;
   const joursTranquillite = (argentDisponibleBrut !== null && depenseJournaliere > 0)
     ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
     : null;
@@ -1848,7 +1850,7 @@ function AppInner() {
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
     if (j === null) return { id: "accueil", label: "Ton compagnon", couleur: "#5DA9E8", pastille: "#5DA9E8",
-      mot: "Renseigne ton solde et tes premiers revenus, et je veillerai sur ta tranquillité jour après jour.", img: "/hector-serein.png", accueil: true };
+      mot: "Renseigne ton train de vie ou tes dépenses, et je te dirai jusqu'à quand je veille sur ta tranquillité.", img: "/hector-serein.png", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
