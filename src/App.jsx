@@ -2085,12 +2085,11 @@ function AppInner() {
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12, background: "rgba(0,0,0,0.15)", borderRadius: 10, padding: "10px 14px" }}>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> URSSAF</span><span style={{ color: "#FAC775" }}>1 060 €</span></div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> Impôts</span><span style={{ color: "#FAC775" }}>300 €</span></div>
               <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12.5, color: "#EAF2FB" }}><span><span style={{ color: "#5DCAA5" }}>✓</span> Réserve</span><span style={{ color: "#FAC775" }}>800 €</span></div>
             </div>
             <div style={{ borderTop: "1px solid rgba(93,202,165,0.25)", paddingTop: 10, textAlign: "center" }}>
               <div style={{ fontSize: 11, color: "#B5D4F4", marginBottom: 2 }}>Ce que tu peux dépenser :</div>
-              <span style={{ fontSize: isMobile ? 32 : 38, fontWeight: 700, color: "#5DCAA5", fontVariantNumeric: "tabular-nums" }}>2 843 €</span>
+              <span style={{ fontSize: isMobile ? 32 : 38, fontWeight: 700, color: "#5DCAA5", fontVariantNumeric: "tabular-nums" }}>3 140 €</span>
             </div>
           </div>
 
