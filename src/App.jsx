@@ -2673,100 +2673,110 @@ function AppInner() {
 
             {/* ─── SÉRÉNITÉ D'HECTOR : carte immersive premium, sous le chiffre-héros ─── */}
             {hectorEtat && (
-              <div style={{ ...S.card, marginTop: 20, background: "#0A2540", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
-                {/* Zone haute immersive : image en fond à droite + texte à gauche */}
-                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 260 }}>
-                  {/* Illustration d'Hector — grande, à droite */}
+              <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(135deg, #0A2540 0%, #0d2647 100%)", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
+                {/* Zone haute : image immersive à droite, texte à gauche */}
+                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 290 }}>
+                  {/* Illustration d'Hector — grande, à droite, fondue dans la carte */}
                   <div style={isMobile
-                    ? { width: "100%", height: 200, position: "relative", overflow: "hidden" }
-                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "56%", overflow: "hidden" }}>
-                    <HectorImage etat={hectorEtat} size={isMobile ? 260 : 320} cover />
-                    {/* Dégradé qui fond l'image dans la carte côté texte */}
+                    ? { width: "100%", height: 210, position: "relative", overflow: "hidden" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "50%", overflow: "hidden" }}>
+                    <HectorImage etat={hectorEtat} size={isMobile ? 280 : 330} cover />
                     <div style={{ position: "absolute", inset: 0, background: isMobile
-                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 55%, #0A2540 100%)"
-                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.5) 28%, rgba(10,37,64,0) 60%)" }} />
+                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 50%, #0A2540 100%)"
+                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.55) 24%, rgba(10,37,64,0) 55%)" }} />
                   </div>
 
-                  {/* Texte à gauche, par-dessus */}
-                  <div style={{ position: "relative", padding: isMobile ? "0 18px 18px" : "24px 22px", maxWidth: isMobile ? "100%" : "55%" }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 999, padding: "4px 11px" }}>
+                  {/* Texte à gauche */}
+                  <div style={{ position: "relative", padding: isMobile ? "20px 20px 0" : "24px 26px", maxWidth: isMobile ? "100%" : "56%" }}>
+                    {/* En-tête : logo bouclier + cockpit financier */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 20 }}>
+                      <LogoIcon size={40} />
+                      <div>
+                        <div style={{ fontSize: 19, fontWeight: 700, color: "white", letterSpacing: 0.5, lineHeight: 1 }}>H€CTOR</div>
+                        <div style={{ fontSize: 9.5, color: "#8BA5C0", letterSpacing: 1.5, marginTop: 3 }}>TON COCKPIT FINANCIER</div>
+                      </div>
+                    </div>
+
+                    {/* Badge état */}
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 16, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 999, padding: "5px 12px" }}>
                       <span style={{ width: 8, height: 8, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
                       <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
                     </div>
+
                     {hectorEtat.accueil ? (
-                      <div style={{ fontSize: isMobile ? 21 : 24, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>Hector, ton gardien de sérénité</div>
+                      <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>Hector, ton gardien de sérénité</div>
                     ) : (
                       <>
-                        <div style={{ fontSize: isMobile ? 21 : 25, fontWeight: 700, color: "white", lineHeight: 1.15 }}>Hector veille sur toi</div>
-                        <div style={{ fontSize: isMobile ? 18 : 21, fontWeight: 700, color: hectorEtat.couleur, lineHeight: 1.2, marginBottom: 14 }}>jusqu'au {dateTranquillite}</div>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: isMobile ? 38 : 44, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{joursTranquillite}</span>
-                          <span style={{ fontSize: 14, color: "#B5D4F4" }}>jours de tranquillité</span>
+                        <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "white", lineHeight: 1.1 }}>Hector veille sur toi</div>
+                        <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5, margin: "8px 0 16px" }}>Tant que tu gardes le cap, la tranquillité reste avec toi.</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 11, marginBottom: 18 }}>
+                          <span style={{ fontSize: isMobile ? 48 : 58, fontWeight: 700, color: hectorEtat.couleur, fontVariantNumeric: "tabular-nums", lineHeight: 0.9 }}>{joursTranquillite}</span>
+                          <span style={{ fontSize: 18, color: "white", lineHeight: 1.1 }}>jours de<br />tranquillité</span>
                         </div>
+                        <div style={{ fontSize: 12.5, color: "#9FB4CC", marginBottom: isMobile ? 16 : 0 }}>🐾 {hectorEtat.mot}</div>
                       </>
                     )}
-                    {/* Mot d'Hector — cliquable en mode accueil pour mener au bon endroit */}
-                    {hectorEtat.accueil ? (
+                    {hectorEtat.accueil && (
                       <button type="button" onClick={() => setNav("profil")}
-                        style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(93,202,165,0.12)", border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 10, padding: "12px 14px", maxWidth: 380, textAlign: "left", cursor: "pointer", width: "100%" }}>
+                        style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 4, marginBottom: isMobile ? 16 : 0, background: "rgba(93,202,165,0.12)", border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 10, padding: "12px 14px", maxWidth: 380, textAlign: "left", cursor: "pointer", width: "100%" }}>
                         <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
                         <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>
                           {hectorEtat.mot}
                           <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ Renseigner mon train de vie dans mon profil</span>
                         </span>
                       </button>
-                    ) : (
-                      <div style={{ marginTop: 14, maxWidth: 380 }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px" }}>
-                          <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
-                          <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
-                        </div>
-                        {joursTranquillite !== null && joursTranquillite < 30 && (
-                          <button type="button"
-                            onClick={() => { setAiInput("Ma trésorerie est un peu juste en ce moment. Qu'est-ce que je peux faire concrètement pour renforcer ma réserve et retrouver de la sérénité ?"); setNav("assistant"); }}
-                            style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, background: hectorEtat.couleur, border: "none", borderRadius: 10, padding: "10px 14px", cursor: "pointer", width: "100%", color: "#0A2540", fontWeight: 700, fontSize: 13 }}>
-                            <i className="ti ti-messages" aria-hidden="true" style={{ fontSize: 16 }} />
-                            On regarde ça ensemble →
-                          </button>
-                        )}
-                      </div>
+                    )}
+                    {/* Bouton action si tendu */}
+                    {!hectorEtat.accueil && joursTranquillite !== null && joursTranquillite < 30 && (
+                      <button type="button"
+                        onClick={() => { setAiInput("Ma trésorerie est un peu juste en ce moment. Qu'est-ce que je peux faire concrètement pour renforcer ma réserve et retrouver de la sérénité ?"); setNav("assistant"); }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, marginBottom: isMobile ? 16 : 0, background: hectorEtat.couleur, border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", color: "#0A2540", fontWeight: 700, fontSize: 13 }}>
+                        <i className="ti ti-messages" aria-hidden="true" style={{ fontSize: 16 }} />
+                        On regarde ça ensemble →
+                      </button>
                     )}
                   </div>
                 </div>
 
-                {/* Chemin des niveaux — progression premium (masqué en accueil) */}
+                {/* Chemin des niveaux — le foyer d'Hector */}
                 {!hectorEtat.accueil && (
-                  <div style={{ background: "rgba(0,0,0,0.22)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "16px 10px" : "18px 22px" }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: "#7A93AD", textTransform: "uppercase", marginBottom: 14, paddingLeft: 2 }}>Le foyer d'Hector</div>
-                    <div style={{ display: "flex", gap: 0, justifyContent: "space-between", position: "relative" }}>
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "16px 10px" : "18px 24px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: "#8BA5C0", textTransform: "uppercase", marginBottom: 16, paddingLeft: 2 }}>Le foyer d'Hector grandit avec toi</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
                       {PALIERS_SERENITE.map((p, i) => {
-                        const acquis = i <= palierAcquisIndex;          // déjà atteint un jour (permanent)
-                        const iciMaintenant = i === palierActuelIndex;  // niveau actuel selon jours du moment
+                        const acquis = i <= palierAcquisIndex;
+                        const iciMaintenant = i === palierActuelIndex;
                         const ligneAcquise = i < palierAcquisIndex;
                         return (
                           <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
-                            {/* Ligne de connexion vers le suivant */}
                             {i < PALIERS_SERENITE.length - 1 && (
                               <div style={{ position: "absolute", top: 18, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
+                            )}
+                            {iciMaintenant && (
+                              <div style={{ position: "absolute", top: -14, left: "50%", transform: "translateX(-50%)", zIndex: 2 }}>
+                                <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 15, color: hectorEtat.couleur }} />
+                              </div>
                             )}
                             <div style={{ position: "relative", zIndex: 1, width: 38, height: 38, borderRadius: "50%", margin: "0 auto 7px", display: "flex", alignItems: "center", justifyContent: "center",
                               background: iciMaintenant ? hectorEtat.couleur : (acquis ? "#1D6E56" : "#16314E"),
                               border: iciMaintenant ? "2px solid white" : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.12)"),
-                              opacity: (acquis && !iciMaintenant) ? 0.7 : 1,
+                              opacity: (acquis && !iciMaintenant) ? 0.75 : 1,
                               boxShadow: iciMaintenant ? `0 0 0 4px ${hectorEtat.couleur}40` : "none" }}>
-                              {iciMaintenant
-                                ? <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 17, color: "#0A2540" }} />
-                                : acquis
-                                  ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: "white" }} />
-                                  : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
+                              {acquis
+                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: iciMaintenant ? "#0A2540" : "white" }} />
+                                : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
                             </div>
-                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 2px" }}>{p.nom}</div>
+                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 1px" }}>{p.nom}</div>
                             <div style={{ fontSize: 9, fontWeight: iciMaintenant ? 700 : 400, color: iciMaintenant ? hectorEtat.couleur : (acquis ? "#9FE1CB" : "#6B86A3") }}>
                               {iciMaintenant ? "tu es ici" : (acquis ? "atteint" : p.court)}
                             </div>
                           </div>
                         );
                       })}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 16, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 14px" }}>
+                      <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 16, color: hectorEtat.couleur, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "#B5D4F4", lineHeight: 1.4 }}>Garde le cap, chaque jour de tranquillité rapproche Hector de son domaine.</span>
                     </div>
                   </div>
                 )}
