@@ -1904,8 +1904,10 @@ function AppInner() {
             </div>
           </div>
 
-          {/* Bande compagnon (discrète, argument secondaire) */}
-          <div style={{ background: "rgba(14,46,79,0.5)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 12, padding: isMobile ? "12px" : "12px 18px", margin: "4px auto 8px", maxWidth: 520, width: "100%" }}>
+          {/* Bande compagnon (sans cadre sur mobile, pour alléger) */}
+          <div style={isMobile
+            ? { padding: "4px 2px 8px", margin: "8px auto", maxWidth: 520, width: "100%" }
+            : { background: "rgba(14,46,79,0.5)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 12, padding: "12px 18px", margin: "4px auto 8px", maxWidth: 520, width: "100%" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
               <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
               <span style={{ fontSize: 12.5, fontWeight: 600, color: "#EAF2FB" }}>Et Hector prépare tes devis quand tu lui parles</span>
@@ -1929,9 +1931,11 @@ function AppInner() {
               { icon: "ti-message-circle", t: "Hector, ton compagnon", d: "Il connaît tes chiffres et prépare tes devis quand tu lui parles" },
               { icon: "ti-receipt-2", t: "Scan de tes frais", d: "Photographie une facture, H€CTOR en extrait le montant" },
               { icon: "ti-lock", t: "Tes données restent chez toi", d: "Aucune connexion bancaire, aucun accès à ton compte" },
-            ].map(f => (
-              <div key={f.t} style={S.authFeatureCard}>
-                <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
+            ].map((f, idx) => (
+              <div key={f.t} style={isMobile
+                ? { display: "flex", alignItems: "flex-start", gap: 10, padding: "11px 2px", borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.08)" }
+                : S.authFeatureCard}>
+                <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <div style={S.authFeatureTitle}>{f.t}</div>
                   <div style={S.authFeatureDesc}>{f.d}</div>
