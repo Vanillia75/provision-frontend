@@ -613,6 +613,7 @@ function AppInner() {
     if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
     savedToastTimerRef.current = setTimeout(() => setSavedToast(false), 2800);
   };
+  const [showWalkthrough, setShowWalkthrough] = useState(() => !localStorage.getItem("hector_walkthrough_done"));
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
@@ -2511,6 +2512,10 @@ function AppInner() {
             <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
           </button>
         ))}
+        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
+          <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
+        </button>
         <div style={S.sidebarBottom}>
 
           {!isMobile && (
@@ -4932,6 +4937,152 @@ function AppInner() {
           </div>
         )}
       </main>
+      {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
+      {showWalkthrough && (() => {
+        const wtSteps = [
+          {
+            icon: null,
+            timerLabel: "BIENVENUE SUR H€CTOR",
+            title: "Bonjour, moi c'est H€CTOR.",
+            sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise.\nEn 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
+            items: [
+              { icon: "ti-check", text: "Zéro case à remplir pour commencer" },
+              { icon: "ti-check", text: "Ton premier revenu suffit à tout démarrer" },
+              { icon: "ti-check", text: "Tu peux passer à tout moment" },
+            ],
+            next: "Découvrir",
+          },
+          {
+            icon: "ti-gauge",
+            timerLabel: "LE COCKPIT + L'ASSISTANT",
+            title: "Fini les mauvaises surprises URSSAF.",
+            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. L'Assistant répond à toutes tes questions fiscales — par texte ou dictée vocale.",
+            items: [
+              { icon: "ti-check", text: "Situation saine / Fragile / Déficit en un coup d'œil" },
+              { icon: "ti-check", text: "Charges URSSAF + impôts calculées automatiquement" },
+              { icon: "ti-mic", text: "Assistant disponible par texte ou dictée vocale" },
+            ],
+            next: "Suivant",
+          },
+          {
+            icon: "ti-file-invoice",
+            timerLabel: "REVENUS, FRAIS & FACTURATION",
+            title: "Encaisser, dépenser, facturer — tout au même endroit.",
+            sub: "Ajoute un revenu ou une dépense en quelques secondes. Crée un devis, convertis-le en facture en 1 clic, et envoie-le directement par email avec PDF.",
+            items: [
+              { icon: "ti-check", text: "Encaisser / Frais : revenus et dépenses professionnelles" },
+              { icon: "ti-check", text: "Mes factures : PDF professionnel + envoi email intégré" },
+              { icon: "ti-check", text: "Mes devis : convertis en facture en 1 clic" },
+            ],
+            next: "Suivant",
+          },
+          {
+            icon: "ti-calculator",
+            timerLabel: "LES OUTILS",
+            title: "Simule avant de décider.",
+            sub: "H€CTOR met à ta disposition 5 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
+            items: [
+              { icon: "ti-cash", text: "Mode Salaire — combien puis-je me verser ce mois ?" },
+              { icon: "ti-shopping-cart", text: "Mode Achat — puis-je me permettre cette dépense ?" },
+              { icon: "ti-target", text: "Combien gagner ? + Simulateur fiscal + Mes tarifs" },
+            ],
+            next: "Suivant",
+          },
+          {
+            icon: "ti-heart-rate-monitor",
+            timerLabel: "SUIVI & PILOTAGE",
+            title: "Pilote ton activité sur le long terme.",
+            sub: "Score H€CTOR note ta santé financière sur 100. Revenus te donne une vue annuelle de ton CA. Contacts centralise tes clients. Actualités et Conseils te tiennent informé des obligations fiscales.",
+            items: [
+              { icon: "ti-heart-rate-monitor", text: "Score H€CTOR — ta santé financière sur 100" },
+              { icon: "ti-chart-bar", text: "Revenus, Contacts, Modèles de documents" },
+              { icon: "ti-bell", text: "Actualités fiscales + Conseils auto-entrepreneur" },
+            ],
+            next: "Suivant",
+          },
+          {
+            icon: "ti-rocket",
+            timerLabel: "TU ES PRÊT(E) !",
+            title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
+            sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
+            items: [
+              { icon: "ti-receipt-2", text: "Ajouter un revenu ou une dépense" },
+              { icon: "ti-file-plus", text: "Créer mon premier devis" },
+              { icon: "ti-help-circle", text: "Retrouver cette visite via « Aide » dans le menu" },
+            ],
+            next: "C'est parti !",
+          },
+        ];
+        const WalkthroughModal = () => {
+          const [wtStep, setWtStep] = useState(0);
+          const s = wtSteps[wtStep];
+          const closeWalkthrough = () => {
+            localStorage.setItem("hector_walkthrough_done", "1");
+            setShowWalkthrough(false);
+          };
+          return (
+            <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,37,64,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <div style={{ background: "#0A2540", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "28px 20px 24px" : "36px 36px 28px", maxWidth: 440, width: "100%", position: "relative", boxSizing: "border-box" }}>
+                {/* Barre de progression */}
+                <div style={{ position: "absolute", top: 0, left: 0, height: 3, width: `${((wtStep + 1) / wtSteps.length) * 100}%`, background: "#378ADD", borderRadius: "18px 0 0 0", transition: "width 0.35s ease" }} />
+                {/* Bouton fermer */}
+                <button onClick={closeWalkthrough} style={{ position: "absolute", top: 14, right: 16, background: "none", border: "none", color: "rgba(181,212,244,0.45)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                  Passer <i className="ti ti-x" style={{ fontSize: 11 }} />
+                </button>
+                {/* Dots */}
+                <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 20 }}>
+                  {wtSteps.map((_, i) => (
+                    <div key={i} style={{ height: 5, width: i === wtStep ? 16 : 5, borderRadius: i === wtStep ? 3 : "50%", background: i === wtStep ? "#378ADD" : "rgba(181,212,244,0.2)", transition: "all 0.2s" }} />
+                  ))}
+                </div>
+                {/* Timer label */}
+                <div style={{ textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "rgba(181,212,244,0.45)", marginBottom: 18 }}>{s.timerLabel}</div>
+                {/* Avatar */}
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                  {wtStep === 0 ? (
+                    <img src="/hector-tete.png" alt="Hector" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(55,138,221,0.5)" }} />
+                  ) : (
+                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(55,138,221,0.15)", border: "1.5px solid rgba(55,138,221,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <i className={`ti ${s.icon}`} style={{ fontSize: 24, color: "#378ADD" }} />
+                    </div>
+                  )}
+                </div>
+                {/* Titre */}
+                <p style={{ color: "white", fontSize: 18, fontWeight: 500, textAlign: "center", margin: "0 0 10px", lineHeight: 1.35 }}>{s.title}</p>
+                {/* Sous-titre */}
+                <p style={{ color: "#B5D4F4", fontSize: 13.5, textAlign: "center", lineHeight: 1.65, margin: "0 auto 18px", maxWidth: 340 }}>{s.sub}</p>
+                {/* Items */}
+                <div style={{ background: "rgba(55,138,221,0.1)", border: "0.5px solid rgba(55,138,221,0.3)", borderRadius: 10, padding: "10px 16px", marginBottom: 22 }}>
+                  {s.items.map((it, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#B5D4F4", fontSize: 13, padding: "4px 0" }}>
+                      <i className={`ti ${it.icon}`} style={{ color: "#5DCAA5", fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                      <span>{it.text}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Navigation */}
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  {wtStep > 0 && (
+                    <button onClick={() => setWtStep(wtStep - 1)} style={{ background: "transparent", color: "#B5D4F4", border: "0.5px solid rgba(181,212,244,0.3)", borderRadius: 8, padding: "10px 16px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                      Retour
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (wtStep < wtSteps.length - 1) setWtStep(wtStep + 1);
+                      else closeWalkthrough();
+                    }}
+                    style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 28px", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    {s.next} {wtStep < wtSteps.length - 1 ? <i className="ti ti-arrow-right" /> : <i className="ti ti-check" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+        return <WalkthroughModal key="walkthrough" />;
+      })()}
       {/* Toast global "✓ Sauvegardé" */}
       {savedToast && (
         <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
