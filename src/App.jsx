@@ -2682,17 +2682,17 @@ function AppInner() {
 
             {/* ─── SÉRÉNITÉ D'HECTOR : carte immersive premium, sous le chiffre-héros ─── */}
             {hectorEtat && (
-              <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(135deg, #0A2540 0%, #0d2647 100%)", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
+              <div style={{ ...S.card, marginTop: 20, background: "#0a1f38", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
                 {/* Zone haute : image immersive à droite, texte à gauche */}
                 <div style={{ position: "relative", minHeight: isMobile ? "auto" : 340 }}>
                   {/* Illustration d'Hector — grande, à droite, fondue dans la carte */}
                   <div style={isMobile
-                    ? { width: "100%", height: 240, position: "relative", overflow: "hidden" }
-                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "54%", overflow: "hidden" }}>
+                    ? { width: "100%", height: 250, position: "relative", overflow: "hidden", background: "#0a1f38" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "52%", overflow: "hidden", background: "#0a1f38" }}>
                     <HectorImage etat={hectorEtat} size={isMobile ? 280 : 330} cover />
                     <div style={{ position: "absolute", inset: 0, background: isMobile
-                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 60%, #0A2540 100%)"
-                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.5) 12%, rgba(10,37,64,0) 35%)" }} />
+                      ? "linear-gradient(to bottom, rgba(10,31,56,0) 60%, #0a1f38 100%)"
+                      : "linear-gradient(to right, #0a1f38 0%, rgba(10,31,56,0.4) 14%, rgba(10,31,56,0) 32%)" }} />
                   </div>
 
                   {/* Texte à gauche */}
