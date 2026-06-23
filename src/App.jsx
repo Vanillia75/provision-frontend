@@ -2684,17 +2684,20 @@ function AppInner() {
 
             {/* ─── SÉRÉNITÉ D'HECTOR : carte immersive premium, sous le chiffre-héros ─── */}
             {hectorEtat && (
-              <div style={{ ...S.card, marginTop: 20, background: "#0a1f38", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
+              <div style={{ ...S.card, marginTop: 20, background: "#0a1322", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
                 {/* Zone haute : image immersive à droite, texte à gauche */}
                 <div style={{ position: "relative", minHeight: isMobile ? "auto" : 340 }}>
                   {/* Illustration d'Hector — grande, à droite, fondue dans la carte */}
                   <div style={isMobile
-                    ? { width: "100%", height: 250, position: "relative", overflow: "hidden", background: "#0a1f38" }
-                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "52%", overflow: "hidden", background: "#0a1f38" }}>
+                    ? { width: "100%", height: 250, position: "relative", overflow: "hidden", background: "#0a1322" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "52%", overflow: "hidden", background: "#0a1322" }}>
                     <HectorImage etat={hectorEtat} size={isMobile ? 280 : 330} cover />
                     <div style={{ position: "absolute", inset: 0, background: isMobile
-                      ? "linear-gradient(to bottom, rgba(10,31,56,0) 60%, #0a1f38 100%)"
-                      : "linear-gradient(to right, #0a1f38 0%, rgba(10,31,56,0.4) 14%, rgba(10,31,56,0) 32%)" }} />
+                      ? "linear-gradient(to bottom, rgba(10,19,34,0) 55%, #0a1322 100%), linear-gradient(to top, rgba(10,19,34,0) 80%, #0a1322 100%)"
+                      : "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0.6) 14%, rgba(10,19,34,0) 36%)" }} />
+                    <div style={{ position: "absolute", inset: 0, background: isMobile
+                      ? "none"
+                      : "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 16%), linear-gradient(to bottom, #0a1322 0%, rgba(10,19,34,0) 14%), linear-gradient(to left, #0a1322 0%, rgba(10,19,34,0) 12%)" }} />
                   </div>
 
                   {/* Texte à gauche */}
