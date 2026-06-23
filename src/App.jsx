@@ -4941,10 +4941,10 @@ function AppInner() {
       {showWalkthrough && (() => {
         const wtSteps = [
           {
-            icon: null,
+            img: "/hector-tete.png",
             timerLabel: "BIENVENUE SUR H€CTOR",
             title: "Bonjour, moi c'est H€CTOR.",
-            sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise.\nEn 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
+            sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
             items: [
               { icon: "ti-check", text: "Zéro case à remplir pour commencer" },
               { icon: "ti-check", text: "Ton premier revenu suffit à tout démarrer" },
@@ -4953,7 +4953,7 @@ function AppInner() {
             next: "Découvrir",
           },
           {
-            icon: "ti-gauge",
+            img: "/niveau1.png",
             timerLabel: "LE COCKPIT + L'ASSISTANT",
             title: "Fini les mauvaises surprises URSSAF.",
             sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. L'Assistant répond à toutes tes questions fiscales — par texte ou dictée vocale.",
@@ -4965,7 +4965,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            icon: "ti-file-invoice",
+            img: "/niveau2.png",
             timerLabel: "REVENUS, FRAIS & FACTURATION",
             title: "Encaisser, dépenser, facturer — tout au même endroit.",
             sub: "Ajoute un revenu ou une dépense en quelques secondes. Crée un devis, convertis-le en facture en 1 clic, et envoie-le directement par email avec PDF.",
@@ -4977,7 +4977,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            icon: "ti-calculator",
+            img: "/niveau3.png",
             timerLabel: "LES OUTILS",
             title: "Simule avant de décider.",
             sub: "H€CTOR met à ta disposition 5 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
@@ -4989,7 +4989,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            icon: "ti-heart-rate-monitor",
+            img: "/niveau4.png",
             timerLabel: "SUIVI & PILOTAGE",
             title: "Pilote ton activité sur le long terme.",
             sub: "Score H€CTOR note ta santé financière sur 100. Revenus te donne une vue annuelle de ton CA. Contacts centralise tes clients. Actualités et Conseils te tiennent informé des obligations fiscales.",
@@ -5001,7 +5001,19 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            icon: "ti-rocket",
+            img: "/niveau5.png",
+            timerLabel: "LA SÉRÉNITÉ D'HECTOR",
+            title: "Hector grandit avec toi.",
+            sub: "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
+            items: [
+              { icon: "ti-dog", text: "Hector arrive → Son panier → Sa niche → Son jardin" },
+              { icon: "ti-home", text: "Sa maison → Son domaine (6 niveaux à débloquer)" },
+              { icon: "ti-check", text: "Plus tu es régulier, plus vite il progresse" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/niveau6.png",
             timerLabel: "TU ES PRÊT(E) !",
             title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
             sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
@@ -5037,15 +5049,9 @@ function AppInner() {
                 </div>
                 {/* Timer label */}
                 <div style={{ textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "rgba(181,212,244,0.45)", marginBottom: 18 }}>{s.timerLabel}</div>
-                {/* Avatar */}
+                {/* Avatar image niveau */}
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  {wtStep === 0 ? (
-                    <img src="/hector-tete.png" alt="Hector" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(55,138,221,0.5)" }} />
-                  ) : (
-                    <div style={{ width: 56, height: 56, borderRadius: "50%", background: "rgba(55,138,221,0.15)", border: "1.5px solid rgba(55,138,221,0.4)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                      <i className={`ti ${s.icon}`} style={{ fontSize: 24, color: "#378ADD" }} />
-                    </div>
-                  )}
+                  <img src={s.img} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2px solid rgba(55,138,221,0.5)", background: "#0d2d4a" }} />
                 </div>
                 {/* Titre */}
                 <p style={{ color: "white", fontSize: 18, fontWeight: 500, textAlign: "center", margin: "0 0 10px", lineHeight: 1.35 }}>{s.title}</p>
