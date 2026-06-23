@@ -2772,14 +2772,14 @@ function AppInner() {
                         return (
                           <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
                             {i < PALIERS_SERENITE.length - 1 && (
-                              <div style={{ position: "absolute", top: 28, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
+                              <div style={{ position: "absolute", top: isMobile ? 24 : 38, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
                             )}
                             {iciMaintenant && (
                               <div style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", zIndex: 2 }}>
                                 <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 16, color: hectorEtat.couleur }} />
                               </div>
                             )}
-                            <div style={{ position: "relative", zIndex: 1, width: 56, height: 56, borderRadius: "50%", margin: "0 auto 8px", overflow: "hidden",
+                            <div style={{ position: "relative", zIndex: 1, width: isMobile ? 48 : 76, height: isMobile ? 48 : 76, borderRadius: "50%", margin: "0 auto 8px", overflow: "hidden",
                               background: "#16314E",
                               border: iciMaintenant ? `2px solid ${hectorEtat.couleur}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.14)"),
                               opacity: (acquis || iciMaintenant) ? 1 : 0.55,
@@ -2787,10 +2787,10 @@ function AppInner() {
                               <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
                             </div>
                             {/* Badge coin : ✓ acquis ou 🔒 verrouillé */}
-                            <div style={{ position: "absolute", top: 0, right: "calc(50% - 30px)", zIndex: 3, width: 19, height: 19, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
-                              background: acquis ? "#5DCAA5" : "#3a4a5f", border: "2px solid #0A2540" }}>
+                            <div style={{ position: "absolute", top: 0, right: isMobile ? "calc(50% - 26px)" : "calc(50% - 38px)", zIndex: 3, width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                              background: acquis ? "#5DCAA5" : "#3a4a5f", border: "2px solid #0a1322" }}>
                               {acquis
-                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 11, color: "#0A2540" }} />
+                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 12, color: "#0A2540" }} />
                                 : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 10, color: "#9FB4CC" }} />}
                             </div>
                             <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 1px" }}>{p.nom}</div>
