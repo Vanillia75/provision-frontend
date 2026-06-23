@@ -362,6 +362,37 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
+function HectorImage({ etat, size = 200 }) {
+  // Affiche l'illustration IA si elle est présente dans /public, sinon une silhouette SVG de secours.
+  const [imgOk, setImgOk] = useState(true);
+  const src = etat?.img;
+  if (src && imgOk) {
+    return (
+      <img src={src} alt={`Hector ${etat?.label || ""}`} width={size} height={size}
+        onError={() => setImgOk(false)}
+        style={{ width: size, height: size, objectFit: "contain", display: "block" }} />
+    );
+  }
+  // Silhouette de secours (bull terrier couché stylisé)
+  const c = etat?.couleur || "#5DCAA5";
+  return (
+    <svg width={size} height={size * 0.8} viewBox="0 0 200 160" role="img" aria-label={`Hector ${etat?.label || ""}`}>
+      <ellipse cx="100" cy="140" rx="70" ry="10" fill="rgba(0,0,0,0.2)" />
+      <ellipse cx="100" cy="110" rx="58" ry="32" fill="#EDE3D4" />
+      <circle cx="52" cy="100" r="28" fill="#EDE3D4" />
+      <path d="M38 78 q-6 -20 8 -26 q6 14 2 30 Z" fill="#1A1A1A" />
+      <path d="M64 76 q4 -20 -8 -26 q-8 14 -2 32 Z" fill="#1A1A1A" />
+      <ellipse cx="44" cy="108" rx="20" ry="22" fill="#1A1A1A" opacity="0.85" />
+      <circle cx="40" cy="98" r="3.5" fill="#1A1A1A" />
+      <circle cx="58" cy="100" r="3.5" fill="#1A1A1A" />
+      <ellipse cx="34" cy="112" rx="6" ry="4" fill="#2A2A2A" />
+      <path d="M150 105 q16 -3 13 14" stroke="#EDE3D4" stroke-width="9" fill="none" stroke-linecap="round" />
+      <circle cx="100" cy="20" r="7" fill={c} opacity="0.5" />
+      <circle cx="120" cy="28" r="3" fill={c} opacity="0.4" />
+    </svg>
+  );
+}
+
 function Logo({ size = 28, dark = false }) {
   // dark=true → logo à texte blanc, pour les fonds foncés (page de connexion, sidebar).
   const ratio = 1348 / 358;
@@ -1786,6 +1817,45 @@ function AppInner() {
   const moyenneMensuelleCA = estimateData?.ca_annuel != null ? estimateData.ca_annuel / moisEcoulesAnnee : 0;
   const moyenneMensuelleFrais = expensesSummary?.frais_annee ? expensesSummary.frais_annee / moisEcoulesAnnee : 0;
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
+
+  // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
+  const depenseJournaliere = baseMensuelleSecurite > 0 ? baseMensuelleSecurite / 30 : 0;
+  const joursTranquillite = (argentDisponibleBrut !== null && depenseJournaliere > 0)
+    ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
+    : null;
+  // Date concrète "jusqu'au ..."
+  const dateTranquillite = joursTranquillite !== null
+    ? new Date(Date.now() + joursTranquillite * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    : null;
+  // Les 6 niveaux-lieux (accomplissements permanents, ne régressent jamais).
+  const PALIERS_SERENITE = [
+    { seuil: 7, nom: "Hector arrive", court: "7 jours" },
+    { seuil: 30, nom: "Son panier", court: "30 jours" },
+    { seuil: 90, nom: "Sa niche", court: "90 jours" },
+    { seuil: 180, nom: "Son jardin", court: "180 jours" },
+    { seuil: 365, nom: "Sa maison", court: "365 jours" },
+    { seuil: 730, nom: "Son domaine", court: "730 jours" },
+  ];
+  const palierRecordRef = useRef(0);
+  if (joursTranquillite !== null && joursTranquillite > palierRecordRef.current) {
+    palierRecordRef.current = joursTranquillite;
+  }
+  const joursRecord = Math.max(joursTranquillite || 0, palierRecordRef.current);
+  const palierAcquisIndex = PALIERS_SERENITE.reduce((acc, p, i) => joursRecord >= p.seuil ? i : acc, -1);
+  const palierActuel = palierAcquisIndex >= 0 ? PALIERS_SERENITE[palierAcquisIndex] : null;
+  // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
+  function etatHector(j) {
+    if (j === null) return null;
+    if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
+      mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
+    if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
+      mot: "Tout va bien, restons attentifs. Gardons un œil ensemble.", img: "/hector-attentif.png" };
+    if (j >= 7) return { id: "vigilant", label: "Vigilant", couleur: "#EF9F27", pastille: "#EF9F27",
+      mot: "On devrait renforcer un peu ta réserve. Je suis là.", img: "/hector-vigilant.png" };
+    return { id: "alerte", label: "Alerte", couleur: "#E24B4A", pastille: "#E24B4A",
+      mot: "Viens, on regarde ça ensemble. On va s'en sortir !", img: "/hector-alerte.png" };
+  }
+  const hectorEtat = etatHector(joursTranquillite);
   const securitePrecise = moyenneMensuelleFrais > 0; // true si base sur vos vrais Frais d'entreprise, false si approxime sur le CA
   const tresorerieApresDettes = soldeNum - totalChargesAVenir;
   const moisSurvie = baseMensuelleSecurite > 0 && panique.solde !== "" ? Math.max(0, Math.round((tresorerieApresDettes / baseMensuelleSecurite) * 10) / 10) : null;
@@ -2561,6 +2631,56 @@ function AppInner() {
                       Seuil de {formatEUR(seuilTva)} ({pourcentageSeuilTva}% atteint){tvaDepasse ? " — vous devez désormais facturer et reverser la TVA." : ", au-delà vous devrez facturer la TVA."}
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+
+            {/* ─── SÉRÉNITÉ D'HECTOR : le gardien émotionnel, sous le chiffre-héros ─── */}
+            {hectorEtat && joursTranquillite !== null && (
+              <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(150deg, #0A2540 0%, #102E50 60%, #143A64 100%)", border: "1px solid rgba(93,202,165,0.18)", overflow: "hidden", padding: 0 }}>
+                {/* Haut : état + texte + image */}
+                <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: 16, padding: isMobile ? 18 : 22 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 12 }}>
+                      <span style={{ width: 9, height: 9, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                    </div>
+                    <div style={{ fontSize: isMobile ? 20 : 23, fontWeight: 700, color: "white", lineHeight: 1.15 }}>Hector veille sur toi</div>
+                    <div style={{ fontSize: isMobile ? 20 : 23, fontWeight: 700, color: hectorEtat.couleur, lineHeight: 1.15, marginBottom: 14 }}>jusqu'au {dateTranquillite}</div>
+                    <div style={{ display: "inline-flex", alignItems: "baseline", gap: 8, background: "rgba(255,255,255,0.06)", borderRadius: 10, padding: "8px 14px" }}>
+                      <i className="ti ti-calendar" aria-hidden="true" style={{ fontSize: 16, color: hectorEtat.couleur }} />
+                      <span style={{ fontSize: 26, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums" }}>{joursTranquillite}</span>
+                      <span style={{ fontSize: 13, color: "#B5D4F4" }}>jours de tranquillité</span>
+                    </div>
+                  </div>
+                  <div style={{ flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <HectorImage etat={hectorEtat} size={isMobile ? 150 : 170} />
+                  </div>
+                </div>
+
+                {/* Mot d'Hector */}
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, margin: isMobile ? "0 18px 16px" : "0 22px 18px", background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 14px" }}>
+                  <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 18, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 13, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
+                </div>
+
+                {/* Chemin des 6 niveaux permanents */}
+                <div style={{ background: "rgba(0,0,0,0.18)", padding: isMobile ? "14px 12px" : "16px 22px", display: "flex", gap: isMobile ? 4 : 8, justifyContent: "space-between", overflowX: "auto" }}>
+                  {PALIERS_SERENITE.map((p, i) => {
+                    const acquis = i <= palierAcquisIndex;
+                    const courant = i === palierAcquisIndex;
+                    return (
+                      <div key={p.seuil} style={{ flex: "1 0 auto", textAlign: "center", minWidth: isMobile ? 52 : 64, opacity: acquis ? 1 : 0.4 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: "50%", margin: "0 auto 6px", display: "flex", alignItems: "center", justifyContent: "center", background: courant ? hectorEtat.couleur : (acquis ? "rgba(93,202,165,0.2)" : "rgba(255,255,255,0.06)"), border: courant ? "2px solid white" : "none" }}>
+                          {acquis
+                            ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 16, color: courant ? "#0A2540" : "#5DCAA5" }} />
+                            : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#7A93AD" }} />}
+                        </div>
+                        <div style={{ fontSize: 10.5, fontWeight: 600, color: acquis ? "white" : "#7A93AD", lineHeight: 1.2 }}>{p.nom}</div>
+                        <div style={{ fontSize: 9.5, color: "#7A93AD" }}>{p.court}</div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
