@@ -1889,8 +1889,8 @@ function AppInner() {
     : -1;
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
-    if (j === null) return { id: "accueil", label: "Ton compagnon", couleur: "#5DA9E8", pastille: "#5DA9E8",
-      mot: "Dis-moi environ combien tu dépenses par mois pour vivre, et je te dirai jusqu'à quand je veille sur ta tranquillité.", img: "/hector-serein.png", accueil: true };
+    if (j === null) return { id: "accueil", label: "En attente", couleur: "#FAC775", pastille: "#FAC775",
+      titre: "Réveille Hector 🐾", mot: "Pour veiller sur ta tranquillité, j'ai besoin de savoir combien tu dépenses par mois pour vivre. Dis-le moi, et je me mets au travail tout de suite !", img: "/hector-attentif.png", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
@@ -2726,7 +2726,7 @@ function AppInner() {
                     </div>
 
                     {hectorEtat.accueil ? (
-                      <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>Hector, ton gardien de sérénité</div>
+                      <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>{hectorEtat.titre || "Hector, ton gardien de sérénité"}</div>
                     ) : (
                       <>
                         <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "white", lineHeight: 1.1 }}>Hector veille sur toi</div>
@@ -2744,7 +2744,7 @@ function AppInner() {
                         <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
                         <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>
                           {hectorEtat.mot}
-                          <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ Renseigner mon train de vie dans mon profil</span>
+                          <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ C'est parti, je renseigne mon train de vie</span>
                         </span>
                       </button>
                     )}
