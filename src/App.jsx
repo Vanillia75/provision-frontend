@@ -373,6 +373,15 @@ function HectorTete({ size = 32 }) {
   return <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: size * 0.7, color: "#5DCAA5" }} />;
 }
 
+function NiveauImage({ src, fallbackIcon, fallbackColor }) {
+  const [ok, setOk] = useState(true);
+  if (src && ok) {
+    return <img src={src} alt="" onError={() => setOk(false)}
+      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", borderRadius: "50%", display: "block" }} />;
+  }
+  return <i className={`ti ${fallbackIcon}`} aria-hidden="true" style={{ fontSize: 18, color: fallbackColor }} />;
+}
+
 function HectorImage({ etat, size = 200, cover = false }) {
   // Affiche l'illustration IA si elle est présente dans /public, sinon une silhouette SVG de secours.
   const [imgOk, setImgOk] = useState(true);
@@ -382,7 +391,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
       <img src={src} alt={`Hector ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
-          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block" }
+          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center center", display: "block" }
           : { width: size, height: size, objectFit: "contain", display: "block" }} />
     );
   }
@@ -407,18 +416,24 @@ function HectorImage({ etat, size = 200, cover = false }) {
 }
 
 function Logo({ size = 28, dark = false }) {
-  // dark=true → logo à texte blanc, pour les fonds foncés (page de connexion, sidebar).
-  const ratio = 1536 / 1024;
+  // Logo = tête d'Hector + texte "H€CTOR". dark=true pour fonds foncés (texte blanc).
+  // size = hauteur en pixels, le texte s'adapte proportionnellement.
+  const textColor = dark ? "white" : INK;
   return (
-    <img src={dark ? "/hector-logo-white.png" : "/hector-logo.png"} alt="H€CTOR" height={size} width={Math.round(size * ratio)}
-         style={{ height: size, width: "auto", display: "block" }} />
+    <div style={{ display: "flex", alignItems: "center", gap: size * 0.18, lineHeight: 1 }}>
+      <img src="/hector-tete.png" alt="" height={size} width={size}
+           style={{ height: size, width: size, objectFit: "contain", display: "block", flexShrink: 0 }} />
+      <span style={{ fontFamily: "Georgia, serif", fontSize: size * 0.62, fontWeight: 700, color: textColor, letterSpacing: size * 0.01 }}>
+        H€CTOR
+      </span>
+    </div>
   );
 }
 
 function LogoIcon({ size = 32 }) {
   return (
-    <img src="/hector-icon.png" alt="H€CTOR" height={size} width={size}
-         style={{ height: size, width: size, display: "block", borderRadius: size * 0.22 }} />
+    <img src="/hector-tete.png" alt="H€CTOR" height={size} width={size}
+         style={{ height: size, width: size, objectFit: "contain", display: "block" }} />
   );
 }
 
@@ -540,6 +555,10 @@ function AppInner() {
   const [onbStep, setOnbStep] = useState("form");
   const [onbSolde, setOnbSolde] = useState("");
   const [onbTrainDeVie, setOnbTrainDeVie] = useState("");
+  const [onbSiret, setOnbSiret] = useState("");
+  const [onbSiretStatus, setOnbSiretStatus] = useState(""); // "", "loading", "success", "error"
+  const [onbSiretMessage, setOnbSiretMessage] = useState("");
+  const [onbSiretData, setOnbSiretData] = useState(null);
 
   async function handleOnboardingSiretLookup() {
     if (!profilSiret) return;
@@ -584,10 +603,19 @@ function AppInner() {
   const recognitionRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
+  // Toast global "✓ Sauvegardé" qui apparaît brièvement après une modification réussie
+  const [savedToast, setSavedToast] = useState(false);
+  const savedToastTimerRef = useRef(null);
+  const showSavedToast = () => {
+    setSavedToast(true);
+    if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
+    savedToastTimerRef.current = setTimeout(() => setSavedToast(false), 2800);
+  };
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
   const tmiMounted = useRef(false);
+  const trainDeVieMounted = useRef(false);
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("");
   const [simActivite, setSimActivite] = useState("services");
@@ -770,6 +798,7 @@ function AppInner() {
           body: JSON.stringify({ solde: panique.solde !== "" ? parseFloat(panique.solde) : null }),
         });
         setSoldeSaveStatus("saved");
+        showSavedToast();
       } catch (err) {
         setSoldeSaveStatus("error");
       }
@@ -786,6 +815,7 @@ function AppInner() {
           method: "POST",
           body: JSON.stringify({ reserve_securite: objectifSecurite !== "" ? parseFloat(objectifSecurite) : null }),
         });
+        showSavedToast();
       } catch (err) {
         // best-effort, ne bloque pas l'usage si la sauvegarde echoue ponctuellement
       }
@@ -794,12 +824,29 @@ function AppInner() {
   }, [objectifSecurite, token]);
 
   useEffect(() => {
+    if (!trainDeVieMounted.current) { trainDeVieMounted.current = true; return; }
+    if (!token) return;
+    const t = setTimeout(async () => {
+      try {
+        await apiFetch("/profile/settings", {
+          method: "POST",
+          body: JSON.stringify({ depenses_mensuelles: depensesMensuelles !== "" ? parseFloat(depensesMensuelles) : null }),
+        });
+        showSavedToast();
+      } catch (err) {
+        // best-effort
+      }
+    }, 600);
+    return () => clearTimeout(t);
+  }, [depensesMensuelles, token]);
+
+  useEffect(() => {
     if (!tmiMounted.current) { tmiMounted.current = true; return; }
     if (!token) return;
     apiFetch("/profile/settings", {
       method: "POST",
       body: JSON.stringify({ tmi }),
-    }).catch(() => {});
+    }).then(() => showSavedToast()).catch(() => {});
   }, [tmi, token]);
 
   useEffect(() => {
@@ -970,6 +1017,24 @@ function AppInner() {
     }
   }
 
+  // Lookup SIRET pendant l'onboarding (optionnel — pré-remplit la raison sociale).
+  async function handleOnbLookupSiret() {
+    const siretClean = (onbSiret || "").replace(/\s/g, "");
+    if (!siretClean) return;
+    setOnbSiretStatus("loading");
+    setOnbSiretMessage("");
+    setOnbSiretData(null);
+    try {
+      const data = await apiFetch(`/siret/lookup?siret=${encodeURIComponent(siretClean)}`);
+      setOnbSiretData(data);
+      setOnbSiretStatus("success");
+      setOnbSiretMessage(data.raison_sociale ? `✓ Trouvé : ${data.raison_sociale}` : "Établissement trouvé");
+    } catch (err) {
+      setOnbSiretStatus("error");
+      setOnbSiretMessage(err.message || "SIRET introuvable");
+    }
+  }
+
   // Onboarding minimal : enregistre activité + périodicité + solde, puis affiche le premier
   // résultat AVANT de basculer sur le Cockpit. C'est l'étape qui décide de l'activation.
   async function handleOnboardingComplete(e) {
@@ -987,6 +1052,15 @@ function AppInner() {
         await apiFetch("/profile/solde", { method: "POST", body: JSON.stringify({ solde: soldeVal }) });
         setPanique(prev => ({ ...prev, solde: String(soldeVal) }));
         localStorage.setItem("soldeUpdatedAt", new Date().toISOString());
+      }
+      // 2bis. SIRET saisi pendant l'onboarding (si validé via lookup INSEE)
+      if (onbSiretData && onbSiretData.siret) {
+        try {
+          await apiFetch("/profile/siret", {
+            method: "POST",
+            body: JSON.stringify({ siret: onbSiretData.siret, raison_sociale: onbSiretData.raison_sociale }),
+          });
+        } catch {}
       }
       // 3. On affiche le résultat (sans recharger : onboarding_complete reste false tant qu'on
       //    n'a pas appelé loadEverything, donc on garde la main sur l'écran result)
@@ -1835,33 +1909,43 @@ function AppInner() {
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
   // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
-  // RÈGLE : on calcule les jours sur le train de vie déclaré en priorité,
-  // sinon sur les vraies dépenses (frais d'entreprise réels).
-  // Le CA n'est JAMAIS utilisé comme proxy de dépenses (résultats absurdes).
+  // RÈGLE STRICTE : on calcule les jours UNIQUEMENT sur le train de vie déclaré.
+  // Pas de fallback (ni CA, ni frais) : ça produisait des résultats absurdes
+  // (ex : 25 € de solde → 216 jours parce que les frais déclarés étaient minuscules).
+  // Sans train de vie réaliste, Hector reste en mode accueil et invite à le renseigner.
   const trainDeVieNum = parseFloat(depensesMensuelles) || 0;
-  const depenseMensuelleReelle = trainDeVieNum > 0 ? trainDeVieNum : moyenneMensuelleFrais;
-  const depenseJournaliere = depenseMensuelleReelle > 0 ? depenseMensuelleReelle / 30 : 0;
-  const joursTranquillite = (argentDisponibleBrut !== null && depenseJournaliere > 0)
-    ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
-    : null;
+  const depenseJournaliere = trainDeVieNum > 0 ? trainDeVieNum / 30 : 0;
+  // Cas 1 : disponible négatif → 0 jour, alerte directe (pas besoin du train de vie pour le savoir).
+  // Cas 2 : train de vie connu + disponible positif → calcul normal.
+  // Cas 3 : ni l'un ni l'autre → null (mode accueil).
+  let joursTranquillite;
+  if (argentDisponibleBrut !== null && argentDisponibleBrut < 0) {
+    joursTranquillite = 0;
+  } else if (argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && depenseJournaliere > 0) {
+    joursTranquillite = Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere));
+  } else {
+    joursTranquillite = null;
+  }
   // Date concrète "jusqu'au ..."
   const dateTranquillite = joursTranquillite !== null
     ? new Date(Date.now() + joursTranquillite * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
     : null;
   // Les 6 niveaux-lieux (accomplissements permanents, ne régressent jamais).
   const PALIERS_SERENITE = [
-    { seuil: 7, nom: "Hector arrive", court: "7 jours" },
-    { seuil: 30, nom: "Son panier", court: "30 jours" },
-    { seuil: 90, nom: "Sa niche", court: "90 jours" },
-    { seuil: 180, nom: "Son jardin", court: "180 jours" },
-    { seuil: 365, nom: "Sa maison", court: "365 jours" },
-    { seuil: 730, nom: "Son domaine", court: "730 jours" },
+    { seuil: 7, nom: "Hector arrive", court: "7 jours", img: "/niveau-1.png" },
+    { seuil: 30, nom: "Son panier", court: "30 jours", img: "/niveau-2.png" },
+    { seuil: 90, nom: "Sa niche", court: "90 jours", img: "/niveau-3.png" },
+    { seuil: 180, nom: "Son jardin", court: "180 jours", img: "/niveau-4.png" },
+    { seuil: 365, nom: "Sa maison", court: "365 jours", img: "/niveau-5.png" },
+    { seuil: 730, nom: "Son domaine", court: "730 jours", img: "/niveau-6.png" },
   ];
   const palierRecordRef = useRef(0);
   if (joursTranquillite !== null && joursTranquillite > palierRecordRef.current) {
     palierRecordRef.current = joursTranquillite;
   }
-  const joursRecord = Math.max(joursTranquillite || 0, palierRecordRef.current);
+  // Pour cette V1, les niveaux acquis suivent les jours ACTUELS (cohérent avec la situation
+  // présente). La logique "record permanent" sera réactivée quand elle sera persistée en base.
+  const joursRecord = joursTranquillite || 0;
   const palierAcquisIndex = PALIERS_SERENITE.reduce((acc, p, i) => joursRecord >= p.seuil ? i : acc, -1);
   const palierActuel = palierAcquisIndex >= 0 ? PALIERS_SERENITE[palierAcquisIndex] : null;
   // Niveau ACTUEL (où tu es maintenant, selon tes jours du moment) — distinct du record acquis.
@@ -1870,8 +1954,8 @@ function AppInner() {
     : -1;
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
-    if (j === null) return { id: "accueil", label: "Ton compagnon", couleur: "#5DA9E8", pastille: "#5DA9E8",
-      mot: "Dis-moi environ combien tu dépenses par mois pour vivre, et je te dirai jusqu'à quand je veille sur ta tranquillité.", img: "/hector-serein.png", accueil: true };
+    if (j === null) return { id: "accueil", label: "En attente", couleur: "#FAC775", pastille: "#FAC775",
+      titre: "Réveille Hector 🐾", mot: "Pour veiller sur ta tranquillité, j'ai besoin de savoir combien tu dépenses par mois pour vivre. Dis-le moi, et je me mets au travail tout de suite !", img: "/hector-attentif.png", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
@@ -1905,7 +1989,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={56} dark />
+          <Logo size={80} dark />
           <h1 style={S.authHero}>Nouveau mot de passe</h1>
           <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
         </div>
@@ -1942,7 +2026,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={56} dark />
+          <Logo size={80} dark />
           <h1 style={S.authHero}>Vérification de votre email</h1>
         </div>
         <div style={S.authRight}>
@@ -1979,7 +2063,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={56} dark />
+          <Logo size={80} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met de côté tes cotisations, tes impôts et ta réserve — et te montre ce que tu peux vraiment dépenser. Sans connexion bancaire.</p>
 
@@ -2135,7 +2219,7 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <Logo size={56} dark />
+            <Logo size={80} dark />
             <h1 style={S.authHero}>C'est prêt.</h1>
             <p style={S.authSub}>Voici ton premier chiffre. Il deviendra de plus en plus précis à mesure que tu ajoutes tes revenus et tes frais.</p>
           </div>
@@ -2182,7 +2266,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={56} dark />
+          <Logo size={80} dark />
           <h1 style={S.authHero}>3 questions,<br />et tu sais tout.</h1>
           <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
@@ -2223,7 +2307,7 @@ function AppInner() {
             <p style={S.sectionLabel}>3. Combien y a-t-il sur ton compte, là, maintenant ?</p>
             <input
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="0.01" inputMode="decimal" placeholder="Exemple : 1750"
+              type="number" step="0.01" inputMode="decimal" placeholder="Exemple : 1750 €"
               value={onbSolde} onChange={e => setOnbSolde(e.target.value)} autoFocus
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
@@ -2233,12 +2317,36 @@ function AppInner() {
             <p style={S.sectionLabel}>4. Environ combien dépenses-tu par mois pour vivre ?</p>
             <input
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="50" inputMode="decimal" placeholder="Exemple : 1800"
+              type="number" step="50" inputMode="decimal" placeholder="Exemple : 1800 €"
               value={onbTrainDeVie} onChange={e => setOnbTrainDeVie(e.target.value)}
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
               Loyer, courses, abonnements, dépenses perso importantes — juste une estimation, tu pourras la modifier après. Ça permet à Hector de veiller sur ta tranquillité dès maintenant.
             </p>
+
+            <p style={S.sectionLabel}>5. Ton SIRET <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(optionnel)</span></p>
+            <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
+              <input
+                style={{ ...S.input, flex: 1 }}
+                type="text" inputMode="numeric" placeholder="14 chiffres"
+                value={onbSiret} onChange={e => { setOnbSiret(e.target.value); setOnbSiretStatus(""); setOnbSiretMessage(""); setOnbSiretData(null); }}
+              />
+              <button type="button" style={{ ...S.btnSecondary, width: "auto", padding: "10px 18px", whiteSpace: "nowrap" }}
+                onClick={handleOnbLookupSiret} disabled={!onbSiret || onbSiretStatus === "loading"}>
+                {onbSiretStatus === "loading" ? "…" : "Vérifier"}
+              </button>
+            </div>
+            {onbSiretStatus === "success" && (
+              <p style={{ fontSize: 12, color: "#1D9E75", fontWeight: 600, margin: "4px 0 16px" }}>{onbSiretMessage}</p>
+            )}
+            {onbSiretStatus === "error" && (
+              <p style={{ fontSize: 12, color: "#A32D2D", margin: "4px 0 16px" }}>{onbSiretMessage}</p>
+            )}
+            {onbSiretStatus === "" && (
+              <p style={{ fontSize: 11, color: "#8BA5C0", margin: "4px 0 20px", lineHeight: 1.5 }}>
+                Si tu le renseignes, H€CTOR récupère automatiquement ta raison sociale et ton adresse pour tes factures. Tu peux aussi le faire plus tard dans ton profil.
+              </p>
+            )}
 
             <button style={S.btnPrimary} type="submit" disabled={loading || onbSolde === ""}>
               {loading ? "…" : "Voir ce que je peux dépenser →"}
@@ -2260,7 +2368,7 @@ function AppInner() {
           <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
             <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 24, color: "white" }} />
           </button>
-          <Logo size={22} dark />
+          <Logo size={28} dark />
           <div style={{ width: 36 }} />
         </div>
       )}
@@ -2277,7 +2385,7 @@ function AppInner() {
         }
       >
         <div style={S.sidebarTop}>
-          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={28} dark />}
+          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={36} dark />}
           {isMobile && (
             <button style={{ ...S.navItem, padding: "4px 8px", width: "auto", marginLeft: "auto" }} onClick={() => setMobileMenuOpen(false)}>
               <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 20 }} />
@@ -2441,7 +2549,7 @@ function AppInner() {
                   type="number"
                   step="0.01"
                   inputMode="decimal"
-                  placeholder="Exemple : 1750"
+                  placeholder="Exemple : 1750 €"
                   value={panique.solde}
                   onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
                 />
@@ -2673,100 +2781,118 @@ function AppInner() {
 
             {/* ─── SÉRÉNITÉ D'HECTOR : carte immersive premium, sous le chiffre-héros ─── */}
             {hectorEtat && (
-              <div style={{ ...S.card, marginTop: 20, background: "#0A2540", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
-                {/* Zone haute immersive : image en fond à droite + texte à gauche */}
-                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 260 }}>
-                  {/* Illustration d'Hector — grande, à droite */}
+              <div style={{ ...S.card, marginTop: 20, background: "#0a1322", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
+                {/* Zone haute : image immersive à droite, texte à gauche */}
+                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 340 }}>
+                  {/* Illustration d'Hector — grande, à droite, fondue dans la carte */}
                   <div style={isMobile
-                    ? { width: "100%", height: 200, position: "relative", overflow: "hidden" }
-                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "56%", overflow: "hidden" }}>
-                    <HectorImage etat={hectorEtat} size={isMobile ? 260 : 320} cover />
-                    {/* Dégradé qui fond l'image dans la carte côté texte */}
+                    ? { width: "100%", height: 250, position: "relative", overflow: "hidden", background: "#0a1322" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "52%", overflow: "hidden", background: "#0a1322" }}>
+                    <HectorImage etat={hectorEtat} size={isMobile ? 280 : 330} cover />
                     <div style={{ position: "absolute", inset: 0, background: isMobile
-                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 55%, #0A2540 100%)"
-                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.5) 28%, rgba(10,37,64,0) 60%)" }} />
+                      ? "linear-gradient(to bottom, rgba(10,19,34,0) 55%, #0a1322 100%), linear-gradient(to top, rgba(10,19,34,0) 80%, #0a1322 100%)"
+                      : "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0.6) 14%, rgba(10,19,34,0) 36%)" }} />
+                    <div style={{ position: "absolute", inset: 0, background: isMobile
+                      ? "none"
+                      : "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 16%), linear-gradient(to bottom, #0a1322 0%, rgba(10,19,34,0) 14%), linear-gradient(to left, #0a1322 0%, rgba(10,19,34,0) 12%)" }} />
                   </div>
 
-                  {/* Texte à gauche, par-dessus */}
-                  <div style={{ position: "relative", padding: isMobile ? "0 18px 18px" : "24px 22px", maxWidth: isMobile ? "100%" : "55%" }}>
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 999, padding: "4px 11px" }}>
+                  {/* Texte à gauche */}
+                  <div style={{ position: "relative", padding: isMobile ? "20px 20px 0" : "24px 26px", maxWidth: isMobile ? "100%" : "56%" }}>
+                    {/* En-tête : logo bouclier + cockpit financier */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 20 }}>
+                      <LogoIcon size={40} />
+                      <div>
+                        <div style={{ fontSize: 19, fontWeight: 700, color: "white", letterSpacing: 0.5, lineHeight: 1 }}>H€CTOR</div>
+                        <div style={{ fontSize: 9.5, color: "#8BA5C0", letterSpacing: 1.5, marginTop: 3 }}>TON COCKPIT FINANCIER</div>
+                      </div>
+                    </div>
+
+                    {/* Badge état */}
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 16, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 999, padding: "5px 12px" }}>
                       <span style={{ width: 8, height: 8, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
                       <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
                     </div>
+
                     {hectorEtat.accueil ? (
-                      <div style={{ fontSize: isMobile ? 21 : 24, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>Hector, ton gardien de sérénité</div>
+                      <div style={{ fontSize: isMobile ? 22 : 26, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>{hectorEtat.titre || "Hector, ton gardien de sérénité"}</div>
                     ) : (
                       <>
-                        <div style={{ fontSize: isMobile ? 21 : 25, fontWeight: 700, color: "white", lineHeight: 1.15 }}>Hector veille sur toi</div>
-                        <div style={{ fontSize: isMobile ? 18 : 21, fontWeight: 700, color: hectorEtat.couleur, lineHeight: 1.2, marginBottom: 14 }}>jusqu'au {dateTranquillite}</div>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: isMobile ? 38 : 44, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{joursTranquillite}</span>
-                          <span style={{ fontSize: 14, color: "#B5D4F4" }}>jours de tranquillité</span>
+                        <div style={{ fontSize: isMobile ? 24 : 28, fontWeight: 700, color: "white", lineHeight: 1.1 }}>Hector veille sur toi</div>
+                        <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5, margin: "8px 0 16px" }}>Tant que tu gardes le cap, la tranquillité reste avec toi.</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 11, marginBottom: 18 }}>
+                          <span style={{ fontSize: isMobile ? 48 : 58, fontWeight: 700, color: hectorEtat.couleur, fontVariantNumeric: "tabular-nums", lineHeight: 0.9 }}>{joursTranquillite}</span>
+                          <span style={{ fontSize: 18, color: "white", lineHeight: 1.1 }}>jours de<br />tranquillité</span>
                         </div>
+                        <div style={{ fontSize: 12.5, color: "#9FB4CC", marginBottom: isMobile ? 16 : 0 }}>🐾 {hectorEtat.mot}</div>
                       </>
                     )}
-                    {/* Mot d'Hector — cliquable en mode accueil pour mener au bon endroit */}
-                    {hectorEtat.accueil ? (
+                    {hectorEtat.accueil && (
                       <button type="button" onClick={() => setNav("profil")}
-                        style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(93,202,165,0.12)", border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 10, padding: "12px 14px", maxWidth: 380, textAlign: "left", cursor: "pointer", width: "100%" }}>
+                        style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 4, marginBottom: isMobile ? 16 : 0, background: "rgba(93,202,165,0.12)", border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 10, padding: "12px 14px", maxWidth: 380, textAlign: "left", cursor: "pointer", width: "100%" }}>
                         <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
                         <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>
                           {hectorEtat.mot}
-                          <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ Renseigner mon train de vie dans mon profil</span>
+                          <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ C'est parti, je renseigne mon train de vie</span>
                         </span>
                       </button>
-                    ) : (
-                      <div style={{ marginTop: 14, maxWidth: 380 }}>
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px" }}>
-                          <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
-                          <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
-                        </div>
-                        {joursTranquillite !== null && joursTranquillite < 30 && (
-                          <button type="button"
-                            onClick={() => { setAiInput("Ma trésorerie est un peu juste en ce moment. Qu'est-ce que je peux faire concrètement pour renforcer ma réserve et retrouver de la sérénité ?"); setNav("assistant"); }}
-                            style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, background: hectorEtat.couleur, border: "none", borderRadius: 10, padding: "10px 14px", cursor: "pointer", width: "100%", color: "#0A2540", fontWeight: 700, fontSize: 13 }}>
-                            <i className="ti ti-messages" aria-hidden="true" style={{ fontSize: 16 }} />
-                            On regarde ça ensemble →
-                          </button>
-                        )}
-                      </div>
+                    )}
+                    {/* Bouton action si tendu */}
+                    {!hectorEtat.accueil && joursTranquillite !== null && joursTranquillite < 30 && (
+                      <button type="button"
+                        onClick={() => { setAiInput("Ma trésorerie est un peu juste en ce moment. Qu'est-ce que je peux faire concrètement pour renforcer ma réserve et retrouver de la sérénité ?"); setNav("assistant"); }}
+                        style={{ display: "inline-flex", alignItems: "center", gap: 8, marginTop: 14, marginBottom: isMobile ? 16 : 0, background: hectorEtat.couleur, border: "none", borderRadius: 10, padding: "10px 16px", cursor: "pointer", color: "#0A2540", fontWeight: 700, fontSize: 13 }}>
+                        <i className="ti ti-messages" aria-hidden="true" style={{ fontSize: 16 }} />
+                        On regarde ça ensemble →
+                      </button>
                     )}
                   </div>
                 </div>
 
-                {/* Chemin des niveaux — progression premium (masqué en accueil) */}
+                {/* Chemin des niveaux — le foyer d'Hector */}
                 {!hectorEtat.accueil && (
-                  <div style={{ background: "rgba(0,0,0,0.22)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "16px 10px" : "18px 22px" }}>
-                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: "#7A93AD", textTransform: "uppercase", marginBottom: 14, paddingLeft: 2 }}>Le foyer d'Hector</div>
-                    <div style={{ display: "flex", gap: 0, justifyContent: "space-between", position: "relative" }}>
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "16px 10px" : "18px 24px" }}>
+                    <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.5, color: "#8BA5C0", textTransform: "uppercase", marginBottom: 16, paddingLeft: 2 }}>Le foyer d'Hector grandit avec toi</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", position: "relative" }}>
                       {PALIERS_SERENITE.map((p, i) => {
-                        const acquis = i <= palierAcquisIndex;          // déjà atteint un jour (permanent)
-                        const iciMaintenant = i === palierActuelIndex;  // niveau actuel selon jours du moment
+                        const acquis = i <= palierAcquisIndex;
+                        const iciMaintenant = i === palierActuelIndex;
                         const ligneAcquise = i < palierAcquisIndex;
                         return (
                           <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
-                            {/* Ligne de connexion vers le suivant */}
                             {i < PALIERS_SERENITE.length - 1 && (
-                              <div style={{ position: "absolute", top: 18, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
+                              <div style={{ position: "absolute", top: isMobile ? 24 : 38, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
                             )}
-                            <div style={{ position: "relative", zIndex: 1, width: 38, height: 38, borderRadius: "50%", margin: "0 auto 7px", display: "flex", alignItems: "center", justifyContent: "center",
-                              background: iciMaintenant ? hectorEtat.couleur : (acquis ? "#1D6E56" : "#16314E"),
-                              border: iciMaintenant ? "2px solid white" : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.12)"),
-                              opacity: (acquis && !iciMaintenant) ? 0.7 : 1,
+                            {iciMaintenant && (
+                              <div style={{ position: "absolute", top: -16, left: "50%", transform: "translateX(-50%)", zIndex: 2 }}>
+                                <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 16, color: hectorEtat.couleur }} />
+                              </div>
+                            )}
+                            <div style={{ position: "relative", zIndex: 1, width: isMobile ? 48 : 76, height: isMobile ? 48 : 76, borderRadius: "50%", margin: "0 auto 8px", overflow: "hidden",
+                              background: "#16314E",
+                              border: iciMaintenant ? `2px solid ${hectorEtat.couleur}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.14)"),
+                              opacity: (acquis || iciMaintenant) ? 1 : 0.55,
                               boxShadow: iciMaintenant ? `0 0 0 4px ${hectorEtat.couleur}40` : "none" }}>
-                              {iciMaintenant
-                                ? <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 17, color: "#0A2540" }} />
-                                : acquis
-                                  ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: "white" }} />
-                                  : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
+                              <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
                             </div>
-                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 2px" }}>{p.nom}</div>
+                            {/* Badge coin : ✓ acquis ou 🔒 verrouillé */}
+                            <div style={{ position: "absolute", top: 0, right: isMobile ? "calc(50% - 26px)" : "calc(50% - 38px)", zIndex: 3, width: 20, height: 20, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                              background: acquis ? "#5DCAA5" : "#3a4a5f", border: "2px solid #0a1322" }}>
+                              {acquis
+                                ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 12, color: "#0A2540" }} />
+                                : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 10, color: "#9FB4CC" }} />}
+                            </div>
+                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 1px" }}>{p.nom}</div>
                             <div style={{ fontSize: 9, fontWeight: iciMaintenant ? 700 : 400, color: iciMaintenant ? hectorEtat.couleur : (acquis ? "#9FE1CB" : "#6B86A3") }}>
                               {iciMaintenant ? "tu es ici" : (acquis ? "atteint" : p.court)}
                             </div>
                           </div>
                         );
                       })}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 16, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 14px" }}>
+                      <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 16, color: hectorEtat.couleur, flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: "#B5D4F4", lineHeight: 1.4 }}>Garde le cap, chaque jour de tranquillité rapproche Hector de son domaine.</span>
                     </div>
                   </div>
                 )}
@@ -3517,16 +3643,40 @@ function AppInner() {
         )}
 
         {nav === "revenus" && (() => {
+          // Garde : si les estimations ne sont pas encore chargées, on évite tout crash.
+          if (!estimateData) {
+            return (
+              <div>
+                <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+                  <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que vous émettez à vos clients — pas vos dépenses</p></div>
+                </div>
+                <div style={{ ...S.card, textAlign: "center", padding: "40px 20px", color: "#8BA5C0" }}>Chargement de tes revenus…</div>
+              </div>
+            );
+          }
           const moisActuel = new Date().getMonth();
           const anneeActuelle = new Date().getFullYear();
-          const incomeCeMois = incomeList.filter(e => new Date(e.date).getMonth() === moisActuel && new Date(e.date).getFullYear() === anneeActuelle);
-          const caMoisCi = incomeCeMois.reduce((s, e) => s + e.amount, 0);
+          // Gardes défensives : une ligne corrompue (date invalide, amount null, description non-string)
+          // ne doit PAS faire planter toute la page Revenus.
+          const incomeListSafe = (incomeList || []).filter(e => {
+            if (!e || typeof e !== "object") return false;
+            if (typeof e.amount !== "number" || isNaN(e.amount)) return false;
+            const d = new Date(e.date);
+            if (isNaN(d.getTime())) return false;
+            return true;
+          });
+          const incomeCeMois = incomeListSafe.filter(e => {
+            const d = new Date(e.date);
+            return d.getMonth() === moisActuel && d.getFullYear() === anneeActuelle;
+          });
+          const caMoisCi = incomeCeMois.reduce((s, e) => s + (e.amount || 0), 0);
           const nbFactures = incomeCeMois.length;
           const factureMoyenne = nbFactures > 0 ? Math.round((caMoisCi / nbFactures) * 100) / 100 : 0;
           const parClientRevenus = {};
-          incomeList.forEach(e => {
-            const cle = (e.description?.match(/Client\s*:\s*([^—]+)/)?.[1] || "").trim() || "Non précisé";
-            parClientRevenus[cle] = (parClientRevenus[cle] || 0) + e.amount;
+          incomeListSafe.forEach(e => {
+            const desc = typeof e.description === "string" ? e.description : "";
+            const cle = (desc.match(/Client\s*:\s*([^—]+)/)?.[1] || "").trim() || "Non précisé";
+            parClientRevenus[cle] = (parClientRevenus[cle] || 0) + (e.amount || 0);
           });
           const meilleurClientRevenus = Object.entries(parClientRevenus).filter(([k]) => k !== "Non précisé").sort((a, b) => b[1] - a[1])[0];
           const urssafAProvisionner = estimateData ? Math.round(caMoisCi * ((estimateData.taux_global_pct || 0) / 100) * 100) / 100 : 0;
@@ -3551,7 +3701,7 @@ function AppInner() {
               const objM = parseFloat(objectifMensuel) || 0;
               const pctM = objM > 0 ? Math.min(100, Math.round((caCeMoisCi / objM) * 100)) : 0;
               const objA = parseFloat(objectifAnnuel) || 0;
-              const pctA = objA > 0 ? Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100)) : 0;
+              const pctA = objA > 0 ? Math.min(100, Math.round(((estimateData?.ca_annuel || 0) / objA) * 100)) : 0;
               const PRESETS_MENSUEL = [2000, 4000, 6000];
               const PRESETS_ANNUEL = [10000, 25000, 50000, 100000];
               return (
@@ -3632,14 +3782,14 @@ function AppInner() {
                       <>
                         <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData?.ca_annuel || 0)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
                           <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
                           <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
                           <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                         </div>
                         <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
-                        {estimateData.ca_annuel === 0 && (
+                        {(estimateData?.ca_annuel || 0) === 0 && (
                           <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
                         )}
                       </>
@@ -4740,6 +4890,16 @@ function AppInner() {
           </div>
         )}
       </main>
+      {/* Toast global "✓ Sauvegardé" */}
+      {savedToast && (
+        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
+          background: "#1D9E75", color: "white", padding: "12px 22px", borderRadius: 99,
+          fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10,
+          boxShadow: "0 8px 28px rgba(29,158,117,0.4)", animation: "fadeInUp 0.3s ease-out" }}>
+          <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 18 }} />
+          Modification enregistrée
+        </div>
+      )}
     </div>
   );
 }
