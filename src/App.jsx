@@ -416,14 +416,16 @@ function HectorImage({ etat, size = 200, cover = false }) {
 }
 
 function Logo({ size = 28, dark = false }) {
-  // Logo = tête d'Hector + texte "H€CTOR". dark=true pour fonds foncés (texte blanc).
-  // size = hauteur en pixels, le texte s'adapte proportionnellement.
+  // Logo = tête d'Hector (dominante) + texte "H€CTOR" en support.
+  // size = hauteur de référence. La tête est plus grande pour avoir vraiment de la présence.
   const textColor = dark ? "white" : INK;
+  const headSize = size * 1.4;  // la tête déborde au-dessus pour mieux remplir
+  const textSize = size * 0.55;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: size * 0.18, lineHeight: 1 }}>
-      <img src="/hector-tete.png" alt="" height={size} width={size}
-           style={{ height: size, width: size, objectFit: "contain", display: "block", flexShrink: 0 }} />
-      <span style={{ fontFamily: "Georgia, serif", fontSize: size * 0.62, fontWeight: 700, color: textColor, letterSpacing: size * 0.01 }}>
+    <div style={{ display: "flex", alignItems: "center", gap: size * 0.1, lineHeight: 1 }}>
+      <img src="/hector-tete.png" alt="" height={headSize} width={headSize}
+           style={{ height: headSize, width: headSize, objectFit: "contain", display: "block", flexShrink: 0, marginTop: -size * 0.2, marginBottom: -size * 0.2 }} />
+      <span style={{ fontFamily: "Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.01 }}>
         H€CTOR
       </span>
     </div>
@@ -1989,7 +1991,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={80} dark />
+          <Logo size={110} dark />
           <h1 style={S.authHero}>Nouveau mot de passe</h1>
           <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
         </div>
@@ -2026,7 +2028,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={80} dark />
+          <Logo size={110} dark />
           <h1 style={S.authHero}>Vérification de votre email</h1>
         </div>
         <div style={S.authRight}>
@@ -2063,7 +2065,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={80} dark />
+          <Logo size={110} dark />
           <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
           <p style={S.authSub}>H€CTOR met de côté tes cotisations, tes impôts et ta réserve — et te montre ce que tu peux vraiment dépenser. Sans connexion bancaire.</p>
 
@@ -2219,7 +2221,7 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <Logo size={80} dark />
+            <Logo size={110} dark />
             <h1 style={S.authHero}>C'est prêt.</h1>
             <p style={S.authSub}>Voici ton premier chiffre. Il deviendra de plus en plus précis à mesure que tu ajoutes tes revenus et tes frais.</p>
           </div>
@@ -2266,7 +2268,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={80} dark />
+          <Logo size={110} dark />
           <h1 style={S.authHero}>3 questions,<br />et tu sais tout.</h1>
           <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
