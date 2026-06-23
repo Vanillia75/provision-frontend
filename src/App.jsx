@@ -528,6 +528,7 @@ function AppInner() {
   // Onboarding 2 temps : "form" (3 questions) puis "result" (premier disponible affiché)
   const [onbStep, setOnbStep] = useState("form");
   const [onbSolde, setOnbSolde] = useState("");
+  const [onbTrainDeVie, setOnbTrainDeVie] = useState("");
 
   async function handleOnboardingSiretLookup() {
     if (!profilSiret) return;
@@ -966,7 +967,9 @@ function AppInner() {
     setError("");
     try {
       // 1. Profil (statut auto_entrepreneur par défaut, ACRE/libératoire à false — affinables plus tard)
-      await apiFetch("/profile", { method: "POST", body: JSON.stringify(profileForm) });
+      const trainVal = onbTrainDeVie !== "" ? parseFloat(onbTrainDeVie) : null;
+      await apiFetch("/profile", { method: "POST", body: JSON.stringify({ ...profileForm, depenses_mensuelles: trainVal }) });
+      if (trainVal != null) setDepensesMensuelles(String(trainVal));
       // 2. Solde saisi pendant l'onboarding
       const soldeVal = onbSolde !== "" ? parseFloat(onbSolde) : null;
       if (soldeVal != null) {
@@ -1853,7 +1856,7 @@ function AppInner() {
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
     if (j === null) return { id: "accueil", label: "Ton compagnon", couleur: "#5DA9E8", pastille: "#5DA9E8",
-      mot: "Renseigne ton train de vie ou tes dépenses, et je te dirai jusqu'à quand je veille sur ta tranquillité.", img: "/hector-serein.png", accueil: true };
+      mot: "Dis-moi environ combien tu dépenses par mois pour vivre, et je te dirai jusqu'à quand je veille sur ta tranquillité.", img: "/hector-serein.png", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
@@ -2210,6 +2213,16 @@ function AppInner() {
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
               H€CTOR ne se connecte jamais à ta banque. Ouvre l'appli de ta banque, lis le solde, recopie-le ici.
+            </p>
+
+            <p style={S.sectionLabel}>4. Environ combien dépenses-tu par mois pour vivre ?</p>
+            <input
+              style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
+              type="number" step="50" inputMode="decimal" placeholder="Exemple : 1800"
+              value={onbTrainDeVie} onChange={e => setOnbTrainDeVie(e.target.value)}
+            />
+            <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
+              Loyer, courses, abonnements, dépenses perso importantes — juste une estimation, tu pourras la modifier après. Ça permet à Hector de veiller sur ta tranquillité dès maintenant.
             </p>
 
             <button style={S.btnPrimary} type="submit" disabled={loading || onbSolde === ""}>
@@ -2677,11 +2690,22 @@ function AppInner() {
                         </div>
                       </>
                     )}
-                    {/* Mot d'Hector */}
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px", maxWidth: 360 }}>
-                      <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
-                    </div>
+                    {/* Mot d'Hector — cliquable en mode accueil pour mener au bon endroit */}
+                    {hectorEtat.accueil ? (
+                      <button type="button" onClick={() => setNav("profil")}
+                        style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(93,202,165,0.12)", border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 10, padding: "12px 14px", maxWidth: 380, textAlign: "left", cursor: "pointer", width: "100%" }}>
+                        <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>
+                          {hectorEtat.mot}
+                          <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ Renseigner mon train de vie dans mon profil</span>
+                        </span>
+                      </button>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px", maxWidth: 360 }}>
+                        <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
+                      </div>
+                    )}
                   </div>
                 </div>
 
