@@ -371,7 +371,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
       <img src={src} alt={`Hector ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
-          ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "right center", display: "block" }
+          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block" }
           : { width: size, height: size, objectFit: "contain", display: "block" }} />
     );
   }
