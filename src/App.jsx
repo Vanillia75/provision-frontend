@@ -391,7 +391,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
       <img src={src} alt={`Hector ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
-          ? { width: "100%", height: "100%", objectFit: "cover", objectPosition: "center center", display: "block" }
+          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center center", display: "block" }
           : { width: size, height: size, objectFit: "contain", display: "block" }} />
     );
   }
@@ -2684,17 +2684,15 @@ function AppInner() {
             {hectorEtat && (
               <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(135deg, #0A2540 0%, #0d2647 100%)", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
                 {/* Zone haute : image immersive à droite, texte à gauche */}
-                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 290 }}>
+                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 340 }}>
                   {/* Illustration d'Hector — grande, à droite, fondue dans la carte */}
                   <div style={isMobile
-                    ? { width: "100%", height: 210, position: "relative", overflow: "hidden" }
-                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "50%", overflow: "hidden" }}>
+                    ? { width: "100%", height: 240, position: "relative", overflow: "hidden" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "54%", overflow: "hidden" }}>
                     <HectorImage etat={hectorEtat} size={isMobile ? 280 : 330} cover />
                     <div style={{ position: "absolute", inset: 0, background: isMobile
-                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 50%, #0A2540 100%)"
-                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.85) 18%, rgba(10,37,64,0.3) 42%, rgba(10,37,64,0) 70%)" }} />
-                    <div style={{ position: "absolute", inset: 0, background: isMobile ? "none" : "linear-gradient(to left, #0A2540 0%, rgba(10,37,64,0) 18%)" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0A2540 0%, rgba(10,37,64,0) 22%), linear-gradient(to bottom, #0A2540 0%, rgba(10,37,64,0) 18%)" }} />
+                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 60%, #0A2540 100%)"
+                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.5) 12%, rgba(10,37,64,0) 35%)" }} />
                   </div>
 
                   {/* Texte à gauche */}
