@@ -2534,12 +2534,20 @@ function AppInner() {
       <style>{CSS}</style>
 
       {isMobile && (
-        <div style={S.mobileTopbar}>
-          <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
-            <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 24, color: "white" }} />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+            aria-label="Ouvrir le menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
           </button>
           <Logo size={28} dark />
-          <div style={{ width: 36 }} />
+          <div style={{ width: 40 }} />
         </div>
       )}
 
