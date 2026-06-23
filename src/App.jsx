@@ -613,7 +613,7 @@ function AppInner() {
     if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
     savedToastTimerRef.current = setTimeout(() => setSavedToast(false), 2800);
   };
-  const [showWalkthrough, setShowWalkthrough] = useState(() => !localStorage.getItem("hector_walkthrough_done"));
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
@@ -718,6 +718,10 @@ function AppInner() {
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
+        // Ouvrir le walkthrough au premier login uniquement
+        if (!localStorage.getItem("hector_walkthrough_done")) {
+          setShowWalkthrough(true);
+        }
       }
     } catch (err) {
       setError(err.message);
@@ -4953,7 +4957,7 @@ function AppInner() {
             next: "Découvrir",
           },
           {
-            img: "/niveau1.png",
+            img: "/niveau-1.png",
             timerLabel: "LE COCKPIT + L'ASSISTANT",
             title: "Fini les mauvaises surprises URSSAF.",
             sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. L'Assistant répond à toutes tes questions fiscales — par texte ou dictée vocale.",
@@ -4965,7 +4969,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/niveau2.png",
+            img: "/niveau-2.png",
             timerLabel: "REVENUS, FRAIS & FACTURATION",
             title: "Encaisser, dépenser, facturer — tout au même endroit.",
             sub: "Ajoute un revenu ou une dépense en quelques secondes. Crée un devis, convertis-le en facture en 1 clic, et envoie-le directement par email avec PDF.",
@@ -4977,7 +4981,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/niveau3.png",
+            img: "/niveau-3.png",
             timerLabel: "LES OUTILS",
             title: "Simule avant de décider.",
             sub: "H€CTOR met à ta disposition 5 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
@@ -4989,7 +4993,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/niveau4.png",
+            img: "/niveau-4.png",
             timerLabel: "SUIVI & PILOTAGE",
             title: "Pilote ton activité sur le long terme.",
             sub: "Score H€CTOR note ta santé financière sur 100. Revenus te donne une vue annuelle de ton CA. Contacts centralise tes clients. Actualités et Conseils te tiennent informé des obligations fiscales.",
@@ -5001,7 +5005,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/niveau5.png",
+            img: "/niveau-5.png",
             timerLabel: "LA SÉRÉNITÉ D'HECTOR",
             title: "Hector grandit avec toi.",
             sub: "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
@@ -5013,7 +5017,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/niveau6.png",
+            img: "/niveau-6.png",
             timerLabel: "TU ES PRÊT(E) !",
             title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
             sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
