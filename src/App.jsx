@@ -408,7 +408,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
 
 function Logo({ size = 28, dark = false }) {
   // dark=true → logo à texte blanc, pour les fonds foncés (page de connexion, sidebar).
-  const ratio = 1348 / 358;
+  const ratio = 1536 / 1024;
   return (
     <img src={dark ? "/hector-logo-white.png" : "/hector-logo.png"} alt="H€CTOR" height={size} width={Math.round(size * ratio)}
          style={{ height: size, width: "auto", display: "block" }} />
