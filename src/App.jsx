@@ -1211,6 +1211,24 @@ function AppInner() {
     }
   }
 
+  const [statutSaving, setStatutSaving] = useState(false);
+  async function handleChangeStatut(nouveauStatut) {
+    if (!profile || profile.statut === nouveauStatut) return;
+    setStatutSaving(true);
+    try {
+      await apiFetch("/profile/statut", {
+        method: "POST",
+        body: JSON.stringify({ statut: nouveauStatut }),
+      });
+      setProfile({ ...profile, statut: nouveauStatut });
+      setNav("dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setStatutSaving(false);
+    }
+  }
+
   function addHectorMessage(text, couleur) {
     const id = Date.now() + Math.random();
     setHectorMessages(prev => [...prev.slice(-1), { id, text, couleur: couleur || "#5DCAA5" }]);
@@ -3261,6 +3279,37 @@ function AppInner() {
               {loading ? "…" : "Voir ce que je peux dépenser →"}
             </button>
           </form>
+        </div>
+      </div>
+    );
+  }
+
+  // ═══ BRIQUE 4a — BASCULE DE COCKPIT selon le statut ═══
+  // Si l'utilisateur est intermittent, on affiche (pour l'instant) un placeholder
+  // propre. Le vrai cockpit intermittent arrive en Brique 5. Le cockpit
+  // auto-entrepreneur (ci-dessous) reste totalement inchangé.
+  if (profile && profile.statut === "intermittent") {
+    return (
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
+        <style>{CSS}</style>
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Logo size={32} dark />
+          <button onClick={() => setNav("reglages")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: 8, padding: "7px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
+            <i className="ti ti-settings" aria-hidden="true" /> Réglages
+          </button>
+        </nav>
+        <div style={{ maxWidth: 480, margin: "0 auto", padding: "64px 20px", textAlign: "center" }}>
+          <div style={{ width: 120, height: 120, margin: "0 auto 24px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
+          </div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: "white", margin: "0 0 12px" }}>Ton cockpit intermittent arrive 🐾</h1>
+          <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 28px" }}>
+            Le compteur 507h, le suivi de tes cachets et l'alerte renouvellement sont en construction.
+            On les prépare avec soin. Tu es aux premières loges.
+          </p>
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: "#6B8299", lineHeight: 1.6 }}>
+            Tu t'es trompé de profil ? Tu peux repasser en auto-entrepreneur dans les réglages.
+          </div>
         </div>
       </div>
     );
@@ -5696,6 +5745,41 @@ function AppInner() {
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{profilPrenom || profilNom ? `${profilPrenom} ${profilNom}`.trim() : "Complétez votre profil"}</div>
                   <div style={{ fontSize: 12, color: "#8BA5C0" }}>{profile?.email}</div>
+                </div>
+              </div>
+
+              {/* ── Statut du compte (bascule auto-entrepreneur / intermittent) ── */}
+              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Ton statut</div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Change le cockpit affiché par H€CTOR. Réversible à tout moment.</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[
+                    { id: "auto_entrepreneur", label: "Auto-entrepreneur", icon: "ti-briefcase" },
+                    { id: "intermittent", label: "Intermittent du spectacle", icon: "ti-movie" },
+                  ].map(opt => {
+                    const actif = profile?.statut === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        disabled={statutSaving}
+                        onClick={() => handleChangeStatut(opt.id)}
+                        style={{
+                          flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
+                          background: actif ? "#5DCAA5" : "white",
+                          color: actif ? "#04342C" : INK,
+                          border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`,
+                          borderRadius: 8, padding: "12px 10px", fontSize: 12.5, fontWeight: 600,
+                          cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit",
+                          opacity: statutSaving ? 0.6 : 1,
+                        }}
+                      >
+                        <i className={`ti ${opt.icon}`} aria-hidden="true" style={{ fontSize: 20 }} />
+                        {opt.label}
+                        {actif && <span style={{ fontSize: 10, fontWeight: 700 }}>✓ Actif</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
