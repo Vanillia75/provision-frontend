@@ -3294,9 +3294,7 @@ function AppInner() {
         <style>{CSS}</style>
         <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Logo size={32} dark />
-          <button onClick={() => setNav("reglages")} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: 8, padding: "7px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
-            <i className="ti ti-settings" aria-hidden="true" /> Réglages
-          </button>
+          <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode intermittent</span>
         </nav>
         <div style={{ maxWidth: 480, margin: "0 auto", padding: "64px 20px", textAlign: "center" }}>
           <div style={{ width: 120, height: 120, margin: "0 auto 24px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -3307,8 +3305,24 @@ function AppInner() {
             Le compteur 507h, le suivi de tes cachets et l'alerte renouvellement sont en construction.
             On les prépare avec soin. Tu es aux premières loges.
           </p>
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "16px 20px", fontSize: 13, color: "#6B8299", lineHeight: 1.6 }}>
-            Tu t'es trompé de profil ? Tu peux repasser en auto-entrepreneur dans les réglages.
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
+            <div style={{ fontSize: 13, color: "#6B8299", lineHeight: 1.6 }}>
+              Tu t'es trompé de profil, ou tu veux revenir à ton cockpit auto-entrepreneur ?
+            </div>
+            <button
+              type="button"
+              disabled={statutSaving}
+              onClick={() => handleChangeStatut("auto_entrepreneur")}
+              style={{
+                background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8,
+                padding: "12px 24px", fontSize: 14, fontWeight: 700,
+                cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit",
+                opacity: statutSaving ? 0.6 : 1, display: "inline-flex", alignItems: "center", gap: 8,
+              }}
+            >
+              <i className="ti ti-arrow-left" aria-hidden="true" />
+              {statutSaving ? "Un instant…" : "Repasser en auto-entrepreneur"}
+            </button>
           </div>
         </div>
       </div>
