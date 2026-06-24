@@ -2114,11 +2114,12 @@ function AppInner() {
   // Une pensée par jour MAX, et seulement ~1 jour sur 3 (sélection déterministe par date).
   const penseeHector = (() => {
     if (argentDisponibleBrut === null) return null; // pas assez d'infos → silence
+    const force = localStorage.getItem("hectorForce") === "pensee";
     const today = new Date().toISOString().slice(0, 10);
     // Déterminisme : un "dé" basé sur la date, stable sur la journée
     const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
     // ~1 jour sur 3 seulement : si le seed n'est pas dans le bon tiers, silence
-    if (seed % 3 !== 0) return null;
+    if (!force && seed % 3 !== 0) return null;
     // Déjà vue aujourd'hui ? On la garde affichée mais on ne régénère pas
     // Pool contextuel : on ne pioche que dans ce qui correspond à la VRAIE situation
     let pool = [];
@@ -2149,12 +2150,13 @@ function AppInner() {
   const souvenirHector = (() => {
     let souvenirs;
     try { souvenirs = JSON.parse(localStorage.getItem("hectorSouvenirs") || "{}"); } catch { return null; }
+    const force = localStorage.getItem("hectorForce") === "souvenir";
     const today = new Date().toISOString().slice(0, 10);
     const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
-    if (seed % 4 !== 1) return null; // ~1 jour sur 4
+    if (!force && seed % 4 !== 1) return null; // ~1 jour sur 4
     const formatDate = (iso) => { try { return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }); } catch { return ""; } };
     // On ne rappelle pas un souvenir tout frais (au moins quelques jours d'écart)
-    const assezAncien = (iso) => { try { return (Date.now() - new Date(iso).getTime()) > 5 * 86400000; } catch { return false; } };
+    const assezAncien = (iso) => { try { return force || (Date.now() - new Date(iso).getTime()) > 5 * 86400000; } catch { return false; } };
     const candidats = [];
     if (souvenirs.premiere_reserve && assezAncien(souvenirs.premiere_reserve))
       candidats.push(`Je me souviens du jour où on a sécurisé ta réserve pour la première fois, le ${formatDate(souvenirs.premiere_reserve)}. Depuis, la maison est beaucoup plus solide.`);
