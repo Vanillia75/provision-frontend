@@ -2898,7 +2898,7 @@ function AppInner() {
                   <button
                     onClick={() => { if (!isListening) { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new SR(); r.lang = "fr-FR"; r.onresult = ev => setAiInput(ev.results[0][0].transcript); r.onend = () => setIsListening(false); r.start(); setIsListening(true); } else setIsListening(false); }}
                     style={{ width: 40, height: 40, background: isListening ? "#E0533D" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, color: isListening ? "white" : "#8BA5C0", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    🎤
+                    {isListening ? "⏹" : "🎤"}
                   </button>
                 )}
                 <button
@@ -3209,46 +3209,56 @@ function AppInner() {
               </div>
 
               <div style={{ ...S.card, marginTop: 14 }}>
-                <div style={S.paniqueLine}>
-                  <span style={S.paniqueLineLabel}><i className="ti ti-chart-bar" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />CA à déclarer</span>
+                {/* CA à déclarer */}
+                <div style={{ padding: "14px 0", borderBottom: "1px solid #EEF2F7" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: "#6B7A8D", display: "flex", alignItems: "center", gap: 6 }}>
+                      📊 CA à déclarer
+                    </span>
+                    <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setEditingDeclarationCa(true)}>✎ Modifier</button>
+                  </div>
                   {editingDeclarationCa ? (
                     <input
-                      style={{ ...S.inlineEditValue, width: 110 }}
+                      style={{ ...S.input, fontSize: 24, fontWeight: 800, textAlign: "center" }}
                       type="number" step="0.01" autoFocus
                       value={declarationCa !== "" ? declarationCa : String(estimateData.ca_periode_courante)}
                       onChange={e => setDeclarationCa(e.target.value)}
                       onBlur={() => setEditingDeclarationCa(false)}
                     />
                   ) : (
-                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <strong style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#0A2540" }}>{formatEUR(caAffiche)}</strong>
-                      <button type="button" style={{ ...S.linkBtn, fontSize: 11, padding: 0 }} onClick={() => setEditingDeclarationCa(true)}>✎ Modifier</button>
-                    </span>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#0A2540", textAlign: "center", padding: "8px 0" }}>{formatEUR(caAffiche)}</div>
                   )}
                 </div>
-                <div style={S.paniqueLine}>
-                  <span style={S.paniqueLineLabel}><i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#EF9F27" }} />Cotisations estimées <span style={{ fontWeight: 400, color: "#8BA5C0", fontSize: 11 }}>({estimateData.taux_global_pct}%)</span></span>
+
+                {/* Cotisations */}
+                <div style={{ padding: "14px 0", borderBottom: "1px solid #EEF2F7" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontSize: 13, color: "#6B7A8D", display: "flex", alignItems: "center", gap: 6 }}>
+                      💰 Cotisations estimées <span style={{ fontSize: 11, color: "#8BA5C0" }}>({estimateData.taux_global_pct}%)</span>
+                    </span>
+                    <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setEditingDeclarationCotisations(true)}>✎ Modifier</button>
+                  </div>
                   {editingDeclarationCotisations ? (
                     <input
-                      style={{ ...S.inlineEditValue, width: 110 }}
+                      style={{ ...S.input, fontSize: 24, fontWeight: 800, textAlign: "center" }}
                       type="number" step="0.01" autoFocus
                       value={declarationCotisations !== "" ? declarationCotisations : String(cotisationsAffichees)}
                       onChange={e => setDeclarationCotisations(e.target.value)}
                       onBlur={() => setEditingDeclarationCotisations(false)}
                     />
                   ) : (
-                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <strong style={{ fontFamily: "'IBM Plex Mono', monospace", color: "#854F0B" }}>{formatEUR(cotisationsAffichees)}</strong>
-                      <button type="button" style={{ ...S.linkBtn, fontSize: 11, padding: 0 }} onClick={() => setEditingDeclarationCotisations(true)}>✎ Modifier</button>
-                    </span>
+                    <div style={{ fontSize: 32, fontWeight: 800, color: "#854F0B", textAlign: "center", padding: "8px 0" }}>{formatEUR(cotisationsAffichees)}</div>
                   )}
                 </div>
-                <div style={S.paniqueLine}>
-                  <span style={S.paniqueLineLabel}><i className="ti ti-id" aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />Activité / statut</span>
-                  <span style={{ fontSize: 12, color: "#6B7A8D" }}>{ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · {profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut}</span>
+
+                {/* Activité */}
+                <div style={{ padding: "12px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 13, color: "#6B7A8D" }}>🏷️ Activité / statut</span>
+                  <span style={{ fontSize: 12, color: "#0A2540", fontWeight: 600 }}>{ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · Auto-entrepreneur</span>
                 </div>
+
                 {(declarationCa !== "" || declarationCotisations !== "" || declarationPeriode !== "") && (
-                  <button style={{ ...S.linkBtn, marginTop: 8 }} onClick={() => { setDeclarationCa(""); setDeclarationCotisations(""); setDeclarationPeriode(""); }}>↺ Revenir aux valeurs calculées par H€CTOR</button>
+                  <button style={{ ...S.linkBtn, marginTop: 4 }} onClick={() => { setDeclarationCa(""); setDeclarationCotisations(""); setDeclarationPeriode(""); }}>↺ Revenir aux valeurs calculées par H€CTOR</button>
                 )}
               </div>
 
