@@ -4681,47 +4681,7 @@ function AppInner() {
                 ))}
               </div>
 
-              {/* Modal détail frais */}
-              {selectedExpense && (
-                <div style={{ position: "fixed", inset: 0, background: "rgba(10,37,64,0.6)", zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
-                  onClick={() => setSelectedExpense(null)}>
-                  <div style={{ background: "white", borderRadius: 16, padding: "28px 28px 24px", maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
-                    onClick={e => e.stopPropagation()}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
-                      <div>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Frais d'entreprise</div>
-                        <div style={{ fontSize: 18, fontWeight: 700, color: INK }}>{selectedExpense.description || labelCategorie(selectedExpense.categorie)}</div>
-                      </div>
-                      <button onClick={() => setSelectedExpense(null)} style={{ background: "#F3F4F6", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, color: "#6B7A8D" }}>✕</button>
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
-                        <span style={{ fontSize: 13, color: "#6B7A8D" }}>Montant</span>
-                        <span style={{ fontSize: 20, fontWeight: 800, color: INK }}>{formatEUR(selectedExpense.montant)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
-                        <span style={{ fontSize: 13, color: "#6B7A8D" }}>Date</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{formatDate(selectedExpense.date)}</span>
-                      </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
-                        <span style={{ fontSize: 13, color: "#6B7A8D" }}>Catégorie</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{labelCategorie(selectedExpense.categorie)}</span>
-                      </div>
-                      {selectedExpense.description && (
-                        <div style={{ padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
-                          <div style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 4 }}>Description</div>
-                          <div style={{ fontSize: 13, color: INK }}>{selectedExpense.description}</div>
-                        </div>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => { handleDeleteExpense(selectedExpense.id); setSelectedExpense(null); }}
-                      style={{ width: "100%", background: "#FEE2E2", color: "#991B1B", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                      Supprimer ce frais
-                    </button>
-                  </div>
-                </div>
-              )}
+              {/* Modal détail frais — rendu au niveau principal via portal ci-dessous */}
             </div>
           );
         })()}
@@ -5256,6 +5216,48 @@ function AppInner() {
         };
         return <WalkthroughModal key="walkthrough" />;
       })()}
+      {/* ===== MODAL DÉTAIL FRAIS ===== */}
+      {selectedExpense && (
+        <div style={{ position: "fixed", inset: 0, background: "rgba(10,37,64,0.6)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}
+          onClick={() => setSelectedExpense(null)}>
+          <div style={{ background: "white", borderRadius: 16, padding: "28px 28px 24px", maxWidth: 420, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }}
+            onClick={e => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>Frais d'entreprise</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: INK }}>{selectedExpense.description || labelCategorie(selectedExpense.categorie)}</div>
+              </div>
+              <button onClick={() => setSelectedExpense(null)} style={{ background: "#F3F4F6", border: "none", borderRadius: 8, width: 32, height: 32, cursor: "pointer", fontSize: 16, color: "#6B7A8D" }}>✕</button>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
+                <span style={{ fontSize: 13, color: "#6B7A8D" }}>Montant</span>
+                <span style={{ fontSize: 20, fontWeight: 800, color: INK }}>{formatEUR(selectedExpense.montant)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
+                <span style={{ fontSize: 13, color: "#6B7A8D" }}>Date</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{formatDate(selectedExpense.date)}</span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
+                <span style={{ fontSize: 13, color: "#6B7A8D" }}>Catégorie</span>
+                <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{labelCategorie(selectedExpense.categorie)}</span>
+              </div>
+              {selectedExpense.description && (
+                <div style={{ padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
+                  <div style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 4 }}>Description</div>
+                  <div style={{ fontSize: 13, color: INK }}>{selectedExpense.description}</div>
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => { handleDeleteExpense(selectedExpense.id); setSelectedExpense(null); }}
+              style={{ width: "100%", background: "#FEE2E2", color: "#991B1B", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              Supprimer ce frais
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Toast global "✓ Sauvegardé" */}
       {savedToast && (
         <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
