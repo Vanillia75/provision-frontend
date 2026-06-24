@@ -354,9 +354,7 @@ function LegalPageView({ page, onBack }) {
 
 
 function formatEUR(n) {
-  const val = n || 0;
-  const hasDecimals = Math.abs(val) % 1 !== 0;
-  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: hasDecimals ? 2 : 0, maximumFractionDigits: hasDecimals ? 2 : 0 }).format(val);
+  return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR" }).format(n || 0);
 }
 
 function formatDate(d) {
@@ -375,15 +373,6 @@ function HectorTete({ size = 32 }) {
   return <i className="ti ti-message-circle-2" aria-hidden="true" style={{ fontSize: size * 0.7, color: "#5DCAA5" }} />;
 }
 
-function NiveauImage({ src, fallbackIcon, fallbackColor }) {
-  const [ok, setOk] = useState(true);
-  if (src && ok) {
-    return <img src={src} alt="" onError={() => setOk(false)}
-      style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 40%", borderRadius: "50%", display: "block" }} />;
-  }
-  return <i className={`ti ${fallbackIcon}`} aria-hidden="true" style={{ fontSize: 18, color: fallbackColor }} />;
-}
-
 function HectorImage({ etat, size = 200, cover = false }) {
   // Affiche l'illustration IA si elle est présente dans /public, sinon une silhouette SVG de secours.
   const [imgOk, setImgOk] = useState(true);
@@ -393,7 +382,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
       <img src={src} alt={`Hector ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
-          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center center", display: "block" }
+          ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block" }
           : { width: size, height: size, objectFit: "contain", display: "block" }} />
     );
   }
@@ -418,26 +407,18 @@ function HectorImage({ etat, size = 200, cover = false }) {
 }
 
 function Logo({ size = 28, dark = false }) {
-  // Logo = tête d'Hector (dominante) + texte "H€CTOR" en support.
-  // size = hauteur de référence. La tête est plus grande pour avoir vraiment de la présence.
-  const textColor = dark ? "white" : INK;
-  const headSize = size * 1.4;  // la tête déborde au-dessus pour mieux remplir
-  const textSize = size * 0.55;
+  // dark=true → logo à texte blanc, pour les fonds foncés (page de connexion, sidebar).
+  const ratio = 1536 / 1024;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: size * 0.1, lineHeight: 1 }}>
-      <img src="/hector-tete.png" alt="" height={headSize} width={headSize}
-           style={{ height: headSize, width: headSize, objectFit: "contain", display: "block", flexShrink: 0, marginTop: -size * 0.2, marginBottom: -size * 0.2 }} />
-      <span style={{ fontFamily: "Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.01 }}>
-        H€CTOR
-      </span>
-    </div>
+    <img src={dark ? "/hector-logo-white.png" : "/hector-logo.png"} alt="H€CTOR" height={size} width={Math.round(size * ratio)}
+         style={{ height: size, width: "auto", display: "block" }} />
   );
 }
 
 function LogoIcon({ size = 32 }) {
   return (
-    <img src="/hector-tete.png" alt="H€CTOR" height={size} width={size}
-         style={{ height: size, width: size, objectFit: "contain", display: "block" }} />
+    <img src="/hector-icon.png" alt="H€CTOR" height={size} width={size}
+         style={{ height: size, width: size, display: "block", borderRadius: size * 0.22 }} />
   );
 }
 
@@ -559,10 +540,6 @@ function AppInner() {
   const [onbStep, setOnbStep] = useState("form");
   const [onbSolde, setOnbSolde] = useState("");
   const [onbTrainDeVie, setOnbTrainDeVie] = useState("");
-  const [onbSiret, setOnbSiret] = useState("");
-  const [onbSiretStatus, setOnbSiretStatus] = useState(""); // "", "loading", "success", "error"
-  const [onbSiretMessage, setOnbSiretMessage] = useState("");
-  const [onbSiretData, setOnbSiretData] = useState(null);
 
   async function handleOnboardingSiretLookup() {
     if (!profilSiret) return;
@@ -607,22 +584,10 @@ function AppInner() {
   const recognitionRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
-  // Toast global "✓ Sauvegardé" qui apparaît brièvement après une modification réussie
-  const [savedToast, setSavedToast] = useState(false);
-  const savedToastTimerRef = useRef(null);
-  const showSavedToast = () => {
-    setSavedToast(true);
-    if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
-    savedToastTimerRef.current = setTimeout(() => setSavedToast(false), 2800);
-  };
-  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
-  const [simCaLanding, setSimCaLanding] = useState("3000");
-  const [simActLanding, setSimActLanding] = useState("0.212");
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
   const tmiMounted = useRef(false);
-  const trainDeVieMounted = useRef(false);
   const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("");
   const [simActivite, setSimActivite] = useState("services");
@@ -669,10 +634,10 @@ function AppInner() {
   const [simFiscalPeriode, setSimFiscalPeriode] = useState("mensuel");
   const [showRetraitTout, setShowRetraitTout] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 900);
+  const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 768);
 
   useEffect(() => {
-    function handleResize() { setIsMobile(window.innerWidth <= 900); }
+    function handleResize() { setIsMobile(window.innerWidth <= 768); }
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
@@ -722,10 +687,6 @@ function AppInner() {
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
-        // Ouvrir le walkthrough au premier login uniquement
-        if (!localStorage.getItem("hector_walkthrough_done")) {
-          setShowWalkthrough(true);
-        }
       }
     } catch (err) {
       setError(err.message);
@@ -809,7 +770,6 @@ function AppInner() {
           body: JSON.stringify({ solde: panique.solde !== "" ? parseFloat(panique.solde) : null }),
         });
         setSoldeSaveStatus("saved");
-        showSavedToast();
       } catch (err) {
         setSoldeSaveStatus("error");
       }
@@ -826,7 +786,6 @@ function AppInner() {
           method: "POST",
           body: JSON.stringify({ reserve_securite: objectifSecurite !== "" ? parseFloat(objectifSecurite) : null }),
         });
-        showSavedToast();
       } catch (err) {
         // best-effort, ne bloque pas l'usage si la sauvegarde echoue ponctuellement
       }
@@ -835,29 +794,12 @@ function AppInner() {
   }, [objectifSecurite, token]);
 
   useEffect(() => {
-    if (!trainDeVieMounted.current) { trainDeVieMounted.current = true; return; }
-    if (!token) return;
-    const t = setTimeout(async () => {
-      try {
-        await apiFetch("/profile/settings", {
-          method: "POST",
-          body: JSON.stringify({ depenses_mensuelles: depensesMensuelles !== "" ? parseFloat(depensesMensuelles) : null }),
-        });
-        showSavedToast();
-      } catch (err) {
-        // best-effort
-      }
-    }, 600);
-    return () => clearTimeout(t);
-  }, [depensesMensuelles, token]);
-
-  useEffect(() => {
     if (!tmiMounted.current) { tmiMounted.current = true; return; }
     if (!token) return;
     apiFetch("/profile/settings", {
       method: "POST",
       body: JSON.stringify({ tmi }),
-    }).then(() => showSavedToast()).catch(() => {});
+    }).catch(() => {});
   }, [tmi, token]);
 
   useEffect(() => {
@@ -1028,24 +970,6 @@ function AppInner() {
     }
   }
 
-  // Lookup SIRET pendant l'onboarding (optionnel — pré-remplit la raison sociale).
-  async function handleOnbLookupSiret() {
-    const siretClean = (onbSiret || "").replace(/\s/g, "");
-    if (!siretClean) return;
-    setOnbSiretStatus("loading");
-    setOnbSiretMessage("");
-    setOnbSiretData(null);
-    try {
-      const data = await apiFetch(`/siret/lookup?siret=${encodeURIComponent(siretClean)}`);
-      setOnbSiretData(data);
-      setOnbSiretStatus("success");
-      setOnbSiretMessage(data.raison_sociale ? `✓ Trouvé : ${data.raison_sociale}` : "Établissement trouvé");
-    } catch (err) {
-      setOnbSiretStatus("error");
-      setOnbSiretMessage(err.message || "SIRET introuvable");
-    }
-  }
-
   // Onboarding minimal : enregistre activité + périodicité + solde, puis affiche le premier
   // résultat AVANT de basculer sur le Cockpit. C'est l'étape qui décide de l'activation.
   async function handleOnboardingComplete(e) {
@@ -1063,15 +987,6 @@ function AppInner() {
         await apiFetch("/profile/solde", { method: "POST", body: JSON.stringify({ solde: soldeVal }) });
         setPanique(prev => ({ ...prev, solde: String(soldeVal) }));
         localStorage.setItem("soldeUpdatedAt", new Date().toISOString());
-      }
-      // 2bis. SIRET saisi pendant l'onboarding (si validé via lookup INSEE)
-      if (onbSiretData && onbSiretData.siret) {
-        try {
-          await apiFetch("/profile/siret", {
-            method: "POST",
-            body: JSON.stringify({ siret: onbSiretData.siret, raison_sociale: onbSiretData.raison_sociale }),
-          });
-        } catch {}
       }
       // 3. On affiche le résultat (sans recharger : onboarding_complete reste false tant qu'on
       //    n'a pas appelé loadEverything, donc on garde la main sur l'écran result)
@@ -1632,15 +1547,11 @@ function AppInner() {
       const form = new FormData();
       form.append("file", file);
       const data = await apiFetch("/expenses/extract", { method: "POST", body: form });
-      // Nettoyer la description : virer les headers de tableau PDF mal parsés
-      const descBrute = data.description || "";
-      const motsParasites = ["qté", "quantite", "prix unitaire", "taxe", "montant", "total", "designation", "désignation", "libellé", "libelle", "tva", "ht", "ttc"];
-      const descPropre = motsParasites.some(m => descBrute.toLowerCase().includes(m)) ? "" : descBrute;
       setExpenseForm({
         date: data.date,
         montant: String(data.amount),
         categorie: "autre",
-        description: descPropre,
+        description: data.description || "",
       });
       setShowAddExpense(true);
     } catch (err) {
@@ -1924,43 +1835,33 @@ function AppInner() {
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
   // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
-  // RÈGLE STRICTE : on calcule les jours UNIQUEMENT sur le train de vie déclaré.
-  // Pas de fallback (ni CA, ni frais) : ça produisait des résultats absurdes
-  // (ex : 25 € de solde → 216 jours parce que les frais déclarés étaient minuscules).
-  // Sans train de vie réaliste, Hector reste en mode accueil et invite à le renseigner.
+  // RÈGLE : on calcule les jours sur le train de vie déclaré en priorité,
+  // sinon sur les vraies dépenses (frais d'entreprise réels).
+  // Le CA n'est JAMAIS utilisé comme proxy de dépenses (résultats absurdes).
   const trainDeVieNum = parseFloat(depensesMensuelles) || 0;
-  const depenseJournaliere = trainDeVieNum > 0 ? trainDeVieNum / 30 : 0;
-  // Cas 1 : disponible négatif → 0 jour, alerte directe (pas besoin du train de vie pour le savoir).
-  // Cas 2 : train de vie connu + disponible positif → calcul normal.
-  // Cas 3 : ni l'un ni l'autre → null (mode accueil).
-  let joursTranquillite;
-  if (argentDisponibleBrut !== null && argentDisponibleBrut < 0) {
-    joursTranquillite = 0;
-  } else if (argentDisponibleBrut !== null && argentDisponibleBrut >= 0 && depenseJournaliere > 0) {
-    joursTranquillite = Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere));
-  } else {
-    joursTranquillite = null;
-  }
+  const depenseMensuelleReelle = trainDeVieNum > 0 ? trainDeVieNum : moyenneMensuelleFrais;
+  const depenseJournaliere = depenseMensuelleReelle > 0 ? depenseMensuelleReelle / 30 : 0;
+  const joursTranquillite = (argentDisponibleBrut !== null && depenseJournaliere > 0)
+    ? Math.max(0, Math.floor(argentDisponibleBrut / depenseJournaliere))
+    : null;
   // Date concrète "jusqu'au ..."
   const dateTranquillite = joursTranquillite !== null
     ? new Date(Date.now() + joursTranquillite * 86400000).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
     : null;
   // Les 6 niveaux-lieux (accomplissements permanents, ne régressent jamais).
   const PALIERS_SERENITE = [
-    { seuil: 7, nom: "Hector arrive", court: "7 jours", img: "/niveau-1.png" },
-    { seuil: 30, nom: "Son panier", court: "30 jours", img: "/niveau-2.png" },
-    { seuil: 90, nom: "Sa niche", court: "90 jours", img: "/niveau-3.png" },
-    { seuil: 180, nom: "Son jardin", court: "180 jours", img: "/niveau-4.png" },
-    { seuil: 365, nom: "Sa maison", court: "365 jours", img: "/niveau-5.png" },
-    { seuil: 730, nom: "Son domaine", court: "730 jours", img: "/niveau-6.png" },
+    { seuil: 7, nom: "Hector arrive", court: "7 jours" },
+    { seuil: 30, nom: "Son panier", court: "30 jours" },
+    { seuil: 90, nom: "Sa niche", court: "90 jours" },
+    { seuil: 180, nom: "Son jardin", court: "180 jours" },
+    { seuil: 365, nom: "Sa maison", court: "365 jours" },
+    { seuil: 730, nom: "Son domaine", court: "730 jours" },
   ];
   const palierRecordRef = useRef(0);
   if (joursTranquillite !== null && joursTranquillite > palierRecordRef.current) {
     palierRecordRef.current = joursTranquillite;
   }
-  // Pour cette V1, les niveaux acquis suivent les jours ACTUELS (cohérent avec la situation
-  // présente). La logique "record permanent" sera réactivée quand elle sera persistée en base.
-  const joursRecord = joursTranquillite || 0;
+  const joursRecord = Math.max(joursTranquillite || 0, palierRecordRef.current);
   const palierAcquisIndex = PALIERS_SERENITE.reduce((acc, p, i) => joursRecord >= p.seuil ? i : acc, -1);
   const palierActuel = palierAcquisIndex >= 0 ? PALIERS_SERENITE[palierAcquisIndex] : null;
   // Niveau ACTUEL (où tu es maintenant, selon tes jours du moment) — distinct du record acquis.
@@ -1969,8 +1870,8 @@ function AppInner() {
     : -1;
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
-    if (j === null) return { id: "accueil", label: "En attente", couleur: "#FAC775", pastille: "#FAC775",
-      titre: "Réveille Hector 🐾", mot: "Pour veiller sur ta tranquillité, j'ai besoin de savoir combien tu dépenses par mois pour vivre. Dis-le moi, et je me mets au travail tout de suite !", img: "/hector-attentif.png", accueil: true };
+    if (j === null) return { id: "accueil", label: "Ton compagnon", couleur: "#5DA9E8", pastille: "#5DA9E8",
+      mot: "Dis-moi environ combien tu dépenses par mois pour vivre, et je te dirai jusqu'à quand je veille sur ta tranquillité.", img: "/hector-serein.png", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
@@ -2004,7 +1905,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={110} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>Nouveau mot de passe</h1>
           <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
         </div>
@@ -2041,7 +1942,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={110} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>Vérification de votre email</h1>
         </div>
         <div style={S.authRight}>
@@ -2070,318 +1971,157 @@ function AppInner() {
   }
 
   if (!token) {
-    const scrollToAuth = () => { document.getElementById("hector-auth-section")?.scrollIntoView({ behavior: "smooth" }); };
+    const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
+    const caSim = parseFloat(simCa) || 0;
+    const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
+    const netSim = Math.round((caSim - urssafSim) * 100) / 100;
     return (
-      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
+      <div style={S.authPage}>
         <style>{CSS}</style>
+        <div style={S.authLeft}>
+          <Logo size={56} dark />
+          <h1 style={S.authHero}>Sache exactement<br />combien tu peux dépenser</h1>
+          <p style={S.authSub}>H€CTOR met de côté tes cotisations, tes impôts et ta réserve — et te montre ce que tu peux vraiment dépenser. Sans connexion bancaire.</p>
 
-        {/* ===== NAVBAR ===== */}
-        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Logo size={32} dark />
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button onClick={() => { setAuthMode("login"); scrollToAuth(); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: 8, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-              Se connecter
-            </button>
-            <button onClick={() => { setAuthMode("register"); scrollToAuth(); }} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-              Créer un compte
-            </button>
-          </div>
-        </nav>
-
-        {/* ===== HERO ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px 32px" : "72px 40px 48px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 40, alignItems: "center" }}>
-          {/* Gauche */}
-          <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", marginBottom: 20, textTransform: "uppercase" }}>Ton cockpit financier</div>
-            <h1 style={{ fontSize: isMobile ? 26 : 48, fontWeight: 800, lineHeight: 1.15, margin: "0 0 20px", color: "white" }}>
-              Ne te demande plus<br />combien tu gagnes.<br />
-              <span style={{ color: "#5DCAA5" }}>H€CTOR te montre ce que<br />tu peux vraiment dépenser.</span>
-            </h1>
-            <p style={{ fontSize: 16, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 460 }}>
-              H€CTOR calcule automatiquement tes charges, prépare tes devis et tes factures, puis te montre ce qui est réellement à toi.
-            </p>
-            <button onClick={() => { setAuthMode("register"); scrollToAuth(); }} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
-              Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
-            </button>
-            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-              {[
-                { svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/><line x1="7" y1="15" x2="7" y2="15" strokeWidth="3"/></svg>, t: "Aucune carte bancaire" },
-                { svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>, t: "Sans engagement" },
-                { svg: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>, t: "Setup en 2 minutes" },
-              ].map(r => (
-                <div key={r.t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8BA5C0" }}>
-                  {r.svg}
-                  {r.t}
-                </div>
-              ))}
+          {/* Démo visuelle compacte : la transformation brut → disponible */}
+          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: isMobile ? "14px 16px" : "16px 24px", margin: "8px auto", maxWidth: 400, width: "100%" }}>
+            <div style={{ display: "inline-block", background: "rgba(255,255,255,0.1)", color: "#B5D4F4", fontSize: 9.5, fontWeight: 700, letterSpacing: 1, padding: "2px 9px", borderRadius: 999, marginBottom: 10 }}>EXEMPLE</div>
+            <div style={{ fontSize: 17, fontWeight: 700, color: "white", marginBottom: 8 }}>5 000 € encaissés</div>
+            <div style={{ fontSize: 12, color: "#B5D4F4", marginBottom: 6 }}>↓ Hector met de côté :</div>
+            <div style={{ display: "flex", justifyContent: "center", gap: 14, flexWrap: "wrap", marginBottom: 12 }}>
+              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Cotisations</span>
+              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Impôts</span>
+              <span style={{ fontSize: 12.5, color: "#EAF2FB" }}><span style={{ color: "#5DCAA5" }}>✓</span> Réserve</span>
             </div>
-          </div>
-          {/* Droite — photo Hector */}
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", position: "relative", marginLeft: isMobile ? 0 : -40 }}>
-            <div style={{ position: "relative", width: "100%", maxWidth: 620 }}>
-              <img src="/hector-panier.png" alt="Hector dans son panier" style={{ width: "100%", display: "block", objectFit: "contain", filter: "brightness(1.15) contrast(1.05)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,25,46,0) 60%, #07192E 98%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(7,25,46,0) 55%, #07192E 100%)" }} />
-            </div>
-          </div>
-        </section>
-
-        {/* ===== BLOC PROBLÈME + SIMULATEUR CÔTE À CÔTE ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto 0", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "stretch" }}>
-            {/* Bloc problème */}
-            <div style={{ background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "18px 20px" : "22px 32px", display: "flex", alignItems: "flex-start", gap: 18 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(226,75,74,0.15)", border: "1px solid rgba(226,75,74,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F09595" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#F09595", marginBottom: 10, textTransform: "uppercase" }}>Le problème</div>
-                <div style={{ fontSize: isMobile ? 15 : 17, color: "#EAF2FB", lineHeight: 1.6 }}>
-                  Tu encaisses <strong style={{ color: "white" }}>5 000 €</strong>.<br />
-                  Tu crois pouvoir les dépenser.<br />
-                  Puis l'URSSAF arrive.
-                </div>
-              </div>
-            </div>
-            {/* Simulateur mini */}
-            {(() => {
-              const caNum = Math.max(0, parseFloat(simCaLanding) || 0);
-              const taux = parseFloat(simActLanding);
-              const urssaf = Math.round(caNum * taux);
-              const dispo = Math.max(0, Math.round(caNum * (1 - taux)));
-              const fmt = n => n.toLocaleString("fr-FR") + " €";
-              return (
-                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "22px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 12 }}>Essaie avec ton propre CA</div>
-                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
-                    <div style={{ flex: 1, position: "relative" }}>
-                      <input
-                        type="number" value={simCaLanding} min="0"
-                        onChange={e => setSimCaLanding(e.target.value)}
-                        style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 28px 8px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }}
-                      />
-                      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 13, fontWeight: 700 }}>€</span>
-                    </div>
-                    <select
-                      value={simActLanding} onChange={e => setSimActLanding(e.target.value)}
-                      style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 10px", fontSize: 11, color: "white", outline: "none", boxSizing: "border-box" }}
-                    >
-                      <option value="0.212">Services (21,2%)</option>
-                      <option value="0.256">Libéral BNC (25,6%)</option>
-                      <option value="0.123">Vente (12,3%)</option>
-                    </select>
-                  </div>
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ flex: 1, background: "#0d2440", borderRadius: 8, padding: "10px 14px", border: "1px solid #1e3a5f" }}>
-                      <div style={{ fontSize: 9, color: "#8BA5C0", marginBottom: 3 }}>URSSAF à mettre de côté</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#FAC775" }}>{fmt(urssaf)}</div>
-                    </div>
-                    <div style={{ flex: 1, background: "rgba(93,202,165,0.07)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(93,202,165,0.25)" }}>
-                      <div style={{ fontSize: 9, color: "#5DCAA5", marginBottom: 3 }}>Il te reste</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#5DCAA5" }}>{fmt(dispo)}</div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
-          </div>
-        </section>
-
-
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 48px" : "0 40px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
-          {/* Démo calcul */}
-          <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "24px 28px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#5DCAA5", marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: "#5DCAA5", fontSize: 14 }}>✓</span> H€CTOR calcule pour toi
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 20, textAlign: "center" }}>5 000 € encaissés</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-              {[
-                { label: "URSSAF", val: "- 1 060 €" },
-                { label: "Réserve de sécurité", val: "- 800 €" },
-              ].map(r => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "#B5D4F4" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ color: "#5DCAA5", fontSize: 15 }}>✓</span> {r.label}
-                  </span>
-                  <span style={{ color: "#FAC775", fontWeight: 600 }}>{r.val}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ borderTop: "1px solid rgba(93,202,165,0.2)", paddingTop: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 4 }}>= réellement disponibles</div>
-              <div style={{ fontSize: 42, fontWeight: 800, color: "#5DCAA5" }}>3 140 €</div>
+            <div style={{ borderTop: "1px solid rgba(93,202,165,0.25)", paddingTop: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: "#5DCAA5" }}>= </span>
+              <span style={{ fontSize: isMobile ? 30 : 34, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums" }}>2 843 €</span>
+              <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>réellement disponibles</div>
             </div>
           </div>
 
-          {/* Démo chat */}
-          <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "24px 28px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: ACCENT, marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: ACCENT, fontSize: 14 }}>💬</span> Parle à H€CTOR
+          {/* Bande compagnon (sans cadre sur mobile, pour alléger) */}
+          <div style={isMobile
+            ? { padding: "4px 2px 8px", margin: "8px auto", maxWidth: 520, width: "100%" }
+            : { background: "rgba(14,46,79,0.5)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 12, padding: "12px 18px", margin: "4px auto 8px", maxWidth: 520, width: "100%" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
+              <i className="ti ti-paw" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "#EAF2FB" }}>Et Hector prépare tes devis quand tu lui parles</span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500, lineHeight: 1.45 }}>
-                  Prépare un devis pour Martin,<br />500 € de consulting
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:42</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              <div style={{ alignSelf: "flex-end", background: ACCENT, color: "white", borderRadius: "10px 10px 3px 10px", padding: "5px 10px", fontSize: 11.5, maxWidth: "85%" }}>
+                « Prépare un devis pour Martin, 500 € de consulting »
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "#5DCAA5" }}>✓</span> Devis créé
-                  <span style={{ marginLeft: 8, color: ACCENT, fontSize: 12, display: "flex", alignItems: "center", gap: 4 }}>📄 Voir le PDF</span>
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:42</div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500 }}>
-                  Transforme-le en facture
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:45</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, display: "flex", alignItems: "center", gap: 10 }}>
-                  <span style={{ color: "#5DCAA5" }}>✓</span> Facture créée
-                  <span style={{ marginLeft: 8, color: "#8BA5C0", fontSize: 12 }}>📄</span>
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:45</div>
+              <div style={{ alignSelf: "flex-start", background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "10px 10px 10px 3px", padding: "5px 10px", fontSize: 11.5, maxWidth: "85%" }}>
+                « Voilà ton devis prêt. On le relit ensemble ? » ✓
               </div>
             </div>
           </div>
-        </section>
 
-        {/* ===== GRILLE FEATURES ===== */}
-        <section style={{ background: "rgba(255,255,255,0.025)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "40px 20px" : "52px 40px" }}>
-          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", textAlign: "center", marginBottom: 36, textTransform: "uppercase" }}>Tout ce qu'H€CTOR fait pour toi</div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 16 : 24 }}>
-              {[
-                { emoji: "📊", t: "Savoir ce que tu peux dépenser", d: "Saisis tes revenus, Hector calcule ce qui est vraiment à toi après charges." },
-                { emoji: "📄", t: "Devis & factures automatiques", d: "Crée, envoie, convertis en quelques secondes — ou dicte à Hector." },
-                { emoji: "📷", t: "Scan de frais", d: "Prends une photo de ta facture, Hector l'enregistre et la classe." },
-                { emoji: "🛡️", t: "Réserve de sécurité", d: "Hector met de côté ce qu'il faut pour que tu sois tranquille à chaque déclaration." },
-                { emoji: "📈", t: "Suivi simple et clair", d: "Tableaux de bord pensés pour les indépendants, pas pour les comptables." },
-                { emoji: "🔒", t: "Sans connexion bancaire", d: "Tes données restent privées et en sécurité, toujours." },
-              ].map(f => (
-                <div key={f.t} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "18px 20px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12 }}>
-                  <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{f.emoji}</div>
-                  <div>
-                    <div style={{ fontSize: 15, fontWeight: 700, color: "white", marginBottom: 5, lineHeight: 1.3 }}>{f.t}</div>
-                    <div style={{ fontSize: 13, color: "#6B8299", lineHeight: 1.55 }}>{f.d}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
-        {/* ===== CTA FINAL + FORMULAIRE ===== */}
-        <section id="hector-auth-section" style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px" : "64px 40px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 48, alignItems: "center" }}>
-          {/* Gauche — social proof sobre */}
-          <div>
-            <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 16px" }}>
-              Reprends enfin le contrôle<br />de ta trésorerie.
-            </h2>
-            <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 24px" }}>
-              50 auto-entrepreneurs utilisent déjà H€CTOR en beta.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                "Zéro surprise à la déclaration URSSAF",
-                "Devis et factures en quelques secondes",
-                "Toujours savoir ce que tu peux dépenser",
-              ].map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: isMobile ? 13 : 14, color: "#B5D4F4", wordBreak: "break-word" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
-                  {t}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Droite — formulaire */}
-          <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box", width: "100%" }}>
-            {forgotMode ? (
-              <div>
-                <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
-                {forgotStatus === "sent" ? (
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
-                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>
-                      Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.
-                    </p>
-                    <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleForgotPassword}>
-                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
-                    <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
-                    <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
-                    <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
-                  </form>
-                )}
-              </div>
-            ) : (
-              <form onSubmit={handleAuth}>
-                <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
-                {error && <div style={S.errorBanner}>{error}</div>}
-                <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
-                <p style={S.orDivider}>ou avec un email</p>
-                <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-                <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
-                {authMode === "login" && (
-                  <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
-                    <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
-                  </p>
-                )}
-                <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>
-                  {loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}
-                </button>
-                {authMode === "register" && (
-                  <div style={{ display: "flex", gap: 16, justifyContent: "center", marginTop: 12 }}>
-                    {[
-                      { svg: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>, t: "Sans engagement" },
-                      { svg: <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>, t: "Annulation en 1 clic" },
-                    ].map(r => (
-                      <div key={r.t} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: "#8BA5C0" }}>
-                        {r.svg} {r.t}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <p style={S.switchAuth}>
-                  {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
-                  <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button>
-                </p>
-                {authMode === "register" && (
-                  <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center", marginTop: 4 }}>
-                    En créant un compte, vous acceptez les <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("cgu")}>CGU</button> et la <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("confidentialite")}>Politique de confidentialité</button>.
-                  </p>
-                )}
-              </form>
-            )}
-          </div>
-        </section>
-
-        {/* ===== FOOTER ===== */}
-        <footer style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "24px 20px" : "28px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between", maxWidth: 1160, margin: "0 auto" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <Logo size={24} dark />
-            <span style={{ fontSize: 11, color: "#4A6280" }}>L'assistant financier des indépendants.</span>
-          </div>
-          <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+          <div style={isMobile ? { ...S.authFeatures, gridTemplateColumns: "1fr" } : S.authFeatures}>
             {[
-              { label: "Mentions légales", page: "mentions" },
-              { label: "CGU", page: "cgu" },
-              { label: "Confidentialité", page: "confidentialite" },
-            ].map(l => (
-              <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
+              { icon: "ti-radar-2", t: "Ce que tu peux vraiment dépenser", d: "En un coup d'œil, sans te mettre en danger" },
+              { icon: "ti-calculator", t: "URSSAF, impôts & TVA anticipés", d: "Recalculés en temps réel selon tes revenus encaissés" },
+              { icon: "ti-file-invoice", t: "Devis & factures", d: "Crée, numérote, envoie par email et télécharge en PDF — ou demande à Hector" },
+              { icon: "ti-message-circle", t: "Hector, ton compagnon", d: "Il connaît tes chiffres et prépare tes devis quand tu lui parles" },
+              { icon: "ti-receipt-2", t: "Scan de tes frais", d: "Photographie une facture, H€CTOR en extrait le montant" },
+              { icon: "ti-lock", t: "Tes données restent chez toi", d: "Aucune connexion bancaire, aucun accès à ton compte" },
+            ].map((f, idx) => (
+              <div key={f.t} style={isMobile
+                ? { display: "flex", alignItems: "flex-start", gap: 10, padding: "11px 2px", borderTop: idx === 0 ? "none" : "1px solid rgba(255,255,255,0.08)" }
+                : S.authFeatureCard}>
+                <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                <div>
+                  <div style={S.authFeatureTitle}>{f.t}</div>
+                  <div style={S.authFeatureDesc}>{f.d}</div>
+                </div>
+              </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: "#4A6280" }}>Fait avec 🐾 pour les indépendants</div>
-        </footer>
+
+          <div style={S.simWidget}>
+            <div style={{ fontSize: 12, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 }}>
+              Essayez sans créer de compte
+            </div>
+            <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+              <input style={S.simInput} type="number" placeholder="CA encaissé" value={simCa} onChange={e => setSimCa(e.target.value)} />
+              <select style={S.simSelect} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
+                <option value="vente">Vente (12,3%)</option>
+                <option value="services">Services (21,2%)</option>
+                <option value="bnc">Libéral (25,6%)</option>
+              </select>
+            </div>
+            {caSim > 0 && (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>À mettre de côté URSSAF</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: "#FAC775" }}>{formatEUR(urssafSim)}</div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontSize: 11, color: "#8BA5C0" }}>Dans votre poche</div>
+                  <div style={{ fontSize: 20, fontWeight: 600, color: "#5DCAA5" }}>{formatEUR(netSim)}</div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div style={S.authRight}>
+          {forgotMode ? (
+            <div style={S.authCard}>
+              <h2 style={S.authTitle}>Mot de passe oublié</h2>
+              {forgotStatus === "sent" ? (
+                <div style={{ textAlign: "center" }}>
+                  <div style={{ fontSize: 36, marginBottom: 10 }}>📧</div>
+                  <p style={{ fontSize: 13, color: "#3D4452", marginBottom: 20, lineHeight: 1.6 }}>
+                    Si un compte existe avec l'adresse <strong>{forgotEmail}</strong>, vous allez recevoir un email avec un lien pour réinitialiser votre mot de passe.
+                  </p>
+                  <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
+                </div>
+              ) : (
+                <form onSubmit={handleForgotPassword}>
+                  <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email, nous vous enverrons un lien pour le réinitialiser.</p>
+                  <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
+                  <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
+                  <p style={S.switchAuth}>
+                    <button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button>
+                  </p>
+                </form>
+              )}
+            </div>
+          ) : (
+            <form style={S.authCard} onSubmit={handleAuth}>
+              <h2 style={S.authTitle}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
+              {error && <div style={S.errorBanner}>{error}</div>}
+              <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+              <p style={S.orDivider}>ou avec un email</p>
+              <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
+              <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+              {authMode === "login" && (
+                <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
+                  <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
+                </p>
+              )}
+              <button style={S.btnPrimary} type="submit" disabled={loading}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte"}</button>
+              <p style={S.switchAuth}>
+                {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
+                <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button>
+              </p>
+              {authMode === "register" && (
+                <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center", marginTop: 4 }}>
+                  En créant un compte, vous acceptez les <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("cgu")}>CGU</button> et la <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setLegalPage("confidentialite")}>Politique de confidentialité</button>.
+                </p>
+              )}
+              <p style={{ fontSize: 11, color: "#B0B6C0", textAlign: "center", marginTop: 10, display: "flex", gap: 8, justifyContent: "center" }}>
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
+                <span>·</span>
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("cgu")}>CGU</button>
+                <span>·</span>
+                <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+              </p>
+            </form>
+          )}
+        </div>
       </div>
     );
   }
@@ -2395,7 +2135,7 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <Logo size={110} dark />
+            <Logo size={56} dark />
             <h1 style={S.authHero}>C'est prêt.</h1>
             <p style={S.authSub}>Voici ton premier chiffre. Il deviendra de plus en plus précis à mesure que tu ajoutes tes revenus et tes frais.</p>
           </div>
@@ -2442,7 +2182,7 @@ function AppInner() {
       <div style={S.authPage}>
         <style>{CSS}</style>
         <div style={S.authLeft}>
-          <Logo size={110} dark />
+          <Logo size={56} dark />
           <h1 style={S.authHero}>3 questions,<br />et tu sais tout.</h1>
           <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
@@ -2483,7 +2223,7 @@ function AppInner() {
             <p style={S.sectionLabel}>3. Combien y a-t-il sur ton compte, là, maintenant ?</p>
             <input
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="0.01" inputMode="decimal" placeholder="Exemple : 1750 €"
+              type="number" step="0.01" inputMode="decimal" placeholder="Exemple : 1750"
               value={onbSolde} onChange={e => setOnbSolde(e.target.value)} autoFocus
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
@@ -2493,36 +2233,12 @@ function AppInner() {
             <p style={S.sectionLabel}>4. Environ combien dépenses-tu par mois pour vivre ?</p>
             <input
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="50" inputMode="decimal" placeholder="Exemple : 1800 €"
+              type="number" step="50" inputMode="decimal" placeholder="Exemple : 1800"
               value={onbTrainDeVie} onChange={e => setOnbTrainDeVie(e.target.value)}
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
               Loyer, courses, abonnements, dépenses perso importantes — juste une estimation, tu pourras la modifier après. Ça permet à Hector de veiller sur ta tranquillité dès maintenant.
             </p>
-
-            <p style={S.sectionLabel}>5. Ton SIRET <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(optionnel)</span></p>
-            <div style={{ display: "flex", gap: 8, marginBottom: 6 }}>
-              <input
-                style={{ ...S.input, flex: 1 }}
-                type="text" inputMode="numeric" placeholder="14 chiffres"
-                value={onbSiret} onChange={e => { setOnbSiret(e.target.value); setOnbSiretStatus(""); setOnbSiretMessage(""); setOnbSiretData(null); }}
-              />
-              <button type="button" style={{ ...S.btnSecondary, width: "auto", padding: "10px 18px", whiteSpace: "nowrap" }}
-                onClick={handleOnbLookupSiret} disabled={!onbSiret || onbSiretStatus === "loading"}>
-                {onbSiretStatus === "loading" ? "…" : "Vérifier"}
-              </button>
-            </div>
-            {onbSiretStatus === "success" && (
-              <p style={{ fontSize: 12, color: "#1D9E75", fontWeight: 600, margin: "4px 0 16px" }}>{onbSiretMessage}</p>
-            )}
-            {onbSiretStatus === "error" && (
-              <p style={{ fontSize: 12, color: "#A32D2D", margin: "4px 0 16px" }}>{onbSiretMessage}</p>
-            )}
-            {onbSiretStatus === "" && (
-              <p style={{ fontSize: 11, color: "#8BA5C0", margin: "4px 0 20px", lineHeight: 1.5 }}>
-                Si tu le renseignes, H€CTOR récupère automatiquement ta raison sociale et ton adresse pour tes factures. Tu peux aussi le faire plus tard dans ton profil.
-              </p>
-            )}
 
             <button style={S.btnPrimary} type="submit" disabled={loading || onbSolde === ""}>
               {loading ? "…" : "Voir ce que je peux dépenser →"}
@@ -2540,20 +2256,12 @@ function AppInner() {
       <style>{CSS}</style>
 
       {isMobile && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
-            aria-label="Ouvrir le menu"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
+        <div style={S.mobileTopbar}>
+          <button style={{ ...S.navItem, padding: "6px 8px", width: "auto" }} onClick={() => setMobileMenuOpen(true)}>
+            <i className="ti ti-menu-2" aria-hidden="true" style={{ fontSize: 24, color: "white" }} />
           </button>
-          <Logo size={28} dark />
-          <div style={{ width: 40 }} />
+          <Logo size={22} dark />
+          <div style={{ width: 36 }} />
         </div>
       )}
 
@@ -2569,7 +2277,7 @@ function AppInner() {
         }
       >
         <div style={S.sidebarTop}>
-          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={36} dark />}
+          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={28} dark />}
           {isMobile && (
             <button style={{ ...S.navItem, padding: "4px 8px", width: "auto", marginLeft: "auto" }} onClick={() => setMobileMenuOpen(false)}>
               <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 20 }} />
@@ -2667,11 +2375,13 @@ function AppInner() {
             <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
           </button>
         ))}
-        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
-          <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
-        </button>
         <div style={S.sidebarBottom}>
+
+          {!isMobile && (
+            <button style={S.navItem} onClick={() => setSidebarOpen(!sidebarOpen)}>
+              <i className={`ti ${sidebarOpen ? "ti-layout-sidebar-left-collapse" : "ti-layout-sidebar-left-expand"}`} aria-hidden="true" style={{ fontSize: 18 }} />
+            </button>
+          )}
           <div style={S.userRow}>
             <div style={S.avatar}>{userInitials}</div>
             {(isMobile || sidebarOpen) && <button style={S.linkBtn} onClick={handleLogout}>Déconnexion</button>}
@@ -2679,7 +2389,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent}>
+      <main style={isMobile ? { ...S.mainContent, padding: "16px 14px" } : S.mainContent}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
         {!emailVerified && profile?.onboarding_complete && (
@@ -2699,388 +2409,404 @@ function AppInner() {
         )}
 
         {nav === "dashboard" && estimateData && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
-            <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
-              {isMobile ? (
-                /* MOBILE : layout horizontal Hector + montant */
-                <div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
-                    {/* Hector mini à droite */}
-                    <div style={{ padding: "16px 16px 0", flex: 1 }}>
-                      {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "3px 10px" }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
-                        </div>
-                      )}
-                      {argentDisponibleBrut !== null ? (
-                        <>
-                          <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 4, lineHeight: 1.4 }}>
-                            {argentDisponibleBrut >= 0 ? "Tu peux dépenser jusqu'à" : "Attention —"}
-                          </div>
-                          <div style={{ fontSize: 30, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
-                            {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 14 }}>
-                            {[
-                              { label: "URSSAF provisionnée", ok: urssafProvision > 0 },
-                              { label: "Réserve constituée", ok: reserveAtteinte },
-                            ].map(c => (
-                              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: c.ok ? "#B5D4F4" : "#8BA5C0" }}>
-                                <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "!"}</span> {c.label}
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 6 }}>
-                            {panique.solde === "" ? "Dis-moi ton solde" : "Ajoute un revenu"}
-                          </div>
-                          <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 12 }}>
-                            {panique.solde === "" ? "Recopie ton solde bancaire ci-dessous. 10 sec." : "H€CTOR calculera ton disponible automatiquement."}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
-                      <HectorImage etat={hectorEtat} size={120} cover />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 40%)" }} />
-                    </div>
-                  </div>
-                  {/* Bande solde mobile */}
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <input
-                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        type="number" step="0.01" inputMode="decimal"
-                        placeholder="Solde bancaire"
-                        value={panique.solde}
-                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                      />
-                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                    </div>
-                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                    {dateTranquillite && joursTranquillite > 0 && (
-                      <span style={{ fontSize: 10, color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>{joursTranquillite}j</span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* DESKTOP : layout grille */
-                <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: 200 }}>
-                    <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
-                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
-                        </div>
-                      )}
-                      {argentDisponibleBrut !== null ? (
-                        <>
-                          <div style={{ fontSize: 14, color: "#8BA5C0", marginBottom: 6 }}>
-                            {argentDisponibleBrut >= 0 ? "Hector veille sur toi. Tu peux dépenser sereinement jusqu'à" : "Hector veille sur toi. Attention —"}
-                          </div>
-                          <div style={{ fontSize: 48, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
-                            {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                            {[
-                              {
-                                label: urssafProvision > 0 ? `URSSAF provisionnée : ${formatEUR(urssafProvision)}` : "Ajoute un revenu pour provisionner l'URSSAF",
-                                ok: urssafProvision > 0
-                              },
-                              {
-                                label: reserveAtteinte ? "Réserve de sécurité constituée" : `Réserve : il manque ${formatEUR(manqueReserveDashboard)}`,
-                                ok: reserveAtteinte
-                              },
-                            ].map(c => (
-                              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: c.ok ? "#B5D4F4" : "#FAC775" }}>
-                                <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "→"}</span> {c.label}
-                              </div>
-                            ))}
-                          </div>
-                          {/* Détail des charges cliquable */}
-                          {[urssafProvision, impotsNum, cfeNum, fraisMoisNum].some(v => v > 0) && (
-                            <details style={{ marginTop: 12 }}>
-                              <summary style={{ fontSize: 11, color: ACCENT, cursor: "pointer", userSelect: "none" }}>Voir le détail du calcul</summary>
-                              <div style={{ marginTop: 8, background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 5 }}>
-                                {urssafProvision > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>URSSAF à provisionner</span><span style={{ color: "#FAC775" }}>−{formatEUR(urssafProvision)}</span></div>}
-                                {impotsNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Impôts estimés (mensuel)</span><span style={{ color: "#FAC775" }}>−{formatEUR(impotsNum)}</span></div>}
-                                {cfeNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>CFE</span><span style={{ color: "#FAC775" }}>−{formatEUR(cfeNum)}</span></div>}
-                                {fraisMoisNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Frais ce mois</span><span style={{ color: "#FAC775" }}>−{formatEUR(fraisMoisNum)}</span></div>}
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 5, marginTop: 2 }}><span>Total charges</span><span style={{ color: "#FAC775" }}>−{formatEUR(totalChargesAVenir)}</span></div>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Solde bancaire</span><span style={{ color: "white" }}>{formatEUR(soldeNum)}</span></div>
-                              </div>
-                            </details>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>
-                            {panique.solde === "" ? "Dis-moi ton solde pour commencer" : "Ajoute un revenu pour voir ton disponible"}
-                          </div>
-                          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16 }}>
-                            {panique.solde === "" ? "Ouvre ton appli bancaire, lis le solde, recopie-le ci-dessous. 10 secondes." : "H€CTOR mettra automatiquement de côté l'URSSAF dès ton premier revenu ajouté."}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                    <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center", minHeight: 220 }}>
-                      <img
-                        src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Hector"
-                        style={{ width: "100%", maxWidth: 300, objectFit: "contain", objectPosition: "center bottom", display: "block" }}
-                      />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 30%)" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 20%)" }} />
-                    </div>
-                  </div>
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
-                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
-                      <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
-                        <input
-                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                          type="number" step="0.01" inputMode="decimal"
-                          placeholder="Ex : 3 500"
-                          value={panique.solde}
-                          onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                        />
-                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                      </div>
-                      {soldeFraicheur && <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>}
-                      {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                      {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                      {soldePerime && <span style={{ fontSize: 10, color: "#FAC775", background: "rgba(240,195,109,0.1)", border: "1px solid rgba(240,195,109,0.3)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠️ Solde périmé — remets-le à jour</span>}
-                    </div>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      {dateTranquillite && joursTranquillite > 0 && (
-                        <div style={{ fontSize: 11, color: "#8BA5C0" }}>
-                          <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
-                        </div>
-                      )}
-                      {estimateData.periode_courante?.jours_restants <= 30 && (
-                        <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
-                          ⏱ Déclaration dans {estimateData.periode_courante.jours_restants}j
-                        </div>
-                      )}
-                    </div>
-                  </div>
+          <div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+              <div>
+                <h1 style={S.pageTitle}>Bonjour 👋</h1>
+                <p style={S.pageSub}>Votre situation en un coup d'œil</p>
+              </div>
+              {estimateData.periode_courante?.jours_restants <= 30 && (
+                <div style={S.alertChip}>
+                  <i className="ti ti-clock" style={{ fontSize: 13 }} aria-hidden="true" />
+                  Déclaration dans {estimateData.periode_courante.jours_restants}j
                 </div>
               )}
             </div>
 
-            {/* ── ASSISTANT INLINE ── */}
-            <div style={{ background: "linear-gradient(135deg, #0A2540 0%, #112e50 100%)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "16px 20px" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                <HectorTete size={28} />
-                <div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Pose une question à H€CTOR</div>
-                  <div style={{ fontSize: 11, color: "#6B8299" }}>Il connaît ta situation. Il répond avec tes vrais chiffres.</div>
+            {/* ─── RITUEL DU SOLDE — le cœur de H€CTOR sans connexion bancaire ───
+                Saisie en 10 secondes, fraîcheur affichée en permanence, recalcul instantané.
+                La fraîcheur est gérée en localStorage (soldeUpdatedAt) — aucune dépendance backend. */}
+            <div style={{ ...S.soldeInputCard, ...(soldePerime ? { border: "1px solid #F0C36D", background: "#FFF8EC" } : {}) }}>
+              <label style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#6B7A8D", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                  💳 Combien y a-t-il sur ton compte, là, maintenant ?
+                  {soldeFraicheur && (
+                    <span style={{ fontSize: 11, fontWeight: 600, color: soldePerime ? "#B7791F" : "#1D9E75" }}>
+                      · {soldeFraicheur}
+                    </span>
+                  )}
+                </span>
+                <input
+                  style={S.soldeInput}
+                  type="number"
+                  step="0.01"
+                  inputMode="decimal"
+                  placeholder="Exemple : 1750"
+                  value={panique.solde}
+                  onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                />
+                <span style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.5 }}>
+                  H€CTOR ne se connecte jamais à ta banque — tes données restent chez toi. Ouvre l'appli de ta banque, lis le solde, recopie-le ici. 10 secondes, et tu sais exactement ce que tu peux dépenser.
+                </span>
+              </label>
+              {soldeSaveStatus === "saving" && <span style={{ ...S.badge, background: "#F1F2EE", color: "#5B6573", flexShrink: 0 }}>⏳ Enregistrement…</span>}
+              {soldeSaveStatus === "saved" && <span style={{ ...S.badge, ...S.badgeGreen, flexShrink: 0 }}>🟢 Pris en compte</span>}
+              {soldeSaveStatus === "error" && <span style={{ ...S.badge, background: "#FCEBEB", color: "#A32D2D", flexShrink: 0 }}>⚠️ Non enregistré</span>}
+            </div>
+
+            {/* Rappel doux : le check hebdo. N'apparaît que si le solde est saisi mais périmé. */}
+            {soldePerime && panique.solde !== "" && (
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "#FFF8EC", border: "1px solid #F0C36D", borderRadius: 12, padding: "12px 16px", marginBottom: 16 }}>
+                <i className="ti ti-clock-hour-4" aria-hidden="true" style={{ fontSize: 18, color: "#B7791F", flexShrink: 0 }} />
+                <span style={{ fontSize: 13, color: "#8A5A1A", lineHeight: 1.5 }}>
+                  Ton solde date de {soldeJours} jours. 10 secondes pour le remettre à jour, et ton chiffre redevient fiable.
+                </span>
+              </div>
+            )}
+
+            {estimateData.ca_annuel === 0 && (
+              <div style={S.onboardingNotice}>
+                <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 20, color: ACCENT, flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: INK }}>
+                    {panique.solde !== "" ? "Plus qu'une étape" : "Pour savoir ce que tu peux vraiment dépenser"}
+                  </div>
+                  <div style={{ fontSize: 12, color: "#5B6573", marginTop: 4, lineHeight: 1.6 }}>
+                    {panique.solde !== ""
+                      ? "Ajoute ton premier revenu encaissé : H€CTOR mettra automatiquement de côté ce que tu devras à l'URSSAF, et tu sauras vraiment ce que tu peux dépenser."
+                      : "Indique ton solde ci-dessus, puis ajoute tes revenus encaissés."}
+                  </div>
+                </div>
+                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>+ Ajouter un revenu</button>
+              </div>
+            )}
+
+            {/* ─── LA STAR : Argent réellement disponible, jamais masqué par la réserve ─── */}
+            {argentDisponibleBrut !== null && argentDisponibleBrut < 0 ? (
+              <div style={{ ...S.heroDispo, background: "#5C1A1A" }}>
+                <div style={S.heroDispoLabel}>🔴 Déficit</div>
+                <div style={{ ...S.heroDispoValue, color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
+                <div style={{ marginTop: 10, fontSize: 13, color: "#F7C1C1", maxWidth: 380, marginLeft: "auto", marginRight: "auto", lineHeight: 1.5 }}>
+                  Il manque <strong>{formatEUR(Math.abs(argentDisponibleBrut))}</strong> pour couvrir les charges prévues.
+                </div>
+                <div style={{ marginTop: 20, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "14px 18px", textAlign: "left", maxWidth: 340, marginLeft: "auto", marginRight: "auto" }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#F0997B", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 8 }}>Charges prises en compte</div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>URSSAF</span><span style={{ color: "#F7C1C1" }}>{formatEUR(urssafProvision)}</span></div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>Impôts</span><span style={{ color: "#F7C1C1" }}>{formatEUR(impotsNum)}</span></div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>CFE</span><span style={{ color: "#F7C1C1" }}>{formatEUR(cfeNum)}</span></div>
+                  <div style={S.heroDetailRow}><span style={{ color: "#F7C1C1" }}>Frais d'entreprise (ce mois)</span><span style={{ color: "#F7C1C1" }}>{formatEUR(fraisMoisNum)}</span></div>
+                  <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 6, fontWeight: 700 }}>
+                    <span style={{ color: "white" }}>Total charges</span><span style={{ color: "white" }}>{formatEUR(totalChargesAVenir)}</span>
+                  </div>
+                  <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 8, marginTop: 6 }}>
+                    <span style={{ color: "#F7C1C1" }}>Argent sur le compte</span><span style={{ color: "#F7C1C1" }}>{formatEUR(soldeNum)}</span>
+                  </div>
+                  <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 6, fontWeight: 700 }}>
+                    <span style={{ color: "#F09595" }}>Déficit</span><span style={{ color: "#F09595" }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</span>
+                  </div>
+                </div>
+                <details style={{ marginTop: 14, textAlign: "left" }}>
+                  <summary style={{ cursor: "pointer", fontSize: 12, color: "#F0997B", textAlign: "center" }}>Voir le calcul avancé (modifier CFE...)</summary>
+                  <div style={{ marginTop: 12, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px" }}>
+                    <div style={S.heroDetailRow}>
+                      <span style={{ color: "#F7C1C1" }}>CFE</span>
+                      <span style={{ color: "#F7C1C1" }}>{formatEUR(cfeNum)}</span>
+                    </div>
+                    <div style={{ textAlign: "center", marginTop: 8 }}>
+                      <button style={{ ...S.linkBtnLight, fontSize: 11 }} onClick={() => setNav("profil")}>⚙️ Régler la CFE et ma réserve dans mon profil →</button>
+                    </div>
+                  </div>
+                </details>
+              </div>
+            ) : (
+              <div style={S.heroDispo}>
+                {niveauFinancier !== null && (
+                  <div style={{ fontSize: 14, fontWeight: 700, color: niveauFinancier === "orange" ? "#5DA9E8" : "#5DCAA5", marginBottom: 10 }}>
+                    {niveauFinancier === "orange" ? "🔵 Tout va bien — tu construis ta réserve" : "✅ Ton activité est saine"}
+                  </div>
+                )}
+                <div style={S.heroDispoLabel}>
+                  {argentDisponibleBrut === null ? "💰 Ce que tu peux dépenser" : niveauFinancier === "rouge" ? "Attention à ta trésorerie" : "🟢 Tu peux dépenser sans risque jusqu'à"}
+                </div>
+                {argentDisponibleBrut !== null ? (
+                  <div style={{ ...S.heroDispoValue, color: soldePerime ? "#6E8199" : (niveauFinancier === "orange" ? "#5DA9E8" : "#5DCAA5"), opacity: soldePerime ? 0.55 : 1 }}>{formatEUR(argentDisponibleBrut)}</div>
+                ) : (
+                  <div style={S.dispoEmpty}>Renseigne ton solde ci-dessus pour voir ce chiffre</div>
+                )}
+                {niveauFinancier === "orange" && (() => {
+                  const pctReserve = securiteNum > 0 ? Math.max(0, Math.min(100, Math.round((argentDisponibleBrut / securiteNum) * 100))) : 0;
+                  return (
+                    <div style={{ marginTop: 14, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>
+                      <p style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, margin: "0 0 10px" }}>
+                        Vous construisez votre réserve de sécurité.
+                      </p>
+                      <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 16px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 12, color: "#B5D4F4", marginBottom: 8 }}>
+                          <span>Réserve de sécurité</span>
+                          <span><strong style={{ color: "white" }}>{formatEUR(argentDisponibleBrut)} / {formatEUR(securiteNum)}</strong> <span style={{ color: "#5DCAA5", fontWeight: 700 }}>· {pctReserve}%</span></span>
+                        </div>
+                        <div style={{ height: 8, background: "rgba(255,255,255,0.12)", borderRadius: 999, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${Math.max(pctReserve, pctReserve > 0 ? 2 : 0)}%`, background: ACCENT, borderRadius: 999 }} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+                {moisSurvie !== null && securitePrecise && (
+                  <div style={{ ...S.heroDispoSub, marginTop: 4, fontSize: 12 }}>
+                    🕐 soit environ {moisSurvie} mois de sécurité
+                  </div>
+                )}
+                {disponibleAujourdhui !== null && (
+                  <details style={{ marginTop: 16, textAlign: "left" }}>
+                    <summary style={{ cursor: "pointer", fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Voir d'où vient ce chiffre</summary>
+                    <div style={{ marginTop: 12, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "12px 16px" }}>
+                      <div style={S.heroDetailRow}>
+                        <span>CA encaissé cette année</span>
+                        <span>{estimateData.ca_annuel === 0 ? <span style={{ color: "#7A93AD", fontStyle: "italic", fontSize: 12 }}>Aucun revenu enregistré pour le moment</span> : formatEUR(estimateData.ca_annuel)}</span>
+                      </div>
+                      <div style={S.heroDetailRow}><span>Argent sur le compte</span><span>{formatEUR(soldeNum)}</span></div>
+                      <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− URSSAF</span><span style={{ color: "#FAC775" }}>{formatEUR(urssafProvision)}</span></div>
+                      <div style={S.heroDetailRow}><span style={{ color: "#FAC775" }}>− Impôts</span><span style={{ color: "#FAC775" }}>{formatEUR(impotsNum)}</span></div>
+                      <div style={S.heroDetailRow}>
+                        <span style={{ color: "#FAC775" }}>− Cotisation Foncière des Entreprises <span title="Impôt local annuel dû par la plupart des entreprises, même sans local professionnel dédié. Souvent autour de 200€/an pour un auto-entrepreneur, mais variable selon la commune." style={{ cursor: "help", borderBottom: "1px dotted #7A93AD" }}>(CFE) ⓘ</span></span>
+                        <span style={{ color: "#FAC775" }}>{formatEUR(cfeNum)}</span>
+                      </div>
+                      <div style={S.heroDetailRow}>
+                        <span style={{ color: "#FAC775" }}>− Frais d'entreprise (ce mois) <button style={{ ...S.linkBtnLight, fontSize: 10, marginLeft: 4 }} onClick={() => setNav("frais")}>voir détail →</button></span>
+                        <span style={{ color: "#FAC775" }}>{formatEUR(fraisMoisNum)}</span>
+                      </div>
+                      <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 6, marginTop: 2 }}>
+                        <span style={{ color: "#5DCAA5" }}>= Argent disponible (avant réserve)</span><span style={{ color: "#5DCAA5" }}>{formatEUR(argentDisponibleBrut)}</span>
+                      </div>
+                      <div style={S.heroDetailRow}>
+                        <span style={{ color: "#B5D4F4" }}>− Objectif de réserve <span style={{ fontSize: 10, color: "#7A93AD" }}>({securiteNum > 0 && baseMensuelleSecurite > 0 ? `≈ ${Math.round(securiteNum / baseMensuelleSecurite * 10) / 10} mois` : "modifiable dans ton profil"})</span></span>
+                        <span style={{ color: "#B5D4F4" }}>{formatEUR(securiteNum)}</span>
+                      </div>
+                      {reserveAtteinte ? (
+                        <div style={{ ...S.heroDetailRow, borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 8, marginTop: 4, fontWeight: 700 }}>
+                          <span style={{ color: "#5DCAA5" }}>= Argent réellement disponible</span><span style={{ color: "#5DCAA5" }}>{formatEUR(Math.max(0, disponibleAujourdhui))}</span>
+                        </div>
+                      ) : (
+                        <div style={{ borderTop: "1px solid rgba(255,255,255,0.15)", paddingTop: 10, marginTop: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", fontSize: 13, fontWeight: 700, color: "#FAC775", marginBottom: 6 }}>
+                            <span>⚠️ Réserve de sécurité en cours</span>
+                            <span>{formatEUR(Math.max(0, argentDisponibleBrut))} / {formatEUR(securiteNum)}</span>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#B5D4F4", lineHeight: 1.5 }}>
+                            Cet argent n'est pas encore "à toi en sécurité" : H€CTOR te recommande d'atteindre {formatEUR(securiteNum)} de réserve avant de le considérer comme libre. Tu peux ajuster cet objectif plus bas.
+                          </div>
+                        </div>
+                      )}
+
+                      <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.1)", textAlign: "center" }}>
+                        <button style={{ ...S.linkBtnLight, fontSize: 12 }} onClick={() => setNav("profil")}>
+                          ⚙️ Régler ma réserve de sécurité et la CFE dans mon profil →
+                        </button>
+                      </div>
+                    </div>
+                  </details>
+                )}
+              </div>
+            )}
+
+            {argentDisponibleBrut !== null && disponibleAujourdhui > 0 && (
+              <div style={S.explainBanner}>
+                Mode Achat et Mode Salaire utilisent votre <strong>marge prudente</strong> (réserve de sécurité déduite) : <strong>{formatEUR(disponibleAujourdhui)}</strong>.
+              </div>
+            )}
+
+            {panique.solde !== "" && (() => {
+              const manque = (disponibleAujourdhui ?? 0) < 0 ? Math.abs(disponibleAujourdhui) : 0;
+              const recos = [];
+              if (manque > 0) {
+                recos.push({ icon: "ti-alert-triangle", text: `Mettre ${formatEUR(manque)} de côté pour couvrir vos charges et votre réserve de sécurité.`, urgent: true });
+              }
+              if (urssafProvision > 0 && estimateData?.periode_courante?.jours_restants <= 14) {
+                recos.push({ icon: "ti-calendar-due", text: `Déclarer et payer vos cotisations URSSAF avant le ${formatDate(estimateData.periode_courante.date_limite_declaration)} (${estimateData.periode_courante.jours_restants}j restants).`, urgent: estimateData.periode_courante.jours_restants <= 7 });
+              }
+              if ((disponibleAujourdhui ?? 0) > securiteNum * 0.5 && (disponibleAujourdhui ?? 0) > 0) {
+                recos.push({ icon: "ti-cash", text: `Vous avez de la marge — vous pourriez vous verser jusqu'à ${formatEUR(salaireRecommande)} sans risque (voir Mode Salaire).`, urgent: false });
+              }
+              if (tvaProche) {
+                recos.push({ icon: "ti-receipt-tax", text: `Vous approchez du seuil de TVA (${pourcentageSeuilTva}%) — anticipez ce changement.`, urgent: tvaDepasse });
+              }
+              if (recos.length === 0) {
+                recos.push({ icon: "ti-check", text: "Rien à signaler pour l'instant — votre situation est stable.", urgent: false });
+              }
+              return (
+                <div style={{ ...S.card, marginBottom: 14 }}>
+                  <div style={S.cardTitle}>🎯 Que faire maintenant ?</div>
+                  {recos.slice(0, 3).map((r, i) => (
+                    <div key={i} style={S.recoRow}>
+                      <span style={{ ...S.recoNum, background: r.urgent ? "#FCEBEB" : "#E6F1FB", color: r.urgent ? "#A32D2D" : "#0C447C" }}>{i + 1}</span>
+                      <span style={{ fontSize: 13, color: INK, lineHeight: 1.5 }}>{r.text}</span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            <div style={S.card}>
+              <div style={S.cardTitle}>Seuil annuel
+                <span style={S.cardSub}>{formatEUR(estimateData.ca_annuel)} / {formatEUR(estimateData.plafond)}</span>
+              </div>
+              <div style={S.progressTrack}><div style={{ ...S.progressFill, width: `${Math.min(estimateData.pourcentage_plafond, 100)}%` }} /></div>
+              <span style={S.kpiSub}>Vous pouvez encore encaisser <strong>{formatEUR(estimateData.plafond - estimateData.ca_annuel)}</strong> avant le plafond</span>
+            </div>
+
+            {tvaProche && (
+              <div style={{ ...S.card, marginTop: 14, background: tvaDepasse ? "#FCEBEB" : "#FAEEDA", border: `1px solid ${tvaDepasse ? "#E24B4A" : "#EF9F27"}` }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <i className="ti ti-receipt-tax" aria-hidden="true" style={{ fontSize: 20, color: tvaDepasse ? "#A32D2D" : "#854F0B" }} />
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: tvaDepasse ? "#A32D2D" : "#854F0B" }}>
+                      {tvaDepasse ? "🔴 Franchise TVA dépassée" : "🟠 Vous approchez du seuil TVA"}
+                    </div>
+                    <div style={{ fontSize: 12, color: tvaDepasse ? "#A32D2D" : "#854F0B", marginTop: 2 }}>
+                      Seuil de {formatEUR(seuilTva)} ({pourcentageSeuilTva}% atteint){tvaDepasse ? " — vous devez désormais facturer et reverser la TVA." : ", au-delà vous devrez facturer la TVA."}
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, margin: "12px 0 10px" }}>
-                <input
-                  style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 14px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit" }}
-                  placeholder={isMobile ? "Pose ta question..." : "Puis-je m'acheter un ordi à 1 200 € ce mois ?"}
-                  value={aiInput}
-                  onChange={e => setAiInput(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter" && aiInput.trim()) { setNav("assistant"); } }}
-                />
-                {speechSupported && (
-                  <button
-                    onClick={() => { if (!isListening) { const SR = window.SpeechRecognition || window.webkitSpeechRecognition; const r = new SR(); r.lang = "fr-FR"; r.onresult = ev => setAiInput(ev.results[0][0].transcript); r.onend = () => setIsListening(false); r.start(); setIsListening(true); } else setIsListening(false); }}
-                    style={{ width: 40, height: 40, background: isListening ? "#E0533D" : "rgba(255,255,255,0.08)", border: "none", borderRadius: 8, color: isListening ? "white" : "#8BA5C0", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    🎤
-                  </button>
+            )}
+
+            {/* ─── SÉRÉNITÉ D'HECTOR : carte immersive premium, sous le chiffre-héros ─── */}
+            {hectorEtat && (
+              <div style={{ ...S.card, marginTop: 20, background: "#0A2540", border: `1px solid ${hectorEtat.couleur}33`, overflow: "hidden", padding: 0, position: "relative" }}>
+                {/* Zone haute immersive : image en fond à droite + texte à gauche */}
+                <div style={{ position: "relative", minHeight: isMobile ? "auto" : 260 }}>
+                  {/* Illustration d'Hector — grande, à droite */}
+                  <div style={isMobile
+                    ? { width: "100%", height: 200, position: "relative", overflow: "hidden" }
+                    : { position: "absolute", top: 0, right: 0, bottom: 0, width: "56%", overflow: "hidden" }}>
+                    <HectorImage etat={hectorEtat} size={isMobile ? 260 : 320} cover />
+                    {/* Dégradé qui fond l'image dans la carte côté texte */}
+                    <div style={{ position: "absolute", inset: 0, background: isMobile
+                      ? "linear-gradient(to bottom, rgba(10,37,64,0) 55%, #0A2540 100%)"
+                      : "linear-gradient(to right, #0A2540 0%, rgba(10,37,64,0.5) 28%, rgba(10,37,64,0) 60%)" }} />
+                  </div>
+
+                  {/* Texte à gauche, par-dessus */}
+                  <div style={{ position: "relative", padding: isMobile ? "0 18px 18px" : "24px 22px", maxWidth: isMobile ? "100%" : "55%" }}>
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 12, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 999, padding: "4px 11px" }}>
+                      <span style={{ width: 8, height: 8, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
+                      <span style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                    </div>
+                    {hectorEtat.accueil ? (
+                      <div style={{ fontSize: isMobile ? 21 : 24, fontWeight: 700, color: "white", lineHeight: 1.2, marginBottom: 12 }}>Hector, ton gardien de sérénité</div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: isMobile ? 21 : 25, fontWeight: 700, color: "white", lineHeight: 1.15 }}>Hector veille sur toi</div>
+                        <div style={{ fontSize: isMobile ? 18 : 21, fontWeight: 700, color: hectorEtat.couleur, lineHeight: 1.2, marginBottom: 14 }}>jusqu'au {dateTranquillite}</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: isMobile ? 38 : 44, fontWeight: 700, color: "white", fontVariantNumeric: "tabular-nums", lineHeight: 1 }}>{joursTranquillite}</span>
+                          <span style={{ fontSize: 14, color: "#B5D4F4" }}>jours de tranquillité</span>
+                        </div>
+                      </>
+                    )}
+                    {/* Mot d'Hector — cliquable en mode accueil pour mener au bon endroit */}
+                    {hectorEtat.accueil ? (
+                      <button type="button" onClick={() => setNav("profil")}
+                        style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 14, background: "rgba(93,202,165,0.12)", border: `1px solid ${hectorEtat.couleur}55`, borderRadius: 10, padding: "12px 14px", maxWidth: 380, textAlign: "left", cursor: "pointer", width: "100%" }}>
+                        <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
+                        <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>
+                          {hectorEtat.mot}
+                          <span style={{ display: "block", marginTop: 6, color: hectorEtat.couleur, fontWeight: 700 }}>→ Renseigner mon train de vie dans mon profil</span>
+                        </span>
+                      </button>
+                    ) : (
+                      <div style={{ marginTop: 14, maxWidth: 380 }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "11px 13px" }}>
+                          <i className="ti ti-shield-heart" aria-hidden="true" style={{ fontSize: 17, color: hectorEtat.couleur, flexShrink: 0, marginTop: 1 }} />
+                          <span style={{ fontSize: 12.5, color: "#EAF2FB", lineHeight: 1.5 }}>{hectorEtat.mot}</span>
+                        </div>
+                        {joursTranquillite !== null && joursTranquillite < 30 && (
+                          <button type="button"
+                            onClick={() => { setAiInput("Ma trésorerie est un peu juste en ce moment. Qu'est-ce que je peux faire concrètement pour renforcer ma réserve et retrouver de la sérénité ?"); setNav("assistant"); }}
+                            style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, background: hectorEtat.couleur, border: "none", borderRadius: 10, padding: "10px 14px", cursor: "pointer", width: "100%", color: "#0A2540", fontWeight: 700, fontSize: 13 }}>
+                            <i className="ti ti-messages" aria-hidden="true" style={{ fontSize: 16 }} />
+                            On regarde ça ensemble →
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Chemin des niveaux — progression premium (masqué en accueil) */}
+                {!hectorEtat.accueil && (
+                  <div style={{ background: "rgba(0,0,0,0.22)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "16px 10px" : "18px 22px" }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: 1, color: "#7A93AD", textTransform: "uppercase", marginBottom: 14, paddingLeft: 2 }}>Le foyer d'Hector</div>
+                    <div style={{ display: "flex", gap: 0, justifyContent: "space-between", position: "relative" }}>
+                      {PALIERS_SERENITE.map((p, i) => {
+                        const acquis = i <= palierAcquisIndex;          // déjà atteint un jour (permanent)
+                        const iciMaintenant = i === palierActuelIndex;  // niveau actuel selon jours du moment
+                        const ligneAcquise = i < palierAcquisIndex;
+                        return (
+                          <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
+                            {/* Ligne de connexion vers le suivant */}
+                            {i < PALIERS_SERENITE.length - 1 && (
+                              <div style={{ position: "absolute", top: 18, left: "50%", width: "100%", height: 3, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.1)", zIndex: 0 }} />
+                            )}
+                            <div style={{ position: "relative", zIndex: 1, width: 38, height: 38, borderRadius: "50%", margin: "0 auto 7px", display: "flex", alignItems: "center", justifyContent: "center",
+                              background: iciMaintenant ? hectorEtat.couleur : (acquis ? "#1D6E56" : "#16314E"),
+                              border: iciMaintenant ? "2px solid white" : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.12)"),
+                              opacity: (acquis && !iciMaintenant) ? 0.7 : 1,
+                              boxShadow: iciMaintenant ? `0 0 0 4px ${hectorEtat.couleur}40` : "none" }}>
+                              {iciMaintenant
+                                ? <i className="ti ti-map-pin" aria-hidden="true" style={{ fontSize: 17, color: "#0A2540" }} />
+                                : acquis
+                                  ? <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 17, color: "white" }} />
+                                  : <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14, color: "#6B86A3" }} />}
+                            </div>
+                            <div style={{ fontSize: isMobile ? 9.5 : 11, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#6B86A3", lineHeight: 1.2, padding: "0 2px" }}>{p.nom}</div>
+                            <div style={{ fontSize: 9, fontWeight: iciMaintenant ? 700 : 400, color: iciMaintenant ? hectorEtat.couleur : (acquis ? "#9FE1CB" : "#6B86A3") }}>
+                              {iciMaintenant ? "tu es ici" : (acquis ? "atteint" : p.court)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
                 )}
-                <button
-                  onClick={() => { if (aiInput.trim()) setNav("assistant"); }}
-                  style={{ width: 40, height: 40, background: "#5DCAA5", border: "none", borderRadius: 8, color: "#07192E", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, flexShrink: 0 }}>
-                  →
-                </button>
               </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                {(isMobile
-                  ? ["💸 Me verser ?", "🛒 Cet achat ?", "🔒 En sécurité ?"]
-                  : ["💸 Combien je peux me verser ?", "🛒 Je peux faire cet achat ?", "📄 Prépare un devis pour Martin", "🔒 Suis-je en sécurité ?"]
-                ).map(q => (
+            )}
+
+            {/* ─── ASSISTANT mis en avant : carte copilote avec questions cliquables ─── */}
+            <div style={{ ...S.card, marginTop: 20, background: "linear-gradient(135deg, #0A2540 0%, #1B4068 100%)", border: "none" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                <HectorTete size={32} />
+                <span style={{ fontSize: 16, fontWeight: 700, color: "white" }}>Demande à H€CTOR</span>
+              </div>
+              <p style={{ fontSize: 12.5, color: "#B5D4F4", margin: "0 0 14px", lineHeight: 1.5 }}>
+                Ton copilote connaît tes chiffres. Pose-lui une vraie question, il te répond avec ta situation à toi.
+              </p>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                {[
+                  "Combien je peux me verser ?",
+                  "Je peux me faire ce resto ?",
+                  "Combien mettre de côté ce mois ?",
+                  "Suis-je en sécurité ?",
+                ].map(q => (
                   <button key={q}
-                    onClick={() => { setAiInput(q.replace(/^[^ ]+ /, "")); setNav("assistant"); }}
-                    style={{ background: "rgba(255,255,255,0.07)", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 20, padding: "6px 12px", fontSize: isMobile ? 11 : 11.5, cursor: "pointer", fontFamily: "inherit" }}>
+                    style={{ background: "rgba(255,255,255,0.10)", color: "white", border: "1px solid rgba(255,255,255,0.18)", borderRadius: 20, padding: "8px 14px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}
+                    onClick={() => {
+                      setQuickAskQuestions([
+                        q,
+                        "Combien puis-je me verser ?",
+                        "Puis-je faire un achat important ?",
+                        "Combien dois-je mettre de côté ce mois-ci ?",
+                      ]);
+                      setNav("assistant");
+                    }}>
                     {q}
                   </button>
                 ))}
               </div>
             </div>
-
-            {/* ── SÉRÉNITÉ D'HECTOR — visible pour tous ── */}
-            {hectorEtat && (
-              <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat.accueil ? "rgba(55,138,221,0.2)" : hectorEtat.couleur + "22"}`, borderRadius: 14, padding: "16px 20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 Le foyer d'Hector grandit avec toi</div>
-                    <div style={{ fontSize: 11, color: "#6B8299" }}>
-                      {hectorEtat.accueil
-                        ? "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine."
-                        : dateTranquillite && joursTranquillite > 0
-                          ? `Jusqu'au ${dateTranquillite} · ${hectorEtat.mot}`
-                          : hectorEtat.mot}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 28, fontWeight: 800, color: hectorEtat.accueil ? "#4A6280" : hectorEtat.couleur, lineHeight: 1 }}>
-                      {hectorEtat.accueil ? "—" : joursTranquillite}
-                    </div>
-                    <div style={{ fontSize: 10, color: "#6B8299" }}>jours de tranquillité</div>
-                  </div>
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 4px" }}>
-                  {PALIERS_SERENITE.map((p, i) => {
-                    const acquis = !hectorEtat.accueil && i <= palierAcquisIndex;
-                    const iciMaintenant = !hectorEtat.accueil && i === palierActuelIndex;
-                    const ligneAcquise = !hectorEtat.accueil && i < palierAcquisIndex;
-                    return (
-                      <div key={p.seuil} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
-                        {i < PALIERS_SERENITE.length - 1 && (
-                          <div style={{ position: "absolute", top: isMobile ? 20 : 28, left: "50%", width: "100%", height: 2, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.06)", zIndex: 0 }} />
-                        )}
-                        <div style={{ position: "relative", zIndex: 1, width: isMobile ? 40 : 56, height: isMobile ? 40 : 56, borderRadius: "50%", margin: "0 auto 6px", overflow: "hidden", background: "#16314E",
-                          border: iciMaintenant ? `2px solid ${hectorEtat.couleur}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.1)"),
-                          opacity: (acquis || iciMaintenant) ? 1 : 0.35,
-                          boxShadow: iciMaintenant ? `0 0 0 4px ${hectorEtat.couleur}30` : "none" }}>
-                          <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
-                        </div>
-                        <div style={{ fontSize: isMobile ? 8.5 : 10, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#3A5170", lineHeight: 1.2 }}>{p.nom}</div>
-                        <div style={{ fontSize: 8.5, color: iciMaintenant ? hectorEtat.couleur : (acquis ? "#9FE1CB" : "#2A4060") }}>
-                          {iciMaintenant ? "tu es ici" : (acquis ? "✓ atteint" : p.court)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-                {hectorEtat.accueil && (
-                  <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(55,138,221,0.08)", borderRadius: 8, fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
-                    💡 Commence par renseigner ton <strong style={{ color: "#B5D4F4" }}>train de vie mensuel</strong> dans ton profil, puis ajoute tes revenus. Hector calculera combien de jours il peut veiller sur toi.
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ── AVIS PREMIÈRE CONNEXION ── */}
-            {hectorEtat?.accueil && (
-              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 20px" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 8 }}>
-                  {panique.solde !== "" ? "✓ Solde enregistré — plus qu'une étape !" : "Commençons par le commencement 🐾"}
-                </div>
-                <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
-                  {panique.solde !== ""
-                    ? "Ajoute maintenant ton premier revenu encaissé. H€CTOR calculera automatiquement l'URSSAF à mettre de côté et te dira ce que tu peux vraiment dépenser."
-                    : "1. Renseigne ton solde bancaire dans la carte en haut — ouvre ton appli de banque, lis le chiffre, recopie-le. 10 secondes.\n2. Ajoute tes revenus encaissés.\nH€CTOR s'occupe du reste."}
-                </div>
-                <button style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={() => setNav("revenus")}>
-                  + Ajouter mon premier revenu
-                </button>
-              </div>
-            )}
-
-            {/* ── TRAIN DE VIE ── */}
-            {trainDeVieNum > 0 && (
-              <div style={{ background: "rgba(55,138,221,0.05)", border: "1px solid rgba(55,138,221,0.15)", borderRadius: 12, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                <div>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0" }}>Train de vie mensuel</div>
-                  <div style={{ fontSize: 10, color: "#4A6280", marginTop: 2 }}>Tes dépenses perso estimées par mois</div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(trainDeVieNum)}</div>
-                  {joursTranquillite !== null && trainDeVieNum > 0 && (
-                    <div style={{ fontSize: 10, color: "#6B8299" }}>
-                      {Math.floor(argentDisponibleBrut / (trainDeVieNum / 30))} jours couverts
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* ── 3 CARTES SECONDAIRES ── */}
-            {argentDisponibleBrut !== null && (
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
-                {/* Que faire maintenant */}
-                <div style={{ background: "#0d2440", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#5DCAA5", marginBottom: 6 }}>⚡ Que faire maintenant ?</div>
-                  {niveauFinancier === "vert" ? (
-                    <>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Tu peux te verser en toute sécurité</div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: "#5DCAA5", marginBottom: 2 }}>{formatEUR(Math.max(0, argentDisponibleBrut * 0.7))}</div>
-                      <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>estimation prudentielle (70% du disponible)</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>💸 Calculer mon salaire →</button>
-                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>🛒 Simuler un achat →</button>
-                      </div>
-                    </>
-                  ) : niveauFinancier === "orange" ? (
-                    <>
-                      <div style={{ fontSize: 11, color: "#FAC775", marginBottom: 8 }}>Ta réserve de sécurité n'est pas encore atteinte</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#FAC775", marginBottom: 2 }}>{formatEUR(manqueReserveDashboard)}</div>
-                      <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>manquants pour atteindre ta réserve</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Analyser la situation →</button>
-                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Demander à Hector →</button>
-                      </div>
-                    </>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: 11, color: "#F09595", marginBottom: 8 }}>Tes charges dépassent ton solde</div>
-                      <div style={{ fontSize: 18, fontWeight: 800, color: "#F09595", marginBottom: 2 }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
-                      <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>de déficit actuellement</div>
-                      <button onClick={() => { setAiInput("Ma trésorerie est dans le rouge. Qu'est-ce que je peux faire concrètement ?"); setNav("assistant"); }}
-                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>En parler à Hector →</button>
-                    </>
-                  )}
-                </div>
-
-                {/* Seuil annuel */}
-                <div style={{ background: "#0d2440", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: ACCENT, marginBottom: 6 }}>📊 Plafond auto-entrepreneur</div>
-                  <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>
-                    {formatEUR(estimateData.ca_annuel || 0)} encaissés sur {formatEUR(estimateData.plafond || 77700)} max
-                  </div>
-                  <div style={{ height: 4, background: "#1e3a5f", borderRadius: 999, marginBottom: 10 }}>
-                    <div style={{ height: "100%", background: ACCENT, borderRadius: 999, width: `${Math.min(100, Math.round(((estimateData.ca_annuel || 0) / (estimateData.plafond || 77700)) * 100))}%`, transition: "width 0.4s" }} />
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(Math.max(0, (estimateData.plafond || 77700) - (estimateData.ca_annuel || 0)))}</div>
-                  <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>encore encaissables avant le plafond</div>
-                  <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Voir le simulateur fiscal →</button>
-                </div>
-
-                {/* Réserve de sécurité */}
-                <div style={{ background: "#0d2440", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#FAC775", marginBottom: 6 }}>🛡️ Réserve de sécurité</div>
-                  <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>
-                    {reserveAtteinte
-                      ? "Objectif atteint — tu es bien protégé"
-                      : "Objectif pas encore atteint"}
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: reserveAtteinte ? "#5DCAA5" : "#FAC775", marginBottom: 2 }}>{formatEUR(securiteNum)}</div>
-                  <div style={{ fontSize: 10, color: reserveAtteinte ? "#5DCAA5" : "#FAC775", marginBottom: 8 }}>
-                    {reserveAtteinte ? "✓ Réserve constituée" : `Il manque ${formatEUR(manqueReserveDashboard)} pour l'atteindre`}
-                  </div>
-                  <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Modifier l'objectif →</button>
-                </div>
-              </div>
-            )}
-
           </div>
         )}
-
-
 
         {nav === "echeances" && (() => {
           const today = new Date();
@@ -3791,40 +3517,16 @@ function AppInner() {
         )}
 
         {nav === "revenus" && (() => {
-          // Garde : si les estimations ne sont pas encore chargées, on évite tout crash.
-          if (!estimateData) {
-            return (
-              <div>
-                <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                  <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que vous émettez à vos clients — pas vos dépenses</p></div>
-                </div>
-                <div style={{ ...S.card, textAlign: "center", padding: "40px 20px", color: "#8BA5C0" }}>Chargement de tes revenus…</div>
-              </div>
-            );
-          }
           const moisActuel = new Date().getMonth();
           const anneeActuelle = new Date().getFullYear();
-          // Gardes défensives : une ligne corrompue (date invalide, amount null, description non-string)
-          // ne doit PAS faire planter toute la page Revenus.
-          const incomeListSafe = (incomeList || []).filter(e => {
-            if (!e || typeof e !== "object") return false;
-            if (typeof e.amount !== "number" || isNaN(e.amount)) return false;
-            const d = new Date(e.date);
-            if (isNaN(d.getTime())) return false;
-            return true;
-          });
-          const incomeCeMois = incomeListSafe.filter(e => {
-            const d = new Date(e.date);
-            return d.getMonth() === moisActuel && d.getFullYear() === anneeActuelle;
-          });
-          const caMoisCi = incomeCeMois.reduce((s, e) => s + (e.amount || 0), 0);
+          const incomeCeMois = incomeList.filter(e => new Date(e.date).getMonth() === moisActuel && new Date(e.date).getFullYear() === anneeActuelle);
+          const caMoisCi = incomeCeMois.reduce((s, e) => s + e.amount, 0);
           const nbFactures = incomeCeMois.length;
           const factureMoyenne = nbFactures > 0 ? Math.round((caMoisCi / nbFactures) * 100) / 100 : 0;
           const parClientRevenus = {};
-          incomeListSafe.forEach(e => {
-            const desc = typeof e.description === "string" ? e.description : "";
-            const cle = (desc.match(/Client\s*:\s*([^—]+)/)?.[1] || "").trim() || "Non précisé";
-            parClientRevenus[cle] = (parClientRevenus[cle] || 0) + (e.amount || 0);
+          incomeList.forEach(e => {
+            const cle = (e.description?.match(/Client\s*:\s*([^—]+)/)?.[1] || "").trim() || "Non précisé";
+            parClientRevenus[cle] = (parClientRevenus[cle] || 0) + e.amount;
           });
           const meilleurClientRevenus = Object.entries(parClientRevenus).filter(([k]) => k !== "Non précisé").sort((a, b) => b[1] - a[1])[0];
           const urssafAProvisionner = estimateData ? Math.round(caMoisCi * ((estimateData.taux_global_pct || 0) / 100) * 100) / 100 : 0;
@@ -3849,7 +3551,7 @@ function AppInner() {
               const objM = parseFloat(objectifMensuel) || 0;
               const pctM = objM > 0 ? Math.min(100, Math.round((caCeMoisCi / objM) * 100)) : 0;
               const objA = parseFloat(objectifAnnuel) || 0;
-              const pctA = objA > 0 ? Math.min(100, Math.round(((estimateData?.ca_annuel || 0) / objA) * 100)) : 0;
+              const pctA = objA > 0 ? Math.min(100, Math.round((estimateData.ca_annuel / objA) * 100)) : 0;
               const PRESETS_MENSUEL = [2000, 4000, 6000];
               const PRESETS_ANNUEL = [10000, 25000, 50000, 100000];
               return (
@@ -3930,14 +3632,14 @@ function AppInner() {
                       <>
                         <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData?.ca_annuel || 0)}</span>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData.ca_annuel)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
                           <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
                           <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
                           <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                         </div>
                         <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
-                        {(estimateData?.ca_annuel || 0) === 0 && (
+                        {estimateData.ca_annuel === 0 && (
                           <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
                         )}
                       </>
@@ -4083,7 +3785,7 @@ function AppInner() {
               })()}
 
               <div style={S.card}>
-                {incomeListSafe.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeListSafe.map(entry => (
+                {incomeList.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeList.map(entry => (
                   <div key={entry.id} style={S.incomeRow}>
                     <div style={{ flex: 1 }}>
                       <span style={S.incomeAmt}>{formatEUR(entry.amount)}</span>
@@ -4926,18 +4628,7 @@ function AppInner() {
 
         {nav === "assistant" && (
           <div>
-            {/* Header premium : grande tête d'Hector, titre fort, ambiance copilote */}
-            <div style={{ background: "linear-gradient(135deg, #0A2540 0%, #1B4068 100%)", borderRadius: 16, padding: isMobile ? "20px 18px" : "24px 28px", marginBottom: 16, display: "flex", alignItems: "center", gap: isMobile ? 14 : 22, flexWrap: isMobile ? "wrap" : "nowrap" }}>
-              <HectorTete size={isMobile ? 80 : 110} />
-              <div style={{ flex: 1, minWidth: 200 }}>
-                <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white", margin: 0, lineHeight: 1.15 }}>Hector, ton copilote</h1>
-                <p style={{ fontSize: isMobile ? 13 : 14, color: "#B5D4F4", margin: "6px 0 0", lineHeight: 1.5 }}>Il connaît tes chiffres, prépare tes devis, et te dit ce que tu peux vraiment dépenser.</p>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 999, padding: "3px 10px" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#5DCAA5", display: "inline-block", animation: "pulse 2s infinite" }} />
-                  <span style={{ fontSize: 11, fontWeight: 600, color: "#5DCAA5" }}>En ligne</span>
-                </div>
-              </div>
-            </div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div style={{ display: "flex", alignItems: "center", gap: 12 }}><HectorTete size={44} /><div><h1 style={S.pageTitle}>Ton copilote</h1><p style={S.pageSub}>Il connaît tes chiffres et te conseille pour de vrai</p></div></div></div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
@@ -5049,168 +4740,6 @@ function AppInner() {
           </div>
         )}
       </main>
-      {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
-      {showWalkthrough && (() => {
-        const wtSteps = [
-          {
-            img: "/hector-tete.png",
-            timerLabel: "BIENVENUE SUR H€CTOR",
-            title: "Bonjour, moi c'est H€CTOR.",
-            sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
-            items: [
-              { icon: "ti-check", text: "Zéro case à remplir pour commencer" },
-              { icon: "ti-check", text: "Ton premier revenu suffit à tout démarrer" },
-              { icon: "ti-check", text: "Tu peux passer à tout moment" },
-            ],
-            next: "Découvrir",
-          },
-          {
-            img: "/niveau-1.png",
-            timerLabel: "LE COCKPIT + L'ASSISTANT",
-            title: "Fini les mauvaises surprises URSSAF.",
-            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. L'Assistant répond à toutes tes questions fiscales — par texte ou dictée vocale.",
-            items: [
-              { icon: "ti-check", text: "Situation saine / Fragile / Déficit en un coup d'œil" },
-              { icon: "ti-check", text: "Charges URSSAF + impôts calculées automatiquement" },
-              { icon: "ti-mic", text: "Assistant disponible par texte ou dictée vocale" },
-            ],
-            next: "Suivant",
-          },
-          {
-            img: "/niveau-2.png",
-            timerLabel: "REVENUS, FRAIS & FACTURATION",
-            title: "Encaisser, dépenser, facturer — tout au même endroit.",
-            sub: "Ajoute un revenu ou une dépense en quelques secondes. Crée un devis, convertis-le en facture en 1 clic, et envoie-le directement par email avec PDF.",
-            items: [
-              { icon: "ti-check", text: "Encaisser / Frais : revenus et dépenses professionnelles" },
-              { icon: "ti-check", text: "Mes factures : PDF professionnel + envoi email intégré" },
-              { icon: "ti-check", text: "Mes devis : convertis en facture en 1 clic" },
-            ],
-            next: "Suivant",
-          },
-          {
-            img: "/niveau-3.png",
-            timerLabel: "LES OUTILS",
-            title: "Simule avant de décider.",
-            sub: "H€CTOR met à ta disposition 5 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
-            items: [
-              { icon: "ti-cash", text: "Mode Salaire — combien puis-je me verser ce mois ?" },
-              { icon: "ti-shopping-cart", text: "Mode Achat — puis-je me permettre cette dépense ?" },
-              { icon: "ti-target", text: "Combien gagner ? + Simulateur fiscal + Mes tarifs" },
-            ],
-            next: "Suivant",
-          },
-          {
-            img: "/niveau-4.png",
-            timerLabel: "SUIVI & PILOTAGE",
-            title: "Pilote ton activité sur le long terme.",
-            sub: "Score H€CTOR note ta santé financière sur 100. Revenus te donne une vue annuelle de ton CA. Contacts centralise tes clients. Actualités et Conseils te tiennent informé des obligations fiscales.",
-            items: [
-              { icon: "ti-heart-rate-monitor", text: "Score H€CTOR — ta santé financière sur 100" },
-              { icon: "ti-chart-bar", text: "Revenus, Contacts, Modèles de documents" },
-              { icon: "ti-bell", text: "Actualités fiscales + Conseils auto-entrepreneur" },
-            ],
-            next: "Suivant",
-          },
-          {
-            img: "/niveau-5.png",
-            timerLabel: "LA SÉRÉNITÉ D'HECTOR",
-            title: "Hector grandit avec toi.",
-            sub: "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
-            items: [
-              { icon: "ti-dog", text: "Hector arrive → Son panier → Sa niche → Son jardin" },
-              { icon: "ti-home", text: "Sa maison → Son domaine (6 niveaux à débloquer)" },
-              { icon: "ti-check", text: "Plus tu es régulier, plus vite il progresse" },
-            ],
-            next: "Suivant",
-          },
-          {
-            img: "/niveau-6.png",
-            timerLabel: "TU ES PRÊT(E) !",
-            title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
-            sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
-            items: [
-              { icon: "ti-receipt-2", text: "Ajouter un revenu ou une dépense" },
-              { icon: "ti-file-plus", text: "Créer mon premier devis" },
-              { icon: "ti-help-circle", text: "Retrouver cette visite via « Aide » dans le menu" },
-            ],
-            next: "C'est parti !",
-          },
-        ];
-        const WalkthroughModal = () => {
-          const [wtStep, setWtStep] = useState(0);
-          const s = wtSteps[wtStep];
-          const closeWalkthrough = () => {
-            localStorage.setItem("hector_walkthrough_done", "1");
-            setShowWalkthrough(false);
-          };
-          return (
-            <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,37,64,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
-              <div style={{ background: "#0A2540", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "28px 20px 24px" : "36px 36px 28px", maxWidth: 440, width: "100%", position: "relative", boxSizing: "border-box" }}>
-                {/* Barre de progression */}
-                <div style={{ position: "absolute", top: 0, left: 0, height: 3, width: `${((wtStep + 1) / wtSteps.length) * 100}%`, background: "#378ADD", borderRadius: "18px 0 0 0", transition: "width 0.35s ease" }} />
-                {/* Bouton fermer */}
-                <button onClick={closeWalkthrough} style={{ position: "absolute", top: 14, right: 16, background: "none", border: "none", color: "rgba(181,212,244,0.45)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                  Passer <i className="ti ti-x" style={{ fontSize: 11 }} />
-                </button>
-                {/* Dots */}
-                <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 20 }}>
-                  {wtSteps.map((_, i) => (
-                    <div key={i} style={{ height: 5, width: i === wtStep ? 16 : 5, borderRadius: i === wtStep ? 3 : "50%", background: i === wtStep ? "#378ADD" : "rgba(181,212,244,0.2)", transition: "all 0.2s" }} />
-                  ))}
-                </div>
-                {/* Timer label */}
-                <div style={{ textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "rgba(181,212,244,0.45)", marginBottom: 18 }}>{s.timerLabel}</div>
-                {/* Avatar image niveau */}
-                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  <img src={s.img} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2px solid rgba(55,138,221,0.5)", background: "#0d2d4a" }} />
-                </div>
-                {/* Titre */}
-                <p style={{ color: "white", fontSize: 18, fontWeight: 500, textAlign: "center", margin: "0 0 10px", lineHeight: 1.35 }}>{s.title}</p>
-                {/* Sous-titre */}
-                <p style={{ color: "#B5D4F4", fontSize: 13.5, textAlign: "center", lineHeight: 1.65, margin: "0 auto 18px", maxWidth: 340 }}>{s.sub}</p>
-                {/* Items */}
-                <div style={{ background: "rgba(55,138,221,0.1)", border: "0.5px solid rgba(55,138,221,0.3)", borderRadius: 10, padding: "10px 16px", marginBottom: 22 }}>
-                  {s.items.map((it, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#B5D4F4", fontSize: 13, padding: "4px 0" }}>
-                      <i className={`ti ${it.icon}`} style={{ color: "#5DCAA5", fontSize: 14, marginTop: 1, flexShrink: 0 }} />
-                      <span>{it.text}</span>
-                    </div>
-                  ))}
-                </div>
-                {/* Navigation */}
-                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
-                  {wtStep > 0 && (
-                    <button onClick={() => setWtStep(wtStep - 1)} style={{ background: "transparent", color: "#B5D4F4", border: "0.5px solid rgba(181,212,244,0.3)", borderRadius: 8, padding: "10px 16px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
-                      Retour
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      if (wtStep < wtSteps.length - 1) setWtStep(wtStep + 1);
-                      else closeWalkthrough();
-                    }}
-                    style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 28px", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
-                  >
-                    {s.next} {wtStep < wtSteps.length - 1 ? <i className="ti ti-arrow-right" /> : <i className="ti ti-check" />}
-                  </button>
-                </div>
-              </div>
-            </div>
-          );
-        };
-        return <WalkthroughModal key="walkthrough" />;
-      })()}
-      {/* Toast global "✓ Sauvegardé" */}
-      {savedToast && (
-        <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
-          background: "#1D9E75", color: "white", padding: "12px 22px", borderRadius: 99,
-          fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10,
-          boxShadow: "0 8px 28px rgba(29,158,117,0.4)", animation: "fadeInUp 0.3s ease-out" }}>
-          <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 18 }} />
-          Modification enregistrée
-        </div>
-      )}
     </div>
   );
 }
@@ -5260,7 +4789,7 @@ const S = {
   authCard: { width: "100%", background: "white", borderRadius: 16, border: "0.5px solid #DDE5EE", padding: 32 },
   authTitle: { fontSize: 20, fontWeight: 600, color: INK, margin: "0 0 20px" },
   appWrap: { display: "flex", minHeight: "100vh", background: PAPER },
-  mobileTopbar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56 },
+  mobileTopbar: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: INK, position: "sticky", top: 0, zIndex: 60 },
   sidebarBackdrop: { position: "fixed", inset: 0, background: "rgba(10,37,64,0.5)", zIndex: 75 },
   sidebar: { width: 220, background: INK, display: "flex", flexDirection: "column", padding: "20px 0", flexShrink: 0, transition: "width 0.2s" },
   sidebarClosed: { width: 64 },
