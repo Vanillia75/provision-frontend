@@ -2122,6 +2122,28 @@ function AppInner() {
     return { salut, prenom, dispo, gardeAuChaud, ton, analyse, conseil, alerte };
   })();
 
+  // ─── PENSÉE PPa : conseil rare, seulement si CA modeste, max 1× / 60 jours ───
+  // Hector suggère de vérifier l'éligibilité à la Prime d'activité. Il ne promet rien.
+  const penseePPa = (() => {
+    if (argentDisponibleBrut === null) return null;        // pas assez d'infos → silence
+    if (!(moyenneMensuelleCA > 0)) return null;            // pas de CA connu → silence
+    if (moyenneMensuelleCA > 3000) return null;            // CA clairement trop élevé → on ne dit rien
+    const force = localStorage.getItem("hectorForce") === "ppa";
+    // Anti-répétition : pas plus d'une fois tous les 60 jours
+    if (!force) {
+      const derniere = localStorage.getItem("hectorPPaVue");
+      if (derniere) {
+        const jours = (Date.now() - new Date(derniere).getTime()) / 86400000;
+        if (jours < 60) return null;
+      }
+      // Rare : ~1 jour sur 5 quand les conditions sont réunies
+      const today = new Date().toISOString().slice(0, 10);
+      const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
+      if (seed % 5 !== 2) return null;
+    }
+    return "🐾 Dis donc… tu sais que pas mal d'indépendants ont droit à la Prime d'activité sans le savoir ? C'est la CAF qui complète quand les revenus sont modestes. Ça vaut peut-être le coup de faire une simu sur caf.fr — c'est gratuit et ça prend 5 minutes. Je dis ça, je dis rien.";
+  })();
+
   // ─── LES PENSÉES D'HECTOR : rares, contextuelles, jamais forcées ───
   // Règle d'or : si Hector n'a rien de vrai à dire, il ne dit RIEN.
   // Une pensée par jour MAX, et seulement ~1 jour sur 3 (sélection déterministe par date).
@@ -3161,8 +3183,23 @@ function AppInner() {
                       {souvenirHector}
                     </div>
                   )}
-                  {/* Pensée du jour : seulement si pas de souvenir (on ne surcharge pas) */}
-                  {!souvenirHector && penseeHector && (
+                  {/* Conseil PPa : rare et utile, prioritaire sur la pensée du jour mais sous le souvenir */}
+                  {!souvenirHector && penseePPa && (
+                    <div style={{ marginTop: 14, fontSize: 13, color: "#9FB8CE", lineHeight: 1.6, fontStyle: "italic", paddingLeft: 12, borderLeft: "2px solid rgba(55,138,221,0.45)" }}>
+                      {penseePPa}
+                      <a
+                        href="https://www.caf.fr"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => { try { localStorage.setItem("hectorPPaVue", new Date().toISOString()); } catch {} }}
+                        style={{ display: "inline-block", marginTop: 6, color: "#378ADD", fontStyle: "normal", fontWeight: 600, textDecoration: "none" }}
+                      >
+                        Faire la simulation sur caf.fr →
+                      </a>
+                    </div>
+                  )}
+                  {/* Pensée du jour : seulement si pas de souvenir ni de conseil PPa (on ne surcharge pas) */}
+                  {!souvenirHector && !penseePPa && penseeHector && (
                     <div style={{ marginTop: 14, fontSize: 13, color: "#9FB8CE", lineHeight: 1.6, fontStyle: "italic", paddingLeft: 12, borderLeft: "2px solid rgba(255,255,255,0.15)" }}>
                       {penseeHector}
                     </div>
