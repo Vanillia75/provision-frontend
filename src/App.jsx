@@ -446,6 +446,16 @@ function AppInner() {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
   const [legalPage, setLegalPage] = useState(null);
   const [authMode, setAuthMode] = useState("login");
+  // Choix de statut sur la landing (avant connexion) : null = écran de choix,
+  // "auto_entrepreneur" = landing AE, "intermittent" = écran "bientôt dispo".
+  // On retient le choix entre visites pour ne pas le redemander à chaque fois.
+  const [landingStatut, setLandingStatut] = useState(() => localStorage.getItem("landingStatut") || null);
+  const chooseLandingStatut = (s) => { localStorage.setItem("landingStatut", s); setLandingStatut(s); };
+  const resetLandingStatut = () => { localStorage.removeItem("landingStatut"); setLandingStatut(null); };
+  // Fake door intermittent : on collecte les emails intéressés pour mesurer la demande.
+  const [intermittentEmail, setIntermittentEmail] = useState("");
+  const [intermittentSent, setIntermittentSent] = useState(false);
+  const [intermittentSending, setIntermittentSending] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState(""); // "", "loading", "sent"
@@ -2395,6 +2405,122 @@ function AppInner() {
     );
   }
 
+  // ÉCRAN DE CHOIX DE STATUT — affiché quand on n'est pas connecté et qu'aucun
+  // statut n'a encore été choisi. Les deux "portes" : auto-entrepreneur (en
+  // premier, produit le plus avancé) et intermittent (fake door + email).
+  if (!token && !landingStatut) {
+    const carte = (statut, hectorImg, fallbackIcon, titre, sousTitre) => (
+      <button
+        type="button"
+        onClick={() => chooseLandingStatut(statut)}
+        style={{ width: "100%", background: "#11203a", border: "1px solid #2a3a55", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 14, textAlign: "left", cursor: "pointer", fontFamily: "inherit", transition: "border-color 0.15s" }}
+        onMouseEnter={e => e.currentTarget.style.borderColor = "#5DCAA5"}
+        onMouseLeave={e => e.currentTarget.style.borderColor = "#2a3a55"}
+      >
+        <div style={{ width: 64, height: 64, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+          <NiveauImage src={hectorImg} fallbackIcon={fallbackIcon} fallbackColor="#3a5169" />
+        </div>
+        <div style={{ flex: 1 }}>
+          <div style={{ color: "white", fontSize: 15, fontWeight: 600, marginBottom: 3 }}>{titre}</div>
+          <div style={{ color: "#8BA5C0", fontSize: 12.5, lineHeight: 1.5 }}>{sousTitre}</div>
+        </div>
+        <i className="ti ti-arrow-right" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
+      </button>
+    );
+    return (
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <style>{CSS}</style>
+        <div style={{ maxWidth: 440, width: "100%", textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+            <Logo size={32} dark />
+          </div>
+          <div style={{ color: "white", fontSize: 22, fontWeight: 700, lineHeight: 1.35, marginBottom: 6 }}>Salut, moi c'est Hector.</div>
+          <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 28 }}>Avant de veiller sur ta tranquillité,<br />dis-moi qui tu es.</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {carte("auto_entrepreneur", "/hector-panier.png", "ti-dog", "Je suis auto-entrepreneur", "Je te dis ce que tu peux vraiment dépenser, sans l'URSSAF qui surprend.")}
+            {carte("intermittent", "/hector-clap.png", "ti-movie", "Je suis intermittent du spectacle", "Je compte tes heures et tes cachets vers tes 507h.")}
+          </div>
+          <div style={{ marginTop: 22, color: "#6B8299", fontSize: 11.5, lineHeight: 1.5 }}>
+            <i className="ti ti-info-circle" aria-hidden="true" /> Tu fais les deux ? Choisis pour commencer,<br />tu pourras activer l'autre cockpit plus tard.
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ÉCRAN INTERMITTENT — "bientôt disponible" + collecte d'email (fake door).
+  // Permet de mesurer la demande réelle avant de coder le module intermittent.
+  if (!token && landingStatut === "intermittent") {
+    const submitIntermittent = async () => {
+      const email = intermittentEmail.trim();
+      if (!email || !email.includes("@")) return;
+      setIntermittentSending(true);
+      try {
+        // ⚠️ REMPLACE cette URL par TON endpoint Formspree (formspree.io, gratuit).
+        // Crée un form en 2 min, colle l'URL ici. Les emails arrivent dans ta boîte.
+        await fetch("https://formspree.io/f/TON_ID_FORMSPREE", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Accept: "application/json" },
+          body: JSON.stringify({ email, statut: "intermittent", source: "landing_hector" }),
+        });
+        setIntermittentSent(true);
+      } catch {
+        // Même en cas d'erreur réseau on remercie (l'email peut être réessayé) :
+        // on ne bloque jamais l'utilisateur sur une fake door.
+        setIntermittentSent(true);
+      } finally {
+        setIntermittentSending(false);
+      }
+    };
+    return (
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <style>{CSS}</style>
+        <div style={{ maxWidth: 440, width: "100%", textAlign: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+            <Logo size={32} dark />
+          </div>
+          <div style={{ width: 120, height: 120, margin: "0 auto 20px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+            <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
+          </div>
+          {!intermittentSent ? (
+            <>
+              <div style={{ color: "white", fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>Hector arrive bientôt<br />pour les intermittents.</div>
+              <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Le compteur 507h, l'alerte renouvellement, le coffre à AEM… On le prépare avec soin. Laisse ton email, je te préviens dès que c'est prêt.</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 320, margin: "0 auto" }}>
+                <input
+                  type="email"
+                  value={intermittentEmail}
+                  onChange={e => setIntermittentEmail(e.target.value)}
+                  placeholder="ton@email.fr"
+                  onKeyDown={e => { if (e.key === "Enter") submitIntermittent(); }}
+                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "12px 14px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", textAlign: "center" }}
+                />
+                <button
+                  type="button"
+                  onClick={submitIntermittent}
+                  disabled={intermittentSending}
+                  style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 700, cursor: intermittentSending ? "default" : "pointer", fontFamily: "inherit", opacity: intermittentSending ? 0.6 : 1 }}
+                >
+                  {intermittentSending ? "…" : "Préviens-moi 🐾"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ color: "white", fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>C'est noté, merci !</div>
+              <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Je te préviens dès qu'Hector est prêt à compter tes heures. À très vite.</div>
+            </>
+          )}
+          <button type="button" onClick={resetLandingStatut} style={{ marginTop: 24, background: "none", border: "none", color: "#4A6280", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+            ← Je ne suis pas intermittent
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Landing auto-entrepreneur (atteinte uniquement si landingStatut === "auto_entrepreneur",
+  // les cas null et "intermittent" étant déjà gérés par les deux blocs ci-dessus).
   if (!token) {
     const scrollToAuth = () => { document.getElementById("hector-auth-section")?.scrollIntoView({ behavior: "smooth" }); };
     return (
@@ -2405,6 +2531,9 @@ function AppInner() {
         <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Logo size={32} dark />
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+            <button onClick={resetLandingStatut} style={{ background: "transparent", border: "none", color: "#4A6280", borderRadius: 8, padding: "7px 10px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+              Je ne suis pas auto-entrepreneur
+            </button>
             <button onClick={() => { setAuthMode("login"); scrollToAuth(); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: 8, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
               Se connecter
             </button>
