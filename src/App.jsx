@@ -2511,8 +2511,8 @@ function AppInner() {
               <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Je te préviens dès qu'Hector est prêt à compter tes heures. À très vite.</div>
             </>
           )}
-          <button type="button" onClick={resetLandingStatut} style={{ marginTop: 24, background: "none", border: "none", color: "#4A6280", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
-            ← Je ne suis pas intermittent
+          <button type="button" onClick={() => chooseLandingStatut("auto_entrepreneur")} style={{ marginTop: 24, background: "none", border: "none", color: "#4A6280", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+            → Passer en mode auto-entrepreneur
           </button>
         </div>
       </div>
@@ -2532,11 +2532,11 @@ function AppInner() {
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Logo size={32} dark />
             <button
-              onClick={resetLandingStatut}
-              title="Changer de profil"
+              onClick={() => chooseLandingStatut("intermittent")}
+              title="Passer en mode intermittent"
               style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 11px", color: "#5DCAA5", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}
             >
-              <i className="ti ti-dog" aria-hidden="true" /> Auto-entrepreneur <i className="ti ti-x" aria-hidden="true" style={{ opacity: 0.6, fontSize: 13 }} />
+              <i className="ti ti-movie" aria-hidden="true" /> Passer en mode intermittent <i className="ti ti-arrow-right" aria-hidden="true" style={{ opacity: 0.7, fontSize: 13 }} />
             </button>
           </div>
           <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
