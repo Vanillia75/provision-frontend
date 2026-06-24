@@ -2438,9 +2438,7 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <div style={{ width: 160, height: 160, borderRadius: "50%", overflow: "hidden", border: "3px solid rgba(93,202,165,0.3)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
-              <img src="/hector-serein.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }} />
-            </div>
+            <img src="/hector-serein.png" alt="Hector" style={{ width: 200, height: "auto", display: "block" }} />
             <h1 style={{ ...S.authHero, marginTop: 20 }}>Une dernière chose.</h1>
             <p style={S.authSub}>Dis-moi ton dernier encaissement. Je te montre exactement ce qu'il te reste après l'URSSAF.</p>
           </div>
@@ -2878,15 +2876,12 @@ function AppInner() {
                       src={hectorEtat?.img || "/hector-tete.png"}
                       alt="Hector"
                       style={{
-                        position: "absolute", right: 0, bottom: 0, height: "118%", maxHeight: 330, width: "auto",
+                        position: "absolute", right: 16, bottom: 0, height: "115%", maxHeight: 300, width: "auto",
                         objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block",
-                        WebkitMaskImage: "radial-gradient(ellipse 75% 90% at 75% 75%, black 40%, transparent 75%)",
-                        maskImage: "radial-gradient(ellipse 75% 90% at 75% 75%, black 40%, transparent 75%)",
                       }}
                     />
-                    {/* Gradient fondu — gauche fort */}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 38%, rgba(10,19,34,0.5) 68%, rgba(10,19,34,0.05) 100%)", zIndex: 1, pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, transparent 35%)", zIndex: 1, pointerEvents: "none" }} />
+                    {/* Léger fondu gauche pour la lisibilité du texte */}
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 30%, rgba(10,19,34,0.4) 60%, transparent 85%)", zIndex: 1, pointerEvents: "none" }} />
                     {/* Contenu par dessus */}
                     <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
                       {hectorEtat && (
