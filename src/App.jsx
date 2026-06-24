@@ -2772,14 +2772,27 @@ function AppInner() {
                   </div>
                 </div>
               ) : (
-                /* DESKTOP : layout grille */
+                /* DESKTOP : Option C — Hector immersif en arrière-plan */
                 <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 280px", minHeight: 200 }}>
-                    <div style={{ padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div style={{ position: "relative", minHeight: 200, overflow: "hidden" }}>
+                    {/* Hector en fond pleine hauteur */}
+                    <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 340, zIndex: 0, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      <img
+                        src={hectorEtat?.img || "/hector-tete.png"}
+                        alt="Hector"
+                        style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
+                      />
+                    </div>
+                    {/* Gradient de fondu gauche + bas */}
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 45%, rgba(10,19,34,0.5) 75%, rgba(10,19,34,0.1) 100%)", zIndex: 1 }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 30%)", zIndex: 1 }} />
+                    {/* Contenu */}
+                    <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
                       {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px" }}>
                           <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
                           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                          {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
                         </div>
                       )}
                       {argentDisponibleBrut !== null ? (
@@ -2787,30 +2800,23 @@ function AppInner() {
                           <div style={{ fontSize: 14, color: "#8BA5C0", marginBottom: 6 }}>
                             {argentDisponibleBrut >= 0 ? "Hector veille sur toi. Tu peux dépenser sereinement jusqu'à" : "Hector veille sur toi. Attention —"}
                           </div>
-                          <div style={{ fontSize: 48, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
+                          <div style={{ fontSize: 52, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
                             {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
                           </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
+                          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10 }}>
                             {[
-                              {
-                                label: urssafProvision > 0 ? `URSSAF provisionnée : ${formatEUR(urssafProvision)}` : "Ajoute un revenu pour provisionner l'URSSAF",
-                                ok: urssafProvision > 0
-                              },
-                              {
-                                label: reserveAtteinte ? "Réserve de sécurité constituée" : `Réserve : il manque ${formatEUR(manqueReserveDashboard)}`,
-                                ok: reserveAtteinte
-                              },
+                              { label: urssafProvision > 0 ? `URSSAF provisionnée : ${formatEUR(urssafProvision)}` : "Ajoute un revenu pour provisionner l'URSSAF", ok: urssafProvision > 0 },
+                              { label: reserveAtteinte ? "Réserve de sécurité constituée" : `Réserve : il manque ${formatEUR(manqueReserveDashboard)}`, ok: reserveAtteinte },
                             ].map(c => (
                               <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: c.ok ? "#B5D4F4" : "#FAC775" }}>
                                 <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "→"}</span> {c.label}
                               </div>
                             ))}
                           </div>
-                          {/* Détail des charges cliquable */}
                           {[urssafProvision, impotsNum, cfeNum, fraisMoisNum].some(v => v > 0) && (
-                            <details style={{ marginTop: 12 }}>
+                            <details>
                               <summary style={{ fontSize: 11, color: ACCENT, cursor: "pointer", userSelect: "none" }}>Voir le détail du calcul</summary>
-                              <div style={{ marginTop: 8, background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 5 }}>
+                              <div style={{ marginTop: 8, background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 5, maxWidth: 340 }}>
                                 {urssafProvision > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>URSSAF à provisionner</span><span style={{ color: "#FAC775" }}>−{formatEUR(urssafProvision)}</span></div>}
                                 {impotsNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Impôts estimés (mensuel)</span><span style={{ color: "#FAC775" }}>−{formatEUR(impotsNum)}</span></div>}
                                 {cfeNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>CFE</span><span style={{ color: "#FAC775" }}>−{formatEUR(cfeNum)}</span></div>}
@@ -2826,22 +2832,14 @@ function AppInner() {
                           <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>
                             {panique.solde === "" ? "Dis-moi ton solde pour commencer" : "Ajoute un revenu pour voir ton disponible"}
                           </div>
-                          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16 }}>
+                          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16, maxWidth: 420 }}>
                             {panique.solde === "" ? "Ouvre ton appli bancaire, lis le solde, recopie-le ci-dessous. 10 secondes." : "H€CTOR mettra automatiquement de côté l'URSSAF dès ton premier revenu ajouté."}
                           </div>
                         </>
                       )}
                     </div>
-                    <div style={{ position: "relative", overflow: "hidden", display: "flex", alignItems: "flex-end", justifyContent: "center", minHeight: 220 }}>
-                      <img
-                        src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Hector"
-                        style={{ width: "100%", maxWidth: 300, objectFit: "contain", objectPosition: "center bottom", display: "block" }}
-                      />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 30%)" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 20%)" }} />
-                    </div>
                   </div>
+                  {/* Bande solde */}
                   <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
                       <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
@@ -3212,42 +3210,48 @@ function AppInner() {
                 {/* CA à déclarer */}
                 <div style={{ padding: "14px 0", borderBottom: "1px solid #EEF2F7" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: "#6B7A8D", display: "flex", alignItems: "center", gap: 6 }}>
-                      📊 CA à déclarer
-                    </span>
-                    <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setEditingDeclarationCa(true)}>✎ Modifier</button>
+                    <span style={{ fontSize: 13, color: "#6B7A8D" }}>📊 CA à déclarer</span>
+                    {!editingDeclarationCa && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
                   {editingDeclarationCa ? (
                     <input
-                      style={{ ...S.input, fontSize: 24, fontWeight: 800, textAlign: "center" }}
+                      style={{ ...S.input, fontSize: 28, fontWeight: 800, textAlign: "center" }}
                       type="number" step="0.01" autoFocus
                       value={declarationCa !== "" ? declarationCa : String(estimateData.ca_periode_courante)}
                       onChange={e => setDeclarationCa(e.target.value)}
                       onBlur={() => setEditingDeclarationCa(false)}
                     />
                   ) : (
-                    <div style={{ fontSize: 32, fontWeight: 800, color: "#0A2540", textAlign: "center", padding: "8px 0" }}>{formatEUR(caAffiche)}</div>
+                    <div
+                      onClick={() => setEditingDeclarationCa(true)}
+                      style={{ fontSize: 32, fontWeight: 800, color: "#0A2540", textAlign: "center", padding: "8px 0", cursor: "pointer", borderRadius: 8, transition: "background 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >{formatEUR(caAffiche)}</div>
                   )}
                 </div>
 
                 {/* Cotisations */}
                 <div style={{ padding: "14px 0", borderBottom: "1px solid #EEF2F7" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: "#6B7A8D", display: "flex", alignItems: "center", gap: 6 }}>
-                      💰 Cotisations estimées <span style={{ fontSize: 11, color: "#8BA5C0" }}>({estimateData.taux_global_pct}%)</span>
-                    </span>
-                    <button type="button" style={{ ...S.linkBtn, fontSize: 11 }} onClick={() => setEditingDeclarationCotisations(true)}>✎ Modifier</button>
+                    <span style={{ fontSize: 13, color: "#6B7A8D" }}>💰 Cotisations estimées <span style={{ fontSize: 11, color: "#8BA5C0" }}>({estimateData.taux_global_pct}%)</span></span>
+                    {!editingDeclarationCotisations && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
                   {editingDeclarationCotisations ? (
                     <input
-                      style={{ ...S.input, fontSize: 24, fontWeight: 800, textAlign: "center" }}
+                      style={{ ...S.input, fontSize: 28, fontWeight: 800, textAlign: "center" }}
                       type="number" step="0.01" autoFocus
                       value={declarationCotisations !== "" ? declarationCotisations : String(cotisationsAffichees)}
                       onChange={e => setDeclarationCotisations(e.target.value)}
                       onBlur={() => setEditingDeclarationCotisations(false)}
                     />
                   ) : (
-                    <div style={{ fontSize: 32, fontWeight: 800, color: "#854F0B", textAlign: "center", padding: "8px 0" }}>{formatEUR(cotisationsAffichees)}</div>
+                    <div
+                      onClick={() => setEditingDeclarationCotisations(true)}
+                      style={{ fontSize: 32, fontWeight: 800, color: "#854F0B", textAlign: "center", padding: "8px 0", cursor: "pointer", borderRadius: 8, transition: "background 0.15s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                    >{formatEUR(cotisationsAffichees)}</div>
                   )}
                 </div>
 
