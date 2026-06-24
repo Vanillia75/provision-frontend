@@ -3602,7 +3602,7 @@ function AppInner() {
             const actif = interNav === item.id;
             return (
               <button key={item.id} type="button" disabled={!item.dispo}
-                onClick={() => { if (item.dispo) { setInterNav(item.id); setInterMenuOpen(false); if (item.id === "conseils") setTimeout(() => document.getElementById("inter-conseils")?.scrollIntoView({ behavior: "smooth" }), 50); if (item.id === "hector") setTimeout(() => document.getElementById("inter-hector")?.scrollIntoView({ behavior: "smooth" }), 50); if (item.id === "activites") setTimeout(() => document.getElementById("inter-activites")?.scrollIntoView({ behavior: "smooth" }), 50); } }}
+                onClick={() => { if (item.dispo) { setInterNav(item.id); setInterMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } }}
                 style={{ display: "flex", alignItems: "center", gap: 10, background: actif ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: actif ? "#5DCAA5" : (item.dispo ? "#B5D4F4" : "#4A6280"), fontWeight: actif ? 700 : 500, cursor: item.dispo ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
                 <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
                 <span>{item.label}</span>
@@ -3688,6 +3688,8 @@ function AppInner() {
                 </div>
               </div>
 
+              {/* ═══ PAGE COCKPIT : compteur + anniversaire + frise + verdict ═══ */}
+              {interNav === "cockpit" && (<>
               {/* Le gros compteur */}
               <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "32px 28px", textAlign: "center", marginBottom: 16 }}>
                 <div style={{ fontSize: 11, color: "#6B8299", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Tes heures sur 12 mois glissants</div>
@@ -3794,7 +3796,10 @@ function AppInner() {
               <div style={{ background: c.droits_securises ? "rgba(93,202,165,0.1)" : "rgba(55,138,221,0.08)", border: `1px solid ${c.droits_securises ? "rgba(93,202,165,0.3)" : "rgba(55,138,221,0.25)"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
                 <div style={{ fontSize: 14, color: "#E8F4FF", lineHeight: 1.6 }}>{c.verdict}</div>
               </div>
+              </>)}
 
+              {/* ═══ PAGE PARLE À HECTOR ═══ */}
+              {interNav === "hector" && (<>
               {/* ── Brique 5.4 : Parle à Hector (simulation de contrat) ── */}
               <div id="inter-hector" style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
@@ -3845,7 +3850,10 @@ function AppInner() {
                   </div>
                 )}
               </div>
+              </>)}
 
+              {/* ═══ PAGE MES ACTIVITÉS ═══ */}
+              {interNav === "activites" && (<>
               {/* ── Brique 5.2 : saisie + liste des activités ── */}
               <div id="inter-activites" style={{ marginTop: 24, marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
@@ -3920,9 +3928,12 @@ function AppInner() {
               <div style={{ fontSize: 11, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginBottom: 8 }}>
                 {c.avertissement}
               </div>
+              </>)}
 
+              {/* ═══ PAGE COMPRENDRE (conseils) ═══ */}
+              {interNav === "conseils" && (<>
               {/* ── Conseils : fiches pédagogiques pour comprendre le régime ── */}
-              <div id="inter-conseils" style={{ marginTop: 40 }}>
+              <div id="inter-conseils" style={{ marginTop: 0 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <i className="ti ti-book" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
                   <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Comprendre ton régime</div>
@@ -3949,6 +3960,7 @@ function AppInner() {
                   Ta situation personnelle peut varier — en cas de doute, contacte France Travail Spectacle.
                 </div>
               </div>
+              </>)}
             </>
           )}
         </div>
