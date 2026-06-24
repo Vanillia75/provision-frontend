@@ -2650,7 +2650,14 @@ function AppInner() {
         setIntermittentSending(false);
       }
     };
-    const ouvrirAvenir = () => { setShowIntermittentAvenir(true); setIntermittentSent(false); };
+    // L'intermittent est désormais OUVERT : les boutons mènent au formulaire
+    // d'inscription présent sur cette même landing (section plus bas).
+    const ouvrirAvenir = () => {
+      setAuthMode("register");
+      setTimeout(() => {
+        document.getElementById("inter-auth-section")?.scrollIntoView({ behavior: "smooth" });
+      }, 50);
+    };
 
     // Simulateur heures OU cachets (1 cachet = 12h). Pas de mélange : soit l'un, soit l'autre.
     const saisieNum = Math.max(0, parseInt(simCachetsLanding) || 0);
@@ -2670,8 +2677,8 @@ function AppInner() {
               <i className="ti ti-dog" aria-hidden="true" /> Passer en mode auto-entrepreneur <i className="ti ti-arrow-right" aria-hidden="true" style={{ opacity: 0.7, fontSize: 13 }} />
             </button>
           </div>
-          <button onClick={ouvrirAvenir} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            Être prévenu
+          <button onClick={() => { setAuthMode("login"); setTimeout(() => document.getElementById("inter-auth-section")?.scrollIntoView({ behavior: "smooth" }), 50); }} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Se connecter
           </button>
         </nav>
 
@@ -2839,13 +2846,75 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== CTA FINAL ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "40px 20px 56px" : "56px 40px 72px", textAlign: "center" }}>
-          <h2 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 800, color: "white", margin: "0 0 12px", lineHeight: 1.25 }}>Dors enfin tranquille sur tes 507 heures.</h2>
-          <p style={{ fontSize: 15, color: "#8BA5C0", margin: "0 0 28px", lineHeight: 1.6 }}>Hector veille pendant que tu fais ton métier.</p>
-          <button onClick={ouvrirAvenir} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-            Je veux être prévenu du lancement 🐾
-          </button>
+        {/* ===== CTA FINAL + FORMULAIRE D'INSCRIPTION ===== */}
+        <section id="inter-auth-section" style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px" : "64px 40px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 48, alignItems: "center" }}>
+          {/* Gauche — promesse */}
+          <div>
+            <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 16px" }}>
+              Dors enfin tranquille<br />sur tes 507 heures.
+            </h2>
+            <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 24px" }}>
+              Hector veille pendant que tu fais ton métier.
+            </p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {[
+                "Ton compteur 507h toujours à jour",
+                "Cachets et heures comptés automatiquement",
+                "Alerté avant ta date anniversaire",
+              ].map(t => (
+                <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: isMobile ? 13 : 14, color: "#B5D4F4", wordBreak: "break-word" }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
+                  {t}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Droite — formulaire (identique à la landing AE) */}
+          <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box", width: "100%" }}>
+            {forgotMode ? (
+              <div>
+                <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
+                {forgotStatus === "sent" ? (
+                  <div style={{ textAlign: "center" }}>
+                    <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
+                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>
+                      Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.
+                    </p>
+                    <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
+                  </div>
+                ) : (
+                  <form onSubmit={handleForgotPassword}>
+                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                    <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
+                    <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
+                    <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
+                  </form>
+                )}
+              </div>
+            ) : (
+              <form onSubmit={handleAuth}>
+                <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte intermittent"}</h2>
+                {error && <div style={S.errorBanner}>{error}</div>}
+                <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
+                <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+                {authMode === "login" && (
+                  <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
+                    <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
+                  </p>
+                )}
+                <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>
+                  {loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}
+                </button>
+                <p style={S.switchAuth}>
+                  {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
+                  <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>
+                    {authMode === "login" ? "Créer un compte" : "Se connecter"}
+                  </button>
+                </p>
+              </form>
+            )}
+          </div>
         </section>
 
         {/* ===== FOOTER ===== */}
