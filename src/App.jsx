@@ -1174,6 +1174,7 @@ function AppInner() {
       setIncomeForm({ date: "", amount: "", description: "" });
       setShowAddIncome(false);
       await loadEverything();
+      setNav("dashboard");
     } catch (err) {
       setError(err.message);
     }
@@ -2437,7 +2438,9 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <HectorImage etat={{ img: "/hector-serein.png", couleur: "#5DCAA5" }} size={160} />
+            <div style={{ width: 160, height: 160, borderRadius: "50%", overflow: "hidden", border: "3px solid rgba(93,202,165,0.3)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}>
+              <img src="/hector-serein.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }} />
+            </div>
             <h1 style={{ ...S.authHero, marginTop: 20 }}>Une dernière chose.</h1>
             <p style={S.authSub}>Dis-moi ton dernier encaissement. Je te montre exactement ce qu'il te reste après l'URSSAF.</p>
           </div>
@@ -2692,6 +2695,7 @@ function AppInner() {
         {[
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
           { id: "assistant", icon: "ti-message-2", label: "Assistant" },
+          { id: "revenus", icon: "ti-chart-bar", label: "Mes revenus" },
           { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
@@ -2749,16 +2753,11 @@ function AppInner() {
         {outilsOpen && (isMobile || sidebarOpen) && [
           { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
-          { id: "simvie", icon: "ti-target", label: "Combien gagner ?" },
           { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
           { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
-          { id: "score", icon: "ti-heart-rate-monitor", label: "Score H€CTOR" },
-          { id: "revenus", icon: "ti-chart-bar", label: "Revenus" },
           { id: "contacts", icon: "ti-address-book", label: "Contacts" },
-          { id: "actualites", icon: "ti-bell", label: "Actualités" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
           { id: "modeles", icon: "ti-template", label: "Modèles" },
-          { id: "societe", icon: "ti-building", label: "Passage société" },
           { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
           { id: "profil", icon: "ti-user", label: "Profil" },
         ].map(item => (
@@ -2874,15 +2873,21 @@ function AppInner() {
                 /* DESKTOP : Option C — Hector immersif en arrière-plan */
                 <div>
                   <div style={{ position: "relative", minHeight: 260, overflow: "hidden" }}>
-                    {/* Hector en fond pleine hauteur — position absolute pour qu'il soit DERRIÈRE */}
+                    {/* Hector en fond pleine hauteur — masqué sur les bords pour fondre dans le fond */}
                     <img
                       src={hectorEtat?.img || "/hector-tete.png"}
                       alt="Hector"
-                      style={{ position: "absolute", right: 0, bottom: 0, height: "130%", maxHeight: 360, width: "auto", objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block" }}
+                      style={{
+                        position: "absolute", right: 0, bottom: 0, height: "130%", maxHeight: 360, width: "auto",
+                        objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block",
+                        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 35%), linear-gradient(to top, transparent 0%, black 20%)",
+                        WebkitMaskComposite: "source-in",
+                        maskImage: "linear-gradient(to right, transparent 0%, black 35%)",
+                      }}
                     />
-                    {/* Gradient fondu — gauche fort, bas léger */}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 55%, rgba(10,19,34,0.6) 80%, rgba(10,19,34,0.1) 100%)", zIndex: 1, pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, transparent 25%)", zIndex: 1, pointerEvents: "none" }} />
+                    {/* Gradient fondu — gauche fort */}
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 40%, rgba(10,19,34,0.7) 70%, rgba(10,19,34,0.2) 100%)", zIndex: 1, pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, transparent 30%)", zIndex: 1, pointerEvents: "none" }} />
                     {/* Contenu par dessus */}
                     <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
                       {hectorEtat && (
