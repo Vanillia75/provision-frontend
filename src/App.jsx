@@ -3885,7 +3885,7 @@ function AppInner() {
                   </button>
                 </div>
                 <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
-                  Hector t'explique ton régime et suit tes heures. Il ne calcule pas les montants en euros — ça, c'est France Travail.
+                  Hector connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
                 </div>
               </div>
 
