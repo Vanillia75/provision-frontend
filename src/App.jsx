@@ -667,6 +667,8 @@ function AppInner() {
   });
   const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
   const [depensesMensuelles, setDepensesMensuelles] = useState(() => localStorage.getItem("depensesMensuelles") || "");
+  const [autresRevenus, setAutresRevenus] = useState(() => localStorage.getItem("autresRevenus") || "");
+  const [inclureAutresRevenus, setInclureAutresRevenus] = useState(() => localStorage.getItem("inclureAutresRevenus") === "true");
   const [achatMontant, setAchatMontant] = useState("");
   const [tarifMontant, setTarifMontant] = useState("");
   const [tarifUnite, setTarifUnite] = useState("heure");
@@ -801,6 +803,8 @@ function AppInner() {
   useEffect(() => { localStorage.setItem("profilAdresse", profilAdresse); }, [profilAdresse]);
   useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
   useEffect(() => { localStorage.setItem("depensesMensuelles", depensesMensuelles); }, [depensesMensuelles]);
+  useEffect(() => { localStorage.setItem("autresRevenus", autresRevenus); }, [autresRevenus]);
+  useEffect(() => { localStorage.setItem("inclureAutresRevenus", String(inclureAutresRevenus)); }, [inclureAutresRevenus]);
   useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
   useEffect(() => { localStorage.setItem("nav", nav); }, [nav]);
 
@@ -1855,6 +1859,10 @@ function AppInner() {
   // --- Calcul central : "Disponible aujourd'hui" ---
   // Source unique de verite, reutilisee partout : dashboard, simulateur d'achat, mode panique, score sante
   const soldeNum = parseFloat(panique.solde) || 0;
+  // Autres revenus (salaire, etc.) : ajoutés au disponible UNIQUEMENT si l'utilisateur le choisit.
+  // ⚠️ N'entrent JAMAIS dans le calcul URSSAF (qui ne porte que sur le CA auto-entrepreneur).
+  const autresRevenusNum = parseFloat(autresRevenus) || 0;
+  const bonusAutresRevenus = inclureAutresRevenus ? autresRevenusNum : 0;
   const urssafProvision = estimateData?.disponible !== false
     ? (estimateData?.montant_a_provisionner || 0) +
       (estimateData?.periode_precedente?.jours_restants > 0
@@ -1869,9 +1877,9 @@ function AppInner() {
   const fraisMoisNum = expensesSummary?.frais_mois || 0;
   const totalChargesAVenir = urssafProvision + impotsNum + cfeNum + fraisMoisNum;
   const securiteNum = parseFloat(objectifSecurite) || 0;
-  const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir - securiteNum) * 100) / 100 : null;
+  const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum + bonusAutresRevenus - totalChargesAVenir - securiteNum) * 100) / 100 : null;
   // Argent reellement sur le compte apres charges, AVANT reserve - ne doit jamais etre clampe a 0 a tort
-  const argentDisponibleBrut = panique.solde !== "" ? Math.round((soldeNum - totalChargesAVenir) * 100) / 100 : null;
+  const argentDisponibleBrut = panique.solde !== "" ? Math.round((soldeNum + bonusAutresRevenus - totalChargesAVenir) * 100) / 100 : null;
   const reserveAtteinte = panique.solde !== "" ? (soldeNum - totalChargesAVenir) >= securiteNum : null;
   const manqueReserveDashboard = (panique.solde !== "" && !reserveAtteinte) ? Math.round((securiteNum - Math.max(0, soldeNum - totalChargesAVenir)) * 100) / 100 : 0;
 
@@ -3281,6 +3289,7 @@ function AppInner() {
                                 {fraisMoisNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Frais ce mois</span><span style={{ color: "#FAC775" }}>−{formatEUR(fraisMoisNum)}</span></div>}
                                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 5, marginTop: 2 }}><span>Total charges</span><span style={{ color: "#FAC775" }}>−{formatEUR(totalChargesAVenir)}</span></div>
                                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Solde bancaire</span><span style={{ color: "white" }}>{formatEUR(soldeNum)}</span></div>
+                                {bonusAutresRevenus > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>+ Autres revenus (salaire…)</span><span style={{ color: "#5DCAA5" }}>+{formatEUR(bonusAutresRevenus)}</span></div>}
                               </div>
                             </details>
                           )}
@@ -5381,6 +5390,16 @@ function AppInner() {
                 <label style={S.label}>Mon train de vie mensuel
                   <input style={S.input} type="number" step="50" value={depensesMensuelles} onChange={e => setDepensesMensuelles(e.target.value)} placeholder="Ex : 1800 €/mois" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Ce que tu dépenses environ chaque mois pour vivre. Sert à Hector pour calculer tes jours de tranquillité.</span>
+                </label>
+                <label style={S.label}>Mes autres revenus mensuels (optionnel)
+                  <input style={S.input} type="number" step="50" inputMode="text" value={autresRevenus} onChange={e => setAutresRevenus(e.target.value)} placeholder="Ex : salaire 1 800 €/mois" />
+                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Salaire ou autre revenu en dehors de ton auto-entreprise. Hector ne calcule jamais d'URSSAF dessus — c'est juste pour avoir une vue complète de ce que tu peux te permettre.</span>
+                  {autresRevenusNum > 0 && (
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 12, color: INK, fontWeight: 500 }}>
+                      <input type="checkbox" checked={inclureAutresRevenus} onChange={e => setInclureAutresRevenus(e.target.checked)} style={{ width: 16, height: 16, cursor: "pointer" }} />
+                      Inclure ce revenu dans « ce que je peux dépenser »
+                    </label>
+                  )}
                 </label>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous vos appareils.</p>
