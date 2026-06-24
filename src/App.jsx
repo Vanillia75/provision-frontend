@@ -469,12 +469,12 @@ function AppInner() {
   const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
   // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
-    { etat: "oeuf",   seuil: 0,   nom: "Œuf",    court: "départ" },
-    { etat: "chiot",  seuil: 100, nom: "Chiot",  court: "100h" },
-    { etat: "ado",    seuil: 250, nom: "Ado",    court: "250h" },
-    { etat: "filet",  seuil: 338, nom: "Filet",  court: "338h" },
-    { etat: "adulte", seuil: 400, nom: "Adulte", court: "400h" },
-    { etat: "niche",  seuil: 507, nom: "Niche",  court: "507h" },
+    { etat: "oeuf",   seuil: 0,   nom: "Arrive",  court: "départ", img: "/niveau-1.png" },
+    { etat: "chiot",  seuil: 100, nom: "Chiot",   court: "100h",   img: "/niveau-2.png" },
+    { etat: "ado",    seuil: 250, nom: "Jeune",   court: "250h",   img: "/niveau-3.png" },
+    { etat: "filet",  seuil: 338, nom: "Gardien", court: "338h",   img: "/niveau-4.png" },
+    { etat: "adulte", seuil: 400, nom: "Adulte",  court: "400h",   img: "/niveau-5.png" },
+    { etat: "niche",  seuil: 507, nom: "Niche",   court: "507h",   img: "/niveau-6.png" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -3463,10 +3463,7 @@ function AppInner() {
                           opacity: acquis ? 1 : 0.35,
                           boxShadow: iciMaintenant ? `0 0 0 4px ${couleurActif}30` : "none",
                           display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          {p.etat === "niche"
-                            ? <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
-                            : <i className={`ti ${acquis ? (p.etat === "filet" ? "ti-shield-check" : "ti-check") : "ti-lock"}`} aria-hidden="true" style={{ color: acquis ? "#5DCAA5" : "#6B86A3", fontSize: 16 }} />
-                          }
+                          <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
                         </div>
                         <div style={{ fontSize: 9.5, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#3A5170", lineHeight: 1.2 }}>{p.nom}</div>
                         <div style={{ fontSize: 8.5, color: iciMaintenant ? couleurActif : (acquis ? "#9FE1CB" : "#2A4060") }}>
