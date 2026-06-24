@@ -526,6 +526,8 @@ function AppInner() {
   const [expensesLoading, setExpensesLoading] = useState(false);
   const [showAddExpense, setShowAddExpense] = useState(false);
   const [selectedExpense, setSelectedExpense] = useState(null);
+  const [hectorMessages, setHectorMessages] = useState([]);
+  const [onbPremierRevenu, setOnbPremierRevenu] = useState("");
   const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "" });
   const [uploadingExpenseFile, setUploadingExpenseFile] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
@@ -794,6 +796,16 @@ function AppInner() {
   useEffect(() => { localStorage.setItem("depensesMensuelles", depensesMensuelles); }, [depensesMensuelles]);
   useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
   useEffect(() => { localStorage.setItem("nav", nav); }, [nav]);
+
+  // Messages Hector contextuels au chargement du dashboard
+  const hectorMessagesSentRef = React.useRef({});
+  useEffect(() => {
+    if (nav !== "dashboard") return;
+    if (soldePerime && !hectorMessagesSentRef.current.soldePerime) {
+      hectorMessagesSentRef.current.soldePerime = true;
+      addHectorMessage("Ça fait plus de 7 jours que je n'ai pas vu ton vrai solde. Mes calculs sont moins précis là. 10 secondes pour me mettre à jour ?", "#FAC775");
+    }
+  }, [nav, soldePerime]);
 
   useEffect(() => {
     if (token) loadEverything();
@@ -1074,9 +1086,8 @@ function AppInner() {
           });
         } catch {}
       }
-      // 3. On affiche le résultat (sans recharger : onboarding_complete reste false tant qu'on
-      //    n'a pas appelé loadEverything, donc on garde la main sur l'écran result)
-      setOnbStep("result");
+      // 3. Passer à l'étape aha moment (premier revenu) avant le cockpit
+      setOnbStep("aha");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1141,10 +1152,21 @@ function AppInner() {
     }
   }
 
+  function addHectorMessage(text, couleur) {
+    const id = Date.now() + Math.random();
+    setHectorMessages(prev => [...prev.slice(-1), { id, text, couleur: couleur || "#5DCAA5" }]);
+    setTimeout(() => setHectorMessages(prev => prev.filter(m => m.id !== id)), 7000);
+  }
+
   async function handleAddIncome(e) {
     e.preventDefault();
     try {
-      await apiFetch("/income", { method: "POST", body: JSON.stringify({ date: incomeForm.date, amount: parseFloat(incomeForm.amount), description: incomeForm.description || null }) });
+      const montant = parseFloat(incomeForm.amount) || 0;
+      await apiFetch("/income", { method: "POST", body: JSON.stringify({ date: incomeForm.date, amount: montant, description: incomeForm.description || null }) });
+      const taux = estimateData?.taux_global_pct || 21.2;
+      const urssaf = Math.round(montant * taux / 100);
+      const reste = Math.round(montant - urssaf);
+      if (montant > 0) addHectorMessage(`${formatEUR(montant)} encaissés 🎉 Je mets ${formatEUR(urssaf)} de côté pour l'URSSAF. Il te reste vraiment ${formatEUR(reste)} à toi.`);
       setIncomeForm({ date: "", amount: "", description: "" });
       setShowAddIncome(false);
       await loadEverything();
@@ -1190,6 +1212,11 @@ function AppInner() {
           force,
         }),
       });
+      const montant = parseFloat(factureExtraite.amount) || 0;
+      const taux = estimateData?.taux_global_pct || 21.2;
+      const urssaf = Math.round(montant * taux / 100);
+      const reste = Math.round(montant - urssaf);
+      if (montant > 0) addHectorMessage(`Facture enregistrée ✓ Je mets ${formatEUR(urssaf)} de côté pour l'URSSAF. Il te reste ${formatEUR(reste)} à toi.`);
       setFactureExtraite(null);
       setShowAddIncome(false);
       await loadEverything();
@@ -1513,6 +1540,10 @@ function AppInner() {
   async function handleInvoiceStatus(id, statut) {
     try {
       await apiFetch(`/invoices/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut }) });
+      if (statut === "payee") {
+        const inv = invoicesList.find(i => i.id === id);
+        if (inv) addHectorMessage(`Facture encaissée ✓ Je recalcule ton disponible avec ces ${formatEUR(inv.montant)}.`);
+      }
       await loadInvoices();
       await loadEverything();
     } catch (err) {
@@ -1598,15 +1629,17 @@ function AppInner() {
   async function handleAddExpense(e) {
     e.preventDefault();
     try {
+      const montant = parseFloat(expenseForm.montant) || 0;
       await apiFetch("/expenses", {
         method: "POST",
         body: JSON.stringify({
           date: expenseForm.date,
-          montant: parseFloat(expenseForm.montant) || 0,
+          montant,
           categorie: expenseForm.categorie,
           description: expenseForm.description || null,
         }),
       });
+      if (montant > 0) addHectorMessage(`Frais de ${formatEUR(montant)} enregistré. Je l'ai déduit de ton disponible — chaque euro que je connais, c'est un euro que tu ne perdras pas.`, "#8BA5C0");
       setExpenseForm({ date: "", montant: "", categorie: "autre", description: "" });
       setShowAddExpense(false);
       await loadExpenses();
@@ -2389,6 +2422,68 @@ function AppInner() {
 
   if (profile && !profile.onboarding_complete) {
     const onbSoldeNum = parseFloat(onbSolde) || 0;
+    const onbPremierRevenuNum = parseFloat(onbPremierRevenu) || 0;
+    const tauxOnb = profileForm.activite === "bic_vente" ? 12.3 : profileForm.activite === "bnc" ? 25.6 : 21.2;
+    const urssafOnb = Math.round(onbPremierRevenuNum * tauxOnb / 100);
+    const resteOnb = Math.round(onbPremierRevenuNum - urssafOnb);
+
+    // ─── PHASE AHA : premier revenu avant cockpit ───
+    if (onbStep === "aha") {
+      return (
+        <div style={S.authPage}>
+          <style>{CSS}</style>
+          <div style={S.authLeft}>
+            <HectorImage etat={{ img: "/hector-serein.png", couleur: "#5DCAA5" }} size={160} />
+            <h1 style={{ ...S.authHero, marginTop: 20 }}>Une dernière chose.</h1>
+            <p style={S.authSub}>Dis-moi ton dernier encaissement. Je te montre exactement ce qu'il te reste après l'URSSAF.</p>
+          </div>
+          <div style={S.authRight}>
+            <div style={S.authCard}>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#6B7A8D", marginBottom: 12 }}>Ton dernier encaissement :</div>
+              <input
+                style={{ ...S.input, fontSize: 24, fontWeight: 800, textAlign: "center", marginBottom: 16 }}
+                type="number" step="0.01" inputMode="decimal"
+                placeholder="Ex : 2 500"
+                value={onbPremierRevenu}
+                onChange={e => setOnbPremierRevenu(e.target.value)}
+                autoFocus
+              />
+              {onbPremierRevenuNum > 0 && (
+                <div style={{ background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6B7A8D", marginBottom: 8 }}>
+                    <span>URSSAF à mettre de côté</span>
+                    <span style={{ color: "#FAC775", fontWeight: 700 }}>−{formatEUR(urssafOnb)}</span>
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: "#0A2540", borderTop: "1px solid #E2EBF6", paddingTop: 8 }}>
+                    <span>Il te reste vraiment</span>
+                    <span style={{ color: "#1D9E75" }}>{formatEUR(resteOnb)}</span>
+                  </div>
+                </div>
+              )}
+              <button
+                style={S.btnPrimary}
+                onClick={async () => {
+                  if (onbPremierRevenuNum > 0) {
+                    try {
+                      await apiFetch("/income", { method: "POST", body: JSON.stringify({ date: new Date().toISOString().slice(0, 10), amount: onbPremierRevenuNum, description: "Premier revenu" }) });
+                    } catch {}
+                  }
+                  handleEnterCockpit();
+                }}
+              >
+                Voir mon cockpit →
+              </button>
+              <button
+                style={{ ...S.linkBtn, marginTop: 12, fontSize: 12, color: "#8BA5C0", display: "block", textAlign: "center", width: "100%" }}
+                onClick={handleEnterCockpit}
+              >
+                Passer pour l'instant
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     // ─── PHASE RÉSULTAT : le premier "tu peux dépenser X €" ───
     if (onbStep === "result") {
@@ -2774,12 +2869,12 @@ function AppInner() {
               ) : (
                 /* DESKTOP : Option C — Hector immersif en arrière-plan */
                 <div>
-                  <div style={{ position: "relative", minHeight: 220, overflow: "hidden" }}>
+                  <div style={{ position: "relative", minHeight: 260, overflow: "hidden" }}>
                     {/* Hector en fond pleine hauteur — position absolute pour qu'il soit DERRIÈRE */}
                     <img
                       src={hectorEtat?.img || "/hector-tete.png"}
                       alt="Hector"
-                      style={{ position: "absolute", right: 0, bottom: 0, height: "100%", maxHeight: 280, width: "auto", objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block" }}
+                      style={{ position: "absolute", right: 0, bottom: 0, height: "130%", maxHeight: 360, width: "auto", objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block" }}
                     />
                     {/* Gradient fondu — gauche fort, bas léger */}
                     <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 55%, rgba(10,19,34,0.6) 80%, rgba(10,19,34,0.1) 100%)", zIndex: 1, pointerEvents: "none" }} />
@@ -2872,6 +2967,20 @@ function AppInner() {
                 </div>
               )}
             </div>
+
+            {/* ── MESSAGES HECTOR ── */}
+            {hectorMessages.map(msg => (
+              <div key={msg.id} style={{ background: "#0a1322", border: `1px solid ${msg.couleur}44`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12, position: "relative", animation: "fadeInDown 0.3s ease" }}>
+                <HectorTete size={32} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 13, color: "white", lineHeight: 1.5 }}>{msg.text}</div>
+                  <div style={{ marginTop: 6, height: 2, background: "rgba(255,255,255,0.08)", borderRadius: 2, overflow: "hidden" }}>
+                    <div style={{ height: "100%", background: msg.couleur, width: "100%", animation: "shrink 7s linear forwards" }} />
+                  </div>
+                </div>
+                <button onClick={() => setHectorMessages(prev => prev.filter(m => m.id !== msg.id))} style={{ background: "none", border: "none", color: "#4A6280", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
+              </div>
+            ))}
 
             {/* ── ASSISTANT INLINE ── */}
             <div style={{ background: "linear-gradient(135deg, #0A2540 0%, #112e50 100%)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "16px 20px" }}>
@@ -5303,6 +5412,8 @@ const PAPER = "#F0F4F8";
 const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,83,61,0.5); } 50% { box-shadow: 0 0 0 6px rgba(224,83,61,0); } }
+  @keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes shrink { from { width: 100%; } to { width: 0%; } }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
   button { font-family: inherit; }
