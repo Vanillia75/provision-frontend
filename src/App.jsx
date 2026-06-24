@@ -467,6 +467,10 @@ function AppInner() {
   const [interShowAdd, setInterShowAdd] = useState(false);
   const [interSaving, setInterSaving] = useState(false);
   const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+  // Brique 5.4 : "Parle à Hector" — simulation de contrat
+  const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
+  const [simResult, setSimResult] = useState(null);
+  const [simLoading, setSimLoading] = useState(false);
   // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
     { etat: "oeuf",   seuil: 0,   nom: "Arrive",  court: "départ", img: "/niveau-1.png" },
@@ -1300,6 +1304,33 @@ function AppInner() {
       await loadIntermittentCockpit();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  // ─── Brique 5.4 : "Parle à Hector" — simuler un contrat ───
+  async function handleSimuler() {
+    const nombre = parseFloat(simForm.nombre);
+    if (!nombre || nombre <= 0) {
+      setError("Indique un nombre pour simuler.");
+      return;
+    }
+    setSimLoading(true);
+    setSimResult(null);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const res = await apiFetch("/intermittent/simuler", {
+        method: "POST",
+        body: JSON.stringify({
+          date: today,
+          type_activite: simForm.type_activite,
+          nombre,
+        }),
+      });
+      setSimResult(res);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSimLoading(false);
     }
   }
 
@@ -3478,6 +3509,57 @@ function AppInner() {
               {/* Le verdict (niveau C) */}
               <div style={{ background: c.droits_securises ? "rgba(93,202,165,0.1)" : "rgba(55,138,221,0.08)", border: `1px solid ${c.droits_securises ? "rgba(93,202,165,0.3)" : "rgba(55,138,221,0.25)"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
                 <div style={{ fontSize: 14, color: "#E8F4FF", lineHeight: 1.6 }}>{c.verdict}</div>
+              </div>
+
+              {/* ── Brique 5.4 : Parle à Hector (simulation de contrat) ── */}
+              <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <i className="ti ti-message" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Parle à Hector</div>
+                </div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 14 }}>
+                  Un contrat en vue ? Demande-lui ce que ça change pour tes droits.
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: "#B5D4F4", alignSelf: "center" }}>Si je fais</span>
+                  <input type="number" min="0" value={simForm.nombre} onChange={e => { setSimForm({ ...simForm, nombre: e.target.value }); setSimResult(null); }}
+                    placeholder="5"
+                    style={{ width: 70, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  <select value={simForm.type_activite} onChange={e => { setSimForm({ ...simForm, type_activite: e.target.value }); setSimResult(null); }}
+                    style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                    <option value="cachet_isole">cachets isolés (12h)</option>
+                    <option value="cachet_groupe">cachets groupés (8h)</option>
+                    <option value="heures">heures</option>
+                  </select>
+                </div>
+                <button type="button" disabled={simLoading} onClick={handleSimuler}
+                  style={{ width: "100%", background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: simLoading ? "default" : "pointer", fontFamily: "inherit", opacity: simLoading ? 0.6 : 1 }}>
+                  {simLoading ? "Hector réfléchit…" : "Demander à Hector"}
+                </button>
+
+                {/* Réponse d'Hector */}
+                {simResult && (
+                  <div style={{ marginTop: 14, background: simResult.securise_apres ? "rgba(93,202,165,0.12)" : "#0a1322", border: `1px solid ${simResult.securise_apres ? "rgba(93,202,165,0.35)" : "rgba(255,255,255,0.08)"}`, borderRadius: 12, padding: "14px 16px" }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                        <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6, marginBottom: 8 }}>{simResult.verdict}</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.1)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>+{simResult.heures_ajoutees}h</span>
+                          <span style={{ fontSize: 11, color: "#B5D4F4", background: "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>{simResult.total_avant}h → {simResult.total_apres}h</span>
+                          {!simResult.securise_apres && (
+                            <span style={{ fontSize: 11, color: "#FAC775", background: "rgba(250,199,117,0.1)", borderRadius: 6, padding: "3px 8px" }}>il manquerait {simResult.manquant_apres}h</span>
+                          )}
+                          {simResult.securise_apres && (
+                            <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.15)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>✓ droits sécurisés</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
               {/* ── Brique 5.2 : saisie + liste des activités ── */}
