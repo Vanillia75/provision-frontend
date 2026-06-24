@@ -5537,7 +5537,7 @@ function AppInner() {
                     <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                       <span style={{ fontSize: 16, flexShrink: 0 }}>💳</span>
                       <div style={{ fontSize: 12.5, color: "#D6E4F2", lineHeight: 1.5 }}>
-                        <strong>Ton CPF</strong> : crédité jusqu'à 500 €/an (plafond 5 000 €). Solde exact et formations sur <strong style={{ color: "#5DCAA5" }}>moncompteformation.gouv.fr</strong>.
+                        <strong>Ton CPF</strong> : crédité jusqu'à 500 €/an (plafond 5 000 €). Solde exact et formations sur <a href="https://www.moncompteformation.gouv.fr" target="_blank" rel="noopener noreferrer" style={{ color: "#5DCAA5", fontWeight: 700, textDecoration: "underline" }}>moncompteformation.gouv.fr</a>.
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
