@@ -2876,12 +2876,14 @@ function AppInner() {
                       src={hectorEtat?.img || "/hector-tete.png"}
                       alt="Hector"
                       style={{
-                        position: "absolute", right: 16, bottom: 0, height: "115%", maxHeight: 300, width: "auto",
+                        position: "absolute", right: 0, bottom: 0, height: "100%", width: "auto", maxWidth: "45%",
                         objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block",
+                        filter: "brightness(1.1)",
                       }}
                     />
-                    {/* Léger fondu gauche pour la lisibilité du texte */}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 30%, rgba(10,19,34,0.4) 60%, transparent 85%)", zIndex: 1, pointerEvents: "none" }} />
+                    {/* Fondus gauche + bas comme la landing pour intégrer Hector sans coupure */}
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 50%, #0a1322 88%)", zIndex: 1, pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 70%, #0a1322 98%)", zIndex: 1, pointerEvents: "none" }} />
                     {/* Contenu par dessus */}
                     <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
                       {hectorEtat && (
