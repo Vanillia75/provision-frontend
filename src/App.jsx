@@ -471,6 +471,10 @@ function AppInner() {
   const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
   const [simResult, setSimResult] = useState(null);
   const [simLoading, setSimLoading] = useState(false);
+  // Brique 5.5 : date anniversaire (échéance des droits)
+  const [anniversaireInput, setAnniversaireInput] = useState("");
+  const [anniversaireSaving, setAnniversaireSaving] = useState(false);
+  const [anniversaireEdit, setAnniversaireEdit] = useState(false);
   // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
     { etat: "oeuf",   seuil: 0,   nom: "Arrive",  court: "départ", img: "/niveau-1.png" },
@@ -1331,6 +1335,23 @@ function AppInner() {
       setError(err.message);
     } finally {
       setSimLoading(false);
+    }
+  }
+
+  // ─── Brique 5.5 : enregistrer la date anniversaire ───
+  async function handleSaveAnniversaire() {
+    setAnniversaireSaving(true);
+    try {
+      await apiFetch("/profile/date-anniversaire", {
+        method: "POST",
+        body: JSON.stringify({ date_anniversaire: anniversaireInput || null }),
+      });
+      setAnniversaireEdit(false);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAnniversaireSaving(false);
     }
   }
 
@@ -3472,6 +3493,58 @@ function AppInner() {
                   <span style={{ color: c.filet_atteint ? "#FAC775" : "#6B8299" }}>338h {c.filet_atteint ? "✓" : ""} filet</span>
                   <span>{c.seuil}h</span>
                 </div>
+              </div>
+
+              {/* ── Brique 5.5 : date anniversaire (échéance des droits) ── */}
+              <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
+                {!anniversaireEdit && c.date_anniversaire && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <i className="ti ti-calendar-clock" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
+                      <div>
+                        <div style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Date anniversaire</div>
+                        <div style={{ fontSize: 14, color: "white", fontWeight: 600, marginTop: 1 }}>
+                          {c.jours_avant_anniversaire != null && c.jours_avant_anniversaire >= 0
+                            ? `Dans ${c.jours_avant_anniversaire} jour${c.jours_avant_anniversaire > 1 ? "s" : ""}`
+                            : "Échéance dépassée"}
+                          <span style={{ color: "#8BA5C0", fontWeight: 400, fontSize: 12 }}> · {c.date_anniversaire}</span>
+                        </div>
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireEdit(true); }}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                      Modifier
+                    </button>
+                  </div>
+                )}
+                {!anniversaireEdit && !c.date_anniversaire && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
+                      <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>
+                        Renseigne ta date anniversaire pour qu'Hector te prévienne avant l'échéance.
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
+                      style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      Ajouter
+                    </button>
+                  </div>
+                )}
+                {anniversaireEdit && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
+                      style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
+                      style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1 }}>
+                      {anniversaireSaving ? "…" : "Enregistrer"}
+                    </button>
+                    <button type="button" onClick={() => setAnniversaireEdit(false)}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                      Annuler
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ── Brique 5.3 : la frise des paliers d'Hector (le foyer grandit) ── */}
