@@ -456,6 +456,8 @@ function AppInner() {
   const [intermittentEmail, setIntermittentEmail] = useState("");
   const [intermittentSent, setIntermittentSent] = useState(false);
   const [intermittentSending, setIntermittentSending] = useState(false);
+  // Modale "à venir" déclenchée par les boutons de la landing intermittent
+  const [showIntermittentAvenir, setShowIntermittentAvenir] = useState(false);
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState(""); // "", "loading", "sent"
@@ -639,6 +641,9 @@ function AppInner() {
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const [simCaLanding, setSimCaLanding] = useState("3000");
   const [simActLanding, setSimActLanding] = useState("0.212");
+  // Simulateur cachets→heures de la landing intermittent
+  const [simCachetsLanding, setSimCachetsLanding] = useState("8");
+  const [simModeLanding, setSimModeLanding] = useState("cachets"); // "heures" ou "cachets" (1 cachet = 12h)
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
   const tmiMounted = useRef(false);
@@ -2448,8 +2453,9 @@ function AppInner() {
     );
   }
 
-  // ÉCRAN INTERMITTENT — "bientôt disponible" + collecte d'email (fake door).
-  // Permet de mesurer la demande réelle avant de coder le module intermittent.
+  // LANDING INTERMITTENT — jumelle visuelle de la landing AE, cerveau "heures".
+  // Toutes les features sont des aperçus (le module n'est pas codé) : chaque bouton
+  // ouvre la modale "à venir + email" (fake door pour mesurer la demande réelle).
   if (!token && landingStatut === "intermittent") {
     const submitIntermittent = async () => {
       const email = intermittentEmail.trim();
@@ -2457,7 +2463,6 @@ function AppInner() {
       setIntermittentSending(true);
       try {
         // ⚠️ REMPLACE cette URL par TON endpoint Formspree (formspree.io, gratuit).
-        // Crée un form en 2 min, colle l'URL ici. Les emails arrivent dans ta boîte.
         await fetch("https://formspree.io/f/TON_ID_FORMSPREE", {
           method: "POST",
           headers: { "Content-Type": "application/json", Accept: "application/json" },
@@ -2465,56 +2470,253 @@ function AppInner() {
         });
         setIntermittentSent(true);
       } catch {
-        // Même en cas d'erreur réseau on remercie (l'email peut être réessayé) :
-        // on ne bloque jamais l'utilisateur sur une fake door.
         setIntermittentSent(true);
       } finally {
         setIntermittentSending(false);
       }
     };
+    const ouvrirAvenir = () => { setShowIntermittentAvenir(true); setIntermittentSent(false); };
+
+    // Simulateur heures OU cachets (1 cachet = 12h). Pas de mélange : soit l'un, soit l'autre.
+    const saisieNum = Math.max(0, parseInt(simCachetsLanding) || 0);
+    const heuresCalc = simModeLanding === "cachets" ? saisieNum * 12 : saisieNum;
+    const totalDemo = Math.min(507, heuresCalc);
+    const manqueDemo = Math.max(0, 507 - totalDemo);
+
     return (
-      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
         <style>{CSS}</style>
-        <div style={{ maxWidth: 440, width: "100%", textAlign: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginBottom: 24 }}>
+
+        {/* ===== NAVBAR ===== */}
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Logo size={32} dark />
+            <button onClick={() => chooseLandingStatut("auto_entrepreneur")} title="Passer en mode auto-entrepreneur" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 11px", color: "#5DCAA5", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
+              <i className="ti ti-dog" aria-hidden="true" /> Passer en mode auto-entrepreneur <i className="ti ti-arrow-right" aria-hidden="true" style={{ opacity: 0.7, fontSize: 13 }} />
+            </button>
           </div>
-          <div style={{ width: 120, height: 120, margin: "0 auto 20px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-            <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
-          </div>
-          {!intermittentSent ? (
-            <>
-              <div style={{ color: "white", fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>Hector arrive bientôt<br />pour les intermittents.</div>
-              <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Le compteur 507h, l'alerte renouvellement, le coffre à AEM… On le prépare avec soin. Laisse ton email, je te préviens dès que c'est prêt.</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 320, margin: "0 auto" }}>
-                <input
-                  type="email"
-                  value={intermittentEmail}
-                  onChange={e => setIntermittentEmail(e.target.value)}
-                  placeholder="ton@email.fr"
-                  onKeyDown={e => { if (e.key === "Enter") submitIntermittent(); }}
-                  style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "12px 14px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", textAlign: "center" }}
-                />
-                <button
-                  type="button"
-                  onClick={submitIntermittent}
-                  disabled={intermittentSending}
-                  style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 700, cursor: intermittentSending ? "default" : "pointer", fontFamily: "inherit", opacity: intermittentSending ? 0.6 : 1 }}
-                >
-                  {intermittentSending ? "…" : "Préviens-moi 🐾"}
-                </button>
-              </div>
-            </>
-          ) : (
-            <>
-              <div style={{ color: "white", fontSize: 22, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>C'est noté, merci !</div>
-              <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 24 }}>Je te préviens dès qu'Hector est prêt à compter tes heures. À très vite.</div>
-            </>
-          )}
-          <button type="button" onClick={() => chooseLandingStatut("auto_entrepreneur")} style={{ marginTop: 24, background: "none", border: "none", color: "#4A6280", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
-            → Passer en mode auto-entrepreneur
+          <button onClick={ouvrirAvenir} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Être prévenu
           </button>
-        </div>
+        </nav>
+
+        {/* ===== HERO ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px 32px" : "72px 40px 48px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 40, alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", marginBottom: 20, textTransform: "uppercase" }}>Ton cockpit d'intermittent</div>
+            <h1 style={{ fontSize: isMobile ? 26 : 48, fontWeight: 800, lineHeight: 1.15, margin: "0 0 20px", color: "white" }}>
+              Ne te demande plus<br />où tu en es.<br />
+              <span style={{ color: "#5DCAA5" }}>H€CTOR compte tes<br />heures pour toi.</span>
+            </h1>
+            <p style={{ fontSize: 16, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 460 }}>
+              H€CTOR additionne tes cachets et tes heures automatiquement, et te dit si tu es dans les temps pour ton renouvellement. Pour que tu dormes tranquille.
+            </p>
+            <button onClick={ouvrirAvenir} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+              Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
+            </button>
+            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
+              {["Aucune carte bancaire", "Sans engagement", "507h sous contrôle"].map(t => (
+                <div key={t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8BA5C0" }}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  {t}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", position: "relative", marginLeft: isMobile ? 0 : -40 }}>
+            <div style={{ position: "relative", width: "100%", maxWidth: 620 }}>
+              <img src="/hector-clap.png" alt="Hector sur un plateau de tournage" style={{ width: "100%", display: "block", objectFit: "contain", filter: "brightness(1.15) contrast(1.05)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,25,46,0) 60%, #07192E 98%)" }} />
+              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(7,25,46,0) 55%, #07192E 100%)" }} />
+            </div>
+          </div>
+        </section>
+
+        {/* ===== BLOC PROBLÈME + SIMULATEUR CACHETS→HEURES ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto 0", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "stretch" }}>
+            <div style={{ background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "18px 20px" : "22px 32px", display: "flex", alignItems: "flex-start", gap: 18 }}>
+              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(226,75,74,0.15)", border: "1px solid rgba(226,75,74,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F09595" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </div>
+              <div>
+                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#F09595", marginBottom: 10, textTransform: "uppercase" }}>Le problème</div>
+                <div style={{ fontSize: isMobile ? 15 : 17, color: "#EAF2FB", lineHeight: 1.6 }}>
+                  Tu fais plein de cachets.<br />
+                  Tu te crois <strong style={{ color: "white" }}>large</strong>.<br />
+                  Puis la date anniversaire arrive.
+                </div>
+              </div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "22px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 12 }}>Calcule tes heures</div>
+              {/* Toggle heures / cachets */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: 3 }}>
+                {[
+                  { v: "heures", label: "En heures" },
+                  { v: "cachets", label: "En cachets" },
+                ].map(opt => (
+                  <button key={opt.v} type="button" onClick={() => setSimModeLanding(opt.v)}
+                    style={{ flex: 1, background: simModeLanding === opt.v ? "#5DCAA5" : "transparent", color: simModeLanding === opt.v ? "#04342C" : "#8BA5C0", border: "none", borderRadius: 6, padding: "7px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+              <div style={{ position: "relative", marginBottom: 12 }}>
+                <input type="number" value={simCachetsLanding} min="0" onChange={e => setSimCachetsLanding(e.target.value)}
+                  style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 70px 8px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }} />
+                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 12, fontWeight: 700 }}>{simModeLanding === "cachets" ? "cachets" : "heures"}</span>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <div style={{ flex: 1, background: "#0d2440", borderRadius: 8, padding: "10px 14px", border: "1px solid #1e3a5f" }}>
+                  <div style={{ fontSize: 9, color: "#8BA5C0", marginBottom: 3 }}>{simModeLanding === "cachets" ? "1 cachet = 12h, soit" : "ça fait"}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "#5DCAA5" }}>{heuresCalc} h</div>
+                </div>
+                <div style={{ flex: 1, background: "rgba(93,202,165,0.07)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(93,202,165,0.25)" }}>
+                  <div style={{ fontSize: 9, color: "#5DCAA5", marginBottom: 3 }}>Sur tes 507h</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: "white" }}>{totalDemo} / 507 h</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== DÉMO COMPTEUR + PARLE À HECTOR ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 48px" : "0 40px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
+          <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "24px 28px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#5DCAA5", marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: "#5DCAA5", fontSize: 14 }}>✓</span> H€CTOR calcule pour toi
+            </div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 20, textAlign: "center" }}>444 h faites</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
+              {[
+                { label: "Tes cachets cette année", val: "37 cachets" },
+                { label: "Convertis en heures (× 12h)", val: "+ 444 h" },
+              ].map(r => (
+                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "#B5D4F4" }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "#5DCAA5", fontSize: 15 }}>✓</span> {r.label}</span>
+                  <span style={{ color: "#5DCAA5", fontWeight: 600 }}>{r.val}</span>
+                </div>
+              ))}
+            </div>
+            <div style={{ borderTop: "1px solid rgba(93,202,165,0.2)", paddingTop: 16, textAlign: "center" }}>
+              <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 4 }}>il te manque</div>
+              <div style={{ fontSize: 42, fontWeight: 800, color: "#5DCAA5" }}>63 h</div>
+              <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 6 }}>Au rythme actuel, tu renouvelleras sans problème.</div>
+            </div>
+          </div>
+
+          <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "24px 28px" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: ACCENT, marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ color: ACCENT, fontSize: 14 }}>💬</span> Parle à H€CTOR
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500, lineHeight: 1.45 }}>
+                  Si j'accepte ce contrat de 15 jours,<br />ça me fait combien d'heures ?
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:42</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, lineHeight: 1.45 }}>
+                  <span style={{ color: "#5DCAA5" }}>✓</span> +85 h → tu passes à 529 h. Tu sécurises ton renouvellement.
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:42</div>
+              </div>
+              <div style={{ display: "flex", justifyContent: "flex-end" }}>
+                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500 }}>
+                  Et il me reste combien avant ma date anniversaire ?
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:45</div>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, lineHeight: 1.45 }}>
+                  <span style={{ color: "#5DCAA5" }}>✓</span> 47 jours. Je garde un œil dessus avec toi.
+                </div>
+                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:45</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== GRILLE FEATURES ===== */}
+        <section style={{ background: "rgba(255,255,255,0.025)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "40px 20px" : "52px 40px" }}>
+          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", textAlign: "center", marginBottom: 36, textTransform: "uppercase" }}>Tout ce qu'H€CTOR fera pour toi</div>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 16 : 24 }}>
+              {[
+                { icon: "ti-gauge", t: "Compteur 507h", d: "Où tu en es, en direct. Tes cachets convertis et additionnés tout seuls." },
+                { icon: "ti-calendar-clock", t: "Alerte renouvellement", d: "Hector te prévient des mois avant ta date anniversaire, jamais pris de court." },
+                { icon: "ti-folder", t: "Coffre à AEM", d: "Prends tes attestations en photo, Hector lit les heures et range tout." },
+                { icon: "ti-message", t: "Simulateur de contrat", d: "« Si j'accepte ce contrat, ça me fait combien d'heures ? » Hector te répond." },
+                { icon: "ti-eye", t: "Calcul transparent", d: "Hector ne devine jamais. Il montre toujours le détail de ses calculs." },
+                { icon: "ti-file-text", t: "Attestation revenus", d: "Un récap propre de tes revenus à présenter à un proprio ou une banque." },
+              ].map(f => (
+                <div key={f.t} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "20px 22px" }}>
+                  <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5" }} />
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "white", margin: "10px 0 6px" }}>{f.t}</div>
+                  <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>{f.d}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== CTA FINAL ===== */}
+        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "40px 20px 56px" : "56px 40px 72px", textAlign: "center" }}>
+          <h2 style={{ fontSize: isMobile ? 22 : 32, fontWeight: 800, color: "white", margin: "0 0 12px", lineHeight: 1.25 }}>Dors enfin tranquille sur tes 507 heures.</h2>
+          <p style={{ fontSize: 15, color: "#8BA5C0", margin: "0 0 28px", lineHeight: 1.6 }}>Hector veille pendant que tu fais ton métier.</p>
+          <button onClick={ouvrirAvenir} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 32px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Je veux être prévenu du lancement 🐾
+          </button>
+        </section>
+
+        {/* ===== FOOTER ===== */}
+        <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", gap: 16 }}>
+            {[
+              { page: "mentions", label: "Mentions légales" },
+              { page: "cgu", label: "CGU" },
+              { page: "confidentialite", label: "Confidentialité" },
+            ].map(l => (
+              <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 11, color: "#4A6280" }}>Fait avec 🐾 pour les intermittents</div>
+        </footer>
+
+        {/* ===== MODALE "À VENIR" + EMAIL (fake door) ===== */}
+        {showIntermittentAvenir && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(4,12,24,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setShowIntermittentAvenir(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 18, padding: isMobile ? "28px 22px" : "36px 40px", maxWidth: 440, width: "100%", textAlign: "center", position: "relative" }}>
+              <button onClick={() => setShowIntermittentAvenir(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#4A6280", fontSize: 20, cursor: "pointer", fontFamily: "inherit" }} aria-label="Fermer"><i className="ti ti-x" aria-hidden="true" /></button>
+              <div style={{ width: 96, height: 96, margin: "0 auto 18px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+                <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
+              </div>
+              {!intermittentSent ? (
+                <>
+                  <div style={{ color: "white", fontSize: 21, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>Hector arrive très bientôt.</div>
+                  <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 22 }}>On prépare le cockpit intermittent avec soin. Laisse ton email, tu seras le premier prévenu — et tu auras le tarif fondateur.</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <input type="email" value={intermittentEmail} onChange={e => setIntermittentEmail(e.target.value)} placeholder="ton@email.fr" onKeyDown={e => { if (e.key === "Enter") submitIntermittent(); }}
+                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "12px 14px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", textAlign: "center" }} />
+                    <button type="button" onClick={submitIntermittent} disabled={intermittentSending}
+                      style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 700, cursor: intermittentSending ? "default" : "pointer", fontFamily: "inherit", opacity: intermittentSending ? 0.6 : 1 }}>
+                      {intermittentSending ? "…" : "Préviens-moi 🐾"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ color: "white", fontSize: 21, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>C'est noté, merci !</div>
+                  <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6 }}>Je te préviens dès qu'Hector est prêt à compter tes heures. À très vite. 🐾</div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
