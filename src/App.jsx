@@ -797,15 +797,19 @@ function AppInner() {
   useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
   useEffect(() => { localStorage.setItem("nav", nav); }, [nav]);
 
-  // Messages Hector contextuels au chargement du dashboard
-  const hectorMessagesSentRef = useRef({});
+  // Message Hector si solde périmé (calcul interne, déclenché une fois par session)
   useEffect(() => {
     if (nav !== "dashboard") return;
-    if (soldePerime && !hectorMessagesSentRef.current.soldePerime) {
+    const updatedAt = localStorage.getItem("soldeUpdatedAt") || "";
+    if (!updatedAt || panique.solde === "") return;
+    const jours = Math.floor((Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24));
+    if (jours >= 7 && !hectorMessagesSentRef.current.soldePerime) {
       hectorMessagesSentRef.current.soldePerime = true;
       addHectorMessage("Ça fait plus de 7 jours que je n'ai pas vu ton vrai solde. Mes calculs sont moins précis là. 10 secondes pour me mettre à jour ?", "#FAC775");
     }
-  }, [nav, soldePerime]);
+  }, [nav, panique.solde]);
+
+  const hectorMessagesSentRef = useRef({});
 
   useEffect(() => {
     if (token) loadEverything();
