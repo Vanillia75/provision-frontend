@@ -2438,8 +2438,13 @@ function AppInner() {
         <div style={S.authPage}>
           <style>{CSS}</style>
           <div style={S.authLeft}>
-            <img src="/hector-serein.png" alt="Hector" style={{ width: 200, height: "auto", display: "block" }} />
-            <h1 style={{ ...S.authHero, marginTop: 20 }}>Une dernière chose.</h1>
+            <div style={{ position: "relative", width: 130, height: 130, margin: "0 auto" }}>
+              <div style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.25) 0%, transparent 70%)" }} />
+              <div style={{ width: 130, height: 130, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(93,202,165,0.35)", position: "relative", boxShadow: "0 8px 32px rgba(0,0,0,0.35)" }}>
+                <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+              </div>
+            </div>
+            <h1 style={{ ...S.authHero, marginTop: 24 }}>Une dernière chose.</h1>
             <p style={S.authSub}>Dis-moi ton dernier encaissement. Je te montre exactement ce qu'il te reste après l'URSSAF.</p>
           </div>
           <div style={S.authRight}>
@@ -2454,7 +2459,7 @@ function AppInner() {
                 autoFocus
               />
               {onbPremierRevenuNum > 0 && (
-                <div style={{ background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 12, padding: "16px 18px", marginBottom: 16 }}>
+                <div style={{ background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 12, padding: "16px 18px", marginBottom: 16, animation: "fadeInDown 0.35s ease" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#6B7A8D", marginBottom: 8 }}>
                     <span>URSSAF à mettre de côté</span>
                     <span style={{ color: "#FAC775", fontWeight: 700 }}>−{formatEUR(urssafOnb)}</span>
@@ -2462,6 +2467,9 @@ function AppInner() {
                   <div style={{ display: "flex", justifyContent: "space-between", fontSize: 18, fontWeight: 800, color: "#0A2540", borderTop: "1px solid #E2EBF6", paddingTop: 8 }}>
                     <span>Il te reste vraiment</span>
                     <span style={{ color: "#1D9E75" }}>{formatEUR(resteOnb)}</span>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", marginTop: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>🐾</span> C'est ça, ton vrai disponible. Pas de mauvaise surprise.
                   </div>
                 </div>
               )}
