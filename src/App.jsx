@@ -5526,7 +5526,11 @@ function AppInner() {
                   </div>
                   {caAnnuel > 0 && (
                     <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 14px", marginBottom: 14, fontSize: 13, color: "#B5D4F4" }}>
-                      Cette année, tu as versé environ <strong style={{ color: "#5DCAA5" }}>{formatEUR(cfpVersee)}</strong> de CFP (estimation sur ton CA de {formatEUR(caAnnuel)}).
+                      Cette année, tu as versé environ <strong style={{ color: "#5DCAA5" }}>{formatEUR(cfpVersee)}</strong> de CFP.
+                      <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: "#8BA5C0", lineHeight: 1.6 }}>
+                        Mon calcul : ton CA de {formatEUR(caAnnuel)} × {(tauxCfp * 100).toFixed(1).replace(".", ",")} % (le taux CFP pour ton activité) = {formatEUR(cfpVersee)}.
+                        <br />Ce taux est de 0,1 % pour la vente, 0,2 % pour les services et professions libérales, 0,3 % pour les artisans.
+                      </div>
                     </div>
                   )}
                   <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -5544,7 +5548,7 @@ function AppInner() {
                     </div>
                   </div>
                   <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "#6B8299", fontStyle: "italic" }}>
-                    🐾 Je ne peux pas voir ton solde exact (il est sur les plateformes officielles), mais je voulais que tu saches que ces droits existent. Beaucoup passent à côté.
+                    🐾 Les montants CPF et FAF ci-dessus sont les maximums prévus par la loi, pas ton solde réel. Ton vrai solde n'est visible que sur les plateformes officielles. Je voulais juste que tu saches que ces droits existent — beaucoup passent à côté.
                   </div>
                 </div>
               );
