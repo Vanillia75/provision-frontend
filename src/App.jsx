@@ -2868,26 +2868,13 @@ function AppInner() {
                   </div>
                 </div>
               ) : (
-                /* DESKTOP : Option C — Hector immersif en arrière-plan */
+                /* DESKTOP : hero en grille comme la landing — Hector entier, jamais cropé */
                 <div>
-                  <div style={{ position: "relative", minHeight: 260, overflow: "hidden" }}>
-                    {/* Hector en fond pleine hauteur — masqué sur les bords pour fondre dans le fond */}
-                    <img
-                      src={hectorEtat?.img || "/hector-tete.png"}
-                      alt="Hector"
-                      style={{
-                        position: "absolute", right: 0, bottom: 0, height: "100%", width: "auto", maxWidth: "45%",
-                        objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block",
-                        filter: "brightness(1.1)",
-                      }}
-                    />
-                    {/* Fondus gauche + bas comme la landing pour intégrer Hector sans coupure */}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 50%, #0a1322 88%)", zIndex: 1, pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 70%, #0a1322 98%)", zIndex: 1, pointerEvents: "none" }} />
-                    {/* Contenu par dessus */}
-                    <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", minHeight: 240, position: "relative", overflow: "hidden" }}>
+                    {/* Contenu à gauche */}
+                    <div style={{ position: "relative", zIndex: 2, padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                       {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px" }}>
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
                           <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
                           <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
                           {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
@@ -2935,6 +2922,16 @@ function AppInner() {
                           </div>
                         </>
                       )}
+                    </div>
+                    {/* Hector dans sa colonne — entier, jamais cropé, fondu comme la landing */}
+                    <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      <img
+                        src={hectorEtat?.img || "/hector-tete.png"}
+                        alt="Hector"
+                        style={{ width: "100%", height: "auto", maxHeight: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
+                      />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
                     </div>
                   </div>
                   {/* Bande solde */}
