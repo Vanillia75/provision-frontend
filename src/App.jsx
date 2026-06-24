@@ -2878,16 +2878,15 @@ function AppInner() {
                       src={hectorEtat?.img || "/hector-tete.png"}
                       alt="Hector"
                       style={{
-                        position: "absolute", right: 0, bottom: 0, height: "130%", maxHeight: 360, width: "auto",
+                        position: "absolute", right: 0, bottom: 0, height: "118%", maxHeight: 330, width: "auto",
                         objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block",
-                        WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 35%), linear-gradient(to top, transparent 0%, black 20%)",
-                        WebkitMaskComposite: "source-in",
-                        maskImage: "linear-gradient(to right, transparent 0%, black 35%)",
+                        WebkitMaskImage: "radial-gradient(ellipse 75% 90% at 75% 75%, black 40%, transparent 75%)",
+                        maskImage: "radial-gradient(ellipse 75% 90% at 75% 75%, black 40%, transparent 75%)",
                       }}
                     />
                     {/* Gradient fondu — gauche fort */}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 40%, rgba(10,19,34,0.7) 70%, rgba(10,19,34,0.2) 100%)", zIndex: 1, pointerEvents: "none" }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, transparent 30%)", zIndex: 1, pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 38%, rgba(10,19,34,0.5) 68%, rgba(10,19,34,0.05) 100%)", zIndex: 1, pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, transparent 35%)", zIndex: 1, pointerEvents: "none" }} />
                     {/* Contenu par dessus */}
                     <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
                       {hectorEtat && (
