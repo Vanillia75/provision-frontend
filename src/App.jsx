@@ -467,6 +467,15 @@ function AppInner() {
   const [interShowAdd, setInterShowAdd] = useState(false);
   const [interSaving, setInterSaving] = useState(false);
   const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+  // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
+  const PALIERS_INTERMITTENT = [
+    { etat: "oeuf",   seuil: 0,   nom: "Œuf",    court: "départ" },
+    { etat: "chiot",  seuil: 100, nom: "Chiot",  court: "100h" },
+    { etat: "ado",    seuil: 250, nom: "Ado",    court: "250h" },
+    { etat: "filet",  seuil: 338, nom: "Filet",  court: "338h" },
+    { etat: "adulte", seuil: 400, nom: "Adulte", court: "400h" },
+    { etat: "niche",  seuil: 507, nom: "Niche",  court: "507h" },
+  ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState(""); // "", "loading", "sent"
@@ -3431,6 +3440,41 @@ function AppInner() {
                   <span>0</span>
                   <span style={{ color: c.filet_atteint ? "#FAC775" : "#6B8299" }}>338h {c.filet_atteint ? "✓" : ""} filet</span>
                   <span>{c.seuil}h</span>
+                </div>
+              </div>
+
+              {/* ── Brique 5.3 : la frise des paliers d'Hector (le foyer grandit) ── */}
+              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px", marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>🐾 Hector grandit avec tes heures</div>
+                <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 16, textAlign: "center" }}>Chaque heure déclarée le rapproche de sa niche.</div>
+                <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 2px" }}>
+                  {PALIERS_INTERMITTENT.map((p, i) => {
+                    const acquis = c.total_heures >= p.seuil;
+                    const iciMaintenant = c.hector_etat === p.etat;
+                    const ligneAcquise = i < PALIERS_INTERMITTENT.length - 1 && c.total_heures >= PALIERS_INTERMITTENT[i + 1].seuil;
+                    const couleurActif = p.etat === "filet" ? "#FAC775" : (p.etat === "niche" ? "#5DCAA5" : "#378ADD");
+                    return (
+                      <div key={p.etat} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
+                        {i < PALIERS_INTERMITTENT.length - 1 && (
+                          <div style={{ position: "absolute", top: 20, left: "50%", width: "100%", height: 2, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.06)", zIndex: 0 }} />
+                        )}
+                        <div style={{ position: "relative", zIndex: 1, width: 40, height: 40, borderRadius: "50%", margin: "0 auto 6px", overflow: "hidden", background: "#16314E",
+                          border: iciMaintenant ? `2px solid ${couleurActif}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.1)"),
+                          opacity: acquis ? 1 : 0.35,
+                          boxShadow: iciMaintenant ? `0 0 0 4px ${couleurActif}30` : "none",
+                          display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          {p.etat === "niche"
+                            ? <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
+                            : <i className={`ti ${acquis ? (p.etat === "filet" ? "ti-shield-check" : "ti-check") : "ti-lock"}`} aria-hidden="true" style={{ color: acquis ? "#5DCAA5" : "#6B86A3", fontSize: 16 }} />
+                          }
+                        </div>
+                        <div style={{ fontSize: 9.5, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#3A5170", lineHeight: 1.2 }}>{p.nom}</div>
+                        <div style={{ fontSize: 8.5, color: iciMaintenant ? couleurActif : (acquis ? "#9FE1CB" : "#2A4060") }}>
+                          {iciMaintenant ? "tu es ici" : (acquis ? "✓" : p.court)}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
