@@ -478,6 +478,10 @@ function AppInner() {
   // Navigation interne du cockpit intermittent (sidebar)
   const [interNav, setInterNav] = useState("cockpit");
   const [interMenuOpen, setInterMenuOpen] = useState(false);
+  // Chat Hector intermittent (assistant IA spécialisé régime)
+  const [interChat, setInterChat] = useState([]);
+  const [interChatInput, setInterChatInput] = useState("");
+  const [interChatLoading, setInterChatLoading] = useState(false);
   // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
     { etat: "oeuf",   seuil: 0,   nom: "Arrive",  court: "départ", img: "/niveau-1.png" },
@@ -1945,6 +1949,28 @@ function AppInner() {
       setAiMessages(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setAiLoading(false);
+    }
+  }
+
+  // --- Chat Hector intermittent : même endpoint, le backend détecte le statut ---
+  async function askInterChat(e) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!interChatInput.trim() || interChatLoading) return;
+    const userMsg = { role: "user", content: interChatInput };
+    const newMessages = [...interChat, userMsg];
+    setInterChat(newMessages);
+    setInterChatInput("");
+    setInterChatLoading(true);
+    try {
+      const data = await apiFetch("/assistant/chat", {
+        method: "POST",
+        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+      });
+      setInterChat(m => [...m, { role: "assistant", content: data.reply }]);
+    } catch (err) {
+      setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
+    } finally {
+      setInterChatLoading(false);
     }
   }
 
@@ -3800,14 +3826,77 @@ function AppInner() {
 
               {/* ═══ PAGE PARLE À HECTOR ═══ */}
               {interNav === "hector" && (<>
-              {/* ── Brique 5.4 : Parle à Hector (simulation de contrat) ── */}
-              <div id="inter-hector" style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+
+              {/* ── Le chat Hector intermittent (assistant expert du régime) ── */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-message" fallbackColor="#3a5169" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>Parle à Hector</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Ton expert du régime intermittent. Pose-lui tes questions.</div>
+                </div>
+              </div>
+
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
+                {/* Fil de discussion */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14, maxHeight: 420, overflowY: "auto" }}>
+                  {interChat.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "12px 8px" }}>
+                      <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
+                        Demande-moi ce que tu veux sur ton régime : tes 507h, les annexes, ta date anniversaire, la clause de rattrapage, les congés spectacles… Je suis là pour rendre tout ça clair.
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[
+                          "C'est quoi exactement la date anniversaire ?",
+                          "Combien d'heures il me reste pour mes droits ?",
+                          "Comment marche la clause de rattrapage ?",
+                          "Un cachet isolé, ça compte pour combien d'heures ?",
+                        ].map(q => (
+                          <button key={q} type="button" onClick={() => { setInterChatInput(q); }}
+                            style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 10, padding: "10px 12px", fontSize: 13, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {interChat.map((m, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{ maxWidth: "85%", background: m.role === "user" ? "#378ADD" : "rgba(255,255,255,0.06)", color: m.role === "user" ? "white" : "#E8F4FF", borderRadius: 14, padding: "10px 14px", fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  {interChatLoading && (
+                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                      <div style={{ background: "rgba(255,255,255,0.06)", color: "#8BA5C0", borderRadius: 14, padding: "10px 14px", fontSize: 13.5 }}>Hector réfléchit…</div>
+                    </div>
+                  )}
+                </div>
+                {/* Saisie */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input type="text" value={interChatInput} onChange={e => setInterChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") askInterChat(e); }}
+                    placeholder="Écris ta question à Hector…"
+                    style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 10, padding: "11px 14px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  <button type="button" onClick={askInterChat} disabled={interChatLoading || !interChatInput.trim()}
+                    style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 10, padding: "0 16px", fontSize: 15, fontWeight: 700, cursor: (interChatLoading || !interChatInput.trim()) ? "default" : "pointer", fontFamily: "inherit", opacity: (interChatLoading || !interChatInput.trim()) ? 0.5 : 1, flexShrink: 0 }}>
+                    <i className="ti ti-send" aria-hidden="true" />
+                  </button>
+                </div>
+                <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
+                  Hector t'explique ton régime et suit tes heures. Il ne calcule pas les montants en euros — ça, c'est France Travail.
+                </div>
+              </div>
+
+              {/* ── Brique 5.4 : Simulateur de contrat (complément du chat) ── */}
+              <div id="inter-simulateur" style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <i className="ti ti-message" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Parle à Hector</div>
+                  <i className="ti ti-calculator" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Simuler un contrat</div>
                 </div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 14 }}>
-                  Un contrat en vue ? Demande-lui ce que ça change pour tes droits.
+                  Un contrat en vue ? Calcule en un clic ce que ça change pour tes droits.
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                   <span style={{ fontSize: 13, color: "#B5D4F4", alignSelf: "center" }}>Si je fais</span>
