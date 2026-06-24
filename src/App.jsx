@@ -5585,7 +5585,7 @@ function AppInner() {
                       animation: isListening ? "pulse 1.2s infinite" : "none",
                     }}
                   >
-                    <i className={`ti ${isListening ? "ti-microphone-filled" : "ti-microphone"}`} aria-hidden="true" style={{ fontSize: 18 }} />
+                    <span style={{ fontSize: 18, lineHeight: 1 }}>{isListening ? "⏹" : "🎤"}</span>
                   </button>
                 )}
                 <button style={S.btnPrimarySmall} type="submit" disabled={aiLoading}>Envoyer</button>
