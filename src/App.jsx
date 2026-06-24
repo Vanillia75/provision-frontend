@@ -528,6 +528,8 @@ function AppInner() {
   const [selectedExpense, setSelectedExpense] = useState(null);
   const [hectorMessages, setHectorMessages] = useState([]);
   const [onbPremierRevenu, setOnbPremierRevenu] = useState("");
+  const [briefingOuvert, setBriefingOuvert] = useState(false);
+  const [briefingVuAujourdhui, setBriefingVuAujourdhui] = useState(() => localStorage.getItem("briefingVu") === new Date().toISOString().slice(0, 10));
   const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "" });
   const [uploadingExpenseFile, setUploadingExpenseFile] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
@@ -808,6 +810,35 @@ function AppInner() {
       addHectorMessage("Ça fait plus de 7 jours que je n'ai pas vu ton vrai solde. Mes calculs sont moins précis là. 10 secondes pour me mettre à jour ?", "#FAC775");
     }
   }, [nav, panique.solde]);
+
+  // ─── STREAK : mise à jour une fois par jour à l'ouverture ───
+  useEffect(() => {
+    if (!token) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastDay = localStorage.getItem("streakLastDay") || "";
+    if (lastDay === today) return; // déjà compté aujourd'hui
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+    const current = parseInt(localStorage.getItem("streakCount") || "0", 10);
+    let newStreak;
+    if (lastDay === yesterday) newStreak = current + 1; // continuité
+    else if (lastDay === "") newStreak = 1; // première fois
+    else newStreak = 1; // streak cassé, on repart à 1
+    localStorage.setItem("streakCount", String(newStreak));
+    localStorage.setItem("streakLastDay", today);
+    // Célébration si on vient de franchir un palier
+    const paliers = [7, 14, 30, 90, 180, 365];
+    const palierMots = {
+      7: "7 jours d'affilée 🛏️ Hector dort maintenant paisiblement dans son panier. Tu prends soin de ta tranquillité.",
+      14: "14 jours ensemble 🌱 Hector grandit grâce à toi. Continue, vous formez une belle équipe.",
+      30: "30 jours d'affilée 🧸 Hector a reçu un jouet ! Il est heureux de ce rituel avec toi.",
+      90: "90 jours 🏡 Hector a maintenant une belle niche, confortable et sûre. Il se sent chez lui.",
+      180: "180 jours 🦴 Hector est devenu adulte, serein et solide. Vous êtes une vraie équipe.",
+      365: "365 jours 👑 Hector est le gardien légendaire de ta tranquillité. Bravo pour cette année.",
+    };
+    if (paliers.includes(newStreak) && palierMots[newStreak]) {
+      setTimeout(() => addHectorMessage(palierMots[newStreak], "#FAC775"), 1200);
+    }
+  }, [token]);
 
   const hectorMessagesSentRef = useRef({});
 
@@ -2020,6 +2051,63 @@ function AppInner() {
       mot: "Viens, on regarde ça ensemble. On va s'en sortir !", img: "/hector-alerte.png" };
   }
   const hectorEtat = etatHector(joursTranquillite);
+
+  // ─── STREAK ÉMOTIONNEL : jours consécutifs d'ouverture ───
+  // Calcul au render (pas d'effet de bord ici). La mise à jour se fait dans un useEffect plus bas.
+  const streakCount = parseInt(localStorage.getItem("streakCount") || "0", 10);
+  // Paliers émotionnels : Hector évolue avec la fidélité, pas avec un chiffre froid
+  const PALIERS_STREAK = [
+    { seuil: 365, emoji: "👑", titre: "Gardien légendaire du foyer", mot: "365 jours ensemble. Hector est devenu le gardien légendaire de ta tranquillité. Personne ne veille mieux que lui." },
+    { seuil: 180, emoji: "🦴", titre: "Hector adulte", mot: "180 jours. Hector a grandi, il est désormais un adulte serein et solide. Vous formez une vraie équipe." },
+    { seuil: 90, emoji: "🏡", titre: "Niche améliorée", mot: "90 jours de fidélité. Hector a maintenant une belle niche, confortable et sûre. Il se sent chez lui." },
+    { seuil: 30, emoji: "🧸", titre: "Hector reçoit un jouet", mot: "30 jours d'affilée ! Hector est heureux, il a même reçu un jouet. Continue, il adore ce rituel." },
+    { seuil: 14, emoji: "🌱", titre: "Hector grandit", mot: "14 jours ensemble. Hector grandit grâce à toi. Tu prends soin de ta tranquillité, et ça se voit." },
+    { seuil: 7, emoji: "🛏️", titre: "Hector dort dans son panier", mot: "7 jours d'affilée. Hector dort paisiblement dans son panier — il se sent en sécurité avec toi." },
+  ];
+  const palierStreakActuel = PALIERS_STREAK.find(p => streakCount >= p.seuil) || null;
+  const prochainPalierStreak = [...PALIERS_STREAK].reverse().find(p => streakCount < p.seuil) || null;
+
+  // ─── BRIEFING DU MATIN : Hector a "réfléchi pendant la nuit" ───
+  // Construit un briefing structuré et contextuel selon la vraie situation financière.
+  const briefingMatin = (() => {
+    const prenom = profilPrenom || "";
+    const heure = new Date().getHours();
+    const salut = heure < 12 ? "Bonjour" : heure < 18 ? "Bon après-midi" : "Bonsoir";
+    const dispo = argentDisponibleBrut;
+
+    // Ce qu'Hector "garde au chaud"
+    const gardeAuChaud = [];
+    if (urssafProvision > 0) gardeAuChaud.push({ label: "URSSAF", montant: urssafProvision });
+    if (impotsNum > 0) gardeAuChaud.push({ label: "Impôts", montant: impotsNum });
+    if (securiteNum > 0) gardeAuChaud.push({ label: "Réserve de sécurité", montant: securiteNum });
+
+    // Analyse + conseil selon l'état
+    let ton, analyse, conseil, alerte = null;
+    if (dispo === null) {
+      ton = "neutre";
+      analyse = "Je n'ai pas encore assez d'infos pour veiller sur toi. Donne-moi ton solde, et je me mets au travail.";
+      conseil = "Renseigne ton solde bancaire pour que je commence à calculer ta tranquillité.";
+    } else if (joursTranquillite !== null && joursTranquillite < 7) {
+      ton = "alerte";
+      alerte = `Ta tréso tient environ ${joursTranquillite} jour${joursTranquillite > 1 ? "s" : ""} à ton rythme de vie actuel. On reste vigilants ensemble.`;
+      analyse = "Ton coussin de sécurité est mince en ce moment. Rien de dramatique, mais on garde l'œil ouvert.";
+      conseil = "Évite les dépenses non essentielles cette semaine, et priorise les encaissements en attente.";
+    } else if (joursTranquillite !== null && joursTranquillite < 30) {
+      ton = "vigilant";
+      analyse = `Ta situation est correcte : tu as de quoi tenir environ ${joursTranquillite} jours sereinement.`;
+      conseil = "Si tu peux, renforce un peu ta réserve ce mois-ci pour passer en zone confortable.";
+    } else {
+      ton = "serein";
+      analyse = reserveAtteinte
+        ? "Ton activité est stable et ta réserve de sécurité est constituée. Tu es en bonne posture."
+        : "Ton activité est stable. Continue comme ça, ta réserve se construit.";
+      conseil = reserveAtteinte
+        ? "Tu peux te verser un complément ce mois-ci sans prendre de risque."
+        : "Mets un peu de côté ce mois-ci pour finir de constituer ta réserve, et tu seras totalement tranquille.";
+    }
+
+    return { salut, prenom, dispo, gardeAuChaud, ton, analyse, conseil, alerte };
+  })();
   const securitePrecise = moyenneMensuelleFrais > 0; // true si base sur vos vrais Frais d'entreprise, false si approxime sur le CA
   const tresorerieApresDettes = soldeNum - totalChargesAVenir;
   const moisSurvie = baseMensuelleSecurite > 0 && panique.solde !== "" ? Math.max(0, Math.round((tresorerieApresDettes / baseMensuelleSecurite) * 10) / 10) : null;
@@ -2805,6 +2893,92 @@ function AppInner() {
 
         {nav === "dashboard" && estimateData && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* ── BRIEFING DU MATIN D'HECTOR ── */}
+            {(() => {
+              const b = briefingMatin;
+              const couleurTon = b.ton === "alerte" ? "#E24B4A" : b.ton === "vigilant" ? "#EF9F27" : b.ton === "serein" ? "#5DCAA5" : "#8BA5C0";
+              const ouvert = briefingOuvert || !briefingVuAujourdhui;
+              const marquerVu = () => {
+                localStorage.setItem("briefingVu", new Date().toISOString().slice(0, 10));
+                setBriefingVuAujourdhui(true);
+                setBriefingOuvert(false);
+              };
+              if (!ouvert) {
+                return (
+                  <button
+                    onClick={() => setBriefingOuvert(true)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, background: "#0a1322", border: `1px solid ${couleurTon}33`, borderRadius: 12, padding: "10px 16px", cursor: "pointer", textAlign: "left", width: "100%" }}
+                  >
+                    <HectorTete size={28} />
+                    <span style={{ fontSize: 13, color: "#B5D4F4", flex: 1 }}>Revoir le briefing d'Hector du jour</span>
+                    <span style={{ fontSize: 12, color: couleurTon }}>Ouvrir →</span>
+                  </button>
+                );
+              }
+              return (
+                <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #0e1b30 100%)", border: `1px solid ${couleurTon}44`, borderRadius: 16, padding: "20px 22px", position: "relative", animation: "fadeInDown 0.4s ease" }}>
+                  <button onClick={marquerVu} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#4A6280", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
+                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                    <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", border: `2px solid ${couleurTon}55`, flexShrink: 0 }}>
+                      <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "white" }}>🐾 {b.salut}{b.prenom ? ` ${b.prenom}` : ""}</div>
+                      <div style={{ fontSize: 11, color: "#6B8299" }}>Ton briefing du {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
+                    </div>
+                  </div>
+
+                  {b.dispo !== null && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 2 }}>💰 Ce que tu peux dépenser aujourd'hui</div>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: b.dispo >= 0 ? "#5DCAA5" : "#F09595", fontVariantNumeric: "tabular-nums" }}>
+                        {b.dispo < 0 ? "−" : ""}{formatEUR(Math.abs(b.dispo))}
+                      </div>
+                    </div>
+                  )}
+
+                  {b.gardeAuChaud.length > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 6 }}>🧾 Ce que je garde au chaud pour toi</div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {b.gardeAuChaud.map(g => (
+                          <div key={g.label} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "6px 12px", fontSize: 12 }}>
+                            <span style={{ color: "#8BA5C0" }}>{g.label} : </span>
+                            <span style={{ color: "white", fontWeight: 700 }}>{formatEUR(g.montant)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {b.alerte && (
+                    <div style={{ background: "rgba(226,75,74,0.1)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#F09595", marginBottom: 4 }}>⚠️ Attention</div>
+                      <div style={{ fontSize: 13, color: "#E8C4C4", lineHeight: 1.5 }}>{b.alerte}</div>
+                    </div>
+                  )}
+
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>📈 Mon analyse</div>
+                    <div style={{ fontSize: 13, color: "#D6E4F2", lineHeight: 1.5 }}>{b.analyse}</div>
+                  </div>
+
+                  <div style={{ background: `${couleurTon}14`, border: `1px solid ${couleurTon}33`, borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: couleurTon, marginBottom: 4 }}>🎯 Mon conseil du jour</div>
+                    <div style={{ fontSize: 13, color: "#E4EEF8", lineHeight: 1.5 }}>{b.conseil}</div>
+                  </div>
+
+                  {streakCount > 0 && (
+                    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 16 }}>🔥</span>
+                      <span style={{ fontSize: 13, color: "#FAC775", fontWeight: 700 }}>{streakCount} jour{streakCount > 1 ? "s" : ""} avec Hector</span>
+                      {palierStreakActuel && <span style={{ fontSize: 12, color: "#8BA5C0" }}>· {palierStreakActuel.emoji} {palierStreakActuel.titre}</span>}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
