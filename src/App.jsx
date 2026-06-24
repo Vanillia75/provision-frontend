@@ -604,7 +604,7 @@ function AppInner() {
   const [onboardingNafLabel, setOnboardingNafLabel] = useState("");
   const [onboardingSiretLater, setOnboardingSiretLater] = useState(false);
   // Onboarding 2 temps : "form" (3 questions) puis "result" (premier disponible affiché)
-  const [onbStep, setOnbStep] = useState("form");
+  const [onbStep, setOnbStep] = useState("statut");
   const [onbSolde, setOnbSolde] = useState("");
   const [onbTrainDeVie, setOnbTrainDeVie] = useState("");
   const [onbSiret, setOnbSiret] = useState("");
@@ -1184,6 +1184,29 @@ function AppInner() {
   async function handleEnterCockpit() {
     setLoading(true);
     try {
+      await loadEverything();
+      setNav("dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ─── Brique 4b : choisir le statut pendant l'onboarding ───
+  async function handleOnboardingStatut(statut) {
+    if (statut === "auto_entrepreneur") {
+      // Flux auto-entrepreneur classique : on passe au formulaire d'onboarding habituel.
+      setProfileForm({ ...profileForm, statut: "auto_entrepreneur" });
+      setOnbStep("form");
+      return;
+    }
+    // Intermittent : on enregistre le statut + on marque l'onboarding comme fait,
+    // puis on file direct au cockpit intermittent (qui a son propre flux d'entrée).
+    setLoading(true);
+    try {
+      await apiFetch("/profile/statut", { method: "POST", body: JSON.stringify({ statut: "intermittent" }) });
+      await apiFetch("/profile/complete-onboarding", { method: "POST" });
       await loadEverything();
       setNav("dashboard");
     } catch (err) {
@@ -3207,6 +3230,39 @@ function AppInner() {
     const tauxOnb = profileForm.activite === "bic_vente" ? 12.3 : profileForm.activite === "bnc" ? 25.6 : 21.2;
     const urssafOnb = Math.round(onbPremierRevenuNum * tauxOnb / 100);
     const resteOnb = Math.round(onbPremierRevenuNum - urssafOnb);
+
+    // ─── PHASE STATUT (Brique 4b) : qui es-tu ? Pré-rempli par la landing. ───
+    if (onbStep === "statut") {
+      const carteOnb = (statut, img, fallbackIcon, titre, sousTitre) => (
+        <button type="button" disabled={loading} onClick={() => handleOnboardingStatut(statut)}
+          style={{ width: "100%", background: "#11203a", border: "1px solid #2a3a55", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 14, textAlign: "left", cursor: loading ? "default" : "pointer", fontFamily: "inherit", opacity: loading ? 0.6 : 1, marginBottom: 12 }}
+          onMouseEnter={e => !loading && (e.currentTarget.style.borderColor = "#5DCAA5")}
+          onMouseLeave={e => (e.currentTarget.style.borderColor = "#2a3a55")}>
+          <div style={{ width: 64, height: 64, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+            <NiveauImage src={img} fallbackIcon={fallbackIcon} fallbackColor="#3a5169" />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "white", fontSize: 15, fontWeight: 600, marginBottom: 3 }}>{titre}</div>
+            <div style={{ color: "#8BA5C0", fontSize: 12.5, lineHeight: 1.5 }}>{sousTitre}</div>
+          </div>
+          <i className="ti ti-arrow-right" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
+        </button>
+      );
+      return (
+        <div style={{ background: "#0a1322", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <style>{CSS}</style>
+          <div style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
+            <Logo size={40} dark />
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "white", margin: "20px 0 8px" }}>Bienvenue ! Dis-moi qui tu es.</h1>
+            <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 28px", lineHeight: 1.5 }}>
+              Je m'adapte à ton activité. Tu pourras changer à tout moment dans les réglages.
+            </p>
+            {carteOnb("auto_entrepreneur", "/hector-tete.png", "ti-briefcase", "Je suis auto-entrepreneur", "Je te dis ce que tu peux vraiment dépenser, sans l'URSSAF qui surprend.")}
+            {carteOnb("intermittent", "/hector-clap.png", "ti-movie", "Je suis intermittent du spectacle", "Je compte tes heures et tes cachets vers tes 507h.")}
+          </div>
+        </div>
+      );
+    }
 
     // ─── PHASE AHA : premier revenu avant cockpit ───
     if (onbStep === "aha") {
