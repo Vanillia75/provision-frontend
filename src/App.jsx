@@ -458,6 +458,15 @@ function AppInner() {
   const [intermittentSending, setIntermittentSending] = useState(false);
   // Modale "à venir" déclenchée par les boutons de la landing intermittent
   const [showIntermittentAvenir, setShowIntermittentAvenir] = useState(false);
+  // Cockpit intermittent (Brique 5) : état calculé renvoyé par /intermittent/cockpit
+  const [interCockpit, setInterCockpit] = useState(null);
+  const [interCockpitLoading, setInterCockpitLoading] = useState(false);
+  const [interCockpitError, setInterCockpitError] = useState("");
+  // Brique 5.2 : saisie et liste des activités intermittent
+  const [interActivites, setInterActivites] = useState([]);
+  const [interShowAdd, setInterShowAdd] = useState(false);
+  const [interSaving, setInterSaving] = useState(false);
+  const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotStatus, setForgotStatus] = useState(""); // "", "loading", "sent"
@@ -1228,6 +1237,70 @@ function AppInner() {
       setStatutSaving(false);
     }
   }
+
+  // ─── Brique 5.1 : charge l'état du cockpit intermittent depuis le backend ───
+  async function loadIntermittentCockpit() {
+    setInterCockpitLoading(true);
+    setInterCockpitError("");
+    try {
+      const [data, activites] = await Promise.all([
+        apiFetch("/intermittent/cockpit"),
+        apiFetch("/intermittent/activites"),
+      ]);
+      setInterCockpit(data);
+      setInterActivites(activites);
+    } catch (err) {
+      setInterCockpitError(err.message || "Impossible de charger ton cockpit.");
+    } finally {
+      setInterCockpitLoading(false);
+    }
+  }
+
+  // ─── Brique 5.2 : ajouter une activité ───
+  async function handleAddActivite() {
+    const nombre = parseFloat(interForm.nombre);
+    if (!interForm.date || !nombre || nombre <= 0) {
+      setError("Renseigne une date et un nombre valide.");
+      return;
+    }
+    setInterSaving(true);
+    try {
+      await apiFetch("/intermittent/activite", {
+        method: "POST",
+        body: JSON.stringify({
+          date: interForm.date,
+          type_activite: interForm.type_activite,
+          nombre,
+          employeur: interForm.employeur || null,
+        }),
+      });
+      setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+      setInterShowAdd(false);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setInterSaving(false);
+    }
+  }
+
+  // ─── Brique 5.2 : supprimer une activité ───
+  async function handleDeleteActivite(id) {
+    try {
+      await apiFetch(`/intermittent/activite/${id}`, { method: "DELETE" });
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // Déclenche le chargement quand l'utilisateur est intermittent et connecté.
+  useEffect(() => {
+    if (token && profile && profile.statut === "intermittent") {
+      loadIntermittentCockpit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, profile?.statut]);
 
   function addHectorMessage(text, couleur) {
     const id = Date.now() + Math.random();
@@ -3284,50 +3357,169 @@ function AppInner() {
     );
   }
 
-  // ═══ BRIQUE 4a — BASCULE DE COCKPIT selon le statut ═══
-  // Si l'utilisateur est intermittent, on affiche (pour l'instant) un placeholder
-  // propre. Le vrai cockpit intermittent arrive en Brique 5. Le cockpit
-  // auto-entrepreneur (ci-dessous) reste totalement inchangé.
+  // ═══ BRIQUE 5.1 — COCKPIT INTERMITTENT (compteur 507h vivant) ═══
+  // Branché sur GET /intermittent/cockpit. Affiche l'état calculé par le moteur :
+  // total d'heures, manquant, barre de progression, état d'Hector, verdict (niveau C).
+  // Suivi indicatif, ne remplace pas France Travail.
   if (profile && profile.statut === "intermittent") {
+    const c = interCockpit;
+    const pct = c ? Math.min(100, c.pourcentage) : 0;
+    const etatLabels = {
+      oeuf: "Hector couve", chiot: "Hector chiot", ado: "Hector ado",
+      filet: "Filet de sécurité atteint", adulte: "Hector adulte", niche: "Droits sécurisés",
+    };
     return (
       <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
         <style>{CSS}</style>
         <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <Logo size={32} dark />
-          <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode intermittent</span>
-        </nav>
-        <div style={{ maxWidth: 480, margin: "0 auto", padding: "64px 20px", textAlign: "center" }}>
-          <div style={{ width: 120, height: 120, margin: "0 auto 24px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-            <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
-          </div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: "white", margin: "0 0 12px" }}>Ton cockpit intermittent arrive 🐾</h1>
-          <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 28px" }}>
-            Le compteur 507h, le suivi de tes cachets et l'alerte renouvellement sont en construction.
-            On les prépare avec soin. Tu es aux premières loges.
-          </p>
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px", display: "flex", flexDirection: "column", alignItems: "center", gap: 14 }}>
-            <div style={{ fontSize: 13, color: "#6B8299", lineHeight: 1.6 }}>
-              Tu t'es trompé de profil, ou tu veux revenir à ton cockpit auto-entrepreneur ?
-            </div>
-            <button
-              type="button"
-              disabled={statutSaving}
-              onClick={() => handleChangeStatut("auto_entrepreneur")}
-              style={{
-                background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8,
-                padding: "12px 24px", fontSize: 14, fontWeight: 700,
-                cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit",
-                opacity: statutSaving ? 0.6 : 1, display: "inline-flex", alignItems: "center", gap: 8,
-              }}
-            >
-              <i className="ti ti-arrow-left" aria-hidden="true" />
-              {statutSaving ? "Un instant…" : "Repasser en auto-entrepreneur"}
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode intermittent</span>
+            <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("auto_entrepreneur")}
+              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
+              ← Mode auto-entrepreneur
             </button>
           </div>
+        </nav>
+
+        <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 20px 80px" }}>
+
+          {/* Chargement */}
+          {interCockpitLoading && !c && (
+            <div style={{ textAlign: "center", padding: "80px 0", color: "#6B8299" }}>
+              <div style={{ fontSize: 14 }}>Hector calcule tes heures…</div>
+            </div>
+          )}
+
+          {/* Erreur */}
+          {interCockpitError && !c && (
+            <div style={{ textAlign: "center", padding: "60px 20px" }}>
+              <div style={{ color: "#E8927C", fontSize: 14, marginBottom: 16 }}>{interCockpitError}</div>
+              <button type="button" onClick={loadIntermittentCockpit}
+                style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                Réessayer
+              </button>
+            </div>
+          )}
+
+          {/* Le compteur vivant */}
+          {c && (
+            <>
+              {/* Hector + briefing */}
+              <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
+                <div style={{ width: 56, height: 56, borderRadius: 14, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                  <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{etatLabels[c.hector_etat] || "Hector veille"}</div>
+                  <div style={{ fontSize: 14, color: "#B5D4F4", marginTop: 2 }}>{c.hector_message}</div>
+                </div>
+              </div>
+
+              {/* Le gros compteur */}
+              <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "32px 28px", textAlign: "center", marginBottom: 16 }}>
+                <div style={{ fontSize: 11, color: "#6B8299", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Tes heures sur 12 mois glissants</div>
+                <div style={{ fontSize: 52, fontWeight: 800, color: "white", lineHeight: 1 }}>
+                  {c.total_heures}<span style={{ color: "#6B8299", fontSize: 28, fontWeight: 600 }}> / {c.seuil} h</span>
+                </div>
+                {/* Barre de progression avec repère filet 338h */}
+                <div style={{ height: 12, background: "#0a1322", borderRadius: 6, margin: "20px 0 8px", overflow: "hidden", position: "relative" }}>
+                  <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.6s ease" }} />
+                  <div style={{ position: "absolute", left: `${(338 / c.seuil) * 100}%`, top: -3, bottom: -3, width: 2, background: "#FAC775" }} title="Filet de sécurité (338h)" />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299" }}>
+                  <span>0</span>
+                  <span style={{ color: c.filet_atteint ? "#FAC775" : "#6B8299" }}>338h {c.filet_atteint ? "✓" : ""} filet</span>
+                  <span>{c.seuil}h</span>
+                </div>
+              </div>
+
+              {/* Le verdict (niveau C) */}
+              <div style={{ background: c.droits_securises ? "rgba(93,202,165,0.1)" : "rgba(55,138,221,0.08)", border: `1px solid ${c.droits_securises ? "rgba(93,202,165,0.3)" : "rgba(55,138,221,0.25)"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, color: "#E8F4FF", lineHeight: 1.6 }}>{c.verdict}</div>
+              </div>
+
+              {/* ── Brique 5.2 : saisie + liste des activités ── */}
+              <div style={{ marginTop: 24, marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#B5D4F4", textTransform: "uppercase", letterSpacing: 0.5 }}>Tes activités</div>
+                  <button type="button" onClick={() => setInterShowAdd(v => !v)}
+                    style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <i className={`ti ${interShowAdd ? "ti-x" : "ti-plus"}`} aria-hidden="true" />
+                    {interShowAdd ? "Fermer" : "Ajouter"}
+                  </button>
+                </div>
+
+                {/* Formulaire d'ajout */}
+                {interShowAdd && (
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <input type="date" value={interForm.date} onChange={e => setInterForm({ ...interForm, date: e.target.value })}
+                        style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
+                        style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                        <option value="cachet_isole">Cachet isolé (12h)</option>
+                        <option value="cachet_groupe">Cachet groupé (8h)</option>
+                        <option value="heures">Heures (technicien)</option>
+                      </select>
+                    </div>
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
+                        placeholder={interForm.type_activite === "heures" ? "Nb d'heures" : "Nb de cachets"}
+                        style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      <input type="text" value={interForm.employeur} onChange={e => setInterForm({ ...interForm, employeur: e.target.value })}
+                        placeholder="Employeur (optionnel)"
+                        style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </div>
+                    <button type="button" disabled={interSaving} onClick={handleAddActivite}
+                      style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: interSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interSaving ? 0.6 : 1 }}>
+                      {interSaving ? "Enregistrement…" : "Enregistrer"}
+                    </button>
+                  </div>
+                )}
+
+                {/* Liste des activités */}
+                {interActivites.length === 0 && !interShowAdd && (
+                  <div style={{ textAlign: "center", padding: "24px 16px", color: "#5A7088", fontSize: 13, background: "rgba(255,255,255,0.02)", borderRadius: 12 }}>
+                    Aucune activité pour l'instant. Ajoute ton premier cachet pour qu'Hector commence à compter. 🐾
+                  </div>
+                )}
+                {interActivites.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {interActivites.map(a => {
+                      const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
+                        a.type_activite === "cachet_isole" ? `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} isolé${a.nombre > 1 ? "s" : ""}` :
+                        `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} groupé${a.nombre > 1 ? "s" : ""}`;
+                      return (
+                        <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 14px" }}>
+                          <div>
+                            <div style={{ fontSize: 13, color: "white", fontWeight: 600 }}>{typeLabel}</div>
+                            <div style={{ fontSize: 11, color: "#6B8299", marginTop: 2 }}>
+                              {a.date}{a.employeur ? ` · ${a.employeur}` : ""}
+                            </div>
+                          </div>
+                          <button type="button" onClick={() => handleDeleteActivite(a.id)} aria-label="Supprimer"
+                            style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 4 }}>
+                            <i className="ti ti-trash" aria-hidden="true" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Avertissement indicatif */}
+              <div style={{ fontSize: 11, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginBottom: 8 }}>
+                {c.avertissement}
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
   }
+
 
   const userInitials = (profile?.email || "").slice(0, 2).toUpperCase();
 
