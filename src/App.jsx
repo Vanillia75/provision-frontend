@@ -2849,7 +2849,7 @@ function AppInner() {
             <p style={S.sectionLabel}>3. Combien y a-t-il sur ton compte, là, maintenant ?</p>
             <input
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="0.01" inputMode="decimal" placeholder="Exemple : 1750 €"
+              type="number" step="0.01" inputMode="text" placeholder="Exemple : 1750 €"
               value={onbSolde} onChange={e => setOnbSolde(e.target.value)} autoFocus
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
@@ -3226,7 +3226,7 @@ function AppInner() {
                     <div style={{ position: "relative", flex: 1 }}>
                       <input
                         style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        type="number" step="0.01" inputMode="decimal"
+                        type="number" step="0.01" inputMode="text"
                         placeholder="Solde bancaire"
                         value={panique.solde}
                         onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
@@ -3314,7 +3314,7 @@ function AppInner() {
                       <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
                         <input
                           style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                          type="number" step="0.01" inputMode="decimal"
+                          type="number" step="0.01" inputMode="text"
                           placeholder="Ex : 3 500"
                           value={panique.solde}
                           onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
