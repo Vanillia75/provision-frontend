@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
+import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -530,6 +531,11 @@ function AppInner() {
   const [onbPremierRevenu, setOnbPremierRevenu] = useState("");
   const [briefingOuvert, setBriefingOuvert] = useState(false);
   const [briefingVuAujourdhui, setBriefingVuAujourdhui] = useState(() => localStorage.getItem("briefingVu") === new Date().toISOString().slice(0, 10));
+  const [parlerHectorOuvert, setParlerHectorOuvert] = useState(false);
+  const [parlerMontant, setParlerMontant] = useState("");
+  const [parlerType, setParlerType] = useState("achat");
+  const [parlerVerdict, setParlerVerdict] = useState(null);
+  const [parlerPourquoi, setParlerPourquoi] = useState(false);
   const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "" });
   const [uploadingExpenseFile, setUploadingExpenseFile] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
@@ -2208,6 +2214,76 @@ function AppInner() {
     if (modifie) localStorage.setItem("hectorSouvenirs", JSON.stringify(souvenirs));
   }, [token, argentDisponibleBrut, reserveAtteinte, joursTranquillite]);
 
+  // ─── MOTEUR DE DÉCISION D'HECTOR — 100% local, zéro crédit, totalement transparent ───
+  // Simule l'impact d'un achat ou d'un versement sur la situation réelle.
+  // Retourne un verdict 🟢🟠🔴 + tout le détail du raisonnement (pour le bouton "Pourquoi ?").
+  // RÈGLE : ne devine jamais. Si données insuffisantes → verdict "inconnu" + message honnête.
+  function verdictHector(montant, type = "achat") {
+    const m = parseFloat(montant) || 0;
+    const regime = getRegime(profile?.activite);
+    // Données nécessaires : un solde renseigné
+    if (panique.solde === "" || argentDisponibleBrut === null) {
+      return {
+        verdict: "inconnu",
+        titre: "Il me manque une info",
+        message: "Donne-moi d'abord ton solde bancaire, et je pourrai te répondre précisément.",
+        details: null,
+      };
+    }
+    if (m <= 0) {
+      return { verdict: "inconnu", titre: "Indique un montant", message: "Dis-moi combien tu veux dépenser ou te verser.", details: null };
+    }
+
+    // Situation AVANT
+    const dispoAvant = argentDisponibleBrut; // après charges, avant réserve
+    const joursAvant = joursTranquillite;
+    // Situation APRÈS (un achat ou un versement réduit le disponible d'autant)
+    const dispoApres = Math.round((dispoAvant - m) * 100) / 100;
+    const depenseJour = (parseFloat(depensesMensuelles) || 0) / 30;
+    const joursApres = depenseJour > 0 ? Math.max(0, Math.floor(Math.max(0, dispoApres) / depenseJour)) : null;
+    // Réserve : est-elle préservée après l'opération ?
+    const reserveApres = dispoApres >= securiteNum;
+    const passeSousReserve = !reserveApres && dispoAvant >= securiteNum; // l'opération entame la réserve
+    const passeNegatif = dispoApres < 0;
+
+    // Verdict
+    let verdict, titre, message;
+    if (passeNegatif) {
+      verdict = "rouge";
+      titre = type === "versement" ? "Pas ce montant, là" : "Je te déconseille cet achat";
+      message = `Si tu ${type === "versement" ? "te verses" : "sors"} ${formatEUR(m)}, tu passes en négatif (${formatEUR(dispoApres)}). Ça veut dire que tu n'aurais plus de quoi couvrir tes charges à venir.`;
+    } else if (passeSousReserve) {
+      verdict = "orange";
+      titre = "Possible, mais prudence";
+      message = `Tu peux le faire, mais ça entame ta réserve de sécurité. Il te resterait ${formatEUR(dispoApres)}, en dessous de ta réserve de ${formatEUR(securiteNum)}.`;
+    } else {
+      verdict = "vert";
+      titre = type === "versement" ? "Oui, tu peux te le verser" : "Oui, tu peux y aller";
+      message = `Après ${type === "versement" ? "ce versement" : "cet achat"}, il te reste ${formatEUR(dispoApres)} et ta réserve de sécurité reste intacte. C'est raisonnable.`;
+    }
+
+    return {
+      verdict,
+      titre,
+      message,
+      details: {
+        regimeLabel: regime.label,
+        tauxCotisations: regime.tauxCotisations,
+        abattementFiscal: regime.abattementFiscal,
+        seuilTVA: regime.seuilTVA,
+        montant: m,
+        type,
+        dispoAvant,
+        dispoApres,
+        reserve: securiteNum,
+        reserveApres,
+        joursAvant,
+        joursApres,
+        version: FISCALITE.version,
+      },
+    };
+  }
+
   // --- Projections fin de mois / fin d'annee, pour le Dashboard ---
   const aujourdhui = new Date();
   const jourDuMois = aujourdhui.getDate();
@@ -3272,6 +3348,102 @@ function AppInner() {
                 <button onClick={() => setHectorMessages(prev => prev.filter(m => m.id !== msg.id))} style={{ background: "none", border: "none", color: "#4A6280", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
               </div>
             ))}
+
+            {/* ── PARLER À HECTOR : le copilote de décision ── */}
+            <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #10233f 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: parlerHectorOuvert ? 16 : 0 }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(93,202,165,0.4)", flexShrink: 0 }}>
+                  <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                </div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Demande à Hector</div>
+                  <div style={{ fontSize: 12, color: "#8BA5C0" }}>« Est-ce que je peux acheter ça ? » « Puis-je me verser 1 000 € ? »</div>
+                </div>
+                {!parlerHectorOuvert && (
+                  <button onClick={() => setParlerHectorOuvert(true)} style={{ background: "#5DCAA5", color: "#06241a", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", whiteSpace: "nowrap" }}>
+                    Lui parler 🐾
+                  </button>
+                )}
+              </div>
+
+              {parlerHectorOuvert && (
+                <div>
+                  {/* Choix achat / versement */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                    {[{ id: "achat", label: "Puis-je acheter ?" }, { id: "versement", label: "Puis-je me verser ?" }].map(opt => (
+                      <button key={opt.id} onClick={() => { setParlerType(opt.id); setParlerVerdict(null); }}
+                        style={{ flex: 1, padding: "8px 10px", borderRadius: 8, fontSize: 12, fontWeight: 600, cursor: "pointer", border: `1px solid ${parlerType === opt.id ? "#5DCAA5" : "rgba(255,255,255,0.15)"}`, background: parlerType === opt.id ? "rgba(93,202,165,0.12)" : "transparent", color: parlerType === opt.id ? "#5DCAA5" : "#8BA5C0" }}>
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Saisie du montant */}
+                  <div style={{ display: "flex", gap: 8, marginBottom: parlerVerdict ? 16 : 0 }}>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <input
+                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "12px 32px 12px 14px", fontSize: 18, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                        type="number" inputMode="decimal" placeholder={parlerType === "versement" ? "Montant à te verser" : "Prix de l'achat"}
+                        value={parlerMontant}
+                        onChange={e => { setParlerMontant(e.target.value); setParlerVerdict(null); }}
+                        onKeyDown={e => { if (e.key === "Enter") { setParlerVerdict(verdictHector(parlerMontant, parlerType)); setParlerPourquoi(false); } }}
+                      />
+                      <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                    </div>
+                    <button onClick={() => { setParlerVerdict(verdictHector(parlerMontant, parlerType)); setParlerPourquoi(false); }}
+                      style={{ background: "#5DCAA5", color: "#06241a", border: "none", borderRadius: 10, padding: "0 20px", fontSize: 14, fontWeight: 700, cursor: "pointer" }}>
+                      Demander
+                    </button>
+                  </div>
+
+                  {/* Verdict */}
+                  {parlerVerdict && (() => {
+                    const v = parlerVerdict;
+                    const coul = v.verdict === "vert" ? "#5DCAA5" : v.verdict === "orange" ? "#EF9F27" : v.verdict === "rouge" ? "#E24B4A" : "#8BA5C0";
+                    const emoji = v.verdict === "vert" ? "🟢" : v.verdict === "orange" ? "🟠" : v.verdict === "rouge" ? "🔴" : "🐾";
+                    return (
+                      <div style={{ background: `${coul}12`, border: `1px solid ${coul}44`, borderRadius: 12, padding: "16px 18px", animation: "fadeInDown 0.3s ease" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                          <span style={{ fontSize: 18 }}>{emoji}</span>
+                          <span style={{ fontSize: 15, fontWeight: 700, color: coul }}>{v.titre}</span>
+                        </div>
+                        <div style={{ fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>{v.message}</div>
+
+                        {v.details && (
+                          <>
+                            <button onClick={() => setParlerPourquoi(!parlerPourquoi)}
+                              style={{ marginTop: 12, background: "none", border: "none", color: coul, fontSize: 12, fontWeight: 600, cursor: "pointer", padding: 0, display: "flex", alignItems: "center", gap: 4 }}>
+                              {parlerPourquoi ? "Masquer le détail" : "Pourquoi ? Voir mon raisonnement"} {parlerPourquoi ? "▲" : "▼"}
+                            </button>
+                            {parlerPourquoi && (
+                              <div style={{ marginTop: 12, background: "rgba(0,0,0,0.25)", borderRadius: 10, padding: "14px 16px", fontSize: 12, color: "#B5D4F4", lineHeight: 1.8 }}>
+                                <div style={{ fontWeight: 700, color: "white", marginBottom: 8 }}>🐾 Voici exactement comment j'ai calculé :</div>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Régime utilisé</span><span style={{ color: "white" }}>{v.details.regimeLabel}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Taux cotisations URSSAF</span><span style={{ color: "white" }}>{(v.details.tauxCotisations * 100).toFixed(1)} %</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Abattement fiscal</span><span style={{ color: "white" }}>{(v.details.abattementFiscal * 100).toFixed(0)} %</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Seuil TVA</span><span style={{ color: "white" }}>{formatEUR(v.details.seuilTVA)}</span></div>
+                                <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Disponible avant</span><span style={{ color: "white" }}>{formatEUR(v.details.dispoAvant)}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>{v.details.type === "versement" ? "Versement" : "Achat"}</span><span style={{ color: coul }}>−{formatEUR(v.details.montant)}</span></div>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontWeight: 700 }}><span>Disponible après</span><span style={{ color: "white" }}>{formatEUR(v.details.dispoApres)}</span></div>
+                                <div style={{ height: 1, background: "rgba(255,255,255,0.1)", margin: "8px 0" }} />
+                                <div style={{ display: "flex", justifyContent: "space-between" }}><span>Réserve de sécurité</span><span style={{ color: "white" }}>{formatEUR(v.details.reserve)} {v.details.reserveApres ? "✓ préservée" : "⚠️ entamée"}</span></div>
+                                {v.details.joursAvant !== null && v.details.joursApres !== null && (
+                                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>Jours de tranquillité</span><span style={{ color: "white" }}>{v.details.joursAvant} j → {v.details.joursApres} j</span></div>
+                                )}
+                                <div style={{ marginTop: 10, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "#6B8299", fontStyle: "italic" }}>
+                                  Estimation régime micro-entrepreneur (règles {v.details.version}). Ne remplace pas un expert-comptable. ACRE, activité mixte ou dépassement de seuil peuvent modifier ces montants — à vérifier selon ton cas exact.
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
 
             {/* ── ASSISTANT INLINE ── */}
             <div style={{ background: "linear-gradient(135deg, #0A2540 0%, #112e50 100%)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "16px 20px" }}>
