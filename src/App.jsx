@@ -5507,6 +5507,49 @@ function AppInner() {
         {nav === "conseils" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Conseils & optimisation</h1><p style={S.pageSub}>Pour tirer le meilleur de ton statut auto-entrepreneur</p></div></div>
+
+            {/* ── TES DROITS FORMATION (CFP / CPF / FAF) ── */}
+            {(() => {
+              const act = profile?.activite || "services";
+              const tauxCfp = FISCALITE.cfp[act] ?? FISCALITE.cfp.services;
+              const caAnnuel = estimateData?.ca_annuel || 0;
+              const cfpVersee = Math.round(caAnnuel * tauxCfp * 100) / 100;
+              const faf = FISCALITE.formation.fafParActivite[act] || "ton FAF";
+              return (
+                <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #10233f 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                    <span style={{ fontSize: 22 }}>🎓</span>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Tes droits à la formation</div>
+                  </div>
+                  <div style={{ fontSize: 13, color: "#D6E4F2", lineHeight: 1.6, marginBottom: 14 }}>
+                    Avec tes cotisations, tu paies la CFP (Contribution à la Formation Professionnelle). En échange, tu as des droits à la formation que beaucoup d'auto-entrepreneurs oublient d'utiliser. C'est de l'argent pour te former.
+                  </div>
+                  {caAnnuel > 0 && (
+                    <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: 10, padding: "12px 14px", marginBottom: 14, fontSize: 13, color: "#B5D4F4" }}>
+                      Cette année, tu as versé environ <strong style={{ color: "#5DCAA5" }}>{formatEUR(cfpVersee)}</strong> de CFP (estimation sur ton CA de {formatEUR(caAnnuel)}).
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>💳</span>
+                      <div style={{ fontSize: 12.5, color: "#D6E4F2", lineHeight: 1.5 }}>
+                        <strong>Ton CPF</strong> : crédité jusqu'à 500 €/an (plafond 5 000 €). Solde exact et formations sur <strong style={{ color: "#5DCAA5" }}>moncompteformation.gouv.fr</strong>.
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>🏛️</span>
+                      <div style={{ fontSize: 12.5, color: "#D6E4F2", lineHeight: 1.5 }}>
+                        <strong>Ton FAF ({faf})</strong> : une enveloppe annuelle en plus (souvent 600 € à 1 400 €). À demander avant le 31 décembre, sinon elle est perdue.
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 11, color: "#6B8299", fontStyle: "italic" }}>
+                    🐾 Je ne peux pas voir ton solde exact (il est sur les plateformes officielles), mais je voulais que tu saches que ces droits existent. Beaucoup passent à côté.
+                  </div>
+                </div>
+              );
+            })()}
+
             <div style={S.card}>
               {CONSEILS.map((c, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 0", borderBottom: i < CONSEILS.length - 1 ? "1px solid #EEF2F7" : "none" }}>

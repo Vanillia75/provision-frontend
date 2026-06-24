@@ -83,14 +83,36 @@ export const FISCALITE = {
   },
 
   // ──────────────────────────────────────────────────────────────────────
-  //  CFP (Contribution à la Formation Professionnelle) — s'ajoute aux cotisations
+  //  FORMATION : CFP versée (calculable) + droits ouverts (informatif)
+  //  ⚠️ Hector estime la CFP versée (CA × taux), mais ne peut PAS donner le
+  //  solde exact des droits CPF/FAF (visible seulement sur les plateformes
+  //  officielles). Il informe et oriente, il n'invente jamais un montant.
   // ──────────────────────────────────────────────────────────────────────
   cfp: {
-    vente: 0.001, // 0,1 %
-    services: 0.002, // 0,2 %
-    bnc: 0.002, // 0,2 %
-    source: "URSSAF — CFP 2026 (varie de 0,1 % à 0,3 % selon secteur)",
-    note: "Taux indicatifs. La CFP exacte dépend du secteur précis.",
+    vente: 0.001, // 0,1 % (commerçants)
+    services: 0.002, // 0,2 % (prestations de services / libéral non réglementé)
+    bnc: 0.002, // 0,2 % (professions libérales)
+    artisan: 0.003, // 0,3 % (artisans)
+    source: "URSSAF / service-public.fr — taux CFP 2026 (0,1 % à 0,3 % selon secteur)",
+    note: "La CFP est prélevée avec les cotisations. Elle ouvre des droits formation.",
+  },
+  formation: {
+    // Droits CPF (Compte Personnel de Formation) — plateforme moncompteformation.gouv.fr
+    cpfCreditAnnuel: 500, // € crédités par an (année pleine, CA > 0)
+    cpfPlafond: 5000, // € plafond total
+    cpfResteACharge: 103.20, // € reste à charge par formation (réforme 2026)
+    // Droits FAF (Fonds d'Assurance Formation) selon l'activité
+    fafParActivite: {
+      vente: "AGEFICE",
+      services: "AGEFICE",
+      bnc: "FIF-PL",
+      artisan: "FAFCEA",
+    },
+    fafFourchette: "600 € à 1 400 € selon l'activité (parfois plus pour les formations certifiantes)",
+    source: "service-public.fr, moncompteformation.gouv.fr — droits formation 2026",
+    note: "Le solde EXACT n'est visible que sur moncompteformation.gouv.fr (CPF) et auprès du FAF. " +
+      "Les droits FAF se remettent à zéro chaque année (à utiliser avant le 31 décembre).",
+    plateformeCPF: "moncompteformation.gouv.fr",
   },
 
   // ──────────────────────────────────────────────────────────────────────
