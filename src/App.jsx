@@ -2529,11 +2529,17 @@ function AppInner() {
 
         {/* ===== NAVBAR ===== */}
         <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Logo size={32} dark />
-          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-            <button onClick={resetLandingStatut} style={{ background: "transparent", border: "none", color: "#4A6280", borderRadius: 8, padding: "7px 10px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
-              Je ne suis pas auto-entrepreneur
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <Logo size={32} dark />
+            <button
+              onClick={resetLandingStatut}
+              title="Changer de profil"
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 11px", color: "#5DCAA5", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}
+            >
+              <i className="ti ti-dog" aria-hidden="true" /> Auto-entrepreneur <i className="ti ti-x" aria-hidden="true" style={{ opacity: 0.6, fontSize: 13 }} />
             </button>
+          </div>
+          <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
             <button onClick={() => { setAuthMode("login"); scrollToAuth(); }} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "white", borderRadius: 8, padding: "7px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
               Se connecter
             </button>
