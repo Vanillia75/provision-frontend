@@ -475,6 +475,9 @@ function AppInner() {
   const [anniversaireInput, setAnniversaireInput] = useState("");
   const [anniversaireSaving, setAnniversaireSaving] = useState(false);
   const [anniversaireEdit, setAnniversaireEdit] = useState(false);
+  // Navigation interne du cockpit intermittent (sidebar)
+  const [interNav, setInterNav] = useState("cockpit");
+  const [interMenuOpen, setInterMenuOpen] = useState(false);
   // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
     { etat: "oeuf",   seuil: 0,   nom: "Arrive",  court: "départ", img: "/niveau-1.png" },
@@ -3554,18 +3557,101 @@ function AppInner() {
       oeuf: "Hector couve", chiot: "Hector chiot", ado: "Hector ado",
       filet: "Filet de sécurité atteint", adulte: "Hector adulte", niche: "Droits sécurisés",
     };
+    // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
+    // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
+    const FICHES_CONSEILS = [
+      {
+        icon: "ti-clock-hour-4", titre: "Les 507 heures, c'est quoi ?",
+        texte: "Pour ouvrir ou renouveler tes droits, tu dois justifier d'au moins 507 heures de travail sur les 12 mois qui précèdent ta dernière fin de contrat. C'est une fenêtre glissante : à chaque examen, France Travail regarde les 12 derniers mois. Une fois les droits ouverts, tu es indemnisé pour 12 mois, jusqu'à ta date anniversaire.",
+      },
+      {
+        icon: "ti-arrows-shuffle", titre: "Annexe 8 ou annexe 10 ?",
+        texte: "L'annexe 8 concerne les techniciens, payés en heures réelles. L'annexe 10 concerne les artistes, payés au cachet. Un cachet isolé compte pour 12h, un cachet groupé (plusieurs jours consécutifs chez le même employeur) pour 8h. Tu peux cumuler des heures des deux annexes ; c'est celle où tu as le plus d'heures qui s'applique.",
+      },
+      {
+        icon: "ti-calendar-clock", titre: "La date anniversaire",
+        texte: "C'est le jour où tes droits sont réexaminés, 12 mois après la fin de contrat qui a ouvert tes droits. Elle change chaque année (on parle de date « flottante »). C'est le moment décisif : il faut avoir tes 507h dans les 12 mois précédents. Anticiper est la clé — c'est pour ça qu'Hector te montre où tu en es en permanence.",
+      },
+      {
+        icon: "ti-lifebuoy", titre: "La clause de rattrapage (338h)",
+        texte: "Si à ta date anniversaire tu n'as pas tes 507h mais que tu as cumulé entre 338 et 506 heures, un mécanisme de rattrapage peut prolonger ton indemnisation jusqu'à 6 mois, au même taux. Les heures faites pendant cette période comptent pour rouvrir tes droits. C'est ton filet de sécurité — d'où le repère à 338h sur ton compteur.",
+      },
+      {
+        icon: "ti-baby-carriage", titre: "Congé maternité, accident : heures assimilées",
+        texte: "Certaines périodes comptent comme du temps de travail pour tes 507h, même sans contrat : congé maternité/paternité et accident du travail sont assimilés à hauteur de 5 heures par jour. Des heures de formation ou d'enseignement artistique peuvent aussi être retenues sous conditions. Pense à les déclarer.",
+      },
+      {
+        icon: "ti-umbrella", titre: "Les congés spectacles (Audiens)",
+        texte: "Tes congés payés d'intermittent ne sont pas versés par ton employeur, mais par la Caisse des Congés Spectacles, gérée par Audiens. Tes employeurs cotisent à chaque contrat. Tu dois faire ta demande chaque année, à partir de mi-avril et avant le 31 mars suivant, depuis ton espace Congés Spectacles. C'est de l'argent qui t'attend — ne l'oublie pas.",
+      },
+    ];
+    // Les entrées du menu intermittent (reflètent les 6 promesses de la landing)
+    const interMenuItems = [
+      { id: "cockpit", icon: "ti-gauge", label: "Cockpit", dispo: true },
+      { id: "hector", icon: "ti-message-2", label: "Parle à Hector", dispo: true },
+      { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
+      { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
+      { id: "attestation", icon: "ti-file-text", label: "Attestation revenus", dispo: false },
+      { id: "coffre", icon: "ti-camera", label: "Coffre à AEM", dispo: false },
+    ];
+    const interSidebar = (
+      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: "100vh" }}>
+        <div style={{ padding: "4px 8px 16px" }}><Logo size={30} dark /></div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {interMenuItems.map(item => {
+            const actif = interNav === item.id;
+            return (
+              <button key={item.id} type="button" disabled={!item.dispo}
+                onClick={() => { if (item.dispo) { setInterNav(item.id); setInterMenuOpen(false); if (item.id === "conseils") setTimeout(() => document.getElementById("inter-conseils")?.scrollIntoView({ behavior: "smooth" }), 50); if (item.id === "hector") setTimeout(() => document.getElementById("inter-hector")?.scrollIntoView({ behavior: "smooth" }), 50); if (item.id === "activites") setTimeout(() => document.getElementById("inter-activites")?.scrollIntoView({ behavior: "smooth" }), 50); } }}
+                style={{ display: "flex", alignItems: "center", gap: 10, background: actif ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: actif ? "#5DCAA5" : (item.dispo ? "#B5D4F4" : "#4A6280"), fontWeight: actif ? 700 : 500, cursor: item.dispo ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+                <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
+                <span>{item.label}</span>
+                {!item.dispo && <span style={{ marginLeft: "auto", fontSize: 9, color: "#4A6280", background: "rgba(255,255,255,0.05)", borderRadius: 4, padding: "2px 5px" }}>bientôt</span>}
+              </button>
+            );
+          })}
+        </div>
+        <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 2 }}>
+          <button type="button" onClick={() => { setInterNav("reglages"); setInterMenuOpen(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: interNav === "reglages" ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: interNav === "reglages" ? "#5DCAA5" : "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+            <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 17 }} /> Réglages
+          </button>
+          <button type="button" onClick={handleLogout}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#8BA5C0", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+            <i className="ti ti-logout" aria-hidden="true" style={{ fontSize: 17 }} /> Déconnexion
+          </button>
+        </div>
+      </div>
+    );
+
     return (
-      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex" }}>
         <style>{CSS}</style>
-        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <Logo size={32} dark />
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode intermittent</span>
-            <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("auto_entrepreneur")}
-              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
-              ← Mode auto-entrepreneur
-            </button>
+
+        {/* Sidebar desktop */}
+        {!isMobile && interSidebar}
+
+        {/* Sidebar mobile (drawer) */}
+        {isMobile && interMenuOpen && (
+          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.5)" }} onClick={() => setInterMenuOpen(false)}>
+            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, height: "100vh", zIndex: 201 }}>{interSidebar}</div>
           </div>
+        )}
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            {isMobile && (
+              <button type="button" onClick={() => setInterMenuOpen(true)} aria-label="Menu" style={{ background: "transparent", border: "none", color: "white", fontSize: 22, cursor: "pointer", padding: 0 }}>
+                <i className="ti ti-menu-2" aria-hidden="true" />
+              </button>
+            )}
+            <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode intermittent</span>
+          </div>
+          <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("auto_entrepreneur")}
+            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
+            ← Mode auto-entrepreneur
+          </button>
         </nav>
 
         <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 20px 80px" }}>
@@ -3710,7 +3796,7 @@ function AppInner() {
               </div>
 
               {/* ── Brique 5.4 : Parle à Hector (simulation de contrat) ── */}
-              <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+              <div id="inter-hector" style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <i className="ti ti-message" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
                   <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Parle à Hector</div>
@@ -3761,7 +3847,7 @@ function AppInner() {
               </div>
 
               {/* ── Brique 5.2 : saisie + liste des activités ── */}
-              <div style={{ marginTop: 24, marginBottom: 16 }}>
+              <div id="inter-activites" style={{ marginTop: 24, marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
                   <div style={{ fontSize: 13, fontWeight: 700, color: "#B5D4F4", textTransform: "uppercase", letterSpacing: 0.5 }}>Tes activités</div>
                   <button type="button" onClick={() => setInterShowAdd(v => !v)}
@@ -3834,8 +3920,38 @@ function AppInner() {
               <div style={{ fontSize: 11, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginBottom: 8 }}>
                 {c.avertissement}
               </div>
+
+              {/* ── Conseils : fiches pédagogiques pour comprendre le régime ── */}
+              <div id="inter-conseils" style={{ marginTop: 40 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <i className="ti ti-book" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Comprendre ton régime</div>
+                </div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 16, lineHeight: 1.5 }}>
+                  Hector t'explique l'essentiel, sans jargon. Pour ne plus jamais te sentir perdu.
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {FICHES_CONSEILS.map((f, i) => (
+                    <details key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "14px 16px" }}>
+                      <summary style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer", fontSize: 14, fontWeight: 600, color: "white", listStyle: "none" }}>
+                        <i className={`ti ${f.icon}`} aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
+                        <span style={{ flex: 1 }}>{f.titre}</span>
+                        <i className="ti ti-chevron-down" aria-hidden="true" style={{ color: "#6B8299", fontSize: 16 }} />
+                      </summary>
+                      <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.7, marginTop: 10, paddingLeft: 28 }}>
+                        {f.texte}
+                      </div>
+                    </details>
+                  ))}
+                </div>
+                <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 14 }}>
+                  Informations générales à jour de 2026, basées sur les sources officielles (France Travail, Audiens).
+                  Ta situation personnelle peut varier — en cas de doute, contacte France Travail Spectacle.
+                </div>
+              </div>
             </>
           )}
+        </div>
         </div>
       </div>
     );
