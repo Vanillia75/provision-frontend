@@ -2108,11 +2108,103 @@ function AppInner() {
 
     return { salut, prenom, dispo, gardeAuChaud, ton, analyse, conseil, alerte };
   })();
+
+  // ─── LES PENSÉES D'HECTOR : rares, contextuelles, jamais forcées ───
+  // Règle d'or : si Hector n'a rien de vrai à dire, il ne dit RIEN.
+  // Une pensée par jour MAX, et seulement ~1 jour sur 3 (sélection déterministe par date).
+  const penseeHector = (() => {
+    if (argentDisponibleBrut === null) return null; // pas assez d'infos → silence
+    const today = new Date().toISOString().slice(0, 10);
+    // Déterminisme : un "dé" basé sur la date, stable sur la journée
+    const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
+    // ~1 jour sur 3 seulement : si le seed n'est pas dans le bon tiers, silence
+    if (seed % 3 !== 0) return null;
+    // Déjà vue aujourd'hui ? On la garde affichée mais on ne régénère pas
+    // Pool contextuel : on ne pioche que dans ce qui correspond à la VRAIE situation
+    let pool = [];
+    if (joursTranquillite !== null && joursTranquillite < 7) {
+      pool = [
+        "Je garde un œil sur les dépenses, ne t'inquiète pas. On traverse ça ensemble.",
+        "C'est un peu serré en ce moment, mais je suis là. On va remonter la pente.",
+      ];
+    } else if (reserveAtteinte === true) {
+      pool = [
+        "Je suis fier de toi aujourd'hui.",
+        "La maison est calme, j'aime quand tout est sous contrôle.",
+        "J'ai vérifié les réserves cette nuit, tout va bien.",
+        "Tu travailles dur ces derniers temps, ça se voit.",
+      ];
+    } else {
+      pool = [
+        "Tu avances bien. Encore un petit effort et la maison sera totalement à l'abri.",
+        "Je veille, même quand tu ne regardes pas. Tout est sous mon œil.",
+      ];
+    }
+    if (pool.length === 0) return null;
+    return "🐾 " + pool[seed % pool.length];
+  })();
+
+  // ─── SOUVENIR À RAPPELER : Hector se souvient, en langage humain ───
+  // Affiché rarement (~1 jour sur 4), un seul à la fois, le plus émouvant disponible.
+  const souvenirHector = (() => {
+    let souvenirs;
+    try { souvenirs = JSON.parse(localStorage.getItem("hectorSouvenirs") || "{}"); } catch { return null; }
+    const today = new Date().toISOString().slice(0, 10);
+    const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
+    if (seed % 4 !== 1) return null; // ~1 jour sur 4
+    const formatDate = (iso) => { try { return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long" }); } catch { return ""; } };
+    // On ne rappelle pas un souvenir tout frais (au moins quelques jours d'écart)
+    const assezAncien = (iso) => { try { return (Date.now() - new Date(iso).getTime()) > 5 * 86400000; } catch { return false; } };
+    const candidats = [];
+    if (souvenirs.premiere_reserve && assezAncien(souvenirs.premiere_reserve))
+      candidats.push(`Je me souviens du jour où on a sécurisé ta réserve pour la première fois, le ${formatDate(souvenirs.premiere_reserve)}. Depuis, la maison est beaucoup plus solide.`);
+    if (souvenirs.sortie_alerte && assezAncien(souvenirs.sortie_alerte))
+      candidats.push(`Tu te souviens quand on était en zone d'alerte ? Regarde où on en est aujourd'hui. Le chemin parcouru, c'est grâce à toi.`);
+    if (souvenirs.record_treso && assezAncien(souvenirs.record_treso))
+      candidats.push(`Le ${formatDate(souvenirs.record_treso)}, tu as atteint ton meilleur niveau de trésorerie. Je l'ai noté quelque part dans ma tête de chien.`);
+    if (souvenirs.premier_positif && assezAncien(souvenirs.premier_positif))
+      candidats.push(`Je repense parfois au ${formatDate(souvenirs.premier_positif)}, le premier jour où tu es passé dans le vert. C'était le début de quelque chose.`);
+    if (streakCount >= 100)
+      candidats.push(`Ça fait plus de 100 jours qu'on fait ça ensemble, toi et moi. Je ne suis qu'un chien, mais je crois que je me suis attaché.`);
+    if (candidats.length === 0) return null;
+    return "🐾 " + candidats[seed % candidats.length];
+  })();
   const securitePrecise = moyenneMensuelleFrais > 0; // true si base sur vos vrais Frais d'entreprise, false si approxime sur le CA
   const tresorerieApresDettes = soldeNum - totalChargesAVenir;
   const moisSurvie = baseMensuelleSecurite > 0 && panique.solde !== "" ? Math.max(0, Math.round((tresorerieApresDettes / baseMensuelleSecurite) * 10) / 10) : null;
   const joursSurvie = moisSurvie !== null ? Math.round(moisSurvie * 30) : null;
   const dateRupture = joursSurvie !== null ? new Date(Date.now() + joursSurvie * 86400000) : null;
+
+  // ─── SOUVENIRS D'HECTOR : détecte et mémorise les moments marquants ───
+  // Stockés en localStorage avec la date du jour où ils sont survenus pour la 1ère fois.
+  // Hector pourra les rappeler plus tard, en langage humain.
+  useEffect(() => {
+    if (!token || argentDisponibleBrut === null) return;
+    const lire = () => { try { return JSON.parse(localStorage.getItem("hectorSouvenirs") || "{}"); } catch { return {}; } };
+    const souvenirs = lire();
+    const today = new Date().toISOString().slice(0, 10);
+    let modifie = false;
+    const noter = (cle) => { if (!souvenirs[cle]) { souvenirs[cle] = today; modifie = true; } };
+
+    // Première réserve de sécurité atteinte
+    if (reserveAtteinte === true) noter("premiere_reserve");
+    // Premier mois positif (disponible brut > 0)
+    if (argentDisponibleBrut > 0) noter("premier_positif");
+    // Record de trésorerie : on garde le max vu
+    const recordActuel = parseFloat(localStorage.getItem("hectorRecordTreso") || "0");
+    if (argentDisponibleBrut > recordActuel && argentDisponibleBrut > 0) {
+      localStorage.setItem("hectorRecordTreso", String(argentDisponibleBrut));
+      if (recordActuel > 0) noter("record_treso"); // pas au tout premier (sinon trivial)
+    }
+    // Sortie de zone d'alerte : on a connu l'alerte, et là on n'y est plus
+    if (joursTranquillite !== null && joursTranquillite < 7) {
+      if (!souvenirs._aDejaEteEnAlerte) { souvenirs._aDejaEteEnAlerte = today; modifie = true; }
+    } else if (souvenirs._aDejaEteEnAlerte && joursTranquillite !== null && joursTranquillite >= 30) {
+      noter("sortie_alerte");
+    }
+
+    if (modifie) localStorage.setItem("hectorSouvenirs", JSON.stringify(souvenirs));
+  }, [token, argentDisponibleBrut, reserveAtteinte, joursTranquillite]);
 
   // --- Projections fin de mois / fin d'annee, pour le Dashboard ---
   const aujourdhui = new Date();
@@ -2968,6 +3060,19 @@ function AppInner() {
                     <div style={{ fontSize: 12, fontWeight: 700, color: couleurTon, marginBottom: 4 }}>🎯 Mon conseil du jour</div>
                     <div style={{ fontSize: 13, color: "#E4EEF8", lineHeight: 1.5 }}>{b.conseil}</div>
                   </div>
+
+                  {/* Souvenir : Hector se souvient (prioritaire car plus rare et plus fort) */}
+                  {souvenirHector && (
+                    <div style={{ marginTop: 14, fontSize: 13, color: "#C9B8E0", lineHeight: 1.6, fontStyle: "italic", paddingLeft: 12, borderLeft: "2px solid rgba(150,120,200,0.4)" }}>
+                      {souvenirHector}
+                    </div>
+                  )}
+                  {/* Pensée du jour : seulement si pas de souvenir (on ne surcharge pas) */}
+                  {!souvenirHector && penseeHector && (
+                    <div style={{ marginTop: 14, fontSize: 13, color: "#9FB8CE", lineHeight: 1.6, fontStyle: "italic", paddingLeft: 12, borderLeft: "2px solid rgba(255,255,255,0.15)" }}>
+                      {penseeHector}
+                    </div>
+                  )}
 
                   {streakCount > 0 && (
                     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 8 }}>
