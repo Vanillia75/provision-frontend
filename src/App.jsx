@@ -798,7 +798,7 @@ function AppInner() {
   useEffect(() => { localStorage.setItem("nav", nav); }, [nav]);
 
   // Messages Hector contextuels au chargement du dashboard
-  const hectorMessagesSentRef = React.useRef({});
+  const hectorMessagesSentRef = useRef({});
   useEffect(() => {
     if (nav !== "dashboard") return;
     if (soldePerime && !hectorMessagesSentRef.current.soldePerime) {
