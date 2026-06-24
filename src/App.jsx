@@ -2774,19 +2774,17 @@ function AppInner() {
               ) : (
                 /* DESKTOP : Option C — Hector immersif en arrière-plan */
                 <div>
-                  <div style={{ position: "relative", minHeight: 200, overflow: "hidden" }}>
-                    {/* Hector en fond pleine hauteur */}
-                    <div style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 340, zIndex: 0, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <img
-                        src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Hector"
-                        style={{ width: "100%", height: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
-                      />
-                    </div>
-                    {/* Gradient de fondu gauche + bas */}
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 45%, rgba(10,19,34,0.5) 75%, rgba(10,19,34,0.1) 100%)", zIndex: 1 }} />
-                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, rgba(10,19,34,0) 30%)", zIndex: 1 }} />
-                    {/* Contenu */}
+                  <div style={{ position: "relative", minHeight: 220, overflow: "hidden" }}>
+                    {/* Hector en fond pleine hauteur — position absolute pour qu'il soit DERRIÈRE */}
+                    <img
+                      src={hectorEtat?.img || "/hector-tete.png"}
+                      alt="Hector"
+                      style={{ position: "absolute", right: 0, bottom: 0, height: "100%", maxHeight: 280, width: "auto", objectFit: "contain", objectPosition: "right bottom", zIndex: 0, display: "block" }}
+                    />
+                    {/* Gradient fondu — gauche fort, bas léger */}
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 55%, rgba(10,19,34,0.6) 80%, rgba(10,19,34,0.1) 100%)", zIndex: 1, pointerEvents: "none" }} />
+                    <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to top, #0a1322 0%, transparent 25%)", zIndex: 1, pointerEvents: "none" }} />
+                    {/* Contenu par dessus */}
                     <div style={{ position: "relative", zIndex: 2, padding: "24px 28px" }}>
                       {hectorEtat && (
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px" }}>
