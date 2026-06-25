@@ -4099,6 +4099,77 @@ function AppInner() {
       return { niveau, titre, phrase, pctChemin, rythmeSemaine, cachetsSemaine, cachetsConseillesSemaine, compa, joursInactif, hCeMois, hMoisDernier };
     })();
 
+    // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
+    const analyses = (() => {
+      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const acts = interActivites || [];
+      const out = [];
+      if (acts.length < 2) return out; // pas assez de matière pour analyser
+
+      const hOf = (a) => (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1);
+      const totalH = acts.reduce((s, a) => s + hOf(a), 0);
+
+      // 1. Meilleur employeur (part des heures)
+      const parEmployeur = {};
+      acts.forEach(a => {
+        const e = (a.employeur || "").trim();
+        if (!e) return;
+        parEmployeur[e] = (parEmployeur[e] || 0) + hOf(a);
+      });
+      const employeurs = Object.entries(parEmployeur).sort((a, b) => b[1] - a[1]);
+      if (employeurs.length > 0 && totalH > 0) {
+        const [nom, h] = employeurs[0];
+        const pct = Math.round((h / totalH) * 100);
+        if (pct >= 30) {
+          out.push({
+            id: "employeur", icon: "ti-building", ton: pct >= 60 ? "attention" : "info",
+            court: `${nom} = ${pct}% de tes heures`,
+            long: pct >= 60
+              ? `${nom} représente ${pct}% de toutes tes heures. C'est ton pilier — mais si ce lien s'arrêtait, ça ferait un vrai trou. Si c'était mon dossier, je chercherais à diversifier un peu mes employeurs pour être plus serein.`
+              : `Ton principal employeur, ${nom}, pèse ${pct}% de tes heures. C'est une belle relation de confiance. Je garde juste un œil à ce que tu ne dépendes pas trop d'un seul donneur d'ouvrage.`,
+          });
+        }
+      }
+
+      // 2. Évolution du rythme (3 derniers mois vs 3 précédents)
+      const now = new Date();
+      const heuresEntre = (moisDebut, moisFin) => {
+        const debut = new Date(now.getFullYear(), now.getMonth() - moisDebut, 1);
+        const fin = new Date(now.getFullYear(), now.getMonth() - moisFin + 1, 0);
+        return acts.reduce((s, a) => { const d = new Date(a.date); return (!isNaN(d) && d >= debut && d <= fin) ? s + hOf(a) : s; }, 0);
+      };
+      const recent = heuresEntre(2, 0);   // 3 derniers mois
+      const avant = heuresEntre(5, 3);    // les 3 mois d'avant
+      if (avant > 0) {
+        if (recent < avant * 0.7) {
+          out.push({
+            id: "rythme", icon: "ti-trending-down", ton: "attention",
+            court: "ton rythme ralentit",
+            long: `J'ai remarqué que tu travailles moins ces 3 derniers mois (${Math.round(recent)}h) qu'avant (${Math.round(avant)}h). Rien d'alarmant en soi, mais je préfère te le dire : si tu vises ton renouvellement, c'est le moment de ne pas trop lever le pied.`,
+          });
+        } else if (recent > avant * 1.3) {
+          out.push({
+            id: "rythme", icon: "ti-trending-up", ton: "positif",
+            court: "ton rythme accélère",
+            long: `Belle dynamique : tu travailles plus ces 3 derniers mois (${Math.round(recent)}h) que sur la période d'avant (${Math.round(avant)}h). On est sur une bonne lancée — je suis plutôt confiant.`,
+          });
+        }
+      }
+
+      // 3. Comparaison mois courant vs même type de mois (déjà calculé dans coach.compa, on en fait une analyse)
+      if (coach.compa) {
+        out.push({
+          id: "mois", icon: coach.compa.sens === "up" ? "ti-calendar-up" : "ti-calendar-down",
+          ton: coach.compa.sens === "up" ? "positif" : "attention",
+          court: coach.compa.sens === "up" ? "meilleur mois que le précédent" : "mois plus calme que le précédent",
+          long: coach.compa.txt,
+        });
+      }
+
+      return out;
+    })();
+    const aDesAnalyses = analyses.length > 0;
+
     // ═══ FENÊTRE GLISSANTE (cercle estimé) : quelles heures vont sortir de la période 12 mois ? ═══
     // Logique : chaque activité "compte" pendant 12 mois après sa date. Au-delà, elle sort de la fenêtre.
     // C'est NOTRE estimation côté front (pas le moteur validé) → toujours présentée comme "d'après mes calculs".
@@ -4631,6 +4702,19 @@ function AppInner() {
                     </div>
                   </div>
 
+                  {/* ── ACCROCHE ANALYSE D'HECTOR (il remarque des choses) ── */}
+                  {aDesAnalyses && (
+                    <button type="button" onClick={() => setInterNav("calcul")}
+                      style={{ width: "100%", textAlign: "left", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px", display: "flex", alignItems: "center", gap: 11, background: "rgba(55,138,221,0.05)", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                      <i className="ti ti-bulb" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, color: "#7FB8F0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>J'ai remarqué</div>
+                        <div style={{ fontSize: 13, color: "#D6E8FA", marginTop: 2 }}>{analyses[0].court}{analyses.length > 1 ? ` · +${analyses.length - 1}` : ""}</div>
+                      </div>
+                      <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 16, flexShrink: 0 }} />
+                    </button>
+                  )}
+
                   {/* ── PENSÉE D'HECTOR (il est vivant) ── */}
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px 18px", display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.04)" }}>
                     <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
@@ -5035,6 +5119,31 @@ function AppInner() {
                   <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Demande-moi, je regarde ton dossier.</div>
                 </div>
               </div>
+
+              {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
+              {aDesAnalyses && (
+                <div style={{ marginBottom: 18 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <i className="ti ti-bulb" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Ce que j'ai remarqué sur ton dossier</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {analyses.map(an => {
+                      const pal = {
+                        positif: { bg: "rgba(93,202,165,0.07)", bd: "rgba(93,202,165,0.25)", tc: "#5DCAA5" },
+                        attention: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
+                        info: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
+                      }[an.ton];
+                      return (
+                        <div key={an.id} style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "flex-start", gap: 11 }}>
+                          <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
+                          <div style={{ fontSize: 13, color: "#E8F4FF", lineHeight: 1.55 }}>{an.long}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {(() => {
                 // ───────── MOTEUR DE RÉPONSES : fabrique ce qu'Hector dit, à partir des vraies données ─────────
