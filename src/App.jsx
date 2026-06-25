@@ -7071,6 +7071,23 @@ function AppInner() {
           );
         })()}
 
+        {/* État vide commun : ces 3 pages ont besoin de revenus déclarés pour s'afficher.
+            Sans données, on affiche une invite au lieu d'une page blanche. */}
+        {["declaration", "simvie", "simulateur"].includes(nav) && (!estimateData || estimateData.disponible === false) && (
+          <div>
+            <div style={{ ...S.card, textAlign: "center", padding: "40px 28px", maxWidth: 480, margin: "40px auto 0" }}>
+              <div style={{ fontSize: 40, marginBottom: 12 }}>🐾</div>
+              <h2 style={{ fontSize: 19, color: "#0A2540", fontWeight: 700, marginBottom: 8 }}>Il me faut d'abord un revenu</h2>
+              <p style={{ fontSize: 14, color: "#6B7A8D", lineHeight: 1.55, marginBottom: 22 }}>
+                Pour préparer ça, j'ai besoin que tu enregistres au moins une rentrée d'argent. Dès que c'est fait, je calcule tout automatiquement et cette page se remplit toute seule.
+              </p>
+              <button style={{ ...S.btnPrimary, maxWidth: 260, margin: "0 auto" }} onClick={() => setNav("revenus")}>
+                Ajouter un revenu
+              </button>
+            </div>
+          </div>
+        )}
+
         {nav === "declaration" && estimateData && estimateData.disponible !== false && (() => {
           const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
           const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : estimateData.ca_periode_courante;
