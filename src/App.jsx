@@ -471,6 +471,10 @@ function AppInner() {
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  // Édition d'une activité existante
+  const [interEditId, setInterEditId] = useState(null);
+  const [interEditForm, setInterEditForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+  const [interEditSaving, setInterEditSaving] = useState(false);
   // Brique 5.4 : "Parle à Hector" — simulation de contrat
   const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
   const [simResult, setSimResult] = useState(null);
@@ -1381,6 +1385,42 @@ function AppInner() {
       await loadIntermittentCockpit();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  // ─── Modifier une activité existante ───
+  function startEditActivite(a) {
+    setInterEditId(a.id);
+    setInterEditForm({
+      date: a.date || "",
+      type_activite: a.type_activite || "cachet_isole",
+      nombre: String(a.nombre ?? ""),
+      employeur: a.employeur || "",
+    });
+  }
+  async function handleSaveEditActivite() {
+    const nombre = parseFloat(interEditForm.nombre);
+    if (!interEditForm.date || !nombre || nombre <= 0) {
+      setError("Renseigne une date et un nombre valide.");
+      return;
+    }
+    setInterEditSaving(true);
+    try {
+      await apiFetch(`/intermittent/activite/${interEditId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          date: interEditForm.date,
+          type_activite: interEditForm.type_activite,
+          nombre,
+          employeur: interEditForm.employeur || null,
+        }),
+      });
+      setInterEditId(null);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setInterEditSaving(false);
     }
   }
 
@@ -3771,22 +3811,35 @@ function AppInner() {
               {/* ═══ PAGE COCKPIT : Hector immersif + anniversaire + frise + verdict ═══ */}
               {interNav === "cockpit" && (<>
 
-              {/* ── Hector vivant au centre (immersif) ── */}
-              <div style={{ background: "radial-gradient(ellipse at 50% 36%, #16335a 0%, #0d1f38 46%, #07192E 100%)", borderRadius: 20, padding: "32px 24px 26px", textAlign: "center", marginBottom: 16, border: "1px solid rgba(93,202,165,0.15)" }}>
-                <div style={{ position: "relative", width: 168, height: 168, margin: "0 auto 16px" }}>
-                  <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.28) 0%, transparent 68%)" }} />
-                  <div style={{ width: 168, height: 168, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
-                    <NiveauImage src={palierActuel.img} fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+              {/* ── Hector en header pleine largeur (déblocage de palier premium) ── */}
+              <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", marginBottom: 16, background: "#0a1322" }}>
+                <div style={{ position: "relative", width: "100%", height: 320 }}>
+                  {/* L'illustration d'Hector, plein cadre */}
+                  <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`}
+                    onError={(e) => { e.currentTarget.style.display = "none"; }}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 28%", display: "block" }} />
+
+                  {/* Badge palier en haut à droite */}
+                  <div style={{ position: "absolute", top: 14, right: 16, textAlign: "right", textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
+                    <div style={{ fontSize: 10.5, color: "#9FCBF5", letterSpacing: 1, fontWeight: 600 }}>PALIER {idxActuel + 1}</div>
+                    <div style={{ fontSize: 18, color: "#9FCBF5", fontWeight: 800 }}>{palierActuel.nom.toUpperCase()}</div>
                   </div>
-                </div>
-                <div style={{ fontSize: 22, color: "white", fontWeight: 800, marginBottom: 6 }}>
-                  Hector {palierActuel.nom}
-                </div>
-                <div style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 4px" }}>
-                  {c.hector_message}
-                  {palierSuivant && (
-                    <> Encore <b style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</b> et il deviendra {palierSuivant.nom}.</>
-                  )}
+
+                  {/* Fondu vers le fond de la carte */}
+                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)" }} />
+
+                  {/* Titre + message par-dessus le fondu, en bas à gauche */}
+                  <div style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
+                    <div style={{ fontSize: 26, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                      Hector {palierActuel.nom}
+                    </div>
+                    <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
+                      {c.hector_message}
+                      {palierSuivant && (
+                        <> Encore <b style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</b> et il deviendra {palierSuivant.nom}.</>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -4140,6 +4193,39 @@ function AppInner() {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "cachet_isole" ? `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} isolé${a.nombre > 1 ? "s" : ""}` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} groupé${a.nombre > 1 ? "s" : ""}`;
+                      // Mode édition de cette ligne
+                      if (interEditId === a.id) {
+                        return (
+                          <div key={a.id} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 10, padding: 12 }}>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+                              <input type="date" value={interEditForm.date} onChange={e => setInterEditForm({ ...interEditForm, date: e.target.value })}
+                                style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              <select value={interEditForm.type_activite} onChange={e => setInterEditForm({ ...interEditForm, type_activite: e.target.value })}
+                                style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                                <option value="heures">heures réelles</option>
+                                <option value="cachet_isole">cachets isolés (12h)</option>
+                                <option value="cachet_groupe">cachets groupés (8h)</option>
+                              </select>
+                            </div>
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                              <input type="number" min="0" value={interEditForm.nombre} onChange={e => setInterEditForm({ ...interEditForm, nombre: e.target.value })} placeholder="Nombre"
+                                style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              <input type="text" value={interEditForm.employeur} onChange={e => setInterEditForm({ ...interEditForm, employeur: e.target.value })} placeholder="Employeur (optionnel)"
+                                style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                            </div>
+                            <div style={{ display: "flex", gap: 8 }}>
+                              <button type="button" disabled={interEditSaving} onClick={handleSaveEditActivite}
+                                style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "9px", fontSize: 13, fontWeight: 700, cursor: interEditSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interEditSaving ? 0.6 : 1 }}>
+                                {interEditSaving ? "…" : "Enregistrer"}
+                              </button>
+                              <button type="button" onClick={() => setInterEditId(null)}
+                                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                                Annuler
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      }
                       return (
                         <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 14px" }}>
                           <div>
@@ -4148,10 +4234,16 @@ function AppInner() {
                               {a.date}{a.employeur ? ` · ${a.employeur}` : ""}
                             </div>
                           </div>
-                          <button type="button" onClick={() => handleDeleteActivite(a.id)} aria-label="Supprimer"
-                            style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 4 }}>
-                            <i className="ti ti-trash" aria-hidden="true" />
-                          </button>
+                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            <button type="button" onClick={() => startEditActivite(a)} aria-label="Modifier"
+                              style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
+                              <i className="ti ti-pencil" aria-hidden="true" />
+                            </button>
+                            <button type="button" onClick={() => { if (window.confirm("Supprimer cette activité ?")) handleDeleteActivite(a.id); }} aria-label="Supprimer"
+                              style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
+                              <i className="ti ti-trash" aria-hidden="true" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}
