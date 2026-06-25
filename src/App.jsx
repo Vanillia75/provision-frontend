@@ -3772,7 +3772,7 @@ function AppInner() {
           </button>
         </nav>
 
-        <div style={{ maxWidth: 560, margin: "0 auto", padding: "40px 20px 80px" }}>
+        <div style={{ maxWidth: interNav === "cockpit" ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
 
           {/* Chargement */}
           {interCockpitLoading && !c && (
@@ -3808,68 +3808,73 @@ function AppInner() {
               </div>
               )}
 
-              {/* ═══ PAGE COCKPIT : Hector immersif + anniversaire + frise + verdict ═══ */}
+              {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
 
-              {/* ── Hector en header pleine largeur (déblocage de palier premium) ── */}
-              <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", marginBottom: 16, background: "#0a1322" }}>
-                <div style={{ position: "relative", width: "100%", height: 360 }}>
-                  {/* L'illustration d'Hector, plein cadre */}
-                  <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`}
-                    onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 62%", display: "block" }} />
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
-                  {/* Badge palier en haut à droite */}
-                  <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px" }}>
-                    <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
-                    <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
+                {/* ───────── COLONNE GAUCHE : Hector (la star) + ses heures + barre ───────── */}
+                <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322" }}>
+                  {/* Header immersif Hector */}
+                  <div style={{ position: "relative", width: "100%", height: isMobile ? 320 : 380 }}>
+                    <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`}
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 62%", display: "block" }} />
+
+                    {/* Badge palier en haut à droite */}
+                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px" }}>
+                      <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
+                      <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
+                    </div>
+
+                    {/* Fondu vers le fond de la carte */}
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)" }} />
+
+                    {/* Titre + message en bas à gauche */}
+                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
+                      <div style={{ fontSize: 26, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                        Hector {palierActuel.nom}
+                      </div>
+                      <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
+                        {c.hector_message}
+                        {palierSuivant && (
+                          <> Encore <b style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</b> et il deviendra {palierSuivant.nom}.</>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Fondu vers le fond de la carte */}
-                  <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)" }} />
-
-                  {/* Titre + message par-dessus le fondu, en bas à gauche */}
-                  <div style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
-                    <div style={{ fontSize: 26, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                      Hector {palierActuel.nom}
+                  {/* Ses heures + prochain palier + barre (dans le même bloc, sous Hector) */}
+                  <div style={{ padding: "18px 22px 20px", borderTop: "1px solid rgba(93,202,165,0.15)" }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+                      <div>
+                        <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Ses heures</div>
+                        <div style={{ fontSize: 32, color: "white", fontWeight: 800, lineHeight: 1.1 }}>
+                          {c.total_heures}<span style={{ fontSize: 17, color: "#6B8299", fontWeight: 600 }}> / {c.seuil} h</span>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Prochain palier</div>
+                        <div style={{ fontSize: 16, color: "#5DCAA5", fontWeight: 700, marginTop: 2 }}>
+                          {palierSuivant ? `${palierSuivant.nom} · ${palierSuivant.seuil}h` : "Niche atteinte ✓"}
+                        </div>
+                      </div>
                     </div>
-                    <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
-                      {c.hector_message}
-                      {palierSuivant && (
-                        <> Encore <b style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</b> et il deviendra {palierSuivant.nom}.</>
-                      )}
+                    <div style={{ height: 10, background: "#0a1322", borderRadius: 6, overflow: "hidden", position: "relative" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.6s ease" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
+                      <span>Chiot · 0h</span>
+                      <span>Gardien · {c.seuil}h</span>
                     </div>
                   </div>
                 </div>
-              </div>
 
-              {/* ── Ses heures + prochain palier + barre ── */}
-              <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 24px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div>
-                    <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Ses heures</div>
-                    <div style={{ fontSize: 32, color: "white", fontWeight: 800, lineHeight: 1.1 }}>
-                      {c.total_heures}<span style={{ fontSize: 17, color: "#6B8299", fontWeight: 600 }}> / {c.seuil} h</span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Prochain palier</div>
-                    <div style={{ fontSize: 16, color: "#5DCAA5", fontWeight: 700, marginTop: 2 }}>
-                      {palierSuivant ? `${palierSuivant.nom} · ${palierSuivant.seuil}h` : "Niche atteinte ✓"}
-                    </div>
-                  </div>
-                </div>
-                <div style={{ height: 10, background: "#0a1322", borderRadius: 6, overflow: "hidden", position: "relative" }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.6s ease" }} />
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
-                  <span>Chiot · 0h</span>
-                  <span>Gardien · {c.seuil}h</span>
-                </div>
-              </div>
+                {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* ── Brique 5.5 : date anniversaire (échéance des droits) ── */}
-              <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
+              <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
                 {!anniversaireEdit && c.date_anniversaire && (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -3921,7 +3926,7 @@ function AppInner() {
               </div>
 
               {/* ── Brique 5.3 : la frise des paliers d'Hector (le foyer grandit) ── */}
-              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px", marginBottom: 16 }}>
+              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px" }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>🐾 Hector grandit avec tes heures</div>
                 <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 16, textAlign: "center" }}>Chaque heure déclarée le rapproche de sa niche.</div>
                 <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 2px" }}>
@@ -3953,9 +3958,12 @@ function AppInner() {
               </div>
 
               {/* Le verdict (niveau C) */}
-              <div style={{ background: c.droits_securises ? "rgba(93,202,165,0.1)" : "rgba(55,138,221,0.08)", border: `1px solid ${c.droits_securises ? "rgba(93,202,165,0.3)" : "rgba(55,138,221,0.25)"}`, borderRadius: 12, padding: "16px 20px", marginBottom: 16 }}>
+              <div style={{ background: c.droits_securises ? "rgba(93,202,165,0.1)" : "rgba(55,138,221,0.08)", border: `1px solid ${c.droits_securises ? "rgba(93,202,165,0.3)" : "rgba(55,138,221,0.25)"}`, borderRadius: 12, padding: "16px 20px" }}>
                 <div style={{ fontSize: 14, color: "#E8F4FF", lineHeight: 1.6 }}>{c.verdict}</div>
               </div>
+
+                </div>{/* ── fin colonne droite ── */}
+              </div>{/* ── fin grille 2 colonnes ── */}
               </>)}
 
               {/* ═══ PAGE PARLE À HECTOR ═══ */}
