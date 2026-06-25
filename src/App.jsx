@@ -4663,6 +4663,10 @@ function AppInner() {
             style={{ display: "flex", alignItems: "center", gap: 10, background: interNav === "reglages" ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: interNav === "reglages" ? "#5DCAA5" : "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
             <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 17 }} /> Réglages
           </button>
+          <button type="button" onClick={() => { setShowWalkthrough(true); setInterMenuOpen(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+            <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 17 }} /> Aide — Visite guidée
+          </button>
           <button type="button" onClick={handleLogout}
             style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#8BA5C0", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
             <i className="ti ti-logout" aria-hidden="true" style={{ fontSize: 17 }} /> Déconnexion
