@@ -63,7 +63,7 @@ const PLANS = [
       "Calcul automatique URSSAF, impôts et seuil TVA",
       "Suivi de tes revenus encaissés",
       "3 factures par mois (PDF inclus)",
-      "On ne se connecte jamais à ta banque",
+      "Connexion bancaire optionnelle (bientôt) — ou saisie manuelle, c'est toi qui choisis",
     ],
   },
   {
@@ -2570,7 +2570,7 @@ function AppInner() {
   });
   const maxRevenu = Math.max(...revenusParMois.map(m => m.total), 1);
 
-  // --- Fraîcheur du solde (rituel sans connexion bancaire) ---
+  // --- Fraîcheur du solde (rituel de mise à jour manuelle) ---
   // Stockée en localStorage, zéro dépendance backend. Le solde est "périmé" au-delà de 7 jours.
   const soldeUpdatedAt = localStorage.getItem("soldeUpdatedAt") || "";
   const soldeJours = (() => {
@@ -3713,7 +3713,7 @@ function AppInner() {
                 { emoji: "📷", t: "Scan de frais", d: "Prends une photo de ta facture, Hector l'enregistre et la classe." },
                 { emoji: "🛡️", t: "Réserve de sécurité", d: "Hector met de côté ce qu'il faut pour que tu sois tranquille à chaque déclaration." },
                 { emoji: "📈", t: "Suivi simple et clair", d: "Tableaux de bord pensés pour les indépendants, pas pour les comptables." },
-                { emoji: "🔒", t: "Sans connexion bancaire", d: "Tes données restent privées et en sécurité, toujours." },
+                { emoji: "🔒", t: "Tes données, ton contrôle", d: "Saisie manuelle ou, bientôt, connexion bancaire en lecture seule : c'est toi qui choisis." },
               ].map(f => (
                 <div key={f.t} style={{ display: "flex", alignItems: "flex-start", gap: 16, padding: "18px 20px", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12 }}>
                   <div style={{ fontSize: 28, lineHeight: 1, flexShrink: 0 }}>{f.emoji}</div>
@@ -4053,7 +4053,7 @@ function AppInner() {
               value={onbSolde} onChange={e => setOnbSolde(e.target.value)} autoFocus
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
-              H€CTOR ne se connecte jamais à ta banque. Ouvre l'appli de ta banque, lis le solde, recopie-le ici.
+              Pour l'instant, ouvre l'appli de ta banque, lis ton solde et recopie-le ici (10 sec). Bientôt tu pourras aussi le synchroniser automatiquement, si tu veux.
             </p>
 
             <p style={S.sectionLabel}>4. Environ combien dépenses-tu par mois pour vivre ?</p>
@@ -9579,11 +9579,11 @@ function AppInner() {
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Tes données bancaires</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: "#5B6573" }}>H€CTOR ne se connecte jamais à ta banque</span>
-                <span style={{ ...S.badge, ...S.badgeGreen }}>🟢 Privé par conception</span>
+                <span style={{ fontSize: 13, color: "#5B6573" }}>C'est toi qui gardes le contrôle</span>
+                <span style={{ ...S.badge, ...S.badgeGreen }}>🟢 Tes données chez toi</span>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, lineHeight: 1.5 }}>
-                Tes identifiants bancaires ne nous sont jamais demandés et tes transactions ne quittent jamais ta banque. Tu mets ton solde à jour en 10 secondes sur le Cockpit, et H€CTOR fait le reste. C'est plus simple, et c'est toi qui gardes le contrôle.
+                Aujourd'hui, tu mets ton solde à jour à la main en 10 secondes : tes identifiants bancaires ne nous sont jamais demandés. Bientôt, tu pourras choisir de connecter ton compte en lecture seule, via un partenaire agréé par la Banque de France — H€CTOR pourra lire ton solde, jamais toucher à ton argent. Connexion ou saisie manuelle : ce sera ton choix, à tout moment.
               </p>
             </div>
 
