@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
-import { valeurDe, tracer, VERSION_REFERENTIEL } from "./regles_intermittent";
+import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -440,6 +440,36 @@ function LogoIcon({ size = 32 }) {
   return (
     <img src="/hector-tete.png" alt="H€CTOR" height={size} width={size}
          style={{ height: size, width: size, objectFit: "contain", display: "block" }} />
+  );
+}
+
+// Badge de confiance d'un calcul. Répond à la vraie question de l'utilisateur :
+// "est-ce que je peux faire confiance à cette réponse ?"
+//   certain  → données complètes ET moteur validé par expert (verifie:true)
+//   fiable   → données complètes, arithmétique juste, moteur en cours de validation
+//   estimation → projection (rythme, date probable, simulation)
+//   manquant → une donnée manque pour conclure
+function BadgeConfiance({ niveau }) {
+  const [ouvert, setOuvert] = useState(false);
+  const conf = {
+    certain:    { dot: "🟢", label: "Calcul certain",        c: "#5DCAA5", bg: "rgba(93,202,165,0.1)",  bd: "rgba(93,202,165,0.3)",  expl: "Tes données sont complètes et le moteur réglementaire a été validé sur ce type de calcul." },
+    fiable:     { dot: "🟠", label: "Calcul fiable",          c: "#FAC775", bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.32)", expl: "J'ai utilisé tes données déclarées et les règles officielles actuellement intégrées dans mon moteur. Ce calcul est fiable, mais le moteur réglementaire est encore en cours de validation sur des dossiers réels." },
+    estimation: { dot: "🔵", label: "Estimation",             c: "#7FB8F0", bg: "rgba(55,138,221,0.1)",  bd: "rgba(55,138,221,0.3)",  expl: "C'est une projection (ton rythme, ta date probable d'atteinte des 507h, une simulation). Par nature, ça dépend de ce qui va se passer." },
+    manquant:   { dot: "🔴", label: "Informations manquantes", c: "#E88", bg: "rgba(238,136,136,0.1)", bd: "rgba(238,136,136,0.3)", expl: "Il me manque une donnée pour conclure avec certitude (par exemple ta date anniversaire)." },
+  }[niveau] || null;
+  if (!conf) return null;
+  return (
+    <span style={{ display: "inline-block" }}>
+      <button type="button" onClick={() => setOuvert(o => !o)}
+        style={{ display: "inline-flex", alignItems: "center", gap: 5, background: conf.bg, border: `1px solid ${conf.bd}`, color: conf.c, borderRadius: 20, padding: "3px 10px", fontSize: 11, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+        {conf.dot} {conf.label}
+      </button>
+      {ouvert && (
+        <div style={{ marginTop: 6, fontSize: 11, color: "#9FBDDD", lineHeight: 1.5, background: conf.bg, border: `1px solid ${conf.bd}`, borderRadius: 8, padding: "8px 11px" }}>
+          {conf.expl}
+        </div>
+      )}
+    </span>
   );
 }
 
@@ -1487,10 +1517,19 @@ function AppInner() {
     setCalcConvo(prev => [...prev, { role: "me", text: label }]);
     // 2. Hector réfléchit
     setCalcThinking(true);
-    // 3. Après un court délai, il répond
+    // 3. Après un court délai, il répond (on transmet toute la matière du moteur)
     setTimeout(() => {
       setCalcThinking(false);
-      setCalcConvo(prev => [...prev, { role: "bot", text: reponseObj.text, questions: reponseObj.questions || [] }]);
+      setCalcConvo(prev => [...prev, {
+        role: "bot",
+        text: reponseObj.text,
+        questions: reponseObj.suite || reponseObj.questions || [],
+        pourquoi: reponseObj.pourquoi || null,
+        calcul: reponseObj.calcul || null,
+        manque: reponseObj.manque || false,
+        estimation: reponseObj.estimation || false,
+        simulateur: reponseObj.simulateur || false,
+      }]);
     }, 1100);
   }
 
@@ -5345,7 +5384,8 @@ function AppInner() {
                   return {
                     ouv: pickOuv(),
                     text: `Il te manque exactement ${calc.manque}h pour atteindre tes ${calc.seuil}h. En cachets, ça fait environ ${calc.cachetsManquants} cachets. Tu en as déjà parcouru ${coach.pctChemin}% du chemin — c'est plus que tu ne crois.`,
-                    pourquoi: `${calc.seuil}h (le seuil) − ${calc.heures}h (tes heures déclarées) = ${calc.manque}h. Je convertis en cachets sur la base d'un cachet isolé = 12h, donc ${calc.manque} ÷ 12 ≈ ${calc.cachetsManquants}.`,
+                    pourquoi: `${calc.seuil}h (le seuil) − ${calc.heures}h (tes heures déclarées) = ${calc.manque}h. Je convertis en cachets sur la base d'un cachet = 12h, donc ${calc.manque} ÷ 12 ≈ ${calc.cachetsManquants}.`,
+                    calcul: `${calc.seuil} h requises\n− ${calc.heures} h déjà déclarées\n─────────────\n= ${calc.manque} h restantes\n\n${calc.manque} ÷ 12 h par cachet ≈ ${calc.cachetsManquants} cachets`,
                     suite: ["combien_cachets", "rythme", "si_contrat"],
                   };
                 };
@@ -5479,24 +5519,50 @@ function AppInner() {
                                     {m.text.includes("date anniversaire") ? "Ajouter ma date anniversaire" : "Ajouter mes contrats"}
                                   </button>
                                 )}
-                                {/* Bouton Pourquoi ? */}
+                                {/* Bouton Pourquoi ? — hiérarchie : badge → raisonnement → règles officielles */}
                                 {m.pourquoi && (
                                   <div style={{ marginTop: 10 }}>
+                                    {/* Badge de confiance (toujours visible) */}
+                                    <div style={{ marginBottom: 8 }}>
+                                      <BadgeConfiance niveau={m.manque ? "manquant" : (m.estimation ? "estimation" : (moteurHeuresValide() ? "certain" : "fiable"))} />
+                                    </div>
                                     {m.showPourquoi ? (
                                       <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#B5D4F4", lineHeight: 1.5 }}>
-                                        <b style={{ color: "#7FB8F0" }}>Mon raisonnement :</b> {m.pourquoi}
-                                        {/* Trace réglementaire sourcée (transparence) */}
+                                        {/* Niveau 1 : ce sur quoi Hector s'est basé (chaleureux) */}
+                                        <b style={{ color: "#7FB8F0" }}>Je me suis basé sur :</b>
+                                        <div style={{ marginTop: 6 }}>
+                                          {c && <div>✅ Tes {c.total_heures}h déclarées</div>}
+                                          {c && c.date_anniversaire && <div>✅ Ta date anniversaire</div>}
+                                          <div>✅ Les règles officielles de France Travail en vigueur</div>
+                                        </div>
+                                        {/* Niveau 2 : voir le calcul (arithmétique nue) */}
+                                        {m.calcul && (
+                                          <div style={{ marginTop: 10 }}>
+                                            <button type="button" onClick={() => setCalcConvo(prev => prev.map((x, j) => j === i ? { ...x, showCalcul: !x.showCalcul } : x))}
+                                              style={{ background: "transparent", border: "1px solid rgba(127,184,240,0.3)", color: "#7FB8F0", borderRadius: 7, padding: "5px 11px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                              <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 13 }} /> Voir le calcul
+                                            </button>
+                                            {m.showCalcul && (
+                                              <div style={{ marginTop: 7, fontFamily: "monospace", fontSize: 12.5, color: "#D6E8FA", background: "rgba(0,0,0,0.2)", borderRadius: 7, padding: "10px 12px", whiteSpace: "pre-line" }}>{m.calcul}</div>
+                                            )}
+                                          </div>
+                                        )}
+                                        {/* Niveau 3 : voir les règles officielles (technique, sur demande) */}
                                         {c && Array.isArray(c.regles_appliquees) && c.regles_appliquees.length > 0 && (
-                                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(127,184,240,0.18)" }}>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                                              <i className="ti ti-book-2" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 14 }} />
-                                              <b style={{ color: "#7FB8F0", fontSize: 11.5 }}>Les règles que j'ai appliquées</b>
-                                            </div>
-                                            <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: "#9FBDDD", lineHeight: 1.55 }}>
-                                              {c.regles_appliquees.map((r, k) => (<li key={k} style={{ marginBottom: 3 }}>{r}</li>))}
-                                            </ul>
-                                            {c.version_referentiel && (
-                                              <div style={{ fontSize: 10, color: "#5A7088", marginTop: 7 }}>Référentiel version {c.version_referentiel}.</div>
+                                          <div style={{ marginTop: 10 }}>
+                                            <button type="button" onClick={() => setCalcConvo(prev => prev.map((x, j) => j === i ? { ...x, showRegles: !x.showRegles } : x))}
+                                              style={{ background: "transparent", border: "1px solid rgba(127,184,240,0.25)", color: "#8BA5C0", borderRadius: 7, padding: "5px 11px", fontSize: 11, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                                              <i className="ti ti-book-2" aria-hidden="true" style={{ fontSize: 13 }} /> Voir le détail réglementaire
+                                            </button>
+                                            {m.showRegles && (
+                                              <div style={{ marginTop: 7 }}>
+                                                <ul style={{ margin: 0, paddingLeft: 16, fontSize: 10.5, color: "#8BA5C0", lineHeight: 1.55 }}>
+                                                  {c.regles_appliquees.map((r, k) => (<li key={k} style={{ marginBottom: 3 }}>{r}</li>))}
+                                                </ul>
+                                                {c.version_referentiel && (
+                                                  <div style={{ fontSize: 10, color: "#5A7088", marginTop: 7 }}>Référentiel version {c.version_referentiel}.</div>
+                                                )}
+                                              </div>
                                             )}
                                           </div>
                                         )}
@@ -5504,7 +5570,7 @@ function AppInner() {
                                     ) : (
                                       <button type="button" onClick={() => setCalcConvo(prev => prev.map((x, j) => j === i ? { ...x, showPourquoi: true } : x))}
                                         style={{ background: "transparent", border: "1px solid rgba(127,184,240,0.3)", color: "#7FB8F0", borderRadius: 7, padding: "5px 11px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                                        Pourquoi ?
+                                        🐾 Pourquoi ?
                                       </button>
                                     )}
                                   </div>
