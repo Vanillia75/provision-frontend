@@ -464,7 +464,7 @@ function AppInner() {
   const [interCockpitError, setInterCockpitError] = useState("");
   // Brique 5.2 : saisie et liste des activités intermittent
   const [interActivites, setInterActivites] = useState([]);
-  const [interShowAdd, setInterShowAdd] = useState(false);
+  const [interShowAdd, setInterShowAdd] = useState(true);
   const [interSaving, setInterSaving] = useState(false);
   const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
   // Report des heures déjà faites (saisie de départ)
