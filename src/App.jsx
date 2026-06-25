@@ -3861,8 +3861,9 @@ function AppInner() {
           {/* Le compteur vivant */}
           {c && (
             <>
-              {/* Hector + briefing — masqué sur le cockpit et l'actualisation (Hector y est déjà présent) */}
-              {interNav !== "cockpit" && interNav !== "actu" && (
+              {/* Bandeau Hector générique retiré : il répétait la même phrase sur chaque page.
+                  Hector ne s'exprime plus que là où il a un vrai message (cockpit, actualisation…). */}
+              {false && (
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
