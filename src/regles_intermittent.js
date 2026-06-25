@@ -44,7 +44,7 @@ export const REGLES = {
   seuilHeures: {
     valeur: 507,
     libelle: "Seuil d'ouverture de droits",
-    source: "Annexes 8 et 10 au règlement d'assurance chômage",
+    source: "Annexes 8 et 10 au règlement d'assurance chômage ; Unédic",
     version: "2026.06",
     dateAppli: "en vigueur",
     verifie: false,
@@ -157,7 +157,7 @@ export const REGLES = {
   rattrapageOuverturesMin: {
     valeur: 5,
     libelle: "Condition d'éligibilité — ouvertures de droits",
-    source: "Circulaire Unédic n°2018-04 ; MesCachets",
+    source: "Circulaire Unédic n°2018-04",
     version: "2026.06",
     dateAppli: "2018-02-07",
     verifie: false,
