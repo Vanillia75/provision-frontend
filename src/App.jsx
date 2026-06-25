@@ -488,6 +488,8 @@ function AppInner() {
   const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
   const [aemSaving, setAemSaving] = useState(false);
   const [aemError, setAemError] = useState("");
+  // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
+  const [aemDetailId, setAemDetailId] = useState(null);
   // ─── Module ACTUALISATION France Travail ───
   // Mois ciblé par l'actualisation = le mois civil précédent (on déclare le mois écoulé).
   // Sous-état du mode recopie guidé (null = écran de préparation, sinon n° d'étape 0..3).
@@ -4685,24 +4687,62 @@ function AppInner() {
                           </div>
                         );
                       }
+                      const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
+                        a.type_activite === "cachet_isole" ? "Cachets isolés" : "Cachets groupés";
+                      const estAEM = a.aem_recue === true || a.source === "ocr";
+                      const detailOuvert = aemDetailId === a.id;
                       return (
-                        <div key={a.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 14px" }}>
-                          <div>
-                            <div style={{ fontSize: 13, color: "white", fontWeight: 600 }}>{typeLabel}</div>
-                            <div style={{ fontSize: 11, color: "#6B8299", marginTop: 2 }}>
-                              {a.date}{a.employeur ? ` · ${a.employeur}` : ""}
+                        <div key={a.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${detailOuvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, overflow: "hidden" }}>
+                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px" }}>
+                            <div style={{ minWidth: 0 }}>
+                              <div style={{ fontSize: 13, color: "white", fontWeight: 600, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                                {typeLabel}
+                                {estAEM && (
+                                  <span style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                    <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
+                                  </span>
+                                )}
+                              </div>
+                              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 2 }}>
+                                {a.date}{a.employeur ? ` · ${a.employeur}` : ""}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}
+                              </div>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                              {estAEM && (
+                                <button type="button" onClick={() => setAemDetailId(detailOuvert ? null : a.id)} aria-label="Revoir l'AEM"
+                                  style={{ background: "transparent", border: "none", color: detailOuvert ? "#5DCAA5" : "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
+                                  <i className={`ti ${detailOuvert ? "ti-eye-off" : "ti-eye"}`} aria-hidden="true" />
+                                </button>
+                              )}
+                              <button type="button" onClick={() => startEditActivite(a)} aria-label="Modifier"
+                                style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
+                                <i className="ti ti-pencil" aria-hidden="true" />
+                              </button>
+                              <button type="button" onClick={() => { if (window.confirm("Supprimer cette activité ?")) handleDeleteActivite(a.id); }} aria-label="Supprimer"
+                                style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
+                                <i className="ti ti-trash" aria-hidden="true" />
+                              </button>
                             </div>
                           </div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-                            <button type="button" onClick={() => startEditActivite(a)} aria-label="Modifier"
-                              style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
-                              <i className="ti ti-pencil" aria-hidden="true" />
-                            </button>
-                            <button type="button" onClick={() => { if (window.confirm("Supprimer cette activité ?")) handleDeleteActivite(a.id); }} aria-label="Supprimer"
-                              style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
-                              <i className="ti ti-trash" aria-hidden="true" />
-                            </button>
-                          </div>
+                          {/* Panneau "revoir ce qu'Hector a lu sur l'AEM" */}
+                          {detailOuvert && (
+                            <div style={{ borderTop: "1px solid rgba(93,202,165,0.15)", background: "rgba(93,202,165,0.04)", padding: "12px 14px" }}>
+                              <div style={{ fontSize: 11, fontWeight: 700, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
+                                <i className="ti ti-file-check" aria-hidden="true" /> Ce que j'ai lu sur cette AEM
+                              </div>
+                              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", fontSize: 12.5 }}>
+                                <div><span style={{ color: "#6B8299" }}>Employeur</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.employeur || "—"}</span></div>
+                                <div><span style={{ color: "#6B8299" }}>Date</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.date}</span></div>
+                                <div><span style={{ color: "#6B8299" }}>Type</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{typeLabelComplet}</span></div>
+                                <div><span style={{ color: "#6B8299" }}>{a.type_activite === "heures" ? "Heures" : "Cachets"}</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.nombre}</span></div>
+                                <div><span style={{ color: "#6B8299" }}>Salaire brut</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.salaire_brut ? `${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : "—"}</span></div>
+                                {a.aem_filename && <div><span style={{ color: "#6B8299" }}>Fichier</span><br /><span style={{ color: "#8BA5C0", fontWeight: 500, fontSize: 11.5, wordBreak: "break-all" }}>{a.aem_filename}</span></div>}
+                              </div>
+                              <div style={{ fontSize: 10.5, color: "#5A7088", marginTop: 10, lineHeight: 1.5 }}>
+                                🐾 Le document original n'est pas encore conservé — ça arrive bientôt. Pour l'instant, je garde les infos que j'ai lues.
+                              </div>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
