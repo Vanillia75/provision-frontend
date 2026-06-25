@@ -6569,6 +6569,284 @@ function AppInner() {
               </>)}
             </>
           )}
+        {/* ===== WALKTHROUGH (rendu aussi dans la vue intermittente) ===== */}
+      {showWalkthrough && (() => {
+        const estIntermittent = profile && profile.statut === "intermittent";
+        // Parcours dédié intermittent du spectacle (le côté "507h / cachets / AEM").
+        const wtStepsIntermittent = [
+          {
+            img: "/hector-tete.png",
+            timerLabel: "BIENVENUE SUR H€CTOR",
+            title: "Bonjour, moi c'est H€CTOR.",
+            sub: "Je suis ton copilote pour le régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
+            items: [
+              { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
+              { icon: "ti-check", text: "Tu déclares tes contrats, je m'occupe des calculs" },
+              { icon: "ti-check", text: "Tu peux passer cette visite à tout moment" },
+            ],
+            next: "Découvrir",
+          },
+          {
+            img: "/hector-1.png",
+            timerLabel: "LE COCKPIT — TON COMPTEUR 507H",
+            title: "Tes 507h, toujours à jour.",
+            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Hector grandit visuellement avec ta progression, du chiot au gardien.",
+            items: [
+              { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
+              { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
+              { icon: "ti-trophy", text: "Tes paliers débloqués au fil de tes heures" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-2.png",
+            timerLabel: "LA DATE ANNIVERSAIRE",
+            title: "Je veille sur ton échéance.",
+            sub: "La date anniversaire, c'est le jour où France Travail réexamine tes droits. Renseigne-la une fois, et je te montre en permanence combien de jours il te reste — et si tu es dans les temps pour avoir tes 507h avant. Plus jamais pris(e) de court.",
+            items: [
+              { icon: "ti-calendar-event", text: "Le compte à rebours jusqu'à ton échéance" },
+              { icon: "ti-bell", text: "Je t'alerte si le rythme n'est pas suffisant" },
+              { icon: "ti-pencil", text: "Modifiable à tout moment depuis le cockpit" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-3.png",
+            timerLabel: "MES ACTIVITÉS",
+            title: "Ajoute un contrat en quelques secondes.",
+            sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Hector, pour démarrer ton compteur au bon endroit.",
+            items: [
+              { icon: "ti-plus", text: "Saisie rapide : date, employeur, cachets ou heures" },
+              { icon: "ti-history", text: "Report de tes heures déjà faites pour bien démarrer" },
+              { icon: "ti-pencil", text: "Tout reste modifiable ou supprimable à tout moment" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-4.png",
+            timerLabel: "SCANNER UNE AEM",
+            title: "Photographie ton AEM, je lis tout.",
+            sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
+            items: [
+              { icon: "ti-camera", text: "Scan photo ou PDF : je lis et je remplis les champs" },
+              { icon: "ti-eye-check", text: "Tu vérifies, tu corriges si besoin, tu valides" },
+              { icon: "ti-folder", text: "Tes AEM conservées, consultables quand tu veux" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-5.png",
+            timerLabel: "L'ACTUALISATION",
+            title: "Chaque mois, ton récap prêt à recopier.",
+            sub: "Au moment de t'actualiser auprès de France Travail, je te prépare le récap du mois écoulé : tes employeurs, tes cachets, tes heures, ton brut. Un mode guidé t'accompagne champ par champ pour recopier sans erreur, et je te signale s'il manque une AEM.",
+            items: [
+              { icon: "ti-list-check", text: "Le récap du mois, employeur par employeur" },
+              { icon: "ti-clipboard-check", text: "Un mode guidé pour recopier sans te tromper" },
+              { icon: "ti-alert-triangle", text: "Une alerte si une AEM manque encore à l'appel" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-1.png",
+            timerLabel: "LE CALCUL DES HEURES",
+            title: "Pose-moi tes questions.",
+            sub: "« Combien me manque-t-il ? », « Si j'accepte ce contrat ? », « Et si je fais une pause ? ». Je réponds avec tes vrais chiffres, jamais à l'aveugle. Et avec le champ « Que se passe-t-il si… », tu me poses n'importe quel scénario en langage normal et je le calcule.",
+            items: [
+              { icon: "ti-target", text: "Combien d'heures il te reste, en cachets concrets" },
+              { icon: "ti-briefcase", text: "L'impact exact d'un contrat avant de l'accepter" },
+              { icon: "ti-message-circle", text: "« Que se passe-t-il si… » : ton scénario, ma réponse chiffrée" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-2.png",
+            timerLabel: "PARLE À HECTOR",
+            title: "Ton expert du régime, dispo 24h/24.",
+            sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Hector ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
+            items: [
+              { icon: "ti-message-2", text: "Un chat expert du régime intermittent" },
+              { icon: "ti-phone-call", text: "« On te propose un contrat ? » : je te dis si tu acceptes" },
+              { icon: "ti-bulb", text: "Des réponses claires, sans jargon administratif" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-3.png",
+            timerLabel: "COMPRENDRE & MES DOCUMENTS",
+            title: "Pour ne plus jamais te sentir perdu(e).",
+            sub: "Dans « Comprendre », des fiches claires t'expliquent l'essentiel : les 507h, les annexes, la clause de rattrapage, les congés spectacles. Et dans « Mes documents », je te génère un récapitulatif de tes revenus à présenter à un proprio ou une banque, et je range tes AEM et actualisations.",
+            items: [
+              { icon: "ti-book", text: "Des fiches pédago pour comprendre ton régime" },
+              { icon: "ti-file-text", text: "Un récap de revenus pour proprio ou banque" },
+              { icon: "ti-folders", text: "Tes AEM et actualisations archivées au même endroit" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-6.png",
+            timerLabel: "LA CONFIANCE",
+            title: "Je te montre toujours mon raisonnement.",
+            sub: "Sur chaque calcul, un badge te dit à quel point tu peux t'y fier, et un bouton « Pourquoi ? » t'explique mon raisonnement — avec les règles officielles sur lesquelles je m'appuie. Tu n'as jamais à me croire sur parole. Commence par déclarer un contrat ou scanner une AEM, et c'est parti !",
+            items: [
+              { icon: "ti-shield-check", text: "Un badge de confiance sur chaque réponse" },
+              { icon: "ti-help-circle", text: "« Pourquoi ? » : mon raisonnement, étape par étape" },
+              { icon: "ti-book", text: "Cette visite est retrouvable via « Aide » dans le menu" },
+            ],
+            next: "C'est parti !",
+          },
+        ];
+        const wtStepsAuto = [
+          {
+            img: "/hector-tete.png",
+            timerLabel: "BIENVENUE SUR H€CTOR",
+            title: "Bonjour, moi c'est H€CTOR.",
+            sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
+            items: [
+              { icon: "ti-check", text: "Zéro case à remplir pour commencer" },
+              { icon: "ti-check", text: "Ton premier revenu suffit à tout démarrer" },
+              { icon: "ti-check", text: "Tu peux passer à tout moment" },
+            ],
+            next: "Découvrir",
+          },
+          {
+            img: "/niveau-1.png",
+            timerLabel: "LE COCKPIT + L'ASSISTANT",
+            title: "Fini les mauvaises surprises URSSAF.",
+            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. L'Assistant répond à toutes tes questions fiscales — par texte ou dictée vocale.",
+            items: [
+              { icon: "ti-check", text: "Situation saine / Fragile / Déficit en un coup d'œil" },
+              { icon: "ti-check", text: "Charges URSSAF + impôts calculées automatiquement" },
+              { icon: "ti-mic", text: "Assistant disponible par texte ou dictée vocale" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/niveau-2.png",
+            timerLabel: "REVENUS, FRAIS & FACTURATION",
+            title: "Encaisser, dépenser, facturer — tout au même endroit.",
+            sub: "Ajoute un revenu ou une dépense en quelques secondes. Crée un devis, convertis-le en facture en 1 clic, et envoie-le directement par email avec PDF.",
+            items: [
+              { icon: "ti-check", text: "Encaisser / Frais : revenus et dépenses professionnelles" },
+              { icon: "ti-check", text: "Mes factures : PDF professionnel + envoi email intégré" },
+              { icon: "ti-check", text: "Mes devis : convertis en facture en 1 clic" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/niveau-3.png",
+            timerLabel: "LES OUTILS",
+            title: "Simule avant de décider.",
+            sub: "H€CTOR met à ta disposition 5 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
+            items: [
+              { icon: "ti-cash", text: "Mode Salaire — combien puis-je me verser ce mois ?" },
+              { icon: "ti-shopping-cart", text: "Mode Achat — puis-je me permettre cette dépense ?" },
+              { icon: "ti-target", text: "Combien gagner ? + Simulateur fiscal + Mes tarifs" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/niveau-4.png",
+            timerLabel: "SUIVI & PILOTAGE",
+            title: "Pilote ton activité sur le long terme.",
+            sub: "Score H€CTOR note ta santé financière sur 100. Revenus te donne une vue annuelle de ton CA. Contacts centralise tes clients. Actualités et Conseils te tiennent informé des obligations fiscales.",
+            items: [
+              { icon: "ti-heart-rate-monitor", text: "Score H€CTOR — ta santé financière sur 100" },
+              { icon: "ti-chart-bar", text: "Revenus, Contacts, Modèles de documents" },
+              { icon: "ti-bell", text: "Actualités fiscales + Conseils auto-entrepreneur" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/niveau-5.png",
+            timerLabel: "LA SÉRÉNITÉ D'HECTOR",
+            title: "Hector grandit avec toi.",
+            sub: "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
+            items: [
+              { icon: "ti-dog", text: "Hector arrive → Son panier → Sa niche → Son jardin" },
+              { icon: "ti-home", text: "Sa maison → Son domaine (6 niveaux à débloquer)" },
+              { icon: "ti-check", text: "Plus tu es régulier, plus vite il progresse" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/niveau-6.png",
+            timerLabel: "TU ES PRÊT(E) !",
+            title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
+            sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
+            items: [
+              { icon: "ti-receipt-2", text: "Ajouter un revenu ou une dépense" },
+              { icon: "ti-file-plus", text: "Créer mon premier devis" },
+              { icon: "ti-help-circle", text: "Retrouver cette visite via « Aide » dans le menu" },
+            ],
+            next: "C'est parti !",
+          },
+        ];
+        const wtSteps = estIntermittent ? wtStepsIntermittent : wtStepsAuto;
+        const WalkthroughModal = () => {
+          const [wtStep, setWtStep] = useState(0);
+          const s = wtSteps[wtStep];
+          const closeWalkthrough = () => {
+            localStorage.setItem("hector_walkthrough_done", "1");
+            setShowWalkthrough(false);
+          };
+          return (
+            <div style={{ position: "fixed", inset: 0, zIndex: 10000, background: "rgba(10,37,64,0.72)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+              <div style={{ background: "#0A2540", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "28px 20px 24px" : "36px 36px 28px", maxWidth: 440, width: "100%", position: "relative", boxSizing: "border-box" }}>
+                {/* Barre de progression */}
+                <div style={{ position: "absolute", top: 0, left: 0, height: 3, width: `${((wtStep + 1) / wtSteps.length) * 100}%`, background: "#378ADD", borderRadius: "18px 0 0 0", transition: "width 0.35s ease" }} />
+                {/* Bouton fermer */}
+                <button onClick={closeWalkthrough} style={{ position: "absolute", top: 14, right: 16, background: "none", border: "none", color: "rgba(181,212,244,0.45)", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                  Passer <i className="ti ti-x" style={{ fontSize: 11 }} />
+                </button>
+                {/* Dots */}
+                <div style={{ display: "flex", gap: 5, justifyContent: "center", marginBottom: 20 }}>
+                  {wtSteps.map((_, i) => (
+                    <div key={i} style={{ height: 5, width: i === wtStep ? 16 : 5, borderRadius: i === wtStep ? 3 : "50%", background: i === wtStep ? "#378ADD" : "rgba(181,212,244,0.2)", transition: "all 0.2s" }} />
+                  ))}
+                </div>
+                {/* Timer label */}
+                <div style={{ textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "rgba(181,212,244,0.45)", marginBottom: 18 }}>{s.timerLabel}</div>
+                {/* Avatar image niveau */}
+                <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+                  <img src={s.img} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2px solid rgba(55,138,221,0.5)", background: "#0d2d4a" }} />
+                </div>
+                {/* Titre */}
+                <p style={{ color: "white", fontSize: 18, fontWeight: 500, textAlign: "center", margin: "0 0 10px", lineHeight: 1.35 }}>{s.title}</p>
+                {/* Sous-titre */}
+                <p style={{ color: "#B5D4F4", fontSize: 13.5, textAlign: "center", lineHeight: 1.65, margin: "0 auto 18px", maxWidth: 340 }}>{s.sub}</p>
+                {/* Items */}
+                <div style={{ background: "rgba(55,138,221,0.1)", border: "0.5px solid rgba(55,138,221,0.3)", borderRadius: 10, padding: "10px 16px", marginBottom: 22 }}>
+                  {s.items.map((it, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9, color: "#B5D4F4", fontSize: 13, padding: "4px 0" }}>
+                      <i className={`ti ${it.icon}`} style={{ color: "#5DCAA5", fontSize: 14, marginTop: 1, flexShrink: 0 }} />
+                      <span>{it.text}</span>
+                    </div>
+                  ))}
+                </div>
+                {/* Navigation */}
+                <div style={{ display: "flex", gap: 10, justifyContent: "center" }}>
+                  {wtStep > 0 && (
+                    <button onClick={() => setWtStep(wtStep - 1)} style={{ background: "transparent", color: "#B5D4F4", border: "0.5px solid rgba(181,212,244,0.3)", borderRadius: 8, padding: "10px 16px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                      Retour
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      if (wtStep < wtSteps.length - 1) setWtStep(wtStep + 1);
+                      else closeWalkthrough();
+                    }}
+                    style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 28px", fontSize: 14, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+                  >
+                    {s.next} {wtStep < wtSteps.length - 1 ? <i className="ti ti-arrow-right" /> : <i className="ti ti-check" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        };
+        return <WalkthroughModal key="walkthrough" />;
+      })()}
+
         </div>
         </div>
       </div>
@@ -9442,7 +9720,7 @@ function AppInner() {
             img: "/hector-tete.png",
             timerLabel: "BIENVENUE SUR H€CTOR",
             title: "Bonjour, moi c'est H€CTOR.",
-            sub: "Je suis ton copilote pour le régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre comment je fonctionne.",
+            sub: "Je suis ton copilote pour le régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
             items: [
               { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
               { icon: "ti-check", text: "Tu déclares tes contrats, je m'occupe des calculs" },
@@ -9452,45 +9730,69 @@ function AppInner() {
           },
           {
             img: "/hector-1.png",
-            timerLabel: "LE COMPTEUR 507H",
+            timerLabel: "LE COCKPIT — TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
-            sub: "C'est le cœur d'Hector. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits.",
+            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Hector grandit visuellement avec ta progression, du chiot au gardien.",
             items: [
               { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
               { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
-              { icon: "ti-calendar-event", text: "Le compte à rebours jusqu'à ta date anniversaire" },
+              { icon: "ti-trophy", text: "Tes paliers débloqués au fil de tes heures" },
             ],
             next: "Suivant",
           },
           {
             img: "/hector-2.png",
-            timerLabel: "DÉCLARER TES ACTIVITÉS",
-            title: "Ajoute un contrat en quelques secondes.",
-            sub: "Chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi scanner ton AEM (Attestation Employeur Mensuelle) en photo — je lis les infos pour toi et je remplis tout seul.",
+            timerLabel: "LA DATE ANNIVERSAIRE",
+            title: "Je veille sur ton échéance.",
+            sub: "La date anniversaire, c'est le jour où France Travail réexamine tes droits. Renseigne-la une fois, et je te montre en permanence combien de jours il te reste — et si tu es dans les temps pour avoir tes 507h avant. Plus jamais pris(e) de court.",
             items: [
-              { icon: "ti-plus", text: "Saisie manuelle : date, employeur, cachets ou heures" },
-              { icon: "ti-camera", text: "Scan AEM : je lis ta photo et je remplis les champs" },
-              { icon: "ti-folder", text: "Tes documents conservés en sécurité, consultables à tout moment" },
+              { icon: "ti-calendar-event", text: "Le compte à rebours jusqu'à ton échéance" },
+              { icon: "ti-bell", text: "Je t'alerte si le rythme n'est pas suffisant" },
+              { icon: "ti-pencil", text: "Modifiable à tout moment depuis le cockpit" },
             ],
             next: "Suivant",
           },
           {
             img: "/hector-3.png",
-            timerLabel: "L'ACTUALISATION",
-            title: "Chaque mois, ton récap prêt.",
-            sub: "Au moment d'actualiser ta situation auprès de France Travail, je te prépare le récap du mois écoulé : tes employeurs, tes cachets, tes heures. Je te signale aussi s'il te manque une AEM, pour que tu ne déclares rien à l'aveugle.",
+            timerLabel: "MES ACTIVITÉS",
+            title: "Ajoute un contrat en quelques secondes.",
+            sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Hector, pour démarrer ton compteur au bon endroit.",
             items: [
-              { icon: "ti-list-check", text: "Le récap du mois à déclarer, employeur par employeur" },
-              { icon: "ti-alert-triangle", text: "Une alerte si une AEM manque encore à l'appel" },
-              { icon: "ti-checks", text: "Tu actualises l'esprit tranquille, rien n'est oublié" },
+              { icon: "ti-plus", text: "Saisie rapide : date, employeur, cachets ou heures" },
+              { icon: "ti-history", text: "Report de tes heures déjà faites pour bien démarrer" },
+              { icon: "ti-pencil", text: "Tout reste modifiable ou supprimable à tout moment" },
             ],
             next: "Suivant",
           },
           {
             img: "/hector-4.png",
-            timerLabel: "LE CENTRE DE CALCUL",
+            timerLabel: "SCANNER UNE AEM",
+            title: "Photographie ton AEM, je lis tout.",
+            sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
+            items: [
+              { icon: "ti-camera", text: "Scan photo ou PDF : je lis et je remplis les champs" },
+              { icon: "ti-eye-check", text: "Tu vérifies, tu corriges si besoin, tu valides" },
+              { icon: "ti-folder", text: "Tes AEM conservées, consultables quand tu veux" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-5.png",
+            timerLabel: "L'ACTUALISATION",
+            title: "Chaque mois, ton récap prêt à recopier.",
+            sub: "Au moment de t'actualiser auprès de France Travail, je te prépare le récap du mois écoulé : tes employeurs, tes cachets, tes heures, ton brut. Un mode guidé t'accompagne champ par champ pour recopier sans erreur, et je te signale s'il manque une AEM.",
+            items: [
+              { icon: "ti-list-check", text: "Le récap du mois, employeur par employeur" },
+              { icon: "ti-clipboard-check", text: "Un mode guidé pour recopier sans te tromper" },
+              { icon: "ti-alert-triangle", text: "Une alerte si une AEM manque encore à l'appel" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-1.png",
+            timerLabel: "LE CALCUL DES HEURES",
             title: "Pose-moi tes questions.",
-            sub: "« Combien me manque-t-il ? », « Si j'accepte ce contrat ? », « Et si je fais une pause ? ». Je réponds avec tes vrais chiffres, jamais à l'aveugle. Et avec « Que se passe-t-il si… », tu me poses n'importe quel scénario en langage normal.",
+            sub: "« Combien me manque-t-il ? », « Si j'accepte ce contrat ? », « Et si je fais une pause ? ». Je réponds avec tes vrais chiffres, jamais à l'aveugle. Et avec le champ « Que se passe-t-il si… », tu me poses n'importe quel scénario en langage normal et je le calcule.",
             items: [
               { icon: "ti-target", text: "Combien d'heures il te reste, en cachets concrets" },
               { icon: "ti-briefcase", text: "L'impact exact d'un contrat avant de l'accepter" },
@@ -9499,26 +9801,38 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-5.png",
-            timerLabel: "LA CONFIANCE",
-            title: "Je te montre toujours mon raisonnement.",
-            sub: "Sur chaque réponse, un badge te dit à quel point tu peux t'y fier, et un bouton « Pourquoi ? » t'explique mon calcul — avec les règles officielles sur lesquelles je m'appuie. Tu n'as jamais à me croire sur parole.",
+            img: "/hector-2.png",
+            timerLabel: "PARLE À HECTOR",
+            title: "Ton expert du régime, dispo 24h/24.",
+            sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Hector ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
             items: [
-              { icon: "ti-shield-check", text: "Un badge de confiance sur chaque réponse" },
-              { icon: "ti-help-circle", text: "« Pourquoi ? » : mon raisonnement, étape par étape" },
-              { icon: "ti-book", text: "Les sources officielles, si tu veux creuser" },
+              { icon: "ti-message-2", text: "Un chat expert du régime intermittent" },
+              { icon: "ti-phone-call", text: "« On te propose un contrat ? » : je te dis si tu acceptes" },
+              { icon: "ti-bulb", text: "Des réponses claires, sans jargon administratif" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-3.png",
+            timerLabel: "COMPRENDRE & MES DOCUMENTS",
+            title: "Pour ne plus jamais te sentir perdu(e).",
+            sub: "Dans « Comprendre », des fiches claires t'expliquent l'essentiel : les 507h, les annexes, la clause de rattrapage, les congés spectacles. Et dans « Mes documents », je te génère un récapitulatif de tes revenus à présenter à un proprio ou une banque, et je range tes AEM et actualisations.",
+            items: [
+              { icon: "ti-book", text: "Des fiches pédago pour comprendre ton régime" },
+              { icon: "ti-file-text", text: "Un récap de revenus pour proprio ou banque" },
+              { icon: "ti-folders", text: "Tes AEM et actualisations archivées au même endroit" },
             ],
             next: "Suivant",
           },
           {
             img: "/hector-6.png",
-            timerLabel: "TU ES PRÊT(E) !",
-            title: "On compte tes rêves, pas seulement tes heures.",
-            sub: "Commence par déclarer ton premier contrat, ou scanne une AEM. En quelques secondes, je te dis où tu en es vers tes 507h. Et plus tu avances, plus je grandis avec toi — du chiot au gardien.",
+            timerLabel: "LA CONFIANCE",
+            title: "Je te montre toujours mon raisonnement.",
+            sub: "Sur chaque calcul, un badge te dit à quel point tu peux t'y fier, et un bouton « Pourquoi ? » t'explique mon raisonnement — avec les règles officielles sur lesquelles je m'appuie. Tu n'as jamais à me croire sur parole. Commence par déclarer un contrat ou scanner une AEM, et c'est parti !",
             items: [
-              { icon: "ti-plus", text: "Déclarer mon premier cachet ou mes premières heures" },
-              { icon: "ti-camera", text: "Ou scanner une AEM pour démarrer encore plus vite" },
-              { icon: "ti-help-circle", text: "Retrouver cette visite via « Aide » dans le menu" },
+              { icon: "ti-shield-check", text: "Un badge de confiance sur chaque réponse" },
+              { icon: "ti-help-circle", text: "« Pourquoi ? » : mon raisonnement, étape par étape" },
+              { icon: "ti-book", text: "Cette visite est retrouvable via « Aide » dans le menu" },
             ],
             next: "C'est parti !",
           },
