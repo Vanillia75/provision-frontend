@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
+import { valeurDe, tracer, VERSION_REFERENTIEL } from "./regles_intermittent";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -1496,15 +1497,15 @@ function AppInner() {
   // ─── Moteur "Que se passe-t-il si…" : RÈGLE D'OR — Hector calcule TOUS les chiffres lui-même.
   // L'IA ne sert qu'à comprendre une question non reconnue ; elle ne fabrique jamais un nombre.
   function calculerScenarioEtSi(question) {
-    const HCONV = { cachet_isole: 12, cachet_groupe: 8 };
+    const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures") };
     const q = (question || "").toLowerCase();
     // Données réelles du dossier (déterministes)
     const acts = interActivites || [];
     const heuresActuelles = acts.reduce((s, a) => {
-      const conv = a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || 12);
+      const conv = a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || valeurDe("cachetHeures"));
       return s + (parseFloat(a.nombre) || 0) * conv;
     }, 0);
-    const seuil = (c && c.seuil) || 507;
+    const seuil = (c && c.seuil) || valeurDe("seuilHeures");
     const manque = Math.max(0, seuil - heuresActuelles);
     const dateAnniv = c && c.date_anniversaire ? new Date(c.date_anniversaire) : null;
     const joursAnniv = dateAnniv ? Math.ceil((dateAnniv - new Date()) / 86400000) : null;
@@ -1515,7 +1516,7 @@ function AppInner() {
     // ─ Scénario 1 : accepter des cachets ─
     if (/(accepte|prends?|fais|ajoute).*(cachet)/.test(q) || (/cachet/.test(q) && /(et si|si je)/.test(q))) {
       const n = num || 1;
-      const ajout = n * 12;
+      const ajout = n * valeurDe("cachetHeures");
       const apres = heuresActuelles + ajout;
       const secu = apres >= seuil;
       return {
@@ -1537,7 +1538,7 @@ function AppInner() {
     if (/(refuse|annule|laisse tomber|rate)/.test(q)) {
       const n = num || null;
       if (n) {
-        const perte = /heure/.test(q) ? n : n * 12;
+        const perte = /heure/.test(q) ? n : n * valeurDe("cachetHeures");
         const apres = Math.max(0, heuresActuelles - perte);
         return {
           ouv: "Je préfère te prévenir.",
@@ -1607,9 +1608,9 @@ function AppInner() {
     // 2. Scénario non reconnu → on demande à l'IA de comprendre, MAIS en lui interdisant d'inventer.
     //    On lui fournit les chiffres réels pour qu'elle reformule sans calculer.
     const acts = interActivites || [];
-    const HCONV = { cachet_isole: 12, cachet_groupe: 8 };
-    const heuresActuelles = Math.round(acts.reduce((s, a) => s + (parseFloat(a.nombre) || 0) * (a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || 12)), 0));
-    const seuil = (c && c.seuil) || 507;
+    const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures") };
+    const heuresActuelles = Math.round(acts.reduce((s, a) => s + (parseFloat(a.nombre) || 0) * (a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || valeurDe("cachetHeures"))), 0));
+    const seuil = (c && c.seuil) || valeurDe("seuilHeures");
     const contexte = `Données réelles de l'utilisateur (NE LES MODIFIE PAS, n'invente AUCUN autre chiffre) : heures actuelles = ${heuresActuelles}h, seuil = ${seuil}h, il manque = ${Math.max(0, seuil - heuresActuelles)}h.`;
     const consigne = `Tu es Hector, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
     try {
@@ -4089,7 +4090,7 @@ function AppInner() {
     };
     // Deux cercles : sûr (arithmétique) = Hector affirme ; estimé (rythme/projection) = Hector estime.
     const calc = (() => {
-      const seuil = c ? c.seuil : 507;
+      const seuil = c ? c.seuil : valeurDe("seuilHeures");
       const heures = heuresActuelles;
       const manque = Math.max(0, (c ? c.manquant : seuil - heures));
       const secu = c ? c.droits_securises : false;
@@ -4101,7 +4102,7 @@ function AppInner() {
       const il3mois = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
       const recent = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= il3mois && d <= now; });
       let heuresRecentes = 0;
-      recent.forEach(a => { const conv = { cachet_isole: 12, cachet_groupe: 8, heures: 1 }[a.type_activite] || 1; heuresRecentes += (parseFloat(a.nombre) || 0) * conv; });
+      recent.forEach(a => { const conv = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 }[a.type_activite] || 1; heuresRecentes += (parseFloat(a.nombre) || 0) * conv; });
       const rythmeMensuel = heuresRecentes / 3; // h/mois sur les 3 derniers mois
       const aUnRythme = rythmeMensuel > 0;
       const moisPourCombler = aUnRythme ? Math.ceil(manque / rythmeMensuel) : null;
@@ -4126,7 +4127,7 @@ function AppInner() {
 
       // — Clause de rattrapage (cercle estimé) : zone 338–506h —
       const filet = c ? c.filet_atteint : false;
-      const procheRattrapage = !secu && heures >= 300 && heures < 507; // on alerte dès qu'on s'en approche
+      const procheRattrapage = !secu && heures >= (valeurDe("rattrapageSeuilMin") - 38) && heures < valeurDe("seuilHeures"); // on alerte dès qu'on s'en approche
 
       // — Le conseil concret (question 4 : dois-je agir ?) —
       let conseilNiveau, conseilTitre, conseilTexte;
@@ -4180,7 +4181,7 @@ function AppInner() {
       }
 
       // Comparaison mois-à-mois (ce mois vs mois précédent)
-      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const now = new Date();
       const heuresDuMois = (offset) => {
         const ref = new Date(now.getFullYear(), now.getMonth() - offset, 1);
@@ -4238,7 +4239,7 @@ function AppInner() {
 
     // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
     const analyses = (() => {
-      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const acts = interActivites || [];
       const out = [];
       if (acts.length < 2) return out; // pas assez de matière pour analyser
@@ -4311,7 +4312,7 @@ function AppInner() {
     // Logique : chaque activité "compte" pendant 12 mois après sa date. Au-delà, elle sort de la fenêtre.
     // C'est NOTRE estimation côté front (pas le moteur validé) → toujours présentée comme "d'après mes calculs".
     const fenetre = (() => {
-      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const now = new Date();
       const lignes = (interActivites || []).map(a => {
         const d = new Date(a.date);
@@ -4422,7 +4423,7 @@ function AppInner() {
     // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
     // Vue d'ensemble visuelle des 12 derniers mois + les 3 prochains (pour montrer les sorties à venir).
     const timeline = (() => {
-      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const MOIS_COURT = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"];
       const now = new Date();
       const acts = (interActivites || []).map(a => {
@@ -4492,7 +4493,7 @@ function AppInner() {
       },
       {
         icon: "ti-arrows-shuffle", titre: "Annexe 8 ou annexe 10 ?",
-        texte: "L'annexe 8 concerne les techniciens, payés en heures réelles. L'annexe 10 concerne les artistes, payés au cachet. Un cachet isolé compte pour 12h, un cachet groupé (plusieurs jours consécutifs chez le même employeur) pour 8h. Tu peux cumuler des heures des deux annexes ; c'est celle où tu as le plus d'heures qui s'applique.",
+        texte: "L'annexe 8 concerne les techniciens, payés en heures réelles. L'annexe 10 concerne les artistes, payés au cachet. Pour le décompte des droits, un cachet d'artiste compte forfaitairement pour 12h. Tu peux cumuler des heures des deux annexes ; c'est celle où tu as le plus d'heures qui s'applique.",
       },
       {
         icon: "ti-calendar-clock", titre: "La date anniversaire",
@@ -4514,7 +4515,7 @@ function AppInner() {
     // ═══ MODULE ACTUALISATION : calcul du récap réel du mois à déclarer ═══
     // On déclare le mois civil écoulé. La fenêtre d'actualisation court ~du 28 au 15.
     const MOIS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-    const HEURES_PAR_TYPE = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+    const HEURES_PAR_TYPE = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
     const maintenant = new Date();
     // Mois à déclarer = mois précédent
     const moisDecl = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1);
@@ -5366,7 +5367,7 @@ function AppInner() {
                   return {
                     ouv: "Voyons ça précisément.",
                     text: `Si c'était mon dossier, je viserais environ ${calc.cachetsManquants} cachets pour être tranquille. C'est ce qu'il faut pour transformer tes ${calc.manque}h manquantes en droits sécurisés.`,
-                    pourquoi: `${calc.manque}h manquantes ÷ 12h par cachet isolé ≈ ${calc.cachetsManquants} cachets. Si tu fais surtout des cachets groupés (8h), il t'en faudrait un peu plus.`,
+                    pourquoi: `${calc.manque}h manquantes ÷ 12h par cachet ≈ ${calc.cachetsManquants} cachets.`,
                     suite: ["rythme", "si_contrat", "renouveler"],
                   };
                 };
@@ -5484,6 +5485,21 @@ function AppInner() {
                                     {m.showPourquoi ? (
                                       <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#B5D4F4", lineHeight: 1.5 }}>
                                         <b style={{ color: "#7FB8F0" }}>Mon raisonnement :</b> {m.pourquoi}
+                                        {/* Trace réglementaire sourcée (transparence) */}
+                                        {c && Array.isArray(c.regles_appliquees) && c.regles_appliquees.length > 0 && (
+                                          <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(127,184,240,0.18)" }}>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                                              <i className="ti ti-book-2" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 14 }} />
+                                              <b style={{ color: "#7FB8F0", fontSize: 11.5 }}>Les règles que j'ai appliquées</b>
+                                            </div>
+                                            <ul style={{ margin: 0, paddingLeft: 16, fontSize: 11, color: "#9FBDDD", lineHeight: 1.55 }}>
+                                              {c.regles_appliquees.map((r, k) => (<li key={k} style={{ marginBottom: 3 }}>{r}</li>))}
+                                            </ul>
+                                            {c.version_referentiel && (
+                                              <div style={{ fontSize: 10, color: "#5A7088", marginTop: 7 }}>Référentiel version {c.version_referentiel}.</div>
+                                            )}
+                                          </div>
+                                        )}
                                       </div>
                                     ) : (
                                       <button type="button" onClick={() => setCalcConvo(prev => prev.map((x, j) => j === i ? { ...x, showPourquoi: true } : x))}
@@ -5723,6 +5739,14 @@ function AppInner() {
                 style={{ width: "100%", background: "rgba(93,202,165,0.08)", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM pour des calculs plus justes
               </button>
+
+              {/* Transparence : version du référentiel de règles utilisé */}
+              <div style={{ marginTop: 16, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 9 }}>
+                <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#6B8299", fontSize: 15, flexShrink: 0, marginTop: 1 }} />
+                <div style={{ fontSize: 10.5, color: "#5A7088", lineHeight: 1.5 }}>
+                  Mes calculs s'appuient sur les règles officielles du régime (seuil {valeurDe("seuilHeures")}h, un cachet d'artiste compté {valeurDe("cachetHeures")}h, clause de rattrapage dès {valeurDe("rattrapageSeuilMin")}h). Référentiel version {VERSION_REFERENTIEL.version}. Ces valeurs sont issues des textes Unédic et France Travail, et restent à confirmer avec un conseiller pour ta situation précise.
+                </div>
+              </div>
               </>)}
 
               {/* ═══ PAGE MES DOCUMENTS ═══ */}
@@ -5984,8 +6008,7 @@ function AppInner() {
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Type
                         <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                          <option value="cachet_isole">Cachets isolés (12h)</option>
-                          <option value="cachet_groupe">Cachets groupés (8h)</option>
+                          <option value="cachet_isole">Cachets (artiste · 12h)</option>
                           <option value="heures">Heures (technicien)</option>
                         </select>
                       </label>
@@ -6277,8 +6300,7 @@ function AppInner() {
                         style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
                         style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                        <option value="cachet_isole">Cachet isolé (12h)</option>
-                        <option value="cachet_groupe">Cachet groupé (8h)</option>
+                        <option value="cachet_isole">Cachet (artiste · 12h)</option>
                         <option value="heures">Heures (technicien)</option>
                       </select>
                     </div>
@@ -6319,8 +6341,7 @@ function AppInner() {
                               <select value={interEditForm.type_activite} onChange={e => setInterEditForm({ ...interEditForm, type_activite: e.target.value })}
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                                 <option value="heures">heures réelles</option>
-                                <option value="cachet_isole">cachets isolés (12h)</option>
-                                <option value="cachet_groupe">cachets groupés (8h)</option>
+                                <option value="cachet_isole">cachets (artiste · 12h)</option>
                               </select>
                             </div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
@@ -6342,8 +6363,7 @@ function AppInner() {
                           </div>
                         );
                       }
-                      const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
-                        a.type_activite === "cachet_isole" ? "Cachets isolés" : "Cachets groupés";
+                      const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" : "Cachets";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
                       return (
