@@ -771,6 +771,7 @@ function AppInner() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
   const googleButtonRef = useRef(null);
+  const googleButtonRefInter = useRef(null); // bouton Google sur la landing intermittent
 
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
@@ -1007,17 +1008,24 @@ function AppInner() {
   }, [estimateData]);
 
   useEffect(() => {
-    if (token || !googleButtonRef.current) return;
+    if (token) return;
+    if (!googleButtonRef.current && !googleButtonRefInter.current) return;
     function renderButton() {
-      if (window.google && googleButtonRef.current) {
+      if (window.google) {
         window.google.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, callback: handleGoogleCredential });
-        window.google.accounts.id.renderButton(googleButtonRef.current, { theme: "outline", size: "large", width: 360, text: "continue_with" });
+        // Une seule landing est affichée à la fois : on remplit la ref présente dans le DOM.
+        if (googleButtonRef.current) {
+          window.google.accounts.id.renderButton(googleButtonRef.current, { theme: "outline", size: "large", width: 360, text: "continue_with" });
+        }
+        if (googleButtonRefInter.current) {
+          window.google.accounts.id.renderButton(googleButtonRefInter.current, { theme: "outline", size: "large", width: 360, text: "continue_with" });
+        }
       } else {
         setTimeout(renderButton, 200);
       }
     }
     renderButton();
-  }, [token, authMode]);
+  }, [token, authMode, landingStatut]);
 
   async function handleAuth(e) {
     e.preventDefault();
@@ -3166,6 +3174,8 @@ function AppInner() {
               <form onSubmit={handleAuth}>
                 <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte intermittent"}</h2>
                 {error && <div style={S.errorBanner}>{error}</div>}
+                <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                <p style={S.orDivider}>ou avec un email</p>
                 <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
                 <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
                 {authMode === "login" && (
