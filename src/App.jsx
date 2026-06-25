@@ -1430,6 +1430,71 @@ function AppInner() {
     }
   }
 
+  // ─── Impression du récapitulatif de revenus (PDF via le navigateur) ───
+  function imprimerRecapRevenus(recap, prenom, nom) {
+    const nomComplet = [prenom, nom].filter(Boolean).join(" ") || "—";
+    const aujourdhui = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    const fmt = (n) => new Intl.NumberFormat("fr-FR").format(n);
+    const lignesHTML = recap.lignes.map(l => `
+      <tr>
+        <td style="padding:9px 12px;border-bottom:1px solid #e5e9f0;">${l.label}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid #e5e9f0;text-align:center;">${l.contrats}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid #e5e9f0;text-align:center;">${l.employeurs}</td>
+        <td style="padding:9px 12px;border-bottom:1px solid #e5e9f0;text-align:right;font-weight:600;">${l.brut > 0 ? fmt(Math.round(l.brut)) + " &euro;" : "&mdash;"}</td>
+      </tr>`).join("");
+    const html = `<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Recapitulatif de revenus - ${nomComplet}</title>
+      <style>
+        * { box-sizing: border-box; }
+        body { font-family: Georgia, 'Times New Roman', serif; color: #1a2b42; margin: 0; padding: 40px; line-height: 1.5; }
+        .head { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #0A2540; padding-bottom: 18px; margin-bottom: 24px; }
+        .brand { font-size: 22px; font-weight: bold; color: #0A2540; }
+        .brand span { color: #378ADD; }
+        .meta { text-align: right; font-size: 12px; color: #5a6b80; }
+        h1 { font-size: 19px; color: #0A2540; margin: 0 0 4px; }
+        .sub { font-size: 13px; color: #5a6b80; margin-bottom: 24px; }
+        .who { background: #f4f7fb; border-radius: 8px; padding: 14px 18px; margin-bottom: 24px; font-size: 14px; }
+        .who b { color: #0A2540; }
+        .stats { display: flex; gap: 14px; margin-bottom: 24px; }
+        .stat { flex: 1; border: 1px solid #dde5ee; border-radius: 8px; padding: 14px; text-align: center; }
+        .stat .v { font-size: 22px; font-weight: bold; color: #0A2540; }
+        .stat .l { font-size: 11px; color: #5a6b80; margin-top: 4px; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 8px; }
+        th { background: #0A2540; color: white; padding: 9px 12px; text-align: left; font-size: 12px; }
+        th:nth-child(2), th:nth-child(3) { text-align: center; }
+        th:last-child { text-align: right; }
+        tfoot td { padding: 11px 12px; font-weight: bold; border-top: 2px solid #0A2540; }
+        .note { font-size: 10.5px; color: #8595a8; margin-top: 22px; border-top: 1px solid #e5e9f0; padding-top: 14px; font-family: Arial, sans-serif; line-height: 1.6; }
+        @media print { body { padding: 20px; } }
+      </style></head><body>
+      <div class="head">
+        <div class="brand">H<span>&euro;</span>CTOR</div>
+        <div class="meta">Document genere le ${aujourdhui}<br>par l'utilisateur via H&euro;CTOR</div>
+      </div>
+      <h1>Recapitulatif de revenus</h1>
+      <div class="sub">Intermittent du spectacle &middot; periode ${recap.periodeLabel}</div>
+      <div class="who"><b>${nomComplet}</b><br>Revenus d'activite declares sur les 12 derniers mois</div>
+      <div class="stats">
+        <div class="stat"><div class="v">${fmt(recap.totalBrut)} &euro;</div><div class="l">Total brut sur la periode</div></div>
+        <div class="stat"><div class="v">${fmt(recap.moyenneMensuelle)} &euro;</div><div class="l">Moyenne mensuelle*</div></div>
+        <div class="stat"><div class="v">${recap.totalContrats}</div><div class="l">Contrats declares</div></div>
+      </div>
+      <table>
+        <thead><tr><th>Mois</th><th>Contrats</th><th>Employeurs</th><th>Salaire brut</th></tr></thead>
+        <tbody>${lignesHTML}</tbody>
+        <tfoot><tr><td>Total</td><td style="text-align:center;">${recap.totalContrats}</td><td style="text-align:center;">${recap.employeursUniques}</td><td style="text-align:right;">${fmt(recap.totalBrut)} &euro;</td></tr></tfoot>
+      </table>
+      <div class="note">
+        * Moyenne calculee sur les mois travailles uniquement.<br>
+        Ce document est un recapitulatif personnel etabli a partir des donnees saisies par l'utilisateur dans l'application H&euro;CTOR. Il ne constitue pas une attestation officielle de France Travail, d'un employeur ou de tout autre organisme, et n'a pas de valeur juridique ou fiscale. Pour un document officiel, l'utilisateur doit s'adresser aux organismes competents.
+      </div>
+      </body></html>`;
+    const w = window.open("", "_blank");
+    if (!w) { alert("Autorise les fenetres pop-up pour generer le PDF."); return; }
+    w.document.write(html);
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 350);
+  }
+
   // ─── Reporter les heures déjà faites (saisie de départ) ───
   async function handleReport() {
     const nombre = parseFloat(reportForm.nombre);
@@ -4033,6 +4098,38 @@ function AppInner() {
       const aDesDonnees = acts.length > 0;
       return { buckets, maxHeures, aDesDonnees };
     })();
+
+    // ═══ RÉCAPITULATIF DE REVENUS (pour bailleur / banque) ═══
+    // Synthèse des revenus déclarés sur les 12 derniers mois. Document personnel, PAS officiel.
+    const recapRevenus = (() => {
+      const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+      const now = new Date();
+      const debut = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+      const acts = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= debut; });
+      // Agrégat par mois
+      const parMois = {};
+      let totalBrut = 0, totalAvecBrut = 0, totalContrats = 0;
+      acts.forEach(a => {
+        const d = new Date(a.date);
+        const clef = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
+        if (!parMois[clef]) parMois[clef] = { label: `${MOIS[d.getMonth()]} ${d.getFullYear()}`, brut: 0, contrats: 0, employeurs: new Set() };
+        const brut = parseFloat(a.salaire_brut) || 0;
+        parMois[clef].brut += brut;
+        parMois[clef].contrats += 1;
+        if (a.employeur) parMois[clef].employeurs.add(a.employeur);
+        totalBrut += brut;
+        if (brut > 0) totalAvecBrut += 1;
+        totalContrats += 1;
+      });
+      const lignes = Object.keys(parMois).sort().reverse().map(k => ({ ...parMois[k], employeurs: parMois[k].employeurs.size }));
+      const moisAvecRevenu = lignes.filter(l => l.brut > 0).length;
+      const moyenneMensuelle = moisAvecRevenu > 0 ? totalBrut / moisAvecRevenu : 0;
+      const employeursUniques = new Set(acts.map(a => a.employeur).filter(Boolean)).size;
+      const periodeLabel = `${MOIS[debut.getMonth()]} ${debut.getFullYear()} – ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
+      // % de contrats avec brut renseigné (pour avertir si incomplet)
+      const completude = totalContrats > 0 ? Math.round((totalAvecBrut / totalContrats) * 100) : 0;
+      return { lignes, totalBrut: Math.round(totalBrut), moyenneMensuelle: Math.round(moyenneMensuelle), totalContrats, employeursUniques, periodeLabel, completude, aDesDonnees: acts.length > 0 };
+    })();
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
     const FICHES_CONSEILS = [
@@ -4121,7 +4218,7 @@ function AppInner() {
       { id: "hector", icon: "ti-message-2", label: "Parle à Hector", dispo: true },
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
-      { id: "attestation", icon: "ti-file-text", label: "Attestation revenus", dispo: false },
+      { id: "attestation", icon: "ti-file-text", label: "Récap revenus", dispo: true },
       { id: "coffre", icon: "ti-camera", label: "Scanner une AEM", dispo: true },
     ];
     const interSidebar = (
@@ -4980,6 +5077,111 @@ function AppInner() {
                   <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM
                 </button>
               </div>
+              </>)}
+
+              {/* ═══ PAGE RÉCAP REVENUS (pour bailleur / banque) ═══ */}
+              {interNav === "attestation" && (<>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-file-text" fallbackColor="#5DCAA5" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Ton récap de revenus 🐾</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>À présenter à un propriétaire ou une banque.</div>
+                </div>
+              </div>
+
+              {!recapRevenus.aDesDonnees ? (
+                <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
+                  Ajoute tes contrats avec leur salaire brut pour que je génère ton récap de revenus.<br />Le plus simple : scanne tes AEM, je remplis tout.
+                  <div style={{ marginTop: 16 }}>
+                    <button type="button" onClick={() => setInterNav("coffre")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Avertissement si données incomplètes */}
+                  {recapRevenus.completude < 100 && (
+                    <div style={{ background: "rgba(250,199,117,0.07)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 12, padding: "12px 15px", marginBottom: 14, fontSize: 12.5, color: "#FAE3B6", lineHeight: 1.5 }}>
+                      🐾 {recapRevenus.completude}% de tes contrats ont un salaire renseigné. Pour un récap complet et crédible, complète les bruts manquants — sinon le total sera sous-évalué.
+                    </div>
+                  )}
+
+                  {/* Aperçu du document */}
+                  <div style={{ background: "white", borderRadius: 14, padding: isMobile ? "20px 18px" : "28px 30px", marginBottom: 16, color: "#1a2b42" }}>
+                    {/* En-tête */}
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #0A2540", paddingBottom: 14, marginBottom: 18 }}>
+                      <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 800, color: "#0A2540" }}>H<span style={{ color: "#378ADD" }}>€</span>CTOR</div>
+                      <div style={{ textAlign: "right", fontSize: 11, color: "#5a6b80", lineHeight: 1.5 }}>Document généré le<br />{new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
+                    </div>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "#0A2540", marginBottom: 3 }}>Récapitulatif de revenus</div>
+                    <div style={{ fontSize: 12.5, color: "#5a6b80", marginBottom: 18 }}>Intermittent du spectacle · {recapRevenus.periodeLabel}</div>
+                    <div style={{ background: "#f4f7fb", borderRadius: 8, padding: "12px 16px", marginBottom: 18, fontSize: 13.5 }}>
+                      <b style={{ color: "#0A2540" }}>{[profilPrenom, profilNom].filter(Boolean).join(" ") || "Ton nom"}</b><br />
+                      <span style={{ color: "#5a6b80", fontSize: 12.5 }}>Revenus déclarés sur les 12 derniers mois</span>
+                    </div>
+                    {/* Stats */}
+                    <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
+                      <div style={{ flex: "1 1 100px", border: "1px solid #dde5ee", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: "#0A2540" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.totalBrut)} €</div>
+                        <div style={{ fontSize: 10.5, color: "#5a6b80", marginTop: 3 }}>Total brut</div>
+                      </div>
+                      <div style={{ flex: "1 1 100px", border: "1px solid #dde5ee", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: "#0A2540" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.moyenneMensuelle)} €</div>
+                        <div style={{ fontSize: 10.5, color: "#5a6b80", marginTop: 3 }}>Moyenne / mois</div>
+                      </div>
+                      <div style={{ flex: "1 1 100px", border: "1px solid #dde5ee", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: "#0A2540" }}>{recapRevenus.totalContrats}</div>
+                        <div style={{ fontSize: 10.5, color: "#5a6b80", marginTop: 3 }}>Contrats</div>
+                      </div>
+                    </div>
+                    {/* Tableau */}
+                    <div style={{ overflowX: "auto" }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
+                        <thead>
+                          <tr style={{ background: "#0A2540", color: "white" }}>
+                            <th style={{ padding: "8px 10px", textAlign: "left" }}>Mois</th>
+                            <th style={{ padding: "8px 10px", textAlign: "center" }}>Contrats</th>
+                            <th style={{ padding: "8px 10px", textAlign: "center" }}>Employeurs</th>
+                            <th style={{ padding: "8px 10px", textAlign: "right" }}>Brut</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {recapRevenus.lignes.map((l, i) => (
+                            <tr key={i}>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0" }}>{l.label}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0", textAlign: "center" }}>{l.contrats}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0", textAlign: "center" }}>{l.employeurs}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                        <tfoot>
+                          <tr style={{ fontWeight: 700 }}>
+                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540" }}>Total</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540", textAlign: "center" }}>{recapRevenus.totalContrats}</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540", textAlign: "center" }}>{recapRevenus.employeursUniques}</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540", textAlign: "right" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.totalBrut)} €</td>
+                          </tr>
+                        </tfoot>
+                      </table>
+                    </div>
+                    <div style={{ fontSize: 10, color: "#8595a8", marginTop: 16, lineHeight: 1.6 }}>
+                      Document personnel établi à partir des données saisies dans H€CTOR. Ne constitue pas une attestation officielle et n'a pas de valeur juridique. Pour un document officiel, s'adresser aux organismes compétents.
+                    </div>
+                  </div>
+
+                  {/* Bouton télécharger */}
+                  <button type="button" onClick={() => imprimerRecapRevenus(recapRevenus, profilPrenom, profilNom)}
+                    style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: "15px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
+                    <i className="ti ti-download" aria-hidden="true" style={{ fontSize: 18 }} /> Télécharger en PDF
+                  </button>
+                  <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>
+                    Le PDF s'ouvre dans une nouvelle fenêtre. Choisis « Enregistrer en PDF » dans les options d'impression.
+                  </div>
+                </>
+              )}
               </>)}
 
               {/* ═══ PAGE SCANNER UNE AEM ═══ */}
