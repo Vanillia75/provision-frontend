@@ -5625,62 +5625,6 @@ function AppInner() {
                 </div>
               )}
 
-              {/* ── 1. OÙ J'EN SUIS (cercle sûr) ── */}
-              <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 16, padding: "18px 20px", marginBottom: 14 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: "white", lineHeight: 1 }}>{calc.heures}</div>
-                    <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 5 }}>heures faites</div>
-                  </div>
-                  <div style={{ textAlign: "center", borderLeft: "1px solid rgba(255,255,255,0.08)", borderRight: "1px solid rgba(255,255,255,0.08)" }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: calc.manque > 0 ? "#FAC775" : "#5DCAA5", lineHeight: 1 }}>{calc.manque}</div>
-                    <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 5 }}>il me manque</div>
-                  </div>
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>{calc.manque > 0 ? `≈${calc.cachetsManquants}` : "✓"}</div>
-                    <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 5 }}>{calc.manque > 0 ? "cachets restants" : "objectif atteint"}</div>
-                  </div>
-                </div>
-                <div style={{ height: 8, background: "#07192E", borderRadius: 5, overflow: "hidden", marginTop: 16 }}>
-                  <div style={{ width: `${pct}%`, height: "100%", background: calc.secu ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 5, transition: "width 0.6s ease" }} />
-                </div>
-                <div style={{ fontSize: 10, color: "#5A7088", textAlign: "right", marginTop: 5 }}>{calc.heures} / {calc.seuil}h · {Math.round(pct)}%</div>
-              </div>
-
-              {/* ── 2. SIMULATION (cercle sûr) — relié au simulateur ── */}
-              <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 16, padding: "18px 20px", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                  <i className="ti ti-flask" aria-hidden="true" style={{ color: "#378ADD", fontSize: 17 }} />
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Si j'accepte un contrat…</div>
-                </div>
-                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-                  {[1, 2, 3, 5, 10].map(n => {
-                    const hAjout = n * 12;
-                    const apres = calc.heures + hAjout;
-                    const secuApres = apres >= calc.seuil;
-                    return (
-                      <button key={n} type="button" onClick={() => { setSimForm({ type_activite: "cachet_isole", nombre: String(n) }); setSimResult({ heures_ajoutees: hAjout, total_avant: calc.heures, total_apres: apres, securise_apres: secuApres, manquant_apres: Math.max(0, calc.seuil - apres) }); }}
-                        style={{ flex: "1 1 auto", minWidth: 52, background: simForm.nombre === String(n) && simResult ? "#378ADD" : "#0d2440", color: simForm.nombre === String(n) && simResult ? "white" : "#B5D4F4", border: `1px solid ${simForm.nombre === String(n) && simResult ? "#378ADD" : "#1e3a5f"}`, borderRadius: 8, padding: "10px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        +{n}
-                      </button>
-                    );
-                  })}
-                </div>
-                <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginBottom: simResult ? 12 : 0 }}>cachets isolés (12h chacun)</div>
-                {simResult && (
-                  <div style={{ background: simResult.securise_apres ? "rgba(93,202,165,0.1)" : "rgba(255,255,255,0.03)", border: `1px solid ${simResult.securise_apres ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.08)"}`, borderRadius: 10, padding: "13px 15px" }}>
-                    <div style={{ fontSize: 14, color: "white", fontWeight: 700, marginBottom: 4 }}>
-                      {simResult.total_avant}h → <span style={{ color: simResult.securise_apres ? "#5DCAA5" : "#7FB8F0" }}>{simResult.total_apres}h</span>
-                    </div>
-                    <div style={{ fontSize: 12.5, color: "#D6E8FA", lineHeight: 1.5 }}>
-                      {simResult.securise_apres
-                        ? "🎯 Avec ça, tu atteins tes 507h. Tes droits seraient sécurisés."
-                        : `Il te manquerait encore ${simResult.manquant_apres}h ≈ ${Math.ceil(simResult.manquant_apres / 12)} cachet${Math.ceil(simResult.manquant_apres / 12) > 1 ? "s" : ""}.`}
-                    </div>
-                  </div>
-                )}
-              </div>
-
               {/* ── 3. TIMELINE DES HEURES (vue d'ensemble visuelle) ── */}
               {timeline.aDesDonnees && (
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px 16px", marginBottom: 14 }}>
@@ -5774,55 +5718,11 @@ function AppInner() {
                 )}
               </div>
 
-              {/* ── 4. CLAUSE DE RATTRAPAGE (cercle estimé) ── */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px", marginBottom: 14 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                  <i className="ti ti-lifebuoy" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 17 }} />
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>La clause de rattrapage</div>
-                </div>
-                <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.55 }}>
-                  {calc.secu
-                    ? "Tu as tes 507h, tu n'en as pas besoin. Mais c'est bon à connaître : entre 338 et 506h, elle sert de filet."
-                    : calc.heures >= 338
-                      ? <>Tu as dépassé <b style={{ color: "#5DCAA5" }}>338h</b> : si tu n'atteins pas 507h à ton échéance, ce filet peut prolonger ton indemnisation. <span style={{ color: "#FAC775" }}>À confirmer avec France Travail.</span></>
-                      : <>C'est un filet de sécurité qui s'active entre <b style={{ color: "white" }}>338 et 506h</b>. Il te reste <b style={{ color: "#5DCAA5" }}>{Math.max(0, 338 - calc.heures)}h</b> pour l'atteindre.</>}
-                </div>
-              </div>
-
-              {/* ── 5. LE CONSEIL D'HECTOR (question : dois-je agir ?) ── */}
-              {(() => {
-                const pal = {
-                  green: { bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5" },
-                  orange: { bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.32)", tc: "#FAC775" },
-                  blue: { bg: "rgba(55,138,221,0.1)", bd: "rgba(55,138,221,0.3)", tc: "#7FB8F0" },
-                }[calc.conseilNiveau];
-                return (
-                  <div style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 14, display: "flex", gap: 13 }}>
-                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#07192E", border: `1.5px solid ${pal.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor={pal.tc} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 14.5, fontWeight: 800, color: pal.tc, marginBottom: 4 }}>{calc.conseilTitre}</div>
-                      <div style={{ fontSize: 13, color: "#E8F4FF", lineHeight: 1.55 }}>{calc.conseilTexte}</div>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* ── 6. AUTOMATISATION : relier au scan AEM ── */}
-              <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.08), rgba(55,138,221,0.05))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                  <i className="ti ti-camera" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 20 }} />
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Laisse-moi remplir tout ça pour toi</div>
-                </div>
-                <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
-                  Plus tu me donnes tes AEM, plus mes calculs sont justes. Photographie-les : j'extrais les heures, les cachets et le brut, et tout se recalcule ici instantanément.
-                </div>
-                <button type="button" onClick={() => setInterNav("coffre")}
-                  style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "13px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                  <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM
-                </button>
-              </div>
+              {/* Lien discret vers le scan (le détail conversationnel a déjà tout dit) */}
+              <button type="button" onClick={() => setInterNav("coffre")}
+                style={{ width: "100%", background: "rgba(93,202,165,0.08)", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM pour des calculs plus justes
+              </button>
               </>)}
 
               {/* ═══ PAGE MES DOCUMENTS ═══ */}
