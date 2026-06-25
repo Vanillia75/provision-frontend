@@ -3734,7 +3734,7 @@ function AppInner() {
     const parEmployeur = {};
     let totalHeuresMois = 0, totalCachetsMois = 0, totalBrutMois = 0, brutManquant = false;
     actusDuMois.forEach(a => {
-      const emp = (a.employeur && a.employeur.trim()) || "Sans employeur";
+      const emp = (a.employeur && a.employeur.trim()) || "Employeur non précisé";
       const nb = parseFloat(a.nombre) || 0;
       const h = nb * (HEURES_PAR_TYPE[a.type_activite] || 1);
       const estCachet = a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe";
@@ -3861,8 +3861,8 @@ function AppInner() {
           {/* Le compteur vivant */}
           {c && (
             <>
-              {/* Hector + briefing — masqué sur le cockpit (Hector immersif le remplace) */}
-              {interNav !== "cockpit" && (
+              {/* Hector + briefing — masqué sur le cockpit et l'actualisation (Hector y est déjà présent) */}
+              {interNav !== "cockpit" && interNav !== "actu" && (
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
