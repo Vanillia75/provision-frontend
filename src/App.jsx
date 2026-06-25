@@ -3817,7 +3817,7 @@ function AppInner() {
                   {/* L'illustration d'Hector, plein cadre */}
                   <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`}
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }} />
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 62%", display: "block" }} />
 
                   {/* Badge palier en haut à droite */}
                   <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px" }}>
