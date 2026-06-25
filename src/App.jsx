@@ -1588,7 +1588,7 @@ function AppInner() {
       const secu = apres >= seuil;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n} cachet${n > 1 ? "s" : ""} isolé${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h — tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h — tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
       };
     }
     // ─ Scénario 2 : accepter des heures ─
@@ -4160,8 +4160,7 @@ function AppInner() {
       const heures = heuresActuelles;
       const manque = Math.max(0, (c ? c.manquant : seuil - heures));
       const secu = c ? c.droits_securises : false;
-      const HEURES_CACHET = 12; // cachet isolé, le cas le plus courant
-      const cachetsManquants = Math.ceil(manque / HEURES_CACHET);
+      const cachetsManquants = Math.ceil(manque / valeurDe("cachetHeures"));
 
       // — Projection (cercle estimé) : à partir du rythme des 3 derniers mois d'activités —
       const now = new Date();
@@ -5418,7 +5417,7 @@ function AppInner() {
                   ouv: "Celui-là mérite qu'on s'y attarde.",
                   text: `Dis-moi combien de cachets on te propose, je te dis tout de suite où ça te mène. Utilise les boutons ci-dessous : je calcule l'impact exact sur tes droits.`,
                   simulateur: true,
-                  pourquoi: `Je prends tes ${calc.heures}h actuelles, j'ajoute les heures du contrat (12h par cachet isolé), et je regarde si on franchit les ${calc.seuil}h.`,
+                  pourquoi: `Je prends tes ${calc.heures}h actuelles, j'ajoute les heures du contrat (12h par cachet), et je regarde si on franchit les ${calc.seuil}h.`,
                   suite: ["combien_cachets", "renouveler", "rythme"],
                 });
 
@@ -6165,7 +6164,7 @@ function AppInner() {
                           "C'est quoi exactement la date anniversaire ?",
                           "Combien d'heures il me reste pour mes droits ?",
                           "Comment marche la clause de rattrapage ?",
-                          "Un cachet isolé, ça compte pour combien d'heures ?",
+                          "Un cachet, ça compte pour combien d'heures ?",
                         ].map(q => (
                           <button key={q} type="button" onClick={() => { setInterChatInput(q); }}
                             style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 10, padding: "10px 12px", fontSize: 13, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
@@ -6420,8 +6419,7 @@ function AppInner() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {interActivites.map(a => {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
-                        a.type_activite === "cachet_isole" ? `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} isolé${a.nombre > 1 ? "s" : ""}` :
-                        `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} groupé${a.nombre > 1 ? "s" : ""}`;
+                        `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
                       // Mode édition de cette ligne
                       if (interEditId === a.id) {
                         return (
@@ -9428,7 +9426,95 @@ function AppInner() {
       </main>
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
-        const wtSteps = [
+        const estIntermittent = profile && profile.statut === "intermittent";
+        // Parcours dédié intermittent du spectacle (le côté "507h / cachets / AEM").
+        const wtStepsIntermittent = [
+          {
+            img: "/hector-tete.png",
+            timerLabel: "BIENVENUE SUR H€CTOR",
+            title: "Bonjour, moi c'est H€CTOR.",
+            sub: "Je suis ton copilote pour le régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre comment je fonctionne.",
+            items: [
+              { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
+              { icon: "ti-check", text: "Tu déclares tes contrats, je m'occupe des calculs" },
+              { icon: "ti-check", text: "Tu peux passer cette visite à tout moment" },
+            ],
+            next: "Découvrir",
+          },
+          {
+            img: "/hector-1.png",
+            timerLabel: "LE COMPTEUR 507H",
+            title: "Tes 507h, toujours à jour.",
+            sub: "C'est le cœur d'Hector. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits.",
+            items: [
+              { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
+              { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
+              { icon: "ti-calendar-event", text: "Le compte à rebours jusqu'à ta date anniversaire" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-2.png",
+            timerLabel: "DÉCLARER TES ACTIVITÉS",
+            title: "Ajoute un contrat en quelques secondes.",
+            sub: "Chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi scanner ton AEM (Attestation Employeur Mensuelle) en photo — je lis les infos pour toi et je remplis tout seul.",
+            items: [
+              { icon: "ti-plus", text: "Saisie manuelle : date, employeur, cachets ou heures" },
+              { icon: "ti-camera", text: "Scan AEM : je lis ta photo et je remplis les champs" },
+              { icon: "ti-folder", text: "Tes documents conservés en sécurité, consultables à tout moment" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-3.png",
+            timerLabel: "L'ACTUALISATION",
+            title: "Chaque mois, ton récap prêt.",
+            sub: "Au moment d'actualiser ta situation auprès de France Travail, je te prépare le récap du mois écoulé : tes employeurs, tes cachets, tes heures. Je te signale aussi s'il te manque une AEM, pour que tu ne déclares rien à l'aveugle.",
+            items: [
+              { icon: "ti-list-check", text: "Le récap du mois à déclarer, employeur par employeur" },
+              { icon: "ti-alert-triangle", text: "Une alerte si une AEM manque encore à l'appel" },
+              { icon: "ti-checks", text: "Tu actualises l'esprit tranquille, rien n'est oublié" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-4.png",
+            timerLabel: "LE CENTRE DE CALCUL",
+            title: "Pose-moi tes questions.",
+            sub: "« Combien me manque-t-il ? », « Si j'accepte ce contrat ? », « Et si je fais une pause ? ». Je réponds avec tes vrais chiffres, jamais à l'aveugle. Et avec « Que se passe-t-il si… », tu me poses n'importe quel scénario en langage normal.",
+            items: [
+              { icon: "ti-target", text: "Combien d'heures il te reste, en cachets concrets" },
+              { icon: "ti-briefcase", text: "L'impact exact d'un contrat avant de l'accepter" },
+              { icon: "ti-message-circle", text: "« Que se passe-t-il si… » : ton scénario, ma réponse chiffrée" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-5.png",
+            timerLabel: "LA CONFIANCE",
+            title: "Je te montre toujours mon raisonnement.",
+            sub: "Sur chaque réponse, un badge te dit à quel point tu peux t'y fier, et un bouton « Pourquoi ? » t'explique mon calcul — avec les règles officielles sur lesquelles je m'appuie. Tu n'as jamais à me croire sur parole.",
+            items: [
+              { icon: "ti-shield-check", text: "Un badge de confiance sur chaque réponse" },
+              { icon: "ti-help-circle", text: "« Pourquoi ? » : mon raisonnement, étape par étape" },
+              { icon: "ti-book", text: "Les sources officielles, si tu veux creuser" },
+            ],
+            next: "Suivant",
+          },
+          {
+            img: "/hector-6.png",
+            timerLabel: "TU ES PRÊT(E) !",
+            title: "On compte tes rêves, pas seulement tes heures.",
+            sub: "Commence par déclarer ton premier contrat, ou scanne une AEM. En quelques secondes, je te dis où tu en es vers tes 507h. Et plus tu avances, plus je grandis avec toi — du chiot au gardien.",
+            items: [
+              { icon: "ti-plus", text: "Déclarer mon premier cachet ou mes premières heures" },
+              { icon: "ti-camera", text: "Ou scanner une AEM pour démarrer encore plus vite" },
+              { icon: "ti-help-circle", text: "Retrouver cette visite via « Aide » dans le menu" },
+            ],
+            next: "C'est parti !",
+          },
+        ];
+        const wtStepsAuto = [
           {
             img: "/hector-tete.png",
             timerLabel: "BIENVENUE SUR H€CTOR",
@@ -9514,6 +9600,7 @@ function AppInner() {
             next: "C'est parti !",
           },
         ];
+        const wtSteps = estIntermittent ? wtStepsIntermittent : wtStepsAuto;
         const WalkthroughModal = () => {
           const [wtStep, setWtStep] = useState(0);
           const s = wtSteps[wtStep];
