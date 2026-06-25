@@ -483,6 +483,11 @@ function AppInner() {
   const [anniversaireInput, setAnniversaireInput] = useState("");
   const [anniversaireSaving, setAnniversaireSaving] = useState(false);
   const [anniversaireEdit, setAnniversaireEdit] = useState(false);
+  // ─── Scan d'AEM (Coffre à AEM) — OCR Claude Vision ───
+  const [aemUploading, setAemUploading] = useState(false);
+  const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
+  const [aemSaving, setAemSaving] = useState(false);
+  const [aemError, setAemError] = useState("");
   // ─── Module ACTUALISATION France Travail ───
   // Mois ciblé par l'actualisation = le mois civil précédent (on déclare le mois écoulé).
   // Sous-état du mode recopie guidé (null = écran de préparation, sinon n° d'étape 0..3).
@@ -1348,6 +1353,63 @@ function AppInner() {
       setError(err.message);
     } finally {
       setInterSaving(false);
+    }
+  }
+
+  // ─── Scan d'AEM : envoie la photo/PDF au backend (Claude Vision), récupère les champs lus ───
+  async function handleScanAEM(file) {
+    setAemUploading(true);
+    setAemError("");
+    setAemExtrait(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
+      // On pré-remplit l'écran de vérification avec ce qu'Hector a lu (tout reste éditable).
+      setAemExtrait({
+        employeur: data.employeur || "",
+        date: data.date || "",
+        type_activite: data.type_activite || "cachet_isole",
+        nombre: data.nombre != null ? String(data.nombre) : "",
+        salaire_brut: data.salaire_brut != null ? String(data.salaire_brut) : "",
+        filename: data.filename || file.name,
+      });
+    } catch (err) {
+      setAemError(err.message || "Lecture impossible. Réessaie avec une photo plus nette.");
+    } finally {
+      setAemUploading(false);
+    }
+  }
+
+  // ─── Confirme l'AEM lue : crée l'activité avec brut + aem_recue=true ───
+  async function handleConfirmAEM() {
+    const nombre = parseFloat(aemExtrait.nombre);
+    if (!aemExtrait.date || !nombre || nombre <= 0) {
+      setAemError("Vérifie la date et le nombre avant d'enregistrer.");
+      return;
+    }
+    setAemSaving(true);
+    setAemError("");
+    try {
+      await apiFetch("/intermittent/activite", {
+        method: "POST",
+        body: JSON.stringify({
+          date: aemExtrait.date,
+          type_activite: aemExtrait.type_activite,
+          nombre,
+          employeur: aemExtrait.employeur || null,
+          salaire_brut: aemExtrait.salaire_brut !== "" ? parseFloat(aemExtrait.salaire_brut) : null,
+          aem_recue: true,
+          aem_filename: aemExtrait.filename || null,
+        }),
+      });
+      setAemExtrait(null);
+      await loadIntermittentCockpit();
+      setInterNav("activites");
+    } catch (err) {
+      setAemError(err.message);
+    } finally {
+      setAemSaving(false);
     }
   }
 
@@ -3775,7 +3837,7 @@ function AppInner() {
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-file-text", label: "Attestation revenus", dispo: false },
-      { id: "coffre", icon: "ti-camera", label: "Coffre à AEM", dispo: false },
+      { id: "coffre", icon: "ti-camera", label: "Scanner une AEM", dispo: true },
     ];
     const interSidebar = (
       <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: "100vh" }}>
@@ -4245,6 +4307,112 @@ function AppInner() {
                   {actuHistorique.length >= 3 && (
                     <div style={{ fontSize: 11.5, color: "#5DCAA5", textAlign: "center", marginTop: 12, fontWeight: 600 }}>🐾 Tu t'actualises sans faute depuis {actuHistorique.length} mois. Continue comme ça.</div>
                   )}
+                </div>
+              )}
+              </>)}
+
+              {/* ═══ PAGE SCANNER UNE AEM ═══ */}
+              {interNav === "coffre" && (<>
+
+              {/* Présence d'Hector + promesse */}
+              <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ width: 80, height: 80, borderRadius: "50%", margin: "0 auto 14px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
+                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-camera" fallbackColor="#5DCAA5" />
+                </div>
+                <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Photographie ton AEM, je lis tout 🐾</h1>
+                <p style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>Employeur, cachets, heures, salaire brut — je remplis tout pour toi. Tu n'as qu'à vérifier.</p>
+              </div>
+
+              {/* Zone d'upload (si pas de résultat en cours) */}
+              {!aemExtrait && (
+                <>
+                  <label style={{ display: "block", border: "1.5px dashed rgba(93,202,165,0.4)", borderRadius: 16, padding: "32px 20px", textAlign: "center", cursor: aemUploading ? "default" : "pointer", background: "rgba(93,202,165,0.04)" }}>
+                    <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading}
+                      onChange={e => e.target.files[0] && handleScanAEM(e.target.files[0])} style={{ display: "none" }} />
+                    {aemUploading ? (
+                      <div>
+                        <div style={{ fontSize: 30, marginBottom: 10 }}>🐾</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#5DCAA5" }}>Hector lit ton AEM…</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 4 }}>Quelques secondes</div>
+                      </div>
+                    ) : (
+                      <div>
+                        <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 34, color: "#5DCAA5" }} />
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "white", marginTop: 10 }}>Photo ou PDF de ton AEM</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 4 }}>Touche ici pour choisir un fichier</div>
+                      </div>
+                    )}
+                  </label>
+                  {aemError && (
+                    <div style={{ marginTop: 14, background: "rgba(226,75,74,0.08)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#F09595", lineHeight: 1.5 }}>{aemError}</div>
+                  )}
+                  <div style={{ marginTop: 20, fontSize: 11.5, color: "#5A7088", lineHeight: 1.6, textAlign: "center" }}>
+                    🐾 Une AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Scanne-la dès que tu la reçois : je la range et je l'ajoute à ton compteur.
+                  </div>
+                </>
+              )}
+
+              {/* Écran de vérification (si Hector a lu quelque chose) */}
+              {aemExtrait && (
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Voilà ce que j'ai lu 🐾</div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0" }}>Vérifie et corrige si besoin, puis enregistre.</div>
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Employeur
+                      <input type="text" value={aemExtrait.employeur} onChange={e => setAemExtrait({ ...aemExtrait, employeur: e.target.value })} placeholder="Nom de la structure"
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Date
+                        <input type="date" value={aemExtrait.date} onChange={e => setAemExtrait({ ...aemExtrait, date: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Type
+                        <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                          <option value="cachet_isole">Cachets isolés (12h)</option>
+                          <option value="cachet_groupe">Cachets groupés (8h)</option>
+                          <option value="heures">Heures (technicien)</option>
+                        </select>
+                      </label>
+                    </div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>{aemExtrait.type_activite === "heures" ? "Nombre d'heures" : "Nombre de cachets"}
+                        <input type="number" min="0" value={aemExtrait.nombre} onChange={e => setAemExtrait({ ...aemExtrait, nombre: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Salaire brut (€)
+                        <input type="number" min="0" value={aemExtrait.salaire_brut} onChange={e => setAemExtrait({ ...aemExtrait, salaire_brut: e.target.value })} placeholder="Optionnel"
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                    </div>
+                  </div>
+
+                  {aemError && (
+                    <div style={{ marginTop: 14, fontSize: 12.5, color: "#F09595" }}>{aemError}</div>
+                  )}
+
+                  <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                    <button type="button" disabled={aemSaving} onClick={handleConfirmAEM}
+                      style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: aemSaving ? "default" : "pointer", fontFamily: "inherit", opacity: aemSaving ? 0.6 : 1 }}>
+                      {aemSaving ? "…" : "C'est juste, enregistre ✓"}
+                    </button>
+                    <button type="button" onClick={() => { setAemExtrait(null); setAemError(""); }}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "14px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                      Annuler
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
+                    Je fais de mon mieux pour bien lire, mais vérifie toujours — une AEM mal scannée, ça arrive.
+                  </div>
                 </div>
               )}
               </>)}
