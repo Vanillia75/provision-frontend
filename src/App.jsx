@@ -3820,9 +3820,9 @@ function AppInner() {
                     style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }} />
 
                   {/* Badge palier en haut à droite */}
-                  <div style={{ position: "absolute", top: 14, right: 16, textAlign: "right", textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
-                    <div style={{ fontSize: 10.5, color: "#9FCBF5", letterSpacing: 1, fontWeight: 600 }}>PALIER {idxActuel + 1}</div>
-                    <div style={{ fontSize: 18, color: "#9FCBF5", fontWeight: 800 }}>{palierActuel.nom.toUpperCase()}</div>
+                  <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px" }}>
+                    <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
+                    <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
                   </div>
 
                   {/* Fondu vers le fond de la carte */}
