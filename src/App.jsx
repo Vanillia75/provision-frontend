@@ -499,6 +499,9 @@ function AppInner() {
   const [calcThinking, setCalcThinking] = useState(false); // Hector "réfléchit"
   // ─── Visionneuse de document AEM (overlay, sans quitter l'app) ───
   const [docViewer, setDocViewer] = useState(null); // { url, filename, loading } | null
+  // ─── Champ "Que se passe-t-il si…" (saisie libre) ───
+  const [etSiInput, setEtSiInput] = useState("");
+  const [etSiLoading, setEtSiLoading] = useState(false);
   const [celebPalier, setCelebPalier] = useState(null); // palier fraîchement franchi (objet) ou null
   const prevPalierRef = useRef(null); // mémorise le palier précédent pour détecter un franchissement
   // ─── Module ACTUALISATION France Travail ───
@@ -1489,6 +1492,140 @@ function AppInner() {
       setCalcConvo(prev => [...prev, { role: "bot", text: reponseObj.text, questions: reponseObj.questions || [] }]);
     }, 1100);
   }
+
+  // ─── Moteur "Que se passe-t-il si…" : RÈGLE D'OR — Hector calcule TOUS les chiffres lui-même.
+  // L'IA ne sert qu'à comprendre une question non reconnue ; elle ne fabrique jamais un nombre.
+  function calculerScenarioEtSi(question) {
+    const HCONV = { cachet_isole: 12, cachet_groupe: 8 };
+    const q = (question || "").toLowerCase();
+    // Données réelles du dossier (déterministes)
+    const acts = interActivites || [];
+    const heuresActuelles = acts.reduce((s, a) => {
+      const conv = a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || 12);
+      return s + (parseFloat(a.nombre) || 0) * conv;
+    }, 0);
+    const seuil = (c && c.seuil) || 507;
+    const manque = Math.max(0, seuil - heuresActuelles);
+    const dateAnniv = c && c.date_anniversaire ? new Date(c.date_anniversaire) : null;
+    const joursAnniv = dateAnniv ? Math.ceil((dateAnniv - new Date()) / 86400000) : null;
+    // Extrait un nombre de la question (ex "3 cachets", "8 heures", "15 jours")
+    const num = (() => { const m = q.match(/(\d+([.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : null; })();
+    const fmtH = (h) => Math.round(h);
+
+    // ─ Scénario 1 : accepter des cachets ─
+    if (/(accepte|prends?|fais|ajoute).*(cachet)/.test(q) || (/cachet/.test(q) && /(et si|si je)/.test(q))) {
+      const n = num || 1;
+      const ajout = n * 12;
+      const apres = heuresActuelles + ajout;
+      const secu = apres >= seuil;
+      return {
+        ouv: secu ? "Ça sent bon." : "Regardons.",
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} isolé${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h — tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
+      };
+    }
+    // ─ Scénario 2 : accepter des heures ─
+    if (/(accepte|prends?|fais|ajoute).*(heure|h\b)/.test(q) || (/heure/.test(q) && /(et si|si je)/.test(q))) {
+      const n = num || 0;
+      const apres = heuresActuelles + n;
+      const secu = apres >= seuil;
+      return {
+        ouv: secu ? "Ça sent bon." : "Regardons.",
+        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h — c'est sécurisé.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
+      };
+    }
+    // ─ Scénario 3 : refuser / annuler un contrat ─
+    if (/(refuse|annule|laisse tomber|rate)/.test(q)) {
+      const n = num || null;
+      if (n) {
+        const perte = /heure/.test(q) ? n : n * 12;
+        const apres = Math.max(0, heuresActuelles - perte);
+        return {
+          ouv: "Je préfère te prévenir.",
+          text: `Si tu refuses ${/heure/.test(q) ? `${n}h` : `${n} cachet${n > 1 ? "s" : ""}`}, tu resterais à ${fmtH(heuresActuelles)}h (ces heures ne s'ajouteraient pas). Tu aurais donc toujours ${fmtH(manque)}h à trouver ailleurs. À ta place, je ne refuserais pas sans avoir une autre piste.`,
+        };
+      }
+      return {
+        ouv: "Regardons.",
+        text: `Aujourd'hui tu es à ${fmtH(heuresActuelles)}h, il te manque ${fmtH(manque)}h. Refuser un contrat te laisse à ce niveau — dis-moi combien de cachets il représentait et je te dis précisément ce que tu perdrais.`,
+      };
+    }
+    // ─ Scénario 4 : pause / vacances / ne pas travailler un mois ─
+    if (/(vacances|pause|arr[êe]te|travaille pas|ne travaille|repos|congé)/.test(q) && !/maladie|maternit/.test(q)) {
+      return {
+        ouv: manque > 0 ? "Je préfère te prévenir." : "On peut souffler.",
+        text: manque > 0
+          ? `Si tu fais une pause, ton compteur reste à ${fmtH(heuresActuelles)}h — il ne baisse pas tout de suite, mais il n'avance pas non plus. Or il te manque ${fmtH(manque)}h${joursAnniv ? ` et il te reste ${joursAnniv} jours avant ton échéance` : ""}. Une pause courte, ça va ; un mois entier, je garderais un œil sur le calendrier.`
+          : `Tu as déjà tes ${seuil}h, donc une pause ne met pas tes droits en danger dans l'immédiat. Profite — je veille.`,
+      };
+    }
+    // ─ Scénario 5 : maladie / maternité ─
+    if (/(maladie|malade|maternit|accident|arrêt)/.test(q)) {
+      return {
+        ouv: "Celui-là mérite qu'on s'y attarde.",
+        text: `Les arrêts maladie et congés maternité ont des règles spéciales (neutralisation de période, parfois assimilation d'heures) que je ne calcule pas encore précisément — je ne veux pas te donner un chiffre à l'aveugle. Pour ce cas, je te conseille de vérifier avec France Travail ou un conseiller. Ce que je peux te dire de sûr : tu es à ${fmtH(heuresActuelles)}h aujourd'hui.`,
+        prudent: true,
+      };
+    }
+    // ─ Scénario 6 : atteindre 507h avant une date / tournée ─
+    if (/(507|atteindre|objectif|avant|tournée|tournee)/.test(q)) {
+      if (/tournée|tournee/.test(q) && num) {
+        const ajout = num * 8; // une tournée ~ heures (estimation prudente : on demande à préciser)
+        return {
+          ouv: "Regardons ensemble.",
+          text: `Une tournée, ça dépend du nombre de cachets ou d'heures déclarés — dis-moi ça précisément (ex : "tournée de 10 cachets") et je te calcule l'impact exact. Pour l'instant tu es à ${fmtH(heuresActuelles)}h, il te manque ${fmtH(manque)}h.`,
+        };
+      }
+      return {
+        ouv: manque > 0 ? "Voyons ça." : "On peut souffler.",
+        text: manque > 0
+          ? `Pour atteindre tes ${seuil}h, il te manque ${fmtH(manque)}h ≈ ${Math.ceil(manque / 12)} cachets${joursAnniv ? `, et il te reste ${joursAnniv} jours avant ton échéance` : ""}. ${joursAnniv && joursAnniv > 0 ? `Ça fait environ ${(Math.ceil(manque / 12) / (joursAnniv / 7)).toFixed(1)} cachets par semaine à tenir.` : "Renseigne ta date anniversaire et je te dirai à quel rythme aller."}`
+          : `Tu as déjà tes ${seuil}h — l'objectif est atteint. 🎉`,
+      };
+    }
+    // Aucun scénario reconnu → on signale qu'on passe la main à l'IA (avec contexte chiffré)
+    return null;
+  }
+
+  // Traite la question libre "Et si…" : déterministe d'abord, IA en secours (sans inventer de chiffre)
+  async function poserEtSi() {
+    const question = etSiInput.trim();
+    if (!question || etSiLoading) return;
+    setEtSiInput("");
+    setCalcConvo(prev => [...prev, { role: "me", text: question }]);
+    setCalcThinking(true);
+
+    // 1. Hector tente de calculer lui-même (déterministe)
+    const scenario = calculerScenarioEtSi(question);
+    if (scenario) {
+      setTimeout(() => {
+        setCalcThinking(false);
+        setCalcConvo(prev => [...prev, { role: "bot", text: scenario.text, ouv: scenario.ouv, questions: [] }]);
+      }, 1100);
+      return;
+    }
+
+    // 2. Scénario non reconnu → on demande à l'IA de comprendre, MAIS en lui interdisant d'inventer.
+    //    On lui fournit les chiffres réels pour qu'elle reformule sans calculer.
+    const acts = interActivites || [];
+    const HCONV = { cachet_isole: 12, cachet_groupe: 8 };
+    const heuresActuelles = Math.round(acts.reduce((s, a) => s + (parseFloat(a.nombre) || 0) * (a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || 12)), 0));
+    const seuil = (c && c.seuil) || 507;
+    const contexte = `Données réelles de l'utilisateur (NE LES MODIFIE PAS, n'invente AUCUN autre chiffre) : heures actuelles = ${heuresActuelles}h, seuil = ${seuil}h, il manque = ${Math.max(0, seuil - heuresActuelles)}h.`;
+    const consigne = `Tu es Hector, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
+    try {
+      const data = await apiFetch("/assistant/chat", {
+        method: "POST",
+        body: JSON.stringify({ messages: [{ role: "user", content: `${consigne}\n\n${contexte}\n\nQuestion : ${question}` }] }),
+      });
+      setCalcThinking(false);
+      setCalcConvo(prev => [...prev, { role: "bot", text: data.reply, ouv: null, questions: [] }]);
+    } catch (err) {
+      setCalcThinking(false);
+      setCalcConvo(prev => [...prev, { role: "bot", ouv: "Hmm.", text: `Je n'ai pas réussi à analyser celle-là. Reformule autrement, ou pose-moi une des questions ci-dessous. Ce que je sais de sûr : tu es à ${heuresActuelles}h sur ${seuil}h.`, questions: [] }]);
+    }
+  }
+
+  // ─── Moteur "Que se passe-t-il si…" : fin ───
 
   function imprimerRecapRevenus(recap, prenom, nom) {
     const nomComplet = [prenom, nom].filter(Boolean).join(" ") || "—";
@@ -5391,6 +5528,32 @@ function AppInner() {
                           </div>
                         </div>
                       )}
+                    </div>
+
+                    {/* ── LE CHAMP SIGNATURE : "Que se passe-t-il si…" ── */}
+                    <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.08), rgba(55,138,221,0.05))", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: "16px 16px 14px", marginBottom: 16 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                        <i className="ti ti-sparkles" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
+                        <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Que se passe-t-il si… ?</div>
+                      </div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <input type="text" value={etSiInput} onChange={e => setEtSiInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") poserEtSi(); }}
+                          placeholder="Ex : et si j'accepte 3 cachets ?" disabled={etSiLoading || calcThinking}
+                          style={{ flex: 1, background: "#07192E", border: "1px solid #1e3a5f", borderRadius: 10, padding: "12px 14px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit" }} />
+                        <button type="button" onClick={poserEtSi} disabled={etSiLoading || calcThinking || !etSiInput.trim()}
+                          style={{ background: "#5DCAA5", border: "none", borderRadius: 10, width: 46, display: "flex", alignItems: "center", justifyContent: "center", cursor: etSiInput.trim() ? "pointer" : "default", flexShrink: 0, opacity: etSiInput.trim() ? 1 : 0.5 }}>
+                          <i className="ti ti-send" aria-hidden="true" style={{ fontSize: 18, color: "#04342C" }} />
+                        </button>
+                      </div>
+                      {/* Suggestions rapides */}
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                        {["Et si je ne travaille pas un mois ?", "Et si je refuse 8 cachets ?", "Et si j'ajoute 5 cachets ?"].map((s, i) => (
+                          <button key={i} type="button" onClick={() => { setEtSiInput(s); }}
+                            style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#9FCBF5", borderRadius: 999, padding: "6px 12px", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
+                            {s}
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     {/* Questions de départ (toujours visibles en bas si conversation vide) */}
