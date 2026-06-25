@@ -6567,6 +6567,111 @@ function AppInner() {
                 </div>
               </div>
               </>)}
+
+              {/* ═══ PAGE RÉGLAGES ═══ */}
+              {interNav === "reglages" && (<>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-settings" fallbackColor="#5DCAA5" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Réglages</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>{profile?.email}</div>
+                </div>
+              </div>
+
+              {/* Mes infos */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 14 }}>Mes infos</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 140px" }}>Prénom
+                    <input type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Ton prénom"
+                      style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </label>
+                  <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 140px" }}>Nom
+                    <input type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Ton nom"
+                      style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </label>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+                  <button type="button" onClick={handleSaveProfileDetails} disabled={profileDetailsSaving}
+                    style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: profileDetailsSaving ? "default" : "pointer", fontFamily: "inherit", opacity: profileDetailsSaving ? 0.6 : 1 }}>
+                    {profileDetailsSaving ? "…" : "Enregistrer"}
+                  </button>
+                  {profileDetailsSaved && <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600 }}>✓ Enregistré</span>}
+                </div>
+                <div style={{ fontSize: 11, color: "#5A7088", marginTop: 12, lineHeight: 1.5 }}>
+                  🐾 Ta date anniversaire se règle directement sur le cockpit, là où je surveille ton échéance.
+                </div>
+              </div>
+
+              {/* Mon statut */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mon statut</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Tu es en mode intermittent du spectacle. Tu peux basculer vers le cockpit auto-entrepreneur à tout moment.</div>
+                <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("auto_entrepreneur")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
+                  <i className="ti ti-briefcase" aria-hidden="true" style={{ fontSize: 16 }} /> {statutSaving ? "…" : "Passer en mode auto-entrepreneur"}
+                </button>
+              </div>
+
+              {/* Mes données (RGPD) */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mes données</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Conformément au RGPD, tu peux exporter toutes tes données ou supprimer définitivement ton compte.</div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button type="button" onClick={handleExportData} disabled={exportingData}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: exportingData ? "default" : "pointer", fontFamily: "inherit", opacity: exportingData ? 0.6 : 1 }}>
+                    <i className="ti ti-download" aria-hidden="true" style={{ fontSize: 15 }} /> {exportingData ? "Export…" : "Exporter mes données"}
+                  </button>
+                  <button type="button" onClick={() => setShowDeleteAccount(true)}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(226,75,74,0.4)", color: "#F09595", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                    <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} /> Supprimer mon compte
+                  </button>
+                </div>
+                {showDeleteAccount && (
+                  <div style={{ marginTop: 14, padding: "14px 16px", background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#F09595", marginBottom: 6 }}>⚠️ Cette action est irréversible</div>
+                    <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 10px", lineHeight: 1.5 }}>
+                      Toutes tes données (profil, activités, AEM, actualisations) seront définitivement supprimées. Pense à exporter avant si besoin.
+                    </p>
+                    <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 8px" }}>Tape <strong>SUPPRIMER</strong> pour confirmer :</p>
+                    <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER"
+                      style={{ background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 10, maxWidth: 240, width: "100%", boxSizing: "border-box" }} />
+                    <div style={{ display: "flex", gap: 10 }}>
+                      <button type="button" onClick={handleDeleteAccount} disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
+                        style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? 0.5 : 1 }}>
+                        {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
+                      </button>
+                      <button type="button" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Aide + déconnexion */}
+              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setShowWalkthrough(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                  <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15 }} /> Revoir la visite guidée
+                </button>
+                <button type="button" onClick={handleLogout}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                  <i className="ti ti-logout" aria-hidden="true" style={{ fontSize: 15 }} /> Déconnexion
+                </button>
+              </div>
+
+              <p style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 20, display: "flex", gap: 8, justifyContent: "center" }}>
+                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
+                <span>·</span>
+                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("cgu")}>CGU</button>
+                <span>·</span>
+                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+              </p>
+              </>)}
             </>
           )}
         {/* ===== WALKTHROUGH (rendu aussi dans la vue intermittente) ===== */}
