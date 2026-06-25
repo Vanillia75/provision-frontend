@@ -1267,6 +1267,17 @@ function AppInner() {
     }
   }
 
+  // Si l'utilisateur a déjà choisi son statut sur la landing (avant inscription),
+  // on applique ce choix automatiquement à l'onboarding au lieu de le redemander.
+  const landingStatutApplied = useRef(false);
+  useEffect(() => {
+    if (landingStatutApplied.current) return;
+    if (token && profile && !profile.onboarding_complete && onbStep === "statut" && landingStatut) {
+      landingStatutApplied.current = true;
+      handleOnboardingStatut(landingStatut);
+    }
+  }, [token, profile, onbStep, landingStatut]);
+
   async function handleLookupSiret() {
     if (!profilSiret) return;
     setSiretLookupStatus("loading");
@@ -3599,6 +3610,19 @@ function AppInner() {
 
     // ─── PHASE STATUT (Brique 4b) : qui es-tu ? Pré-rempli par la landing. ───
     if (onbStep === "statut") {
+      // Si l'utilisateur a déjà choisi son statut sur la landing, on n'affiche pas
+      // le choix une 2e fois : on montre un court écran de transition pendant que
+      // le useEffect applique le choix automatiquement.
+      if (landingStatut) {
+        return (
+          <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
+            <div style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} className="hector-breathe">
+              <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+            </div>
+            <div style={{ color: "#8BA5C0", fontSize: 14 }}>🐾 Je prépare ton espace…</div>
+          </div>
+        );
+      }
       const carteOnb = (statut, img, fallbackIcon, titre, sousTitre) => (
         <button type="button" disabled={loading} onClick={() => handleOnboardingStatut(statut)}
           style={{ width: "100%", background: "#11203a", border: "1px solid #2a3a55", borderRadius: 14, padding: 16, display: "flex", alignItems: "center", gap: 14, textAlign: "left", cursor: loading ? "default" : "pointer", fontFamily: "inherit", opacity: loading ? 0.6 : 1, marginBottom: 12 }}
