@@ -603,6 +603,16 @@ function AppInner() {
   const [resetMessage, setResetMessage] = useState("");
   const [verifyToken] = useState(() => new URLSearchParams(window.location.search).get("verify_token"));
   const [verifyStatus, setVerifyStatus] = useState(""); // "", "loading", "success", "error"
+  // Connexion bancaire (Powens) : callback de retour de la webview + état du solde.
+  const [bankCallbackConnId] = useState(() => {
+    const inCallback = window.location.pathname.includes("bank-callback");
+    if (!inCallback) return null;
+    return new URLSearchParams(window.location.search).get("connection_id");
+  });
+  const [bankConnected, setBankConnected] = useState(false);
+  const [bankSolde, setBankSolde] = useState(null);
+  const [bankLoading, setBankLoading] = useState(false);
+  const [bankSyncing, setBankSyncing] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [authEmail, setAuthEmail] = useState("");
@@ -885,6 +895,8 @@ function AppInner() {
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
+        // État de la connexion bancaire (Powens) — best effort, n'interrompt rien.
+        loadBankStatus();
         // Ouvrir le walkthrough au premier login uniquement
         if (!localStorage.getItem("hector_walkthrough_done")) {
           setShowWalkthrough(true);
@@ -1164,6 +1176,71 @@ function AppInner() {
       .then(() => setVerifyStatus("success"))
       .catch(err => { setVerifyStatus("error"); setResetMessage(err.message); });
   }, [verifyToken]);
+
+  // ── Connexion bancaire (Powens) ──
+  // Démarre la connexion : récupère l'URL de la webview Powens et y redirige.
+  async function handleBankConnect() {
+    setBankLoading(true);
+    try {
+      const data = await apiFetch("/bank/connect", { method: "POST" });
+      if (data && data.webview_url) {
+        window.location.href = data.webview_url;
+      } else {
+        addHectorMessage("La connexion bancaire n'est pas encore disponible.", "#F0C36D");
+        setBankLoading(false);
+      }
+    } catch (err) {
+      addHectorMessage(err.message || "Connexion bancaire indisponible pour le moment.", "#F0C36D");
+      setBankLoading(false);
+    }
+  }
+
+  // Récupère l'état de la connexion + le solde synchronisé.
+  async function loadBankStatus() {
+    try {
+      const data = await apiFetch("/bank/balance");
+      setBankConnected(!!(data && data.connected));
+      if (data && data.solde != null) setBankSolde(data.solde);
+    } catch {
+      // silencieux : pas de banque reliée ou backend pas encore prêt
+    }
+  }
+
+  // Débranche la banque (retour à la saisie manuelle).
+  async function handleBankDisconnect() {
+    setBankLoading(true);
+    try {
+      await apiFetch("/bank/disconnect", { method: "POST" });
+      setBankConnected(false);
+      setBankSolde(null);
+      addHectorMessage("Banque débranchée. Tu peux saisir ton solde à la main quand tu veux.", "#5DCAA5");
+    } catch (err) {
+      addHectorMessage(err.message || "Impossible de débrancher pour le moment.", "#F0C36D");
+    } finally {
+      setBankLoading(false);
+    }
+  }
+
+  // Traite le retour de la webview Powens (/bank-callback?connection_id=...).
+  useEffect(() => {
+    if (!bankCallbackConnId) return;
+    if (!token) return; // il faut être authentifié pour enregistrer la connexion
+    setBankSyncing(true);
+    apiFetch("/bank/callback", {
+      method: "POST",
+      body: JSON.stringify({ connection_id: parseInt(bankCallbackConnId, 10) }),
+    })
+      .then(data => {
+        setBankConnected(true);
+        if (data && data.solde != null) setBankSolde(data.solde);
+      })
+      .catch(() => {})
+      .finally(() => {
+        // Nettoie l'URL (retire /bank-callback et les paramètres) et revient à l'app.
+        window.history.replaceState({}, "", "/");
+        setBankSyncing(false);
+      });
+  }, [bankCallbackConnId, token]);
 
   async function handleResendVerification() {
     setResendVerifStatus("sending");
@@ -7428,35 +7505,65 @@ function AppInner() {
               )}
             </div>
 
-            {/* ── À VENIR : CONNEXION BANCAIRE ── */}
+            {/* ── CONNEXION BANCAIRE (Powens, lecture seule) ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(55,138,221,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 19, color: "#5DA9F0" }} />
                 </div>
                 <div style={{ fontSize: 15, fontWeight: 800, color: "#FFFFFF" }}>Connexion bancaire</div>
-                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
+                {bankConnected
+                  ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#5DCAA5", background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 10px" }}>Connectée</span>
+                  : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
               </div>
-              <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 14px" }}>
-                Bientôt, tu pourras relier ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. Ça restera <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : la saisie manuelle ne disparaît pas, la connexion sera juste une option pour ceux qui la veulent.
-              </p>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                  <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                  <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> H€CTOR pourra lire ton solde, jamais bouger ton argent. C'est une règle européenne (DSP2), pas une promesse.</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                  <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                  <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Via un partenaire agréé.</strong> La connexion passera par un prestataire certifié par la Banque de France. Tes identifiants ne transitent jamais par H€CTOR.</span>
-                </div>
-                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                  <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                  <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Débranchable quand tu veux.</strong> Tu connectes, tu déconnectes, tu reviens au manuel : c'est ton choix à chaque instant.</span>
-                </div>
-              </div>
-              <p style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5, margin: "14px 0 0" }}>
-                🐾 En préparation — je travaille à brancher ça proprement pour t'enlever la corvée de saisie.
-              </p>
+
+              {bankSyncing ? (
+                <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: 0 }}>
+                  🔄 Synchronisation de ta banque en cours…
+                </p>
+              ) : bankConnected ? (
+                <>
+                  <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 6px" }}>
+                    Ta banque est reliée : ton solde se met à jour tout seul, en lecture seule.
+                    {bankSolde != null && <> Dernier solde lu : <strong style={{ color: "#FFFFFF" }}>{formatEUR(bankSolde)}</strong>.</>}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                    <button type="button" onClick={loadBankStatus} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.4)", color: "#9FD0FF", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
+                      <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 15 }} /> Rafraîchir le solde
+                    </button>
+                    <button type="button" onClick={handleBankDisconnect} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "9px 16px", fontSize: 13, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
+                      <i className="ti ti-unlink" aria-hidden="true" style={{ fontSize: 15 }} /> Débrancher
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 14px" }}>
+                    Relie ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. C'est <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : tu peux aussi continuer en saisie manuelle.
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                      <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> H€CTOR lit ton solde, jamais bouger ton argent (règle européenne DSP2).</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                      <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Powens, agréé par la Banque de France. Tes identifiants ne transitent jamais par H€CTOR.</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                      <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Débranchable quand tu veux.</strong></span>
+                    </div>
+                  </div>
+                  <button type="button" onClick={handleBankConnect} disabled={bankLoading}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1 }}>
+                    <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 16 }} />
+                    {bankLoading ? "Ouverture…" : "Connecter ma banque"}
+                  </button>
+                </>
+              )}
             </div>
 
             {/* ── MESSAGES HECTOR ── */}
