@@ -494,6 +494,9 @@ function AppInner() {
   const [docTab, setDocTab] = useState("revenus");
   // ─── Vie d'Hector sur le cockpit (micro-interactions) ───
   const [hectorPop, setHectorPop] = useState(false); // déclenche l'animation pop quand on ajoute
+  // ─── Centre de calcul conversationnel ───
+  const [calcConvo, setCalcConvo] = useState([]); // fil de la conversation : {role, text, questions?}
+  const [calcThinking, setCalcThinking] = useState(false); // Hector "réfléchit"
   const [celebPalier, setCelebPalier] = useState(null); // palier fraîchement franchi (objet) ou null
   const prevPalierRef = useRef(null); // mémorise le palier précédent pour détecter un franchissement
   // ─── Module ACTUALISATION France Travail ───
@@ -1441,6 +1444,20 @@ function AppInner() {
   }
 
   // ─── Impression du récapitulatif de revenus (PDF via le navigateur) ───
+  // ─── Centre de calcul : pose une question, Hector "réfléchit" puis répond ───
+  // reponseObj = { text, questions } déjà calculé par le moteur (dans le rendu).
+  function poserQuestionCalc(label, reponseObj) {
+    // 1. Ajoute la question de l'utilisateur
+    setCalcConvo(prev => [...prev, { role: "me", text: label }]);
+    // 2. Hector réfléchit
+    setCalcThinking(true);
+    // 3. Après un court délai, il répond
+    setTimeout(() => {
+      setCalcThinking(false);
+      setCalcConvo(prev => [...prev, { role: "bot", text: reponseObj.text, questions: reponseObj.questions || [] }]);
+    }, 1100);
+  }
+
   function imprimerRecapRevenus(recap, prenom, nom) {
     const nomComplet = [prenom, nom].filter(Boolean).join(" ") || "—";
     const aujourdhui = new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
@@ -4924,19 +4941,295 @@ function AppInner() {
               )}
               </>)}
 
-              {/* ═══ PAGE CALCUL DES HEURES — le cœur rationnel d'Hector ═══ */}
+              {/* ═══ PAGE CENTRE DE CALCUL HECTOR — conversationnel ═══ */}
               {interNav === "calcul" && (<>
 
               {/* En-tête */}
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/hector-tete.png" fallbackIcon="ti-calculator" fallbackColor="#5DCAA5" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Je fais les calculs pour toi 🐾</div>
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Tu n'as plus jamais à les faire toi-même.</div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Centre de calcul 🐾</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Demande-moi, je regarde ton dossier.</div>
                 </div>
               </div>
+
+              {(() => {
+                // ───────── MOTEUR DE RÉPONSES : fabrique ce qu'Hector dit, à partir des vraies données ─────────
+                // Règle d'or : Hector ne fait JAMAIS semblant d'avoir une donnée. S'il manque la date
+                // anniversaire, il le dit et invite à l'ajouter, au lieu d'inventer une projection.
+                const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                const dateAnnivTxt = c && c.date_anniversaire ? `${new Date(c.date_anniversaire).getDate()} ${MOIS[new Date(c.date_anniversaire).getMonth()]}` : null;
+                // Les données qu'Hector "consulte" (citées dans chaque réponse)
+                const bases = [
+                  `${calc.heures} heures déclarées`,
+                  `${totalCachetsMois >= 0 ? (interActivites || []).filter(a => a.type_activite !== "heures").reduce((s, a) => s + (parseFloat(a.nombre) || 0), 0) : 0} cachets au total`,
+                  dateAnnivTxt ? `date anniversaire : ${dateAnnivTxt}` : null,
+                  calc.aUnRythme ? `ton activité des 3 derniers mois` : null,
+                ].filter(Boolean);
+
+                // Ouvertures émotionnelles selon le niveau
+                const ouverture = {
+                  green: ["Ça sent bon.", "On peut souffler.", "Je suis plutôt confiant."],
+                  orange: ["Je préfère te prévenir.", "Celui-là mérite qu'on s'y attarde.", "Je garde un œil dessus."],
+                  blue: ["Regardons ça ensemble.", "Bonne question.", "Voyons où tu en es."],
+                }[calc.conseilNiveau === "orange" ? "orange" : calc.secu || calc.dansLesTemps ? "green" : "blue"];
+                const pickOuv = () => ouverture[Math.floor(Math.random() * ouverture.length)];
+
+                // Le moteur : chaque question → { text, questions:[ids], pourquoi }
+                const R = {};
+
+                R.renouveler = () => {
+                  if (calc.secu) return {
+                    ouv: "On peut souffler.",
+                    text: `D'après ce que je vois, tes droits sont déjà sécurisés${dateAnnivTxt ? ` jusqu'à ton échéance du ${dateAnnivTxt}` : ""}. Tu as tes 507h. Pour moi, on est tranquilles — et chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
+                    pourquoi: `Tu es à ${calc.heures}h, au-dessus du seuil de ${calc.seuil}h requis. C'est ce seuil, atteint dans ta période de référence, qui ouvre le renouvellement.`,
+                    suite: ["combien_manque", "rythme", "si_pause"],
+                  };
+                  if (!dateAnnivTxt) return {
+                    ouv: "Il me manque une info.",
+                    text: `Pour te dire si tu vas renouveler, j'ai besoin de ta date anniversaire — c'est elle qui fixe l'échéance où on examine tes droits. Sans elle, je ne veux pas te donner une réponse à l'aveugle.`,
+                    manque: true,
+                    suite: ["combien_manque", "combien_cachets"],
+                  };
+                  if (calc.dansLesTemps === true) return {
+                    ouv: "Ça sent bon.",
+                    text: `Je nous vois bien. Il te manque ${calc.manque}h, et à ton rythme actuel${calc.dateProjection ? ` tu atteindrais les 507h vers ${calc.dateProjection}` : ""}, avant ton échéance du ${dateAnnivTxt}. Si c'était mon dossier, je continuerais sur cette lancée.`,
+                    pourquoi: `Tu fais ~${calc.rythmeMensuel}h/mois. Il te reste ${calc.joursAnniv} jours avant le ${dateAnnivTxt}, soit assez de temps pour combler les ${calc.manque}h manquantes à ce rythme.`,
+                    suite: ["combien_cachets", "si_contrat", "rythme"],
+                  };
+                  return {
+                    ouv: "Je préfère te prévenir.",
+                    text: `Pour l'instant, à ton rythme actuel, j'ai peur qu'on n'y arrive pas avant ton échéance du ${dateAnnivTxt}. Il te manque ${calc.manque}h ≈ ${calc.cachetsManquants} cachets, et il te reste ${calc.joursAnniv} jours. Ce n'est pas perdu — mais à ta place, je chercherais des contrats dès maintenant.`,
+                    pourquoi: `À ${calc.rythmeMensuel}h/mois, il faudrait environ ${Math.ceil(calc.manque / Math.max(1, calc.rythmeMensuel))} mois pour combler les ${calc.manque}h. Or il ne reste que ${Math.round(calc.joursAnniv / 30)} mois avant le ${dateAnnivTxt}.`,
+                    suite: ["rythme", "combien_cachets", "si_contrat"],
+                  };
+                };
+
+                R.combien_manque = () => {
+                  if (calc.manque <= 0) return {
+                    ouv: "On peut souffler.",
+                    text: `Plus rien ! Tu es à ${calc.heures}h, tu as dépassé les ${calc.seuil}h. Tes droits sont là.`,
+                    pourquoi: `Le seuil d'ouverture des droits est de ${calc.seuil}h sur la période de référence. Tu es à ${calc.heures}h.`,
+                    suite: ["renouveler", "si_pause"],
+                  };
+                  return {
+                    ouv: pickOuv(),
+                    text: `Il te manque exactement ${calc.manque}h pour atteindre tes ${calc.seuil}h. En cachets, ça fait environ ${calc.cachetsManquants} cachets. Tu en as déjà parcouru ${coach.pctChemin}% du chemin — c'est plus que tu ne crois.`,
+                    pourquoi: `${calc.seuil}h (le seuil) − ${calc.heures}h (tes heures déclarées) = ${calc.manque}h. Je convertis en cachets sur la base d'un cachet isolé = 12h, donc ${calc.manque} ÷ 12 ≈ ${calc.cachetsManquants}.`,
+                    suite: ["combien_cachets", "rythme", "si_contrat"],
+                  };
+                };
+
+                R.si_contrat = () => ({
+                  ouv: "Celui-là mérite qu'on s'y attarde.",
+                  text: `Dis-moi combien de cachets on te propose, je te dis tout de suite où ça te mène. Utilise les boutons ci-dessous : je calcule l'impact exact sur tes droits.`,
+                  simulateur: true,
+                  pourquoi: `Je prends tes ${calc.heures}h actuelles, j'ajoute les heures du contrat (12h par cachet isolé), et je regarde si on franchit les ${calc.seuil}h.`,
+                  suite: ["combien_cachets", "renouveler", "rythme"],
+                });
+
+                R.combien_cachets = () => {
+                  if (calc.manque <= 0) return {
+                    ouv: "On peut souffler.",
+                    text: `Aucun, tu y es déjà ! Tes ${calc.seuil}h sont atteintes.`,
+                    suite: ["renouveler", "si_pause"],
+                  };
+                  return {
+                    ouv: "Voyons ça précisément.",
+                    text: `Si c'était mon dossier, je viserais environ ${calc.cachetsManquants} cachets pour être tranquille. C'est ce qu'il faut pour transformer tes ${calc.manque}h manquantes en droits sécurisés.`,
+                    pourquoi: `${calc.manque}h manquantes ÷ 12h par cachet isolé ≈ ${calc.cachetsManquants} cachets. Si tu fais surtout des cachets groupés (8h), il t'en faudrait un peu plus.`,
+                    suite: ["rythme", "si_contrat", "renouveler"],
+                  };
+                };
+
+                R.rythme = () => {
+                  if (!calc.aUnRythme) return {
+                    ouv: "Il me manque une info.",
+                    text: `Je ne peux pas encore estimer ton rythme : je n'ai pas assez d'activité déclarée sur les 3 derniers mois. Ajoute tes contrats récents (ou scanne tes AEM), et je te dirai exactement à quelle cadence aller.`,
+                    manque: true,
+                    suite: ["combien_cachets", "combien_manque"],
+                  };
+                  const cadenceConseillee = coach.cachetsConseillesSemaine;
+                  return {
+                    ouv: pickOuv(),
+                    text: `En ce moment, tu tournes à environ ${(coach.cachetsSemaine).toFixed(1)} cachet${coach.cachetsSemaine >= 2 ? "s" : ""}/semaine (${calc.rythmeMensuel}h/mois).${cadenceConseillee ? ` Pour tenir ton échéance, je viserais plutôt ${cadenceConseillee.toFixed(1)} cachets/semaine.` : ""} ${cadenceConseillee && cadenceConseillee > coach.cachetsSemaine ? "Il va falloir pousser un peu." : "Tu es sur la bonne cadence."}`,
+                    pourquoi: `Je calcule ton rythme sur tes activités des 3 derniers mois : ${calc.rythmeMensuel}h/mois ÷ 4,33 semaines ÷ 12h ≈ ${coach.cachetsSemaine.toFixed(1)} cachets/semaine.${cadenceConseillee ? ` La cadence conseillée = ${calc.manque}h restantes ÷ le temps avant ton échéance.` : ""}`,
+                    suite: ["combien_cachets", "renouveler", "si_contrat"],
+                  };
+                };
+
+                R.si_pause = () => {
+                  if (!fenetre.aDesActivites) return {
+                    ouv: "Il me manque une info.",
+                    text: `Je n'ai pas encore assez d'activité pour estimer ça. Ajoute tes contrats et je te dirai précisément ce que tu peux te permettre comme pause.`,
+                    manque: true,
+                    suite: ["combien_manque", "rythme"],
+                  };
+                  return {
+                    ouv: fenetre.sortent30 > 0 ? "Je préfère te prévenir." : "Regardons ça ensemble.",
+                    text: fenetre.sortent30 > 0
+                      ? `Attention : ${fenetre.sortent30}h vont sortir de ta période dans le mois qui vient. Si tu fais une pause maintenant sans rien ajouter, ton total va baisser de ${fenetre.sortent30}h. À ta place, je ne resterais pas inactif trop longtemps en ce moment.`
+                      : `Bonne nouvelle : aucune de tes heures ne sort de ta période dans les 30 prochains jours. Tu peux faire une pause sans perdre de terrain dans l'immédiat.${fenetre.sortent90 > 0 ? ` Mais d'ici 3 mois, ${fenetre.sortent90}h sortiront — garde-le en tête.` : ""}`,
+                    pourquoi: `Tes 507h se comptent sur 12 mois glissants. Chaque heure "sort" 12 mois après l'avoir faite. Je regarde lesquelles arrivent à échéance bientôt.`,
+                    suite: ["combien_manque", "renouveler", "rythme"],
+                  };
+                };
+
+                // Catalogue des questions (label affiché + icône)
+                const QUESTIONS = {
+                  renouveler: { icon: "ti-calendar-check", label: "Est-ce que je vais renouveler ?" },
+                  combien_manque: { icon: "ti-target", label: "Combien me manque-t-il ?" },
+                  si_contrat: { icon: "ti-briefcase", label: "Si j'accepte un contrat ?" },
+                  combien_cachets: { icon: "ti-ticket", label: "Combien de cachets viser ?" },
+                  rythme: { icon: "ti-run", label: "Quel rythme dois-je tenir ?" },
+                  si_pause: { icon: "ti-player-pause", label: "Si je ne travaille plus un mois ?" },
+                };
+
+                const lancer = (id) => {
+                  const rep = R[id]();
+                  poserQuestionCalc(QUESTIONS[id].label, { ...rep, bases, qid: id });
+                };
+
+                return (
+                  <>
+                    {/* Zone de conversation */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
+                      {/* Message d'accueil */}
+                      {calcConvo.length === 0 && (
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                          </div>
+                          <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "4px 14px 14px 14px", padding: "12px 15px", fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55, maxWidth: "85%" }}>
+                            Salut 🐾 Je connais ton dossier par cœur. Qu'est-ce qui t'inquiète ? Choisis une question, je regarde et je te réponds.
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Fil de la conversation */}
+                      {calcConvo.map((m, i) => (
+                        m.role === "me" ? (
+                          <div key={i} style={{ alignSelf: "flex-end", background: "#378ADD", color: "#fff", borderRadius: "14px 14px 4px 14px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 600 }}>{m.text}</div>
+                        ) : (
+                          <div key={i} style={{ display: "flex", gap: 10 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                              <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                            </div>
+                            <div style={{ maxWidth: "88%" }}>
+                              <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "4px 14px 14px 14px", padding: "13px 15px", fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55 }}>
+                                {m.ouv && <div style={{ fontWeight: 700, color: "#5DCAA5", marginBottom: 6 }}>🐾 {m.ouv}</div>}
+                                {/* Données citées */}
+                                {m.bases && !m.manque && (
+                                  <div style={{ background: "rgba(93,202,165,0.06)", borderRadius: 8, padding: "9px 11px", marginBottom: 10 }}>
+                                    <div style={{ fontSize: 10.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 5, textTransform: "uppercase", letterSpacing: 0.4 }}>Je me base sur</div>
+                                    {m.bases.map((b, j) => (
+                                      <div key={j} style={{ fontSize: 11.5, color: "#B5D4F4", lineHeight: 1.7 }}>✓ {b}</div>
+                                    ))}
+                                  </div>
+                                )}
+                                <div>{m.text}</div>
+                                {/* Simulateur intégré si la réponse le demande */}
+                                {m.simulateur && (
+                                  <div style={{ display: "flex", gap: 6, marginTop: 12, flexWrap: "wrap" }}>
+                                    {[1, 2, 3, 5, 10].map(n => {
+                                      const apres = calc.heures + n * 12;
+                                      const secuApres = apres >= calc.seuil;
+                                      return (
+                                        <button key={n} type="button" onClick={() => poserQuestionCalc(`Et si j'accepte ${n} cachet${n > 1 ? "s" : ""} ?`, { ouv: secuApres ? "Ça sent bon." : "Voyons.", text: secuApres ? `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Tu franchis les ${calc.seuil}h — tes droits seraient sécurisés. Celui-là, à ta place, je ne le laisserais pas filer.` : `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Il te manquerait encore ${calc.seuil - apres}h ≈ ${Math.ceil((calc.seuil - apres) / 12)} cachets. Ça aide, mais ça ne suffit pas encore.`, bases, suite: ["combien_cachets", "rythme", "renouveler"], qid: "si_contrat_res" })}
+                                          style={{ flex: "1 1 auto", minWidth: 46, background: "#0d2440", color: "#B5D4F4", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                          +{n}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                                {/* Si une donnée manque, bouton d'action */}
+                                {m.manque && (
+                                  <button type="button" onClick={() => setInterNav(m.text.includes("date anniversaire") ? "cockpit" : "activites")} style={{ marginTop: 11, background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                    {m.text.includes("date anniversaire") ? "Ajouter ma date anniversaire" : "Ajouter mes contrats"}
+                                  </button>
+                                )}
+                                {/* Bouton Pourquoi ? */}
+                                {m.pourquoi && (
+                                  <div style={{ marginTop: 10 }}>
+                                    {m.showPourquoi ? (
+                                      <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#B5D4F4", lineHeight: 1.5 }}>
+                                        <b style={{ color: "#7FB8F0" }}>Mon raisonnement :</b> {m.pourquoi}
+                                      </div>
+                                    ) : (
+                                      <button type="button" onClick={() => setCalcConvo(prev => prev.map((x, j) => j === i ? { ...x, showPourquoi: true } : x))}
+                                        style={{ background: "transparent", border: "1px solid rgba(127,184,240,0.3)", color: "#7FB8F0", borderRadius: 7, padding: "5px 11px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                                        Pourquoi ?
+                                      </button>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                              {/* Questions liées */}
+                              {m.questions && m.questions.length > 0 && (
+                                <div style={{ marginTop: 10 }}>
+                                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7, marginLeft: 2 }}>🐾 On continue ?</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    {m.questions.map(qid => QUESTIONS[qid] && (
+                                      <button key={qid} type="button" onClick={() => lancer(qid)}
+                                        style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "10px 13px", fontSize: 12.5, color: "#D6E8FA", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>
+                                        <i className={`ti ${QUESTIONS[qid].icon}`} aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 16, flexShrink: 0 }} /> {QUESTIONS[qid].label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      ))}
+
+                      {/* Hector réfléchit : séquence d'analyse */}
+                      {calcThinking && (
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                          </div>
+                          <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "4px 14px 14px 14px", padding: "13px 15px", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.9, minWidth: 220 }}>
+                            <div style={{ fontWeight: 700, color: "#5DCAA5", marginBottom: 4 }}>🐾 Je regarde ton dossier…</div>
+                            <div className="analyse-step" style={{ animationDelay: "0.1s" }}>✓ Je retrouve tes contrats…</div>
+                            <div className="analyse-step" style={{ animationDelay: "0.35s" }}>✓ Je recompte tes heures…</div>
+                            <div className="analyse-step" style={{ animationDelay: "0.6s" }}>✓ Je compare avec ta date anniversaire…</div>
+                            <div className="analyse-step" style={{ animationDelay: "0.85s" }}>✓ J'estime ton rythme…</div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Questions de départ (toujours visibles en bas si conversation vide) */}
+                    {calcConvo.length === 0 && !calcThinking && (
+                      <div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 10, marginLeft: 2 }}>Qu'est-ce qui t'inquiète ?</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                          {Object.keys(QUESTIONS).map(qid => (
+                            <button key={qid} type="button" onClick={() => lancer(qid)}
+                              style={{ textAlign: "left", display: "flex", alignItems: "center", gap: 11, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 11, padding: "13px 15px", fontSize: 14, color: "#E8F4FF", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>
+                              <i className={`ti ${QUESTIONS[qid].icon}`} aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} /> {QUESTIONS[qid].label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Recommencer si conversation entamée */}
+                    {calcConvo.length > 0 && (
+                      <button type="button" onClick={() => setCalcConvo([])} style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.12)", color: "#8BA5C0", borderRadius: 9, padding: "10px 16px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", alignSelf: "flex-start" }}>
+                        <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 14, marginRight: 6 }} /> Nouvelle question
+                      </button>
+                    )}
+                  </>
+                );
+              })()}
+
+              {/* ───── Le détail complet, plus bas (référence visuelle) ───── */}
+              <div style={{ marginTop: 28, paddingTop: 4 }} />
 
               {/* ── 0. DÉTECTION D'ERREURS (Hector veille) ── */}
               {aDesAnomalies && (
@@ -8975,6 +9268,8 @@ const CSS = `
   @keyframes tailWag { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
   .hector-breathe { animation: hectorBreathe 5.5s ease-in-out infinite; }
   .hector-pop { animation: hectorPop 0.6s ease; }
+  .analyse-step { opacity: 0; animation: analyseStepIn 0.3s ease forwards; }
+  @keyframes analyseStepIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
   @media (prefers-reduced-motion: reduce) {
     .hector-breathe, .hector-pop { animation: none !important; }
   }
