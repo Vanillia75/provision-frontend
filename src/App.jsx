@@ -4484,55 +4484,106 @@ function AppInner() {
                 </div>
               </div>
 
-              {/* ── Brique 5.4 : Simulateur de contrat (complément du chat) ── */}
+              {/* ── Brique 5.4 : "Quoi accepter" — le conseiller de décision ── */}
               <div id="inter-simulateur" style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <i className="ti ti-calculator" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Simuler un contrat</div>
+                  <i className="ti ti-phone-call" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>On te propose un contrat ?</div>
                 </div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 14 }}>
-                  Un contrat en vue ? Calcule en un clic ce que ça change pour tes droits.
+                  Dis-moi ce qu'on te propose, je te dis si tu dois accepter. 🐾
                 </div>
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                  <span style={{ fontSize: 13, color: "#B5D4F4", alignSelf: "center" }}>Si je fais</span>
+
+                {/* Boutons rapides cachets (pour décider vite, au téléphone) */}
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                  {[1, 2, 3, 5, 10].map(n => (
+                    <button key={n} type="button" onClick={() => { setSimForm({ ...simForm, nombre: String(n) }); setSimResult(null); }}
+                      style={{ flex: "1 1 auto", minWidth: 46, background: simForm.nombre === String(n) ? "#378ADD" : "#0d2440", color: simForm.nombre === String(n) ? "white" : "#B5D4F4", border: `1px solid ${simForm.nombre === String(n) ? "#378ADD" : "#1e3a5f"}`, borderRadius: 8, padding: "10px 0", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
                   <input type="number" min="0" value={simForm.nombre} onChange={e => { setSimForm({ ...simForm, nombre: e.target.value }); setSimResult(null); }}
-                    placeholder="5"
-                    style={{ width: 70, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    placeholder="ou tape un nombre"
+                    style={{ flex: "1 1 110px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                   <select value={simForm.type_activite} onChange={e => { setSimForm({ ...simForm, type_activite: e.target.value }); setSimResult(null); }}
-                    style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                    style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                     <option value="cachet_isole">cachets isolés (12h)</option>
                     <option value="cachet_groupe">cachets groupés (8h)</option>
                     <option value="heures">heures</option>
                   </select>
                 </div>
                 <button type="button" disabled={simLoading} onClick={handleSimuler}
-                  style={{ width: "100%", background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: simLoading ? "default" : "pointer", fontFamily: "inherit", opacity: simLoading ? 0.6 : 1 }}>
-                  {simLoading ? "Hector réfléchit…" : "Demander à Hector"}
+                  style={{ width: "100%", background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "12px", fontSize: 14.5, fontWeight: 700, cursor: simLoading ? "default" : "pointer", fontFamily: "inherit", opacity: simLoading ? 0.6 : 1 }}>
+                  {simLoading ? "Hector réfléchit…" : "Je dois accepter ?"}
                 </button>
 
-                {/* Réponse d'Hector */}
-                {simResult && (
-                  <div style={{ marginTop: 14, background: simResult.securise_apres ? "rgba(93,202,165,0.12)" : "#0a1322", border: `1px solid ${simResult.securise_apres ? "rgba(93,202,165,0.35)" : "rgba(255,255,255,0.08)"}`, borderRadius: 12, padding: "14px 16px" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                        <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6, marginBottom: 8 }}>{simResult.verdict}</div>
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.1)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>+{simResult.heures_ajoutees}h</span>
-                          <span style={{ fontSize: 11, color: "#B5D4F4", background: "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>{simResult.total_avant}h → {simResult.total_apres}h</span>
-                          {!simResult.securise_apres && (
-                            <span style={{ fontSize: 11, color: "#FAC775", background: "rgba(250,199,117,0.1)", borderRadius: 6, padding: "3px 8px" }}>il manquerait {simResult.manquant_apres}h</span>
-                          )}
-                          {simResult.securise_apres && (
-                            <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.15)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>✓ droits sécurisés</span>
-                          )}
+                {/* Verdict décisionnel d'Hector */}
+                {simResult && (() => {
+                  // On calcule un verdict tranché à partir des champs du moteur + la date anniversaire connue côté front.
+                  const secu = simResult.securise_apres;
+                  const dejaSecu = c.droits_securises; // déjà sécurisé AVANT ce contrat
+                  const manque = simResult.manquant_apres || 0;
+                  const passeLaBarre = secu && !dejaSecu; // ce contrat précis fait franchir les 507h
+                  // Formatage de la date anniversaire pour le verdict
+                  let dateAnnivTxt = "";
+                  if (c.date_anniversaire) {
+                    try {
+                      const d = new Date(c.date_anniversaire);
+                      const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                      dateAnnivTxt = `${d.getDate()} ${MOIS[d.getMonth()]}`;
+                    } catch {}
+                  }
+                  // Choix du verdict
+                  let niveau, emoji, titre, sous;
+                  if (passeLaBarre) {
+                    niveau = "green"; emoji = "🎯"; titre = "Fonce, c'est LE contrat";
+                    sous = dateAnnivTxt ? `Il te fait passer les 507h et sécurise ton renouvellement du ${dateAnnivTxt}.` : "Il te fait passer les 507h et sécurise tes droits.";
+                  } else if (dejaSecu) {
+                    niveau = "blue"; emoji = "👍"; titre = "Prends-le si tu peux";
+                    sous = "Tes droits sont déjà sécurisés. Celui-là, c'est du bonus pour la suite.";
+                  } else if (secu) {
+                    niveau = "green"; emoji = "✅"; titre = "Accepte les yeux fermés";
+                    sous = dateAnnivTxt ? `Avec lui, tes droits sont sécurisés pour ton échéance du ${dateAnnivTxt}.` : "Avec lui, tes droits sont sécurisés.";
+                  } else {
+                    niveau = "orange"; emoji = "🟠"; titre = "Ça aide, mais continue à chercher";
+                    sous = `Bon à prendre, mais il te manquera encore ${manque}h après${dateAnnivTxt ? ` pour ton échéance du ${dateAnnivTxt}` : ""}.`;
+                  }
+                  const palette = {
+                    green: { bg: "rgba(93,202,165,0.12)", bd: "rgba(93,202,165,0.4)", tc: "#5DCAA5" },
+                    blue: { bg: "rgba(55,138,221,0.1)", bd: "rgba(55,138,221,0.35)", tc: "#7FB8F0" },
+                    orange: { bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.35)", tc: "#FAC775" },
+                  }[niveau];
+                  return (
+                    <div style={{ marginTop: 14, background: palette.bg, border: `1px solid ${palette.bd}`, borderRadius: 12, padding: "16px 16px" }}>
+                      {/* Verdict en tête, gros */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 12 }}>
+                        <div style={{ fontSize: 28, flexShrink: 0 }}>{emoji}</div>
+                        <div>
+                          <div style={{ fontSize: 17, fontWeight: 800, color: palette.tc, lineHeight: 1.2 }}>{titre}</div>
+                          <div style={{ fontSize: 12.5, color: "#D6E8FA", lineHeight: 1.5, marginTop: 3 }}>{sous}</div>
                         </div>
                       </div>
+                      {/* Les chiffres qui justifient, en dessous */}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.1)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>+{simResult.heures_ajoutees}h</span>
+                        <span style={{ fontSize: 11, color: "#B5D4F4", background: "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>{simResult.total_avant}h → {simResult.total_apres}h</span>
+                        {!secu && (
+                          <span style={{ fontSize: 11, color: "#FAC775", background: "rgba(250,199,117,0.1)", borderRadius: 6, padding: "3px 8px" }}>il manquerait {manque}h</span>
+                        )}
+                        {secu && (
+                          <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.15)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>✓ 507h atteintes</span>
+                        )}
+                      </div>
+                      {!c.date_anniversaire && (
+                        <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 11, lineHeight: 1.5 }}>
+                          🐾 Renseigne ta date anniversaire sur le cockpit pour que je te dise si c'est à temps pour ton échéance.
+                        </div>
+                      )}
                     </div>
-                  </div>
-                )}
+                  );
+                })()}
               </div>
               </>)}
 
