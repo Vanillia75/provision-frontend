@@ -488,12 +488,12 @@ function AppInner() {
   const [interChatLoading, setInterChatLoading] = useState(false);
   // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
-    { etat: "oeuf",   seuil: 0,   nom: "Arrive",  court: "départ", img: "/niveau-1.png" },
-    { etat: "chiot",  seuil: 100, nom: "Chiot",   court: "100h",   img: "/niveau-2.png" },
-    { etat: "ado",    seuil: 250, nom: "Jeune",   court: "250h",   img: "/niveau-3.png" },
-    { etat: "filet",  seuil: 338, nom: "Gardien", court: "338h",   img: "/niveau-4.png" },
-    { etat: "adulte", seuil: 400, nom: "Adulte",  court: "400h",   img: "/niveau-5.png" },
-    { etat: "niche",  seuil: 507, nom: "Niche",   court: "507h",   img: "/niveau-6.png" },
+    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",        img: "/hector-1.png" },
+    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",          img: "/hector-2.png" },
+    { etat: "jeune",    seuil: 200, nom: "Jeune",    court: "200h",  sous: "Il prend de l'élan",      img: "/hector-3.png" },
+    { etat: "confirme", seuil: 350, nom: "Confirmé", court: "350h",  sous: "Il assure",               img: "/hector-4.png" },
+    { etat: "pro",      seuil: 450, nom: "Pro",      court: "450h",  sous: "Presque au but",          img: "/hector-5.png" },
+    { etat: "gardien",  seuil: 507, nom: "Gardien",  court: "507h",  sous: "Objectif atteint",        img: "/hector-6.png" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -3652,7 +3652,7 @@ function AppInner() {
       },
       {
         icon: "ti-lifebuoy", titre: "La clause de rattrapage (338h)",
-        texte: "Si à ta date anniversaire tu n'as pas tes 507h mais que tu as cumulé entre 338 et 506 heures, un mécanisme de rattrapage peut prolonger ton indemnisation jusqu'à 6 mois, au même taux. Les heures faites pendant cette période comptent pour rouvrir tes droits. C'est ton filet de sécurité — d'où le repère à 338h sur ton compteur.",
+        texte: "Si à ta date anniversaire tu n'as pas tes 507h mais que tu as cumulé entre 338 et 506 heures, un mécanisme de rattrapage peut prolonger ton indemnisation jusqu'à 6 mois, au même taux. Les heures faites pendant cette période comptent pour rouvrir tes droits. C'est un vrai filet de sécurité.",
       },
       {
         icon: "ti-baby-carriage", titre: "Congé maternité, accident : heures assimilées",
@@ -3780,7 +3780,7 @@ function AppInner() {
                   </div>
                 </div>
                 <div style={{ fontSize: 22, color: "white", fontWeight: 800, marginBottom: 6 }}>
-                  {etatLabels[c.hector_etat] || `Hector ${palierActuel.nom}`}
+                  Hector {palierActuel.nom}
                 </div>
                 <div style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 4px" }}>
                   {c.hector_message}
@@ -3808,12 +3808,10 @@ function AppInner() {
                 </div>
                 <div style={{ height: 10, background: "#0a1322", borderRadius: 6, overflow: "hidden", position: "relative" }}>
                   <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.6s ease" }} />
-                  <div style={{ position: "absolute", left: `${(338 / c.seuil) * 100}%`, top: -3, bottom: -3, width: 2, background: "#FAC775" }} title="Filet de sécurité (338h)" />
                 </div>
                 <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
-                  <span>Arrivée</span>
-                  <span style={{ color: c.filet_atteint ? "#FAC775" : "#6B8299" }}>Filet 338h {c.filet_atteint ? "✓" : ""}</span>
-                  <span>Niche {c.seuil}h</span>
+                  <span>Chiot · 0h</span>
+                  <span>Gardien · {c.seuil}h</span>
                 </div>
               </div>
 
@@ -3876,9 +3874,9 @@ function AppInner() {
                 <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 2px" }}>
                   {PALIERS_INTERMITTENT.map((p, i) => {
                     const acquis = c.total_heures >= p.seuil;
-                    const iciMaintenant = c.hector_etat === p.etat;
+                    const iciMaintenant = i === idxActuel;
                     const ligneAcquise = i < PALIERS_INTERMITTENT.length - 1 && c.total_heures >= PALIERS_INTERMITTENT[i + 1].seuil;
-                    const couleurActif = p.etat === "filet" ? "#FAC775" : (p.etat === "niche" ? "#5DCAA5" : "#378ADD");
+                    const couleurActif = p.etat === "gardien" ? "#5DCAA5" : "#378ADD";
                     return (
                       <div key={p.etat} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
                         {i < PALIERS_INTERMITTENT.length - 1 && (
