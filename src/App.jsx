@@ -490,6 +490,10 @@ function AppInner() {
   const [aemError, setAemError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
+  // ─── Vie d'Hector sur le cockpit (micro-interactions) ───
+  const [hectorPop, setHectorPop] = useState(false); // déclenche l'animation pop quand on ajoute
+  const [celebPalier, setCelebPalier] = useState(null); // palier fraîchement franchi (objet) ou null
+  const prevPalierRef = useRef(null); // mémorise le palier précédent pour détecter un franchissement
   // ─── Module ACTUALISATION France Travail ───
   // Mois ciblé par l'actualisation = le mois civil précédent (on déclare le mois écoulé).
   // Sous-état du mode recopie guidé (null = écran de préparation, sinon n° d'étape 0..3).
@@ -1323,6 +1327,16 @@ function AppInner() {
       ]);
       setInterCockpit(data);
       setInterActivites(activites);
+      // Détection d'un franchissement de palier (pour la célébration).
+      const heures = data ? data.total_heures : 0;
+      let palierAtteint = PALIERS_INTERMITTENT[0];
+      for (const p of PALIERS_INTERMITTENT) { if (heures >= p.seuil) palierAtteint = p; }
+      const prev = prevPalierRef.current;
+      if (prev && palierAtteint.seuil > prev.seuil) {
+        // On vient de monter d'au moins un palier → on fête.
+        setCelebPalier(palierAtteint);
+      }
+      prevPalierRef.current = palierAtteint;
     } catch (err) {
       setInterCockpitError(err.message || "Impossible de charger ton cockpit.");
     } finally {
@@ -1351,6 +1365,7 @@ function AppInner() {
       setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
+      setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -3751,6 +3766,41 @@ function AppInner() {
     const idxActuel = PALIERS_INTERMITTENT.indexOf(palierActuel);
     const palierSuivant = idxActuel < PALIERS_INTERMITTENT.length - 1 ? PALIERS_INTERMITTENT[idxActuel + 1] : null;
     const heuresAvantSuivant = palierSuivant ? Math.max(0, palierSuivant.seuil - heuresActuelles) : 0;
+    // Prochain objectif exprimé en cachets (≈), plus parlant qu'en heures seules.
+    const cachetsAvantSuivant = palierSuivant ? Math.ceil(heuresAvantSuivant / 12) : 0;
+    // "Pensée d'Hector" : une phrase vivante, à la 1re personne, choisie selon la situation.
+    // 4 rôles possibles (me parle / me rassure / me dit où aller / me félicite).
+    const penseesHector = (() => {
+      if (c && c.droits_securises) {
+        return [
+          "Tes droits sont sécurisés. Je veille, repose-toi un peu. 🐾",
+          "On l'a fait. Maintenant chaque heure, c'est du bonus.",
+          "Je suis fier de nous. Tu peux souffler.",
+        ];
+      }
+      if (palierSuivant && heuresAvantSuivant <= 24) {
+        return [
+          `Plus que ${heuresAvantSuivant}h et je deviens ${palierSuivant.nom}. On y est presque !`,
+          `Encore un petit effort — ${cachetsAvantSuivant} cachet${cachetsAvantSuivant > 1 ? "s" : ""} et je grandis. 🐾`,
+          "Je sens qu'on approche. Continue, ne lâche rien.",
+        ];
+      }
+      if (heuresActuelles === 0) {
+        return [
+          "On démarre ensemble. Ajoute ton premier cachet, je compte tout. 🐾",
+          "Chaque grande carrière commence par une première heure.",
+          "J'ai hâte de grandir avec toi.",
+        ];
+      }
+      return [
+        "Chaque heure te rapproche de ta niche. 🐾",
+        "Tu avances plus vite que tu ne le crois.",
+        "J'adore quand tu ajoutes un nouveau contrat.",
+        `Encore ${heuresAvantSuivant}h et je deviens ${palierSuivant ? palierSuivant.nom : "Gardien"}.`,
+      ];
+    })();
+    // On choisit une pensée stable par session (basée sur les heures, pour ne pas clignoter à chaque render).
+    const penseeHector = penseesHector[heuresActuelles % penseesHector.length];
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
     const FICHES_CONSEILS = [
@@ -3876,6 +3926,30 @@ function AppInner() {
       <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex" }}>
         <style>{CSS}</style>
 
+        {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
+        {celebPalier && (
+          <div onClick={() => setCelebPalier(null)} style={{ position: "fixed", inset: 0, zIndex: 400, background: "rgba(4,12,24,0.88)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20, animation: "celebrIn 0.3s ease", overflow: "hidden", cursor: "pointer" }}>
+            {/* confettis */}
+            {Array.from({ length: 36 }).map((_, i) => {
+              const colors = ["#5DCAA5", "#378ADD", "#FAC775", "#9FCBF5", "#E8F4FF"];
+              const left = (i * 2.78) % 100;
+              const delay = (i % 12) * 0.12;
+              const dur = 2.2 + (i % 5) * 0.4;
+              const size = 7 + (i % 4) * 3;
+              return <div key={i} style={{ position: "absolute", top: "-6vh", left: `${left}%`, width: size, height: size * 0.5, background: colors[i % colors.length], borderRadius: 1, animation: `confettiFall ${dur}s ${delay}s ease-in forwards`, opacity: 0 }} />;
+            })}
+            <div onClick={e => e.stopPropagation()} style={{ position: "relative", zIndex: 1, maxWidth: 380, width: "100%", background: "linear-gradient(160deg,#0d2440,#0a1322)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 22, padding: "30px 26px 26px", textAlign: "center", animation: "celebrCard 0.6s cubic-bezier(.34,1.56,.64,1)", cursor: "default", boxShadow: "0 20px 60px rgba(0,0,0,0.5)" }}>
+              <div style={{ width: 120, height: 120, borderRadius: "50%", margin: "0 auto 18px", overflow: "hidden", border: "3px solid rgba(93,202,165,0.5)", boxShadow: "0 0 0 10px rgba(93,202,165,0.08)", background: "#0a1322" }} className="hector-breathe">
+                <NiveauImage src={celebPalier.img} fallbackIcon="ti-trophy" fallbackColor="#5DCAA5" />
+              </div>
+              <div style={{ fontSize: 11, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700, marginBottom: 6 }}>Nouveau palier débloqué</div>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 10, lineHeight: 1.1 }}>Hector est {celebPalier.nom} ! 🎉</h2>
+              <p style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, marginBottom: 22 }}>{celebPalier.sous}. Tu avances exactement comme il faut — je suis fier de nous. 🐾</p>
+              <button type="button" onClick={() => setCelebPalier(null)} style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 15, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Continuer 🐾</button>
+            </div>
+          </div>
+        )}
+
         {/* Sidebar desktop */}
         {!isMobile && interSidebar}
 
@@ -3944,60 +4018,82 @@ function AppInner() {
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
-                {/* ───────── COLONNE GAUCHE : Hector (la star) + ses heures + barre ───────── */}
-                <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322" }}>
-                  {/* Header immersif Hector */}
-                  <div style={{ position: "relative", width: "100%", height: isMobile ? 320 : 380 }}>
-                    <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`}
+                {/* ───────── COLONNE GAUCHE : Hector (la star) + objectif + pensée ───────── */}
+                <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", animation: "paliersHalo 6s ease-in-out infinite" }}>
+                  {/* Header immersif Hector (agrandi : il est la star) */}
+                  <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
+                    {/* halo doux derrière Hector */}
+                    <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
+                    <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`} className="hector-breathe"
                       onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 62%", display: "block" }} />
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
 
                     {/* Badge palier en haut à droite */}
-                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px" }}>
+                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
                       <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
                       <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
                     </div>
 
                     {/* Fondu vers le fond de la carte */}
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 180, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)" }} />
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 190, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)", zIndex: 1 }} />
 
                     {/* Titre + message en bas à gauche */}
-                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20 }}>
-                      <div style={{ fontSize: 26, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20, zIndex: 2 }}>
+                      <div style={{ fontSize: 28, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
                         Hector {palierActuel.nom}
                       </div>
                       <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
                         {c.hector_message}
-                        {palierSuivant && (
-                          <> Encore <b style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</b> et il deviendra {palierSuivant.nom}.</>
-                        )}
                       </div>
                     </div>
                   </div>
 
-                  {/* Ses heures + prochain palier + barre (dans le même bloc, sous Hector) */}
+                  {/* ── PROCHAIN OBJECTIF (actionnable) ── */}
                   <div style={{ padding: "18px 22px 20px", borderTop: "1px solid rgba(93,202,165,0.15)" }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-                      <div>
-                        <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Ses heures</div>
-                        <div style={{ fontSize: 32, color: "white", fontWeight: 800, lineHeight: 1.1 }}>
-                          {c.total_heures}<span style={{ fontSize: 17, color: "#6B8299", fontWeight: 600 }}> / {c.seuil} h</span>
+                    {palierSuivant ? (
+                      <>
+                        <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Prochain objectif</div>
+                        <div style={{ fontSize: 19, color: "white", fontWeight: 800, lineHeight: 1.25 }}>
+                          Encore <span style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</span> <span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}>≈ {cachetsAvantSuivant} cachet{cachetsAvantSuivant > 1 ? "s" : ""}</span>
                         </div>
-                      </div>
-                      <div style={{ textAlign: "right" }}>
-                        <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Prochain palier</div>
-                        <div style={{ fontSize: 16, color: "#5DCAA5", fontWeight: 700, marginTop: 2 }}>
-                          {palierSuivant ? `${palierSuivant.nom} · ${palierSuivant.seuil}h` : "Niche atteinte ✓"}
-                        </div>
-                      </div>
-                    </div>
-                    <div style={{ height: 10, background: "#0a1322", borderRadius: 6, overflow: "hidden", position: "relative" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.6s ease" }} />
+                        <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 3 }}>➡️ Tu deviendras <b style={{ color: "white" }}>{palierSuivant.nom}</b>.</div>
+                      </>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 10, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Objectif atteint</div>
+                        <div style={{ fontSize: 19, color: "white", fontWeight: 800, lineHeight: 1.25 }}>Tes 507h sont là 🎉</div>
+                        <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 3 }}>Hector veille. Chaque heure en plus, c'est du bonus.</div>
+                      </>
+                    )}
+
+                    {/* Barre de progression */}
+                    <div style={{ height: 10, background: "#07192E", borderRadius: 6, overflow: "hidden", position: "relative", marginTop: 14 }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
-                      <span>Chiot · 0h</span>
-                      <span>Gardien · {c.seuil}h</span>
+                      <span>{c.total_heures}h faites</span>
+                      <span>Objectif · {c.seuil}h</span>
                     </div>
+
+                    {/* Bouton d'action : faire agir l'utilisateur */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                      <button type="button" onClick={() => setInterNav("activites")}
+                        style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "13px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Ajouter un contrat
+                      </button>
+                      <button type="button" onClick={() => { setInterNav("hector"); setTimeout(() => { const el = document.getElementById("inter-simulateur"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 120); }}
+                        style={{ background: "transparent", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 10, padding: "13px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                        Simuler
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* ── PENSÉE D'HECTOR (il est vivant) ── */}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px 18px", display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.04)" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                    </div>
+                    <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5, fontStyle: "italic" }}>{penseeHector}</div>
                   </div>
                 </div>
 
@@ -7912,6 +8008,20 @@ const CSS = `
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,83,61,0.5); } 50% { box-shadow: 0 0 0 6px rgba(224,83,61,0); } }
   @keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes shrink { from { width: 100%; } to { width: 0%; } }
+  /* ─── Vie d'Hector (cockpit intermittent) ─── */
+  @keyframes hectorBreathe { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.012) translateY(-3px); } }
+  @keyframes hectorHalo { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.06); } }
+  @keyframes paliersHalo { 0%,100% { box-shadow: 0 0 0 8px rgba(93,202,165,0.05), 0 10px 30px rgba(0,0,0,0.4); } 50% { box-shadow: 0 0 0 12px rgba(93,202,165,0.09), 0 10px 30px rgba(0,0,0,0.4); } }
+  @keyframes hectorPop { 0% { transform: scale(1); } 30% { transform: scale(1.06) rotate(-1deg); } 60% { transform: scale(0.98) rotate(1deg); } 100% { transform: scale(1); } }
+  @keyframes celebrIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes celebrCard { 0% { opacity: 0; transform: scale(0.8) translateY(20px); } 60% { transform: scale(1.04) translateY(0); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
+  @keyframes confettiFall { 0% { opacity: 1; transform: translateY(-10vh) rotate(0deg); } 100% { opacity: 0; transform: translateY(85vh) rotate(540deg); } }
+  @keyframes tailWag { 0%,100% { transform: rotate(0deg); } 25% { transform: rotate(8deg); } 75% { transform: rotate(-8deg); } }
+  .hector-breathe { animation: hectorBreathe 5.5s ease-in-out infinite; }
+  .hector-pop { animation: hectorPop 0.6s ease; }
+  @media (prefers-reduced-motion: reduce) {
+    .hector-breathe, .hector-pop { animation: none !important; }
+  }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
   button { font-family: inherit; }
