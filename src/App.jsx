@@ -490,6 +490,8 @@ function AppInner() {
   const [aemError, setAemError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
+  // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
+  const [docTab, setDocTab] = useState("revenus");
   // ─── Vie d'Hector sur le cockpit (micro-interactions) ───
   const [hectorPop, setHectorPop] = useState(false); // déclenche l'animation pop quand on ajoute
   const [celebPalier, setCelebPalier] = useState(null); // palier fraîchement franchi (objet) ou null
@@ -4218,7 +4220,7 @@ function AppInner() {
       { id: "hector", icon: "ti-message-2", label: "Parle à Hector", dispo: true },
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
-      { id: "attestation", icon: "ti-file-text", label: "Récap revenus", dispo: true },
+      { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "coffre", icon: "ti-camera", label: "Scanner une AEM", dispo: true },
     ];
     const interSidebar = (
@@ -5079,19 +5081,35 @@ function AppInner() {
               </div>
               </>)}
 
-              {/* ═══ PAGE RÉCAP REVENUS (pour bailleur / banque) ═══ */}
+              {/* ═══ PAGE MES DOCUMENTS ═══ */}
               {interNav === "attestation" && (<>
 
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-file-text" fallbackColor="#5DCAA5" />
+                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-folder" fallbackColor="#5DCAA5" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Ton récap de revenus 🐾</div>
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>À présenter à un propriétaire ou une banque.</div>
+                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Mes documents 🐾</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Tout ce que j'ai préparé à partir de tes AEM.</div>
                 </div>
               </div>
 
+              {/* Onglets */}
+              <div style={{ display: "flex", gap: 6, marginBottom: 18, background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: 4 }}>
+                {[
+                  { id: "revenus", label: "Revenus", icon: "ti-file-text" },
+                  { id: "aem", label: "Mes AEM", icon: "ti-file-check" },
+                  { id: "actualisations", label: "Actualisations", icon: "ti-clipboard-check" },
+                ].map(t => (
+                  <button key={t.id} type="button" onClick={() => setDocTab(t.id)}
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: docTab === t.id ? "#5DCAA5" : "transparent", color: docTab === t.id ? "#04342C" : "#8BA5C0", border: "none", borderRadius: 7, padding: "9px 6px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    <i className={`ti ${t.icon}`} aria-hidden="true" style={{ fontSize: 15 }} /> {!isMobile && t.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* ─── SECTION REVENUS ─── */}
+              {docTab === "revenus" && (<>
               {!recapRevenus.aDesDonnees ? (
                 <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
                   Ajoute tes contrats avec leur salaire brut pour que je génère ton récap de revenus.<br />Le plus simple : scanne tes AEM, je remplis tout.
@@ -5181,6 +5199,71 @@ function AppInner() {
                     Le PDF s'ouvre dans une nouvelle fenêtre. Choisis « Enregistrer en PDF » dans les options d'impression.
                   </div>
                 </>
+              )}
+              </>)}
+
+              {/* ─── SECTION MES AEM ─── */}
+              {docTab === "aem" && (() => {
+                const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
+                if (aems.length === 0) {
+                  return (
+                    <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
+                      Tu n'as pas encore scanné d'AEM.<br />Photographie-les, je les range ici automatiquement.
+                      <div style={{ marginTop: 16 }}>
+                        <button type="button" onClick={() => setInterNav("coffre")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
+                      </div>
+                    </div>
+                  );
+                }
+                const fmtDate = (iso) => { try { const d = new Date(iso); const M = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"]; return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`; } catch { return iso; } };
+                return (
+                  <>
+                    <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+                      {aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Bientôt, tu pourras aussi revoir le document original ici.
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {aems.map((a, i) => (
+                        <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
+                          <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                            <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur non précisé"}</div>
+                            <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                );
+              })()}
+
+              {/* ─── SECTION ACTUALISATIONS ─── */}
+              {docTab === "actualisations" && (
+                (actuHistorique || []).length === 0 ? (
+                  <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
+                    Aucune actualisation enregistrée pour l'instant.<br />Une fois que tu t'actualises avec Hector, l'historique apparaît ici.
+                    <div style={{ marginTop: 16 }}>
+                      <button type="button" onClick={() => setInterNav("actu")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Voir l'actualisation</button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+                      Ton historique d'actualisations — une preuve de ta régularité.
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {actuHistorique.map((h, i) => (
+                        <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ color: "#E8F4FF", fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 9 }}>
+                            <i className="ti ti-circle-check-filled" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 17 }} /> {h.label}
+                          </span>
+                          <span style={{ color: "#8BA5C0", fontSize: 11.5 }}>{h.cachets} cachets · {h.heures}h</span>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )
               )}
               </>)}
 
