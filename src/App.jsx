@@ -5386,12 +5386,14 @@ function AppInner() {
                     ouv: "Ça sent bon.",
                     text: `Je nous vois bien. Il te manque ${calc.manque}h, et à ton rythme actuel${calc.dateProjection ? ` tu atteindrais les 507h vers ${calc.dateProjection}` : ""}, avant ton échéance du ${dateAnnivTxt}. Si c'était mon dossier, je continuerais sur cette lancée.`,
                     pourquoi: `Tu fais ~${calc.rythmeMensuel}h/mois. Il te reste ${calc.joursAnniv} jours avant le ${dateAnnivTxt}, soit assez de temps pour combler les ${calc.manque}h manquantes à ce rythme.`,
+                    estimation: true,
                     suite: ["combien_cachets", "si_contrat", "rythme"],
                   };
                   return {
                     ouv: "Je préfère te prévenir.",
                     text: `Pour l'instant, à ton rythme actuel, j'ai peur qu'on n'y arrive pas avant ton échéance du ${dateAnnivTxt}. Il te manque ${calc.manque}h ≈ ${calc.cachetsManquants} cachets, et il te reste ${calc.joursAnniv} jours. Ce n'est pas perdu — mais à ta place, je chercherais des contrats dès maintenant.`,
                     pourquoi: `À ${calc.rythmeMensuel}h/mois, il faudrait environ ${Math.ceil(calc.manque / Math.max(1, calc.rythmeMensuel))} mois pour combler les ${calc.manque}h. Or il ne reste que ${Math.round(calc.joursAnniv / 30)} mois avant le ${dateAnnivTxt}.`,
+                    estimation: true,
                     suite: ["rythme", "combien_cachets", "si_contrat"],
                   };
                 };
@@ -5446,6 +5448,7 @@ function AppInner() {
                     ouv: pickOuv(),
                     text: `En ce moment, tu tournes à environ ${(coach.cachetsSemaine).toFixed(1)} cachet${coach.cachetsSemaine >= 2 ? "s" : ""}/semaine (${calc.rythmeMensuel}h/mois).${cadenceConseillee ? ` Pour tenir ton échéance, je viserais plutôt ${cadenceConseillee.toFixed(1)} cachets/semaine.` : ""} ${cadenceConseillee && cadenceConseillee > coach.cachetsSemaine ? "Il va falloir pousser un peu." : "Tu es sur la bonne cadence."}`,
                     pourquoi: `Je calcule ton rythme sur tes activités des 3 derniers mois : ${calc.rythmeMensuel}h/mois ÷ 4,33 semaines ÷ 12h ≈ ${coach.cachetsSemaine.toFixed(1)} cachets/semaine.${cadenceConseillee ? ` La cadence conseillée = ${calc.manque}h restantes ÷ le temps avant ton échéance.` : ""}`,
+                    estimation: true,
                     suite: ["combien_cachets", "renouveler", "si_contrat"],
                   };
                 };
@@ -5463,6 +5466,7 @@ function AppInner() {
                       ? `Attention : ${fenetre.sortent30}h vont sortir de ta période dans le mois qui vient. Si tu fais une pause maintenant sans rien ajouter, ton total va baisser de ${fenetre.sortent30}h. À ta place, je ne resterais pas inactif trop longtemps en ce moment.`
                       : `Bonne nouvelle : aucune de tes heures ne sort de ta période dans les 30 prochains jours. Tu peux faire une pause sans perdre de terrain dans l'immédiat.${fenetre.sortent90 > 0 ? ` Mais d'ici 3 mois, ${fenetre.sortent90}h sortiront — garde-le en tête.` : ""}`,
                     pourquoi: `Tes 507h se comptent sur 12 mois glissants. Chaque heure "sort" 12 mois après l'avoir faite. Je regarde lesquelles arrivent à échéance bientôt.`,
+                    estimation: true,
                     suite: ["combien_manque", "renouveler", "rythme"],
                   };
                 };
@@ -9633,8 +9637,8 @@ function AppInner() {
 export default Sentry.withErrorBoundary(AppInner, {
   fallback: ({ resetError }) => (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
-      <p style={{ fontSize: 18, fontWeight: 600, color: "#0A2540" }}>Une erreur inattendue est survenue</p>
-      <p style={{ fontSize: 14, color: "#6B7A8D", maxWidth: 380 }}>L'équipe H€CTOR a été automatiquement prévenue. Vous pouvez réessayer ou recharger la page.</p>
+      <p style={{ fontSize: 18, fontWeight: 600, color: "#0A2540" }}>Hector a eu un petit souci 🐾</p>
+      <p style={{ fontSize: 14, color: "#6B7A8D", maxWidth: 380 }}>Quelque chose a coincé de mon côté — j'ai prévenu l'équipe automatiquement. Recharge la page, je reviens tout de suite.</p>
       <button onClick={() => { resetError(); window.location.reload(); }} style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
         Recharger la page
       </button>
