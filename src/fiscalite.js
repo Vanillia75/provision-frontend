@@ -8,6 +8,10 @@
 //
 //  Pour mettre à jour Hector chaque année : modifier UNIQUEMENT ce fichier.
 //  Le moteur de décision (App.jsx) lit ces règles, il ne les code jamais en dur.
+//
+//  ⚠️ JUMEAU BACKEND : les taux ci-dessous sont dupliqués dans tax_engine.py
+//  (AUTO_ENTREPRENEUR_RATES). Si tu modifies un taux ici, modifie-le AUSSI là-bas.
+//  Le test test_coherence_fiscalite.py vérifie que les deux concordent.
 // ============================================================================
 
 export const FISCALITE = {
