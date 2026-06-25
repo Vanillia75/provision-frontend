@@ -1891,6 +1891,11 @@ function AppInner() {
   useEffect(() => {
     if (token && profile && profile.statut === "intermittent") {
       loadIntermittentCockpit();
+      // Walkthrough intermittent au premier accès (indépendant de loadEverything,
+      // qui appelle des endpoints AE pouvant échouer pour un intermittent).
+      if (profile.onboarding_complete && !localStorage.getItem("hector_walkthrough_done")) {
+        setShowWalkthrough(true);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, profile?.statut]);
