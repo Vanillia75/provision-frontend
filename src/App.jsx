@@ -3912,6 +3912,94 @@ function AppInner() {
       const totalDansFenetre = lignes.filter(l => l.dansLaFenetre).reduce((s, l) => s + l.heures, 0);
       return { sortent30: Math.round(sortent30), sortent60: Math.round(sortent60), sortent90: Math.round(sortent90), prochainesSorties, totalDansFenetre: Math.round(totalDansFenetre), aDesActivites: lignes.length > 0 };
     })();
+
+    // ═══ DÉTECTION D'ERREURS : Hector veille sur ton dossier ═══
+    // 5 cas fiables, calculés depuis les données qu'on a déjà. Aucune anomalie → rien ne s'affiche.
+    const anomalies = (() => {
+      const out = [];
+      const acts = interActivites || [];
+      const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+      const fmt = (iso) => { try { const d = new Date(iso); return `${d.getDate()} ${MOIS[d.getMonth()]}`; } catch { return iso; } };
+
+      // 1. AEM manquantes (activités sans AEM reçue)
+      const sansAEM = acts.filter(a => !(a.aem_recue === true || a.source === "ocr"));
+      if (sansAEM.length > 0) {
+        out.push({
+          id: "aem", niveau: "orange", icon: "ti-file-alert",
+          titre: `${sansAEM.length} AEM manquante${sansAEM.length > 1 ? "s" : ""}`,
+          texte: sansAEM.length === 1
+            ? `Je n'ai pas l'AEM de ton contrat${sansAEM[0].employeur ? ` chez ${sansAEM[0].employeur}` : ""} du ${fmt(sansAEM[0].date)}. Sans elle, ces heures n'existent pas pour France Travail — relance ton employeur.`
+            : `Il me manque les AEM de ${sansAEM.length} de tes contrats. Sans elles, ces heures ne comptent pas. Scanne-les ou relance tes employeurs.`,
+          action: "coffre", actionLabel: "Scanner une AEM",
+        });
+      }
+
+      // 2. Employeur non renseigné
+      const sansEmp = acts.filter(a => !a.employeur || !a.employeur.trim());
+      if (sansEmp.length > 0) {
+        out.push({
+          id: "emp", niveau: "blue", icon: "ti-building-off",
+          titre: `${sansEmp.length} contrat${sansEmp.length > 1 ? "s" : ""} sans employeur`,
+          texte: `Tu n'as pas précisé l'employeur ${sansEmp.length === 1 ? `du ${fmt(sansEmp[0].date)}` : `de ${sansEmp.length} contrats`}. C'est utile pour ton actualisation et pour repérer une AEM manquante.`,
+          action: "activites", actionLabel: "Compléter",
+        });
+      }
+
+      // 3. Salaire brut manquant
+      const sansBrut = acts.filter(a => !a.salaire_brut);
+      if (sansBrut.length > 0 && sansBrut.length < acts.length) {
+        out.push({
+          id: "brut", niveau: "blue", icon: "ti-currency-euro-off",
+          titre: `${sansBrut.length} contrat${sansBrut.length > 1 ? "s" : ""} sans salaire`,
+          texte: `Le brut manque sur ${sansBrut.length === 1 ? `ton contrat du ${fmt(sansBrut[0].date)}` : `${sansBrut.length} contrats`}. Ajoute-le pour un récap d'actualisation complet.`,
+          action: "activites", actionLabel: "Compléter",
+        });
+      }
+
+      // 4. Trou suspect : un mois vide entouré de mois actifs
+      if (acts.length >= 3) {
+        const moisActifs = new Set(acts.map(a => { const d = new Date(a.date); return `${d.getFullYear()}-${d.getMonth()}`; }));
+        const dates = acts.map(a => new Date(a.date)).filter(d => !isNaN(d)).sort((a, b) => a - b);
+        if (dates.length >= 2) {
+          const premier = dates[0], dernier = dates[dates.length - 1];
+          const cur = new Date(premier.getFullYear(), premier.getMonth(), 1);
+          const trous = [];
+          while (cur <= dernier) {
+            const clef = `${cur.getFullYear()}-${cur.getMonth()}`;
+            if (!moisActifs.has(clef)) trous.push(`${MOIS[cur.getMonth()]} ${cur.getFullYear()}`);
+            cur.setMonth(cur.getMonth() + 1);
+          }
+          if (trous.length > 0 && trous.length <= 2) {
+            out.push({
+              id: "trou", niveau: "blue", icon: "ti-calendar-question",
+              titre: `Rien de déclaré en ${trous.join(", ")}`,
+              texte: `Je ne vois aucune activité ${trous.length === 1 ? `en ${trous[0]}` : `sur ${trous.length} mois`}, alors que tu travailles avant et après. Si tu as bossé, pense à l'ajouter — sinon tout va bien.`,
+              action: "activites", actionLabel: "Vérifier",
+            });
+          }
+        }
+      }
+
+      // 5. Doublon potentiel (même date + employeur + nombre + type)
+      const vus = {};
+      let doublon = null;
+      for (const a of acts) {
+        const clef = `${a.date}|${(a.employeur || "").trim().toLowerCase()}|${a.nombre}|${a.type_activite}`;
+        if (vus[clef]) { doublon = a; break; }
+        vus[clef] = true;
+      }
+      if (doublon) {
+        out.push({
+          id: "doublon", niveau: "blue", icon: "ti-copy",
+          titre: "Doublon possible",
+          texte: `Tu as deux contrats identiques le ${fmt(doublon.date)}${doublon.employeur ? ` chez ${doublon.employeur}` : ""}. Si c'est une erreur de saisie, supprime-en un pour ne pas fausser ton compteur.`,
+          action: "activites", actionLabel: "Vérifier",
+        });
+      }
+
+      return out;
+    })();
+    const aDesAnomalies = anomalies.length > 0;
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
     const FICHES_CONSEILS = [
@@ -4127,6 +4215,21 @@ function AppInner() {
 
               {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
+
+              {/* Alerte détection d'erreurs (seulement si Hector a repéré quelque chose) */}
+              {aDesAnomalies && (
+                <button type="button" onClick={() => setInterNav("calcul")}
+                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
+                    <div style={{ fontSize: 12, color: "#C9A861", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{anomalies.map(a => a.titre).join(" · ")}</div>
+                  </div>
+                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0 }} />
+                </button>
+              )}
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
@@ -4604,6 +4707,47 @@ function AppInner() {
                   <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Tu n'as plus jamais à les faire toi-même.</div>
                 </div>
               </div>
+
+              {/* ── 0. DÉTECTION D'ERREURS (Hector veille) ── */}
+              {aDesAnomalies && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18 }} />
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>J'ai vérifié ton dossier</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {anomalies.map(an => {
+                      const pal = {
+                        orange: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
+                        blue: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
+                      }[an.niveau];
+                      return (
+                        <div key={an.id} style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+                            <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: an.niveau === "orange" ? "#FAE3B6" : "#D6E8FA" }}>{an.titre}</div>
+                              <div style={{ fontSize: 12.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 3 }}>{an.texte}</div>
+                              <button type="button" onClick={() => setInterNav(an.action)}
+                                style={{ marginTop: 9, background: "transparent", border: `1px solid ${pal.bd}`, color: pal.tc, borderRadius: 7, padding: "6px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                                {an.actionLabel}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Message rassurant si tout est clean */}
+              {!aDesAnomalies && (interActivites || []).length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px 15px", marginBottom: 14 }}>
+                  <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 20, flexShrink: 0 }} />
+                  <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5 }}>🐾 J'ai vérifié ton dossier, tout est cohérent. Rien à signaler.</div>
+                </div>
+              )}
 
               {/* ── 1. OÙ J'EN SUIS (cercle sûr) ── */}
               <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 16, padding: "18px 20px", marginBottom: 14 }}>
