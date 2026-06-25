@@ -7428,6 +7428,37 @@ function AppInner() {
               )}
             </div>
 
+            {/* ── À VENIR : CONNEXION BANCAIRE ── */}
+            <div style={{ background: "linear-gradient(135deg, rgba(55,138,221,0.08), rgba(93,202,165,0.06))", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(55,138,221,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 19, color: ACCENT }} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Connexion bancaire</div>
+                <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: ACCENT, background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
+              </div>
+              <p style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.6, margin: "0 0 12px" }}>
+                Bientôt, tu pourras relier ton compte pour que ton solde se mette à jour <strong style={{ color: "white" }}>tout seul</strong> — fini de le recopier à la main. Ça restera <strong style={{ color: "white" }}>toi qui choisis</strong> : la saisie manuelle ne disparaît pas, la connexion sera juste une option pour ceux qui la veulent.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}><strong style={{ color: "#B5D4F4" }}>Lecture seule.</strong> H€CTOR pourra lire ton solde, jamais bouger ton argent. C'est une règle européenne (DSP2), pas une promesse.</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}><strong style={{ color: "#B5D4F4" }}>Via un partenaire agréé.</strong> La connexion passera par un prestataire certifié par la Banque de France. Tes identifiants ne transitent jamais par H€CTOR.</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                  <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                  <span style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}><strong style={{ color: "#B5D4F4" }}>Débranchable quand tu veux.</strong> Tu connectes, tu déconnectes, tu reviens au manuel : c'est ton choix à chaque instant.</span>
+                </div>
+              </div>
+              <p style={{ fontSize: 11, color: "#5A7088", lineHeight: 1.5, margin: "12px 0 0" }}>
+                🐾 En préparation — je travaille à brancher ça proprement pour t'enlever la corvée de saisie.
+              </p>
+            </div>
+
             {/* ── MESSAGES HECTOR ── */}
             {hectorMessages.map(msg => (
               <div key={msg.id} style={{ background: "#0a1322", border: `1px solid ${msg.couleur}44`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12, position: "relative", animation: "fadeInDown 0.3s ease" }}>
