@@ -467,6 +467,10 @@ function AppInner() {
   const [interShowAdd, setInterShowAdd] = useState(false);
   const [interSaving, setInterSaving] = useState(false);
   const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+  // Report des heures déjà faites (saisie de départ)
+  const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
+  const [reportSaving, setReportSaving] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   // Brique 5.4 : "Parle à Hector" — simulation de contrat
   const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
   const [simResult, setSimResult] = useState(null);
@@ -1328,6 +1332,45 @@ function AppInner() {
       setError(err.message);
     } finally {
       setInterSaving(false);
+    }
+  }
+
+  // ─── Reporter les heures déjà faites (saisie de départ) ───
+  async function handleReport() {
+    const nombre = parseFloat(reportForm.nombre);
+    if (!nombre || nombre <= 0) {
+      setError("Indique un nombre valide.");
+      return;
+    }
+    // On ancre le report à une date cohérente dans la fenêtre de 12 mois,
+    // selon la période choisie, pour que le moteur vieillisse les heures justement.
+    const aujourdhui = new Date();
+    let joursEnArriere;
+    if (reportForm.periode === "recent") joursEnArriere = 60;       // ~2 mois
+    else if (reportForm.periode === "ancien") joursEnArriere = 300;  // ~10 mois
+    else joursEnArriere = 180;                                       // réparti sur l'année (~6 mois)
+    const d = new Date(aujourdhui.getTime() - joursEnArriere * 24 * 60 * 60 * 1000);
+    const dateStr = d.toISOString().slice(0, 10);
+    // Unité : "heures" enregistre des heures réelles ; "cachets" = cachets isolés (12h).
+    const type_activite = reportForm.unite === "cachets" ? "cachet_isole" : "heures";
+    setReportSaving(true);
+    try {
+      await apiFetch("/intermittent/activite", {
+        method: "POST",
+        body: JSON.stringify({
+          date: dateStr,
+          type_activite,
+          nombre,
+          employeur: "Report (heures déjà faites)",
+        }),
+      });
+      setReportForm({ unite: "heures", nombre: "", periode: "annee" });
+      setReportOpen(false);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setReportSaving(false);
     }
   }
 
@@ -3983,6 +4026,71 @@ function AppInner() {
 
               {/* ═══ PAGE MES ACTIVITÉS ═══ */}
               {interNav === "activites" && (<>
+
+              {/* ── Reporter les heures déjà faites (saisie de départ) ── */}
+              <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }} onClick={() => setReportOpen(v => !v)}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <i className="ti ti-history" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 20 }} />
+                    <div>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Tu as déjà des heures ?</div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 1 }}>Reporte tes heures ou cachets déjà faits pour démarrer ton compteur au bon endroit.</div>
+                    </div>
+                  </div>
+                  <i className={`ti ${reportOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ color: "#8BA5C0", fontSize: 18, flexShrink: 0 }} />
+                </div>
+
+                {reportOpen && (
+                  <div style={{ marginTop: 16 }}>
+                    {/* Unité : heures ou cachets */}
+                    <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+                      {[{ id: "heures", label: "En heures" }, { id: "cachets", label: "En cachets" }].map(u => (
+                        <button key={u.id} type="button" onClick={() => setReportForm({ ...reportForm, unite: u.id })}
+                          style={{ flex: 1, background: reportForm.unite === u.id ? "#5DCAA5" : "transparent", color: reportForm.unite === u.id ? "#04342C" : "#B5D4F4", border: `1px solid ${reportForm.unite === u.id ? "#5DCAA5" : "rgba(255,255,255,0.15)"}`, borderRadius: 8, padding: "9px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                          {u.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Nombre */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                      <input type="number" min="0" value={reportForm.nombre} onChange={e => setReportForm({ ...reportForm, nombre: e.target.value })}
+                        placeholder={reportForm.unite === "cachets" ? "Ex : 22" : "Ex : 280"}
+                        style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "11px 14px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      <span style={{ fontSize: 14, color: "#8BA5C0", minWidth: 60 }}>{reportForm.unite === "cachets" ? "cachets" : "heures"}</span>
+                    </div>
+
+                    {/* Aperçu de l'équivalent en heures */}
+                    {parseFloat(reportForm.nombre) > 0 && (
+                      <div style={{ fontSize: 12.5, color: "#5DCAA5", marginBottom: 12 }}>
+                        {reportForm.unite === "cachets"
+                          ? `Soit ${Math.round(parseFloat(reportForm.nombre) * 12)} h (1 cachet = 12h) ajoutées à ton compteur.`
+                          : `${Math.round(parseFloat(reportForm.nombre))} h ajoutées à ton compteur.`}
+                      </div>
+                    )}
+
+                    {/* Période (pour la fenêtre glissante de 12 mois) */}
+                    <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 8 }}>Ces heures, tu les as faites plutôt :</div>
+                    <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
+                      {[{ id: "recent", label: "Récemment" }, { id: "annee", label: "Sur l'année" }, { id: "ancien", label: "Il y a un moment" }].map(p => (
+                        <button key={p.id} type="button" onClick={() => setReportForm({ ...reportForm, periode: p.id })}
+                          style={{ flex: "1 1 auto", background: reportForm.periode === p.id ? "rgba(93,202,165,0.15)" : "transparent", color: reportForm.periode === p.id ? "#5DCAA5" : "#8BA5C0", border: `1px solid ${reportForm.periode === p.id ? "rgba(93,202,165,0.4)" : "rgba(255,255,255,0.12)"}`, borderRadius: 8, padding: "8px 10px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                          {p.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <button type="button" disabled={reportSaving} onClick={handleReport}
+                      style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "11px", fontSize: 14, fontWeight: 700, cursor: reportSaving ? "default" : "pointer", fontFamily: "inherit", opacity: reportSaving ? 0.6 : 1 }}>
+                      {reportSaving ? "…" : "Reporter ces heures"}
+                    </button>
+                    <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
+                      Tu pourras toujours ajuster ou ajouter tes cachets un par un ci-dessous.
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {/* ── Brique 5.2 : saisie + liste des activités ── */}
               <div id="inter-activites" style={{ marginTop: 24, marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
