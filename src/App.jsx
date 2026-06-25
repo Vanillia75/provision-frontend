@@ -497,6 +497,8 @@ function AppInner() {
   // ─── Centre de calcul conversationnel ───
   const [calcConvo, setCalcConvo] = useState([]); // fil de la conversation : {role, text, questions?}
   const [calcThinking, setCalcThinking] = useState(false); // Hector "réfléchit"
+  // ─── Visionneuse de document AEM (overlay, sans quitter l'app) ───
+  const [docViewer, setDocViewer] = useState(null); // { url, filename, loading } | null
   const [celebPalier, setCelebPalier] = useState(null); // palier fraîchement franchi (objet) ou null
   const prevPalierRef = useRef(null); // mémorise le palier précédent pour détecter un franchissement
   // ─── Module ACTUALISATION France Travail ───
@@ -1456,12 +1458,19 @@ function AppInner() {
     }
   }
 
-  // ─── Ouvre le document AEM original (URL signée temporaire depuis R2) ───
-  async function voirDocumentAEM(activiteId) {
+  // ─── Ouvre le document AEM original dans une visionneuse overlay (sans quitter l'app) ───
+  async function voirDocumentAEM(activiteId, filename) {
+    setDocViewer({ url: null, filename: filename || "Document", loading: true });
     try {
       const data = await apiFetch(`/intermittent/activite/${activiteId}/document`, { method: "GET" });
-      if (data && data.url) window.open(data.url, "_blank");
+      if (data && data.url) {
+        setDocViewer({ url: data.url, filename: filename || "Document", loading: false });
+      } else {
+        setDocViewer(null);
+        alert("Document introuvable.");
+      }
     } catch (err) {
+      setDocViewer(null);
       alert("Impossible d'ouvrir le document pour l'instant.");
     }
   }
@@ -4416,6 +4425,42 @@ function AppInner() {
           </div>
         )}
 
+        {/* Visionneuse de document AEM (overlay) */}
+        {docViewer && (
+          <div onClick={() => setDocViewer(null)} style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(4,12,24,0.9)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 0 : 24, animation: "celebrIn 0.25s ease" }}>
+            <div onClick={e => e.stopPropagation()} style={{ position: "relative", width: "100%", maxWidth: 820, height: isMobile ? "100%" : "90vh", background: "#0c1f38", borderRadius: isMobile ? 0 : 16, overflow: "hidden", display: "flex", flexDirection: "column", border: "1px solid rgba(93,202,165,0.25)" }}>
+              {/* En-tête */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+                <i className="ti ti-file-text" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
+                <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{docViewer.filename}</div>
+                {docViewer.url && (
+                  <a href={docViewer.url} target="_blank" rel="noopener noreferrer" style={{ color: "#9FCBF5", fontSize: 12, textDecoration: "none", display: "flex", alignItems: "center", gap: 5, padding: "5px 10px", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 7 }}>
+                    <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 14 }} /> {!isMobile && "Onglet"}
+                  </a>
+                )}
+                <button type="button" onClick={() => setDocViewer(null)} style={{ background: "transparent", border: "none", color: "#8BA5C0", fontSize: 22, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>
+                  <i className="ti ti-x" aria-hidden="true" />
+                </button>
+              </div>
+              {/* Contenu */}
+              <div style={{ flex: 1, background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto" }}>
+                {docViewer.loading ? (
+                  <div style={{ color: "#8BA5C0", fontSize: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px solid rgba(93,202,165,0.4)", overflow: "hidden" }} className="hector-breathe">
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                    </div>
+                    🐾 Je récupère ton document…
+                  </div>
+                ) : /\.(jpg|jpeg|png|webp)$/i.test(docViewer.filename) ? (
+                  <img src={docViewer.url} alt={docViewer.filename} style={{ maxWidth: "100%", maxHeight: "100%", objectFit: "contain" }} />
+                ) : (
+                  <iframe src={docViewer.url} title={docViewer.filename} style={{ width: "100%", height: "100%", border: "none" }} />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Sidebar desktop */}
         {!isMobile && interSidebar}
 
@@ -5659,7 +5704,7 @@ function AppInner() {
                             <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}</div>
                           </div>
                           {a.a_document && (
-                            <button type="button" onClick={() => voirDocumentAEM(a.id)}
+                            <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
                               style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                               <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
                             </button>
@@ -6176,9 +6221,16 @@ function AppInner() {
                                 <div><span style={{ color: "#6B8299" }}>Salaire brut</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.salaire_brut ? `${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : "—"}</span></div>
                                 {a.aem_filename && <div><span style={{ color: "#6B8299" }}>Fichier</span><br /><span style={{ color: "#8BA5C0", fontWeight: 500, fontSize: 11.5, wordBreak: "break-all" }}>{a.aem_filename}</span></div>}
                               </div>
-                              <div style={{ fontSize: 10.5, color: "#5A7088", marginTop: 10, lineHeight: 1.5 }}>
-                                🐾 Le document original n'est pas encore conservé — ça arrive bientôt. Pour l'instant, je garde les infos que j'ai lues.
-                              </div>
+                              {a.a_document ? (
+                                <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
+                                  style={{ marginTop: 12, background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "8px 14px", fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 7 }}>
+                                  <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir le document original
+                                </button>
+                              ) : (
+                                <div style={{ fontSize: 10.5, color: "#5A7088", marginTop: 10, lineHeight: 1.5 }}>
+                                  🐾 Le document original de cette AEM n'a pas été conservé (scannée avant l'activation du coffre). Les prochaines seront gardées en sécurité.
+                                </div>
+                              )}
                             </div>
                           )}
                         </div>
