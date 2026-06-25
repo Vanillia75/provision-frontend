@@ -6350,6 +6350,10 @@ function AppInner() {
           <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
           {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
         </button>
+        <button style={{ ...S.navItem, marginTop: 4 }} disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")} title="Passer en mode intermittent">
+          <i className="ti ti-movie" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0, color: "#5DCAA5" }} />
+          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12, color: "#5DCAA5" }}>{statutSaving ? "…" : "Mode intermittent"}</span>}
+        </button>
         <div style={S.sidebarBottom}>
           <div style={S.userRow}>
             <div style={S.avatar}>{userInitials}</div>
