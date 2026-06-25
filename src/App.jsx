@@ -1414,6 +1414,7 @@ function AppInner() {
         nombre: data.nombre != null ? String(data.nombre) : "",
         salaire_brut: data.salaire_brut != null ? String(data.salaire_brut) : "",
         filename: data.filename || file.name,
+        aem_r2_key: data.aem_r2_key || null,
       });
     } catch (err) {
       setAemError(err.message || "Lecture impossible. Réessaie avec une photo plus nette.");
@@ -1442,6 +1443,7 @@ function AppInner() {
           salaire_brut: aemExtrait.salaire_brut !== "" ? parseFloat(aemExtrait.salaire_brut) : null,
           aem_recue: true,
           aem_filename: aemExtrait.filename || null,
+          aem_r2_key: aemExtrait.aem_r2_key || null,
         }),
       });
       setAemExtrait(null);
@@ -1451,6 +1453,16 @@ function AppInner() {
       setAemError(err.message);
     } finally {
       setAemSaving(false);
+    }
+  }
+
+  // ─── Ouvre le document AEM original (URL signée temporaire depuis R2) ───
+  async function voirDocumentAEM(activiteId) {
+    try {
+      const data = await apiFetch(`/intermittent/activite/${activiteId}/document`, { method: "GET" });
+      if (data && data.url) window.open(data.url, "_blank");
+    } catch (err) {
+      alert("Impossible d'ouvrir le document pour l'instant.");
     }
   }
 
@@ -5634,7 +5646,7 @@ function AppInner() {
                 return (
                   <>
                     <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
-                      {aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Bientôt, tu pourras aussi revoir le document original ici.
+                      {aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Tes documents originaux sont conservés en sécurité — tu peux les rouvrir à tout moment.
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                       {aems.map((a, i) => (
@@ -5646,6 +5658,12 @@ function AppInner() {
                             <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur non précisé"}</div>
                             <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}</div>
                           </div>
+                          {a.a_document && (
+                            <button type="button" onClick={() => voirDocumentAEM(a.id)}
+                              style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                              <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
+                            </button>
+                          )}
                         </div>
                       ))}
                     </div>
