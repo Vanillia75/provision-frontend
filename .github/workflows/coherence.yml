@@ -16,7 +16,9 @@
 name: Cohérence référentiels intermittent
 
 # Quand lancer : à chaque push et chaque pull request sur la branche main.
-on:
+# Note : "on" est mis entre guillemets car en YAML, on sans guillemets peut
+# être interprété comme le booléen true, ce qui casse le déclencheur.
+"on":
   push:
     branches: [ main ]
   pull_request:
