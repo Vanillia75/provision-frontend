@@ -4000,6 +4000,39 @@ function AppInner() {
       return out;
     })();
     const aDesAnomalies = anomalies.length > 0;
+
+    // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
+    // Vue d'ensemble visuelle des 12 derniers mois + les 3 prochains (pour montrer les sorties à venir).
+    const timeline = (() => {
+      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const MOIS_COURT = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"];
+      const now = new Date();
+      const acts = (interActivites || []).map(a => {
+        const d = new Date(a.date);
+        if (isNaN(d)) return null;
+        return { d, heures: (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1), sortie: new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()) };
+      }).filter(Boolean);
+      // On construit 12 mois passés (dont le mois courant) + 3 mois futurs
+      const buckets = [];
+      for (let i = -11; i <= 3; i++) {
+        const m = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const heuresFaites = acts.filter(a => a.d.getFullYear() === m.getFullYear() && a.d.getMonth() === m.getMonth()).reduce((s, a) => s + a.heures, 0);
+        // Heures qui SORTENT ce mois-là (date de sortie tombe dans ce mois)
+        const heuresSortantes = acts.filter(a => a.sortie.getFullYear() === m.getFullYear() && a.sortie.getMonth() === m.getMonth()).reduce((s, a) => s + a.heures, 0);
+        buckets.push({
+          label: MOIS_COURT[m.getMonth()],
+          annee: m.getFullYear(),
+          mois: m.getMonth(),
+          heuresFaites: Math.round(heuresFaites),
+          heuresSortantes: Math.round(heuresSortantes),
+          futur: i > 0,
+          courant: i === 0,
+        });
+      }
+      const maxHeures = Math.max(60, ...buckets.map(b => b.heuresFaites));
+      const aDesDonnees = acts.length > 0;
+      return { buckets, maxHeures, aDesDonnees };
+    })();
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
     const FICHES_CONSEILS = [
@@ -4805,7 +4838,57 @@ function AppInner() {
                 )}
               </div>
 
-              {/* ── 3. FENÊTRE GLISSANTE (cercle estimé) ── */}
+              {/* ── 3. TIMELINE DES HEURES (vue d'ensemble visuelle) ── */}
+              {timeline.aDesDonnees && (
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px 16px", marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <i className="ti ti-chart-bar" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 17 }} />
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Tes heures, mois par mois</div>
+                  </div>
+                  <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.45, marginBottom: 16 }}>
+                    Tes heures déclarées, et le marqueur ⚠️ quand certaines vont sortir de ta période.
+                  </div>
+
+                  {/* Le graphe en barres */}
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: isMobile ? 3 : 5, height: 130, marginBottom: 8 }}>
+                    {timeline.buckets.map((b, i) => {
+                      const h = b.heuresFaites > 0 ? Math.max(4, (b.heuresFaites / timeline.maxHeures) * 110) : (b.futur ? 0 : 2);
+                      return (
+                        <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "flex-end", height: "100%", minWidth: 0 }}>
+                          {/* badge heures qui sortent */}
+                          {b.heuresSortantes > 0 && (
+                            <div style={{ fontSize: 8.5, color: "#FAC775", fontWeight: 700, marginBottom: 3, whiteSpace: "nowrap" }} title={`${b.heuresSortantes}h sortent`}>⚠️{b.heuresSortantes}</div>
+                          )}
+                          {/* valeur au-dessus de la barre */}
+                          {b.heuresFaites > 0 && (
+                            <div style={{ fontSize: 8.5, color: b.courant ? "#5DCAA5" : "#8BA5C0", fontWeight: 600, marginBottom: 2 }}>{b.heuresFaites}</div>
+                          )}
+                          {/* la barre */}
+                          <div style={{
+                            width: "100%", maxWidth: 26, height: h, borderRadius: "4px 4px 0 0",
+                            background: b.futur
+                              ? "repeating-linear-gradient(45deg, rgba(250,199,117,0.15), rgba(250,199,117,0.15) 3px, transparent 3px, transparent 6px)"
+                              : b.courant ? "linear-gradient(180deg,#5DCAA5,#1D9E75)" : "linear-gradient(180deg,#2C6E8F,#378ADD)",
+                            border: b.heuresSortantes > 0 ? "1px solid rgba(250,199,117,0.5)" : "none",
+                            transition: "height 0.5s ease",
+                          }} />
+                          {/* label mois */}
+                          <div style={{ fontSize: 8.5, color: b.courant ? "#5DCAA5" : "#6B8299", fontWeight: b.courant ? 700 : 500, marginTop: 5, whiteSpace: "nowrap" }}>{b.label}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Légende */}
+                  <div style={{ display: "flex", gap: 14, flexWrap: "wrap", fontSize: 10.5, color: "#8BA5C0", marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "#378ADD" }} /> heures faites</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "#5DCAA5" }} /> ce mois</span>
+                    <span style={{ display: "flex", alignItems: "center", gap: 5 }}>⚠️ heures qui sortent</span>
+                  </div>
+                </div>
+              )}
+
+              {/* ── 4. FENÊTRE GLISSANTE (cercle estimé) ── */}
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px", marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <i className="ti ti-history-toggle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 17 }} />
