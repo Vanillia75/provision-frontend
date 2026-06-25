@@ -3813,11 +3813,11 @@ function AppInner() {
 
               {/* ── Hector en header pleine largeur (déblocage de palier premium) ── */}
               <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", marginBottom: 16, background: "#0a1322" }}>
-                <div style={{ position: "relative", width: "100%", height: 320 }}>
+                <div style={{ position: "relative", width: "100%", height: 360 }}>
                   {/* L'illustration d'Hector, plein cadre */}
                   <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`}
                     onError={(e) => { e.currentTarget.style.display = "none"; }}
-                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 28%", display: "block" }} />
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 35%", display: "block" }} />
 
                   {/* Badge palier en haut à droite */}
                   <div style={{ position: "absolute", top: 14, right: 16, textAlign: "right", textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
