@@ -261,6 +261,17 @@ export const REGLES = {
 };
 
 /**
+ * Indique si les règles-clés du calcul des heures (seuil, conversion cachet,
+ * période de référence) ont toutes été validées par un expert.
+ * Tant que ce n'est pas le cas, le badge de confiance reste "fiable" (pas "certain").
+ * Le jour où tu passes ces règles à verifie:true, le badge bascule tout seul.
+ */
+export function moteurHeuresValide() {
+  const clesCles = ["seuilHeures", "cachetHeures", "periodeReferenceJours"];
+  return clesCles.every((c) => REGLES[c] && REGLES[c].verifie === true);
+}
+
+/**
  * Renvoie une règle avec sa traçabilité complète.
  * Usage : const seuil = getRegle("seuilHeures");  → { valeur, source, version, ... }
  */
