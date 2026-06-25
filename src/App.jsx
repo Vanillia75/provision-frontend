@@ -366,6 +366,36 @@ function formatDate(d) {
   return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+//  CONVERSION HEURES — SOURCE UNIQUE côté front (jumeau de heures_de() backend).
+//  Tous les cachets comptent 12h (cf. regles_intermittent : règle "8h" abandonnée).
+//  Toute la logique de conversion DOIT passer par ici : ne jamais réécrire un
+//  objet { cachet_isole: 12, ... } ailleurs, sous peine de divergence front/back.
+// ─────────────────────────────────────────────────────────────────────────────
+function heuresDe(activite) {
+  if (!activite) return 0;
+  const n = Math.max(0, parseFloat(activite.nombre) || 0);
+  const t = activite.type_activite;
+  if (t === "heures") return n;
+  if (t === "cachet_isole" || t === "cachet_groupe" || t === "cachet") return n * valeurDe("cachetHeures");
+  return 0; // type inconnu : on ne devine pas (comme le backend)
+}
+
+// Total des heures sur la fenêtre glissante de 365 jours (identique au backend).
+// On ignore ce qui est hors fenêtre ou dans le futur. C'est CE total qui doit
+// être affiché partout (cockpit, "Que se passe-t-il si", analyses), pour ne jamais
+// contredire le compteur officiel renvoyé par le backend.
+function heuresFenetre(activites, aujourdhui = new Date()) {
+  const fenetreJours = valeurDe("periodeReferenceJours") || 365;
+  const borneBasse = new Date(aujourdhui);
+  borneBasse.setDate(borneBasse.getDate() - fenetreJours);
+  return (activites || []).reduce((s, a) => {
+    const d = new Date(a.date);
+    if (isNaN(d) || d < borneBasse || d > aujourdhui) return s;
+    return s + heuresDe(a);
+  }, 0);
+}
+
 function HectorTete({ size = 32 }) {
   // Tête d'Hector pour l'assistant. Fallback sur une icône si l'image n'est pas déposée.
   const [ok, setOk] = useState(true);
@@ -1536,14 +1566,12 @@ function AppInner() {
   // ─── Moteur "Que se passe-t-il si…" : RÈGLE D'OR — Hector calcule TOUS les chiffres lui-même.
   // L'IA ne sert qu'à comprendre une question non reconnue ; elle ne fabrique jamais un nombre.
   function calculerScenarioEtSi(question) {
-    const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures") };
     const q = (question || "").toLowerCase();
-    // Données réelles du dossier (déterministes)
+    // Données réelles du dossier (déterministes).
+    // On part du total OFFICIEL du backend (c.total_heures, déjà filtré sur 365j)
+    // pour ne JAMAIS contredire le cockpit. Secours : recalcul fenêtre glissante.
     const acts = interActivites || [];
-    const heuresActuelles = acts.reduce((s, a) => {
-      const conv = a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || valeurDe("cachetHeures"));
-      return s + (parseFloat(a.nombre) || 0) * conv;
-    }, 0);
+    const heuresActuelles = (c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts);
     const seuil = (c && c.seuil) || valeurDe("seuilHeures");
     const manque = Math.max(0, seuil - heuresActuelles);
     const dateAnniv = c && c.date_anniversaire ? new Date(c.date_anniversaire) : null;
@@ -1647,8 +1675,7 @@ function AppInner() {
     // 2. Scénario non reconnu → on demande à l'IA de comprendre, MAIS en lui interdisant d'inventer.
     //    On lui fournit les chiffres réels pour qu'elle reformule sans calculer.
     const acts = interActivites || [];
-    const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures") };
-    const heuresActuelles = Math.round(acts.reduce((s, a) => s + (parseFloat(a.nombre) || 0) * (a.type_activite === "heures" ? 1 : (HCONV[a.type_activite] || valeurDe("cachetHeures"))), 0));
+    const heuresActuelles = Math.round((c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts));
     const seuil = (c && c.seuil) || valeurDe("seuilHeures");
     const contexte = `Données réelles de l'utilisateur (NE LES MODIFIE PAS, n'invente AUCUN autre chiffre) : heures actuelles = ${heuresActuelles}h, seuil = ${seuil}h, il manque = ${Math.max(0, seuil - heuresActuelles)}h.`;
     const consigne = `Tu es Hector, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
@@ -4141,7 +4168,7 @@ function AppInner() {
       const il3mois = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
       const recent = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= il3mois && d <= now; });
       let heuresRecentes = 0;
-      recent.forEach(a => { const conv = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 }[a.type_activite] || 1; heuresRecentes += (parseFloat(a.nombre) || 0) * conv; });
+      recent.forEach(a => { heuresRecentes += heuresDe(a); });
       const rythmeMensuel = heuresRecentes / 3; // h/mois sur les 3 derniers mois
       const aUnRythme = rythmeMensuel > 0;
       const moisPourCombler = aUnRythme ? Math.ceil(manque / rythmeMensuel) : null;
@@ -4220,14 +4247,13 @@ function AppInner() {
       }
 
       // Comparaison mois-à-mois (ce mois vs mois précédent)
-      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const now = new Date();
       const heuresDuMois = (offset) => {
         const ref = new Date(now.getFullYear(), now.getMonth() - offset, 1);
         return (interActivites || []).reduce((s, a) => {
           const d = new Date(a.date);
           if (isNaN(d) || d.getMonth() !== ref.getMonth() || d.getFullYear() !== ref.getFullYear()) return s;
-          return s + (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1);
+          return s + heuresDe(a);
         }, 0);
       };
       const hCeMois = Math.round(heuresDuMois(0));
@@ -4278,12 +4304,11 @@ function AppInner() {
 
     // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
     const analyses = (() => {
-      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const acts = interActivites || [];
       const out = [];
       if (acts.length < 2) return out; // pas assez de matière pour analyser
 
-      const hOf = (a) => (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1);
+      const hOf = (a) => heuresDe(a);
       const totalH = acts.reduce((s, a) => s + hOf(a), 0);
 
       // 1. Meilleur employeur (part des heures)
@@ -4351,13 +4376,12 @@ function AppInner() {
     // Logique : chaque activité "compte" pendant 12 mois après sa date. Au-delà, elle sort de la fenêtre.
     // C'est NOTRE estimation côté front (pas le moteur validé) → toujours présentée comme "d'après mes calculs".
     const fenetre = (() => {
-      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const now = new Date();
       const lignes = (interActivites || []).map(a => {
         const d = new Date(a.date);
         if (isNaN(d)) return null;
         const sortie = new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()); // +12 mois
-        const h = (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1);
+        const h = heuresDe(a);
         const joursAvantSortie = Math.ceil((sortie - now) / 86400000);
         return { date: a.date, employeur: a.employeur, heures: h, sortie, joursAvantSortie, dansLaFenetre: sortie > now };
       }).filter(Boolean);
@@ -4462,13 +4486,12 @@ function AppInner() {
     // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
     // Vue d'ensemble visuelle des 12 derniers mois + les 3 prochains (pour montrer les sorties à venir).
     const timeline = (() => {
-      const HCONV = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
       const MOIS_COURT = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"];
       const now = new Date();
       const acts = (interActivites || []).map(a => {
         const d = new Date(a.date);
         if (isNaN(d)) return null;
-        return { d, heures: (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1), sortie: new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()) };
+        return { d, heures: heuresDe(a), sortie: new Date(d.getFullYear() + 1, d.getMonth(), d.getDate()) };
       }).filter(Boolean);
       // On construit 12 mois passés (dont le mois courant) + 3 mois futurs
       const buckets = [];
@@ -4554,7 +4577,6 @@ function AppInner() {
     // ═══ MODULE ACTUALISATION : calcul du récap réel du mois à déclarer ═══
     // On déclare le mois civil écoulé. La fenêtre d'actualisation court ~du 28 au 15.
     const MOIS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-    const HEURES_PAR_TYPE = { cachet_isole: valeurDe("cachetHeures"), cachet_groupe: valeurDe("cachetHeures"), heures: 1 };
     const maintenant = new Date();
     // Mois à déclarer = mois précédent
     const moisDecl = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1);
@@ -4572,7 +4594,7 @@ function AppInner() {
     actusDuMois.forEach(a => {
       const emp = (a.employeur && a.employeur.trim()) || "Employeur non précisé";
       const nb = parseFloat(a.nombre) || 0;
-      const h = nb * (HEURES_PAR_TYPE[a.type_activite] || 1);
+      const h = heuresDe(a);
       const estCachet = a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe";
       const brut = parseFloat(a.salaire_brut) || 0; // champ pas encore saisi en V1 → souvent 0
       if (!brut) brutManquant = true;
@@ -6202,8 +6224,7 @@ function AppInner() {
                     style={{ flex: "1 1 110px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                   <select value={simForm.type_activite} onChange={e => { setSimForm({ ...simForm, type_activite: e.target.value }); setSimResult(null); }}
                     style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                    <option value="cachet_isole">cachets isolés (12h)</option>
-                    <option value="cachet_groupe">cachets groupés (8h)</option>
+                    <option value="cachet_isole">cachets (12h)</option>
                     <option value="heures">heures</option>
                   </select>
                 </div>
