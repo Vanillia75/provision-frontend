@@ -3583,6 +3583,15 @@ function AppInner() {
       oeuf: "Hector couve", chiot: "Hector chiot", ado: "Hector ado",
       filet: "Filet de sécurité atteint", adulte: "Hector adulte", niche: "Droits sécurisés",
     };
+    // Palier actuel + prochain palier (pour l'affichage immersif d'Hector au centre)
+    const heuresActuelles = c ? c.total_heures : 0;
+    let palierActuel = PALIERS_INTERMITTENT[0];
+    for (const p of PALIERS_INTERMITTENT) {
+      if (heuresActuelles >= p.seuil) palierActuel = p;
+    }
+    const idxActuel = PALIERS_INTERMITTENT.indexOf(palierActuel);
+    const palierSuivant = idxActuel < PALIERS_INTERMITTENT.length - 1 ? PALIERS_INTERMITTENT[idxActuel + 1] : null;
+    const heuresAvantSuivant = palierSuivant ? Math.max(0, palierSuivant.seuil - heuresActuelles) : 0;
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
     const FICHES_CONSEILS = [
@@ -3703,7 +3712,8 @@ function AppInner() {
           {/* Le compteur vivant */}
           {c && (
             <>
-              {/* Hector + briefing */}
+              {/* Hector + briefing — masqué sur le cockpit (Hector immersif le remplace) */}
+              {interNav !== "cockpit" && (
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
@@ -3713,24 +3723,54 @@ function AppInner() {
                   <div style={{ fontSize: 14, color: "#B5D4F4", marginTop: 2 }}>{c.hector_message}</div>
                 </div>
               </div>
+              )}
 
-              {/* ═══ PAGE COCKPIT : compteur + anniversaire + frise + verdict ═══ */}
+              {/* ═══ PAGE COCKPIT : Hector immersif + anniversaire + frise + verdict ═══ */}
               {interNav === "cockpit" && (<>
-              {/* Le gros compteur */}
-              <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "32px 28px", textAlign: "center", marginBottom: 16 }}>
-                <div style={{ fontSize: 11, color: "#6B8299", textTransform: "uppercase", letterSpacing: 1, marginBottom: 12 }}>Tes heures sur 12 mois glissants</div>
-                <div style={{ fontSize: 52, fontWeight: 800, color: "white", lineHeight: 1 }}>
-                  {c.total_heures}<span style={{ color: "#6B8299", fontSize: 28, fontWeight: 600 }}> / {c.seuil} h</span>
+
+              {/* ── Hector vivant au centre (immersif) ── */}
+              <div style={{ background: "radial-gradient(ellipse at 50% 36%, #16335a 0%, #0d1f38 46%, #07192E 100%)", borderRadius: 20, padding: "32px 24px 26px", textAlign: "center", marginBottom: 16, border: "1px solid rgba(93,202,165,0.15)" }}>
+                <div style={{ position: "relative", width: 168, height: 168, margin: "0 auto 16px" }}>
+                  <div style={{ position: "absolute", inset: -12, borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.28) 0%, transparent 68%)" }} />
+                  <div style={{ width: 168, height: 168, borderRadius: "50%", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", position: "relative" }}>
+                    <NiveauImage src={palierActuel.img} fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                  </div>
                 </div>
-                {/* Barre de progression avec repère filet 338h */}
-                <div style={{ height: 12, background: "#0a1322", borderRadius: 6, margin: "20px 0 8px", overflow: "hidden", position: "relative" }}>
+                <div style={{ fontSize: 22, color: "white", fontWeight: 800, marginBottom: 6 }}>
+                  {etatLabels[c.hector_etat] || `Hector ${palierActuel.nom}`}
+                </div>
+                <div style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 4px" }}>
+                  {c.hector_message}
+                  {palierSuivant && (
+                    <> Encore <b style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</b> et il deviendra {palierSuivant.nom}.</>
+                  )}
+                </div>
+              </div>
+
+              {/* ── Ses heures + prochain palier + barre ── */}
+              <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 24px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div>
+                    <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Ses heures</div>
+                    <div style={{ fontSize: 32, color: "white", fontWeight: 800, lineHeight: 1.1 }}>
+                      {c.total_heures}<span style={{ fontSize: 17, color: "#6B8299", fontWeight: 600 }}> / {c.seuil} h</span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5 }}>Prochain palier</div>
+                    <div style={{ fontSize: 16, color: "#5DCAA5", fontWeight: 700, marginTop: 2 }}>
+                      {palierSuivant ? `${palierSuivant.nom} · ${palierSuivant.seuil}h` : "Niche atteinte ✓"}
+                    </div>
+                  </div>
+                </div>
+                <div style={{ height: 10, background: "#0a1322", borderRadius: 6, overflow: "hidden", position: "relative" }}>
                   <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.6s ease" }} />
                   <div style={{ position: "absolute", left: `${(338 / c.seuil) * 100}%`, top: -3, bottom: -3, width: 2, background: "#FAC775" }} title="Filet de sécurité (338h)" />
                 </div>
-                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299" }}>
-                  <span>0</span>
-                  <span style={{ color: c.filet_atteint ? "#FAC775" : "#6B8299" }}>338h {c.filet_atteint ? "✓" : ""} filet</span>
-                  <span>{c.seuil}h</span>
+                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
+                  <span>Arrivée</span>
+                  <span style={{ color: c.filet_atteint ? "#FAC775" : "#6B8299" }}>Filet 338h {c.filet_atteint ? "✓" : ""}</span>
+                  <span>Niche {c.seuil}h</span>
                 </div>
               </div>
 
