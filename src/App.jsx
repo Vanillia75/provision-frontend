@@ -1326,6 +1326,11 @@ function AppInner() {
       await apiFetch("/profile/complete-onboarding", { method: "POST" });
       await loadEverything();
       setNav("dashboard");
+      // Nouvelle inscription intermittent → on lance la visite guidée.
+      // On purge le flag pour qu'un nouveau compte la voie toujours, même si
+      // ce navigateur en avait déjà vu une (ex : un compte AE précédent).
+      localStorage.removeItem("hector_walkthrough_done");
+      setShowWalkthrough(true);
     } catch (err) {
       setError(err.message);
     } finally {
