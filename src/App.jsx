@@ -3966,6 +3966,77 @@ function AppInner() {
       };
     })();
 
+    // ═══ COACH : le verdict-héros + projections parlantes (voix d'Hector qui veille) ═══
+    const coach = (() => {
+      const heures = calc.heures, seuil = calc.seuil, manque = calc.manque;
+      const pctChemin = Math.min(100, Math.round((heures / seuil) * 100));
+      // Rythme par semaine (plus parlant que par mois)
+      const rythmeSemaine = calc.rythmeMensuel / 4.33;
+      const cachetsSemaine = rythmeSemaine / 12; // en cachets isolés
+      // Rythme conseillé pour tenir l'échéance (si date anniv connue)
+      let cachetsConseillesSemaine = null;
+      if (calc.aDateAnniv && calc.joursAnniv > 0 && manque > 0) {
+        const semainesDispo = calc.joursAnniv / 7;
+        cachetsConseillesSemaine = (manque / 12) / semainesDispo;
+      }
+
+      // Comparaison mois-à-mois (ce mois vs mois précédent)
+      const HCONV = { cachet_isole: 12, cachet_groupe: 8, heures: 1 };
+      const now = new Date();
+      const heuresDuMois = (offset) => {
+        const ref = new Date(now.getFullYear(), now.getMonth() - offset, 1);
+        return (interActivites || []).reduce((s, a) => {
+          const d = new Date(a.date);
+          if (isNaN(d) || d.getMonth() !== ref.getMonth() || d.getFullYear() !== ref.getFullYear()) return s;
+          return s + (parseFloat(a.nombre) || 0) * (HCONV[a.type_activite] || 1);
+        }, 0);
+      };
+      const hCeMois = Math.round(heuresDuMois(0));
+      const hMoisDernier = Math.round(heuresDuMois(1));
+      let compa = null;
+      if (hMoisDernier > 0 || hCeMois > 0) {
+        if (hCeMois > hMoisDernier && hMoisDernier > 0) compa = { sens: "up", txt: `Tu fais mieux que le mois dernier (${hMoisDernier}h → ${hCeMois}h). On garde cette énergie. 🐾` };
+        else if (hCeMois < hMoisDernier && hCeMois >= 0 && hMoisDernier > 0) compa = { sens: "down", txt: `Le mois dernier tu étais à ${hMoisDernier}h, ce mois-ci ${hCeMois}h. Ton rythme ralentit — si tu peux, ne lâche pas.` };
+      }
+
+      // Jours depuis le dernier contrat (le chien remarque l'inactivité)
+      let joursInactif = null;
+      if ((interActivites || []).length > 0) {
+        const derniere = (interActivites || []).map(a => new Date(a.date)).filter(d => !isNaN(d)).sort((a, b) => b - a)[0];
+        if (derniere) joursInactif = Math.floor((now - derniere) / 86400000);
+      }
+
+      // LE VERDICT-HÉROS : niveau + grande phrase, dans la voix d'Hector qui veille
+      let niveau, titre, phrase;
+      if (calc.secu) {
+        niveau = "green";
+        titre = "Je veille, tu peux souffler.";
+        phrase = calc.aDateAnniv
+          ? `Tes droits sont sécurisés jusqu'à ton échéance du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
+          : "Tes 507h sont là. Je continue à monter la garde sur ton dossier.";
+      } else if (calc.dansLesTemps === true) {
+        niveau = "green";
+        titre = "Je pense qu'on est sur la bonne voie.";
+        phrase = `À ton rythme, je nous vois atteindre les 507h${calc.dateProjection ? ` vers ${calc.dateProjection}` : ""}${calc.aDateAnniv ? `, avant ton échéance` : ""}. Si c'était mon dossier, je continuerais comme ça.`;
+      } else if (calc.dansLesTemps === false) {
+        niveau = "orange";
+        titre = "Il va falloir accélérer un peu.";
+        phrase = `Il te reste ${calc.joursAnniv} jours et environ ${calc.cachetsManquants} cachets à décrocher. C'est jouable, mais à ta place je chercherais des contrats dès maintenant.`;
+      } else if (manque > 0) {
+        niveau = "blue";
+        titre = "On avance, je garde un œil.";
+        phrase = calc.aUnRythme
+          ? `Il te manque ${manque}h ≈ ${calc.cachetsManquants} cachets.${calc.dateProjection ? ` À ton rythme, je nous vois y arriver vers ${calc.dateProjection}.` : ""} Renseigne ta date anniversaire et je te dirai si on est dans les temps.`
+          : `Il te manque ${manque}h ≈ ${calc.cachetsManquants} cachets. Ajoute tes contrats au fur et à mesure, je suis ton avancée de près.`;
+      } else {
+        niveau = "green";
+        titre = "On l'a fait. 🎉";
+        phrase = "Tu as tes 507h. Je suis fier de nous.";
+      }
+
+      return { niveau, titre, phrase, pctChemin, rythmeSemaine, cachetsSemaine, cachetsConseillesSemaine, compa, joursInactif, hCeMois, hMoisDernier };
+    })();
+
     // ═══ FENÊTRE GLISSANTE (cercle estimé) : quelles heures vont sortir de la période 12 mois ? ═══
     // Logique : chaque activité "compte" pendant 12 mois après sa date. Au-delà, elle sort de la fenêtre.
     // C'est NOTRE estimation côté front (pas le moteur validé) → toujours présentée comme "d'après mes calculs".
@@ -4405,26 +4476,31 @@ function AppInner() {
                     </div>
                   </div>
 
-                  {/* ── PROCHAIN OBJECTIF (actionnable) ── */}
-                  <div style={{ padding: "18px 22px 20px", borderTop: "1px solid rgba(93,202,165,0.15)" }}>
-                    {palierSuivant ? (
-                      <>
-                        <div style={{ fontSize: 10, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Prochain objectif</div>
-                        <div style={{ fontSize: 19, color: "white", fontWeight: 800, lineHeight: 1.25 }}>
-                          Encore <span style={{ color: "#5DCAA5" }}>{heuresAvantSuivant}h</span> <span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}>≈ {cachetsAvantSuivant} cachet{cachetsAvantSuivant > 1 ? "s" : ""}</span>
+                  {/* ── LE VERDICT-HÉROS (juste sous Hector) ── */}
+                  {(() => {
+                    const pal = {
+                      green: { bg: "rgba(93,202,165,0.12)", bd: "rgba(93,202,165,0.35)", tc: "#5DCAA5", emoji: "🟢" },
+                      orange: { bg: "rgba(250,199,117,0.12)", bd: "rgba(250,199,117,0.35)", tc: "#FAC775", emoji: "🟠" },
+                      red: { bg: "rgba(226,83,61,0.12)", bd: "rgba(226,83,61,0.35)", tc: "#F0997F", emoji: "🔴" },
+                      blue: { bg: "rgba(55,138,221,0.1)", bd: "rgba(55,138,221,0.3)", tc: "#7FB8F0", emoji: "🐾" },
+                    }[coach.niveau];
+                    return (
+                      <div style={{ padding: "20px 22px", borderTop: "1px solid rgba(93,202,165,0.15)", background: pal.bg }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
+                          <span style={{ fontSize: 22 }}>{pal.emoji}</span>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: pal.tc, lineHeight: 1.15 }}>{coach.titre}</div>
                         </div>
-                        <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 3 }}>➡️ Tu deviendras <b style={{ color: "white" }}>{palierSuivant.nom}</b>.</div>
-                      </>
-                    ) : (
-                      <>
-                        <div style={{ fontSize: 10, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 0.6, marginBottom: 6 }}>Objectif atteint</div>
-                        <div style={{ fontSize: 19, color: "white", fontWeight: 800, lineHeight: 1.25 }}>Tes 507h sont là 🎉</div>
-                        <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 3 }}>Hector veille. Chaque heure en plus, c'est du bonus.</div>
-                      </>
-                    )}
+                        <div style={{ fontSize: 14, color: "#E8F4FF", lineHeight: 1.55 }}>{coach.phrase}</div>
+                      </div>
+                    );
+                  })()}
 
-                    {/* Barre de progression */}
-                    <div style={{ height: 10, background: "#07192E", borderRadius: 6, overflow: "hidden", position: "relative", marginTop: 14 }}>
+                  {/* ── Progression en phrase + barre ── */}
+                  <div style={{ padding: "16px 22px 18px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                    <div style={{ fontSize: 14, color: "white", fontWeight: 700, marginBottom: 10 }}>
+                      Tu as déjà parcouru <span style={{ color: "#5DCAA5" }}>{coach.pctChemin}%</span> du chemin.
+                    </div>
+                    <div style={{ height: 10, background: "#07192E", borderRadius: 6, overflow: "hidden", position: "relative" }}>
                       <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
                     </div>
                     <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
@@ -4432,15 +4508,27 @@ function AppInner() {
                       <span>Objectif · {c.seuil}h</span>
                     </div>
 
-                    {/* Bouton d'action : faire agir l'utilisateur */}
-                    <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+                    {/* Comparaison mois-à-mois (le chien remarque) */}
+                    {coach.compa && (
+                      <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: coach.compa.sens === "up" ? "rgba(93,202,165,0.07)" : "rgba(250,199,117,0.06)", border: `1px solid ${coach.compa.sens === "up" ? "rgba(93,202,165,0.2)" : "rgba(250,199,117,0.2)"}`, borderRadius: 10, padding: "11px 13px" }}>
+                        <i className={`ti ${coach.compa.sens === "up" ? "ti-trending-up" : "ti-trending-down"}`} aria-hidden="true" style={{ color: coach.compa.sens === "up" ? "#5DCAA5" : "#FAC775", fontSize: 17, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 12.5, color: "#D6E8FA", lineHeight: 1.45 }}>{coach.compa.txt}</div>
+                      </div>
+                    )}
+
+                    {/* LE gros bouton : Hector fait les calculs */}
+                    <button type="button" onClick={() => setInterNav("calcul")}
+                      style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "15px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
+                      <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Hector, fais les calculs pour moi
+                    </button>
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                       <button type="button" onClick={() => setInterNav("activites")}
-                        style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "13px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 7 }}>
-                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Ajouter un contrat
+                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} /> Ajouter un contrat
                       </button>
-                      <button type="button" onClick={() => { setInterNav("hector"); setTimeout(() => { const el = document.getElementById("inter-simulateur"); if (el) el.scrollIntoView({ behavior: "smooth", block: "center" }); }, 120); }}
-                        style={{ background: "transparent", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 10, padding: "13px 16px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                        Simuler
+                      <button type="button" onClick={() => setInterNav("coffre")}
+                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} /> Scanner une AEM
                       </button>
                     </div>
                   </div>
