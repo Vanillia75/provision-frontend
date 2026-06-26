@@ -551,6 +551,8 @@ function AppInner() {
   // ─── Scan d'AEM (Coffre à AEM) — OCR Claude Vision ───
   const [aemUploading, setAemUploading] = useState(false);
   const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
+  const [aemQueue, setAemQueue] = useState([]); // AEM restantes à valider (si le doc en contenait plusieurs)
+  const [aemTotal, setAemTotal] = useState(0); // nb total d'AEM détectées dans le document (pour l'indicateur "1/3")
   const [aemSaving, setAemSaving] = useState(false);
   const [aemError, setAemError] = useState("");
   // Import attestation ARE (date anniversaire + montant journalier lus, jamais calculés).
@@ -1593,24 +1595,38 @@ function AppInner() {
   }
 
   // ─── Scan d'AEM : envoie la photo/PDF au backend (Claude Vision), récupère les champs lus ───
+  // Le document peut contenir PLUSIEURS attestations (un employeur regroupe souvent tous les
+  // contrats du mois dans un seul fichier). On les met en file : on valide la 1ère, puis la suivante.
   async function handleScanAEM(file) {
     setAemUploading(true);
     setAemError("");
     setAemExtrait(null);
+    setAemQueue([]);
+    setAemTotal(0);
     try {
       const form = new FormData();
       form.append("file", file);
       const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
-      // On pré-remplit l'écran de vérification avec ce qu'Hector a lu (tout reste éditable).
-      setAemExtrait({
-        employeur: data.employeur || "",
-        date: data.date || "",
-        type_activite: data.type_activite || "cachet_isole",
-        nombre: data.nombre != null ? String(data.nombre) : "",
-        salaire_brut: data.salaire_brut != null ? String(data.salaire_brut) : "",
-        filename: data.filename || file.name,
-        aem_r2_key: data.aem_r2_key || null,
+      // Le backend renvoie { aems: [...] }. Compatibilité : si un seul objet arrive, on l'emballe.
+      const liste = Array.isArray(data?.aems) ? data.aems : (data ? [data] : []);
+      if (liste.length === 0) {
+        setAemError("Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette.");
+        return;
+      }
+      // Transforme chaque AEM lue en formulaire éditable.
+      const toForm = (d) => ({
+        employeur: d.employeur || "",
+        date: d.date || "",
+        type_activite: d.type_activite || "cachet_isole",
+        nombre: d.nombre != null ? String(d.nombre) : "",
+        salaire_brut: d.salaire_brut != null ? String(d.salaire_brut) : "",
+        filename: d.filename || file.name,
+        aem_r2_key: d.aem_r2_key || null,
       });
+      const forms = liste.map(toForm);
+      setAemTotal(forms.length);
+      setAemExtrait(forms[0]);        // la 1ère à valider
+      setAemQueue(forms.slice(1));    // les suivantes en attente
     } catch (err) {
       setAemError(err.message || "Lecture impossible. Réessaie avec une photo plus nette.");
     } finally {
@@ -1641,13 +1657,35 @@ function AppInner() {
           aem_r2_key: aemExtrait.aem_r2_key || null,
         }),
       });
+      // S'il reste des AEM dans la file (document multi-attestations), on enchaîne sur la suivante.
+      if (aemQueue.length > 0) {
+        setAemExtrait(aemQueue[0]);
+        setAemQueue(aemQueue.slice(1));
+        await loadIntermittentCockpit(); // rafraîchit le compteur d'heures au fur et à mesure
+        setAemSaving(false);
+        return; // on reste sur l'écran de validation pour la suivante
+      }
+      // Plus rien en file : on termine.
       setAemExtrait(null);
+      setAemTotal(0);
       await loadIntermittentCockpit();
       setInterNav("activites");
     } catch (err) {
       setAemError(err.message);
     } finally {
       setAemSaving(false);
+    }
+  }
+
+  // ─── Passe une AEM de la file sans l'enregistrer (ex : doublon ou erreur de lecture) ───
+  function handleSkipAEM() {
+    setAemError("");
+    if (aemQueue.length > 0) {
+      setAemExtrait(aemQueue[0]);
+      setAemQueue(aemQueue.slice(1));
+    } else {
+      setAemExtrait(null);
+      setAemTotal(0);
     }
   }
 
@@ -6839,8 +6877,14 @@ function AppInner() {
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                     </div>
                     <div>
-                      <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Voilà ce que j'ai lu 🐾</div>
-                      <div style={{ fontSize: 12, color: "#8BA5C0" }}>Vérifie et corrige si besoin, puis enregistre.</div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>
+                        {aemTotal > 1 ? "J'ai trouvé " + aemTotal + " attestations dans ce document 🐾" : "Voilà ce que j'ai lu 🐾"}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0" }}>
+                        {aemTotal > 1
+                          ? "Attestation " + (aemTotal - aemQueue.length) + " sur " + aemTotal + " — vérifie et enregistre, je passe à la suivante."
+                          : "Vérifie et corrige si besoin, puis enregistre."}
+                      </div>
                     </div>
                   </div>
 
@@ -6881,12 +6925,19 @@ function AppInner() {
                   <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
                     <button type="button" disabled={aemSaving} onClick={handleConfirmAEM}
                       style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: aemSaving ? "default" : "pointer", fontFamily: "inherit", opacity: aemSaving ? 0.6 : 1 }}>
-                      {aemSaving ? "…" : "C'est juste, enregistre ✓"}
+                      {aemSaving ? "…" : (aemQueue.length > 0 ? "Enregistre et suivante →" : "C'est juste, enregistre ✓")}
                     </button>
-                    <button type="button" onClick={() => { setAemExtrait(null); setAemError(""); }}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "14px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
-                      Annuler
-                    </button>
+                    {aemQueue.length > 0 ? (
+                      <button type="button" disabled={aemSaving} onClick={handleSkipAEM}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "14px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                        Passer
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => { setAemExtrait(null); setAemQueue([]); setAemTotal(0); setAemError(""); }}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "14px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                        Annuler
+                      </button>
+                    )}
                   </div>
                   <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
                     Je fais de mon mieux pour bien lire, mais vérifie toujours — une AEM mal scannée, ça arrive.
