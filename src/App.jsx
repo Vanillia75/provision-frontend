@@ -5721,7 +5721,7 @@ function AppInner() {
 
               {/* ── 0. CE QUE J'AI DÉTECTÉ (carte unique, style maquette) ── */}
               {aDesAnomalies && (
-                <div style={{ background: "rgba(226,83,61,0.07)", border: "1px solid rgba(226,83,61,0.28)", borderRadius: 16, padding: "16px 18px", marginBottom: 14 }}>
+                <div style={{ background: "rgba(226,83,61,0.07)", border: "1px solid rgba(226,83,61,0.28)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
                       <span style={{ fontSize: 18 }}>🔴</span>
@@ -5765,7 +5765,7 @@ function AppInner() {
 
               {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
               {aDesAnalyses && (
-                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 16, padding: "16px 18px", marginBottom: 18 }}>
+                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
                     <span style={{ fontSize: 18 }}>🟢</span>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que j'ai analysé</div>
@@ -6137,7 +6137,7 @@ function AppInner() {
               <div style={{ marginTop: 28, paddingTop: 4 }} />
 
               {/* ── MÉMOIRE DE CARRIÈRE (placeholder — à construire) ── */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(159,203,245,0.3)", borderRadius: 16, padding: "16px 20px", marginBottom: 14 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(159,203,245,0.3)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
                   <i className="ti ti-paw" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 18 }} />
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Mémoire de carrière</div>
@@ -6150,7 +6150,7 @@ function AppInner() {
 
               {/* ── 3. TIMELINE DES HEURES (vue d'ensemble visuelle) ── */}
               {timeline.aDesDonnees && (
-                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px 16px", marginBottom: 14 }}>
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "22px 24px 20px", marginBottom: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                     <i className="ti ti-chart-bar" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 17 }} />
                     <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Tes heures, mois par mois</div>
@@ -6199,7 +6199,7 @@ function AppInner() {
               )}
 
               {/* ── 4. FENÊTRE GLISSANTE (cercle estimé) ── */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px", marginBottom: 14 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "18px 20px", marginBottom: 22 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                   <i className="ti ti-history-toggle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 17 }} />
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Ta fenêtre de 12 mois</div>
