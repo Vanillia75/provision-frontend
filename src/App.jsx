@@ -405,6 +405,7 @@ function AppInner() {
   const [bankSolde, setBankSolde] = useState(null);
   const [bankLoading, setBankLoading] = useState(false);
   const [bankSyncing, setBankSyncing] = useState(false);
+  const [bankCardOpen, setBankCardOpen] = useState(false); // carte connexion bancaire repliée par défaut (accordéon)
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [authEmail, setAuthEmail] = useState("");
@@ -7972,6 +7973,8 @@ function AppInner() {
               );
             })()}
 
+            {/* ── RANGÉE 2 COLONNES : Disponible + Checklist ── */}
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "start" }}>
             {/* ── OBJECTIF : DISPONIBLE + JAUGE RÉSERVE (style cockpit) ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px" }}>
               {argentDisponibleBrut !== null ? (() => {
@@ -8077,6 +8080,7 @@ function AppInner() {
                 </div>
               );
             })()}
+            </div>
 
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
@@ -8189,9 +8193,9 @@ function AppInner() {
               )}
             </div>
 
-            {/* ── CONNEXION BANCAIRE (Powens, lecture seule) ── */}
+            {/* ── CONNEXION BANCAIRE (Powens, lecture seule) — accordéon pleine largeur ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10, flexWrap: "wrap" }}>
+              <div onClick={() => setBankCardOpen(o => !o)} role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: bankCardOpen ? 10 : 0, flexWrap: "wrap", cursor: "pointer" }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(55,138,221,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                   <i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 19, color: "#5DA9F0" }} />
                 </div>
@@ -8201,8 +8205,10 @@ function AppInner() {
                   : BANK_BIENTOT
                     ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#FAC775", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.45)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
                     : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
+                <i className={`ti ti-chevron-${bankCardOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 18, color: "#6B8299", marginLeft: "auto" }} />
               </div>
 
+              {bankCardOpen && (<>
               {bankSyncing ? (
                 <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: 0 }}>
                   🔄 Synchronisation de ta banque en cours…
@@ -8258,6 +8264,7 @@ function AppInner() {
                   )}
                 </>
               )}
+              </>)}
             </div>
 
             {/* ── MESSAGES HECTOR ── */}
