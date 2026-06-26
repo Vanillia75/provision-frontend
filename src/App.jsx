@@ -7996,9 +7996,26 @@ function AppInner() {
                   </>
                 );
               })() : (
-                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <i className="ti ti-wallet" aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0", flexShrink: 0 }} />
-                  <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>Renseigne ton solde bancaire ci-dessous pour voir ton disponible et ta réserve de sécurité.</div>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <i className="ti ti-wallet" aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0", flexShrink: 0 }} />
+                    <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>Renseigne ton solde bancaire pour voir ton disponible et ta réserve de sécurité.</div>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
+                    <div style={{ position: "relative", flex: 1, minWidth: 160, maxWidth: 220 }}>
+                      <input
+                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "10px 30px 10px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                        type="number" step="0.01" inputMode="text"
+                        placeholder="Ex : 3 500"
+                        value={panique.solde}
+                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                      />
+                      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                    </div>
+                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 11, color: "#8BA5C0" }}>⏳</span>}
+                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 11, color: "#5DCAA5" }}>✓</span>}
+                  </div>
                 </div>
               )}
             </div>
