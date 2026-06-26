@@ -573,6 +573,7 @@ function AppInner() {
   const [actuEmpChecked, setActuEmpChecked] = useState({});
   // Petit feedback "copié" sur les boutons du mode recopie.
   const [actuCopied, setActuCopied] = useState("");
+  const [actuLigneOpen, setActuLigneOpen] = useState(null); // index de la ligne de détail ouverte dans le récap
   // Historique des actualisations marquées comme faites (persistées localement pour la V1).
   const [actuHistorique, setActuHistorique] = useState(() => {
     try { return JSON.parse(localStorage.getItem("actuHistorique") || "[]"); } catch { return []; }
@@ -5357,24 +5358,65 @@ function AppInner() {
                         </div>
                       </div>
 
-                      {/* Détail par employeur */}
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {employeursMois.map((e, i) => (
-                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "11px 13px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
-                              <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(93,202,165,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                                <i className="ti ti-building" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15 }} />
-                              </div>
-                              <div style={{ minWidth: 0 }}>
-                                <div style={{ fontSize: 13, fontWeight: 600, color: "#E8F4FF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.nom}</div>
-                                <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 1 }}>{e.cachets > 0 ? `${e.cachets} cachet${e.cachets > 1 ? "s" : ""}` : `${Math.round(e.heures)}h`}</div>
-                              </div>
+                      {/* Tableau détaillé : une ligne par contrat, cliquable */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                        {[...actusDuMois].sort((a, b) => new Date(a.date) - new Date(b.date)).map((a, i) => {
+                          const estCachet = a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe";
+                          const nb = parseFloat(a.nombre) || 0;
+                          const h = Math.round(heuresDe(a));
+                          const emp = (a.employeur && a.employeur.trim()) || "Employeur non précisé";
+                          const dateObj = new Date(a.date);
+                          const dateCourt = `${String(dateObj.getDate()).padStart(2, "0")}/${String(dateObj.getMonth() + 1).padStart(2, "0")}`;
+                          // Source : France Travail (futur) > AEM importée > manuel
+                          const src = a.aem_recue === true || a.source === "ocr"
+                            ? { label: "AEM importée", color: "#9FCBF5", bg: "rgba(55,138,221,0.12)", bd: "rgba(55,138,221,0.3)", icon: "ti-file-check" }
+                            : { label: "Ajout manuel", color: "#C9A861", bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.28)", icon: "ti-pencil" };
+                          const ouvert = actuLigneOpen === i;
+                          return (
+                            <div key={i} style={{ background: ouvert ? "rgba(93,202,165,0.06)" : "rgba(255,255,255,0.025)", border: `1px solid ${ouvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, overflow: "hidden", transition: "background 0.2s" }}>
+                              <button type="button" onClick={() => setActuLigneOpen(ouvert ? null : i)}
+                                style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", padding: "11px 13px", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                                <div style={{ fontSize: 12, fontWeight: 700, color: "#9FCBF5", minWidth: 42, flexShrink: 0 }}>{dateCourt}</div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 13, fontWeight: 600, color: "#E8F4FF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{emp}</div>
+                                  <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 1 }}>{estCachet ? `${nb} cachet${nb > 1 ? "s" : ""}` : `${h}h`} · {h}h retenues</div>
+                                </div>
+                                <span style={{ fontSize: 9.5, fontWeight: 700, color: src.color, background: src.bg, border: `1px solid ${src.bd}`, borderRadius: 6, padding: "3px 7px", display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                                  <i className={`ti ${src.icon}`} aria-hidden="true" style={{ fontSize: 11 }} /> {src.label}
+                                </span>
+                                <i className={`ti ${ouvert ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ color: "#6B8299", fontSize: 15, flexShrink: 0 }} />
+                              </button>
+
+                              {/* Panneau de détail au clic */}
+                              {ouvert && (
+                                <div style={{ padding: "4px 15px 15px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                  <div style={{ fontSize: 12.5, fontWeight: 700, color: "white", margin: "12px 0 10px" }}>{dateObj.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
+                                  <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#D6E8FA" }}>
+                                      <i className="ti ti-building" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, width: 18 }} /> {emp}
+                                    </div>
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#D6E8FA" }}>
+                                      <i className="ti ti-clock" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 15, width: 18 }} /> {estCachet ? `${nb} cachet${nb > 1 ? "s" : ""} · ${h} heures retenues` : `${h} heures`}
+                                    </div>
+                                    {a.salaire_brut > 0 && (
+                                      <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#D6E8FA" }}>
+                                        <i className="ti ti-cash" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, width: 18 }} /> {new Intl.NumberFormat("fr-FR").format(Math.round(a.salaire_brut))} € brut
+                                      </div>
+                                    )}
+                                    <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#D6E8FA" }}>
+                                      <i className={`ti ${a.aem_recue === true || a.source === "ocr" ? "ti-circle-check" : "ti-info-circle"}`} aria-hidden="true" style={{ color: a.aem_recue === true || a.source === "ocr" ? "#5DCAA5" : "#C9A861", fontSize: 15, width: 18 }} />
+                                      {a.aem_recue === true || a.source === "ocr" ? "AEM importée ✓" : "Saisie manuelle — pense à vérifier ton AEM"}
+                                    </div>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                            {e.brut > 0 && (
-                              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#B5D4F4", flexShrink: 0 }}>{new Intl.NumberFormat("fr-FR").format(Math.round(e.brut))} €</div>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
+                      </div>
+
+                      <div style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
+                        Vérifie que tout est là : ce qu'Hector compte doit correspondre exactement à ton dossier France Travail.
                       </div>
                     </div>
                   )}
