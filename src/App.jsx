@@ -6857,7 +6857,7 @@ function AppInner() {
                   <NiveauImage src="/hector-tete.png" fallbackIcon="ti-camera" fallbackColor="#5DCAA5" />
                 </div>
                 <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Photographie ton AEM, je lis tout 🐾</h1>
-                <p style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>Employeur, cachets, heures, salaire brut — je remplis tout pour toi. Tu n'as qu'à vérifier.</p>
+                <p style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>Employeur, cachets, heures, salaire brut — je remplis tout pour toi. Tu n'as qu'à vérifier. <strong style={{ color: "#9FCBF5", fontWeight: 700 }}>Plusieurs attestations dans un même fichier ? Je les lis toutes.</strong></p>
               </div>
 
               {/* Zone d'upload (si pas de résultat en cours) */}
@@ -6892,17 +6892,42 @@ function AppInner() {
               {/* Écran de vérification (si Hector a lu quelque chose) */}
               {aemExtrait && (
                 <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 20px 22px" }}>
+                  {/* Bannière mise en avant quand le document contient plusieurs attestations */}
+                  {aemTotal > 1 && (
+                    <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.18), rgba(93,202,165,0.06))", border: "1px solid rgba(93,202,165,0.45)", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                        <span style={{ fontSize: 26, flexShrink: 0 }}>🎉</span>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "white", lineHeight: 1.25 }}>
+                          J'ai trouvé {aemTotal} attestations dans ce document !
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 13, color: "#C2E6D8", lineHeight: 1.5, marginBottom: 12 }}>
+                        Je te les fais valider une par une — tu es sur la <strong style={{ color: "white" }}>n°{aemTotal - aemQueue.length}</strong> sur {aemTotal}.
+                      </div>
+                      {/* Petite frise de progression */}
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {Array.from({ length: aemTotal }).map((_, idx) => {
+                          const courante = aemTotal - aemQueue.length - 1;
+                          const fait = idx < courante;
+                          const active = idx === courante;
+                          return (
+                            <div key={idx} style={{ flex: 1, height: 6, borderRadius: 3, background: fait ? "#5DCAA5" : active ? "rgba(93,202,165,0.6)" : "rgba(255,255,255,0.12)", transition: "background 0.3s ease" }} />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                     <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                     </div>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>
-                        {aemTotal > 1 ? "J'ai trouvé " + aemTotal + " attestations dans ce document 🐾" : "Voilà ce que j'ai lu 🐾"}
+                        {aemTotal > 1 ? "Attestation " + (aemTotal - aemQueue.length) + " sur " + aemTotal : "Voilà ce que j'ai lu 🐾"}
                       </div>
                       <div style={{ fontSize: 12, color: "#8BA5C0" }}>
                         {aemTotal > 1
-                          ? "Attestation " + (aemTotal - aemQueue.length) + " sur " + aemTotal + " — vérifie et enregistre, je passe à la suivante."
+                          ? "Vérifie et enregistre, je passe à la suivante."
                           : "Vérifie et corrige si besoin, puis enregistre."}
                       </div>
                     </div>
@@ -7571,7 +7596,7 @@ function AppInner() {
             img: "/hector-4.png",
             timerLabel: "SCANNER UNE AEM",
             title: "Photographie ton AEM, je lis tout.",
-            sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
+            sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Plusieurs attestations dans un seul fichier ? Je les détecte toutes. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
             items: [
               { icon: "ti-camera", text: "Scan photo ou PDF : je lis et je remplis les champs" },
               { icon: "ti-eye-check", text: "Tu vérifies, tu corriges si besoin, tu valides" },
@@ -10784,7 +10809,7 @@ function AppInner() {
             img: "/hector-4.png",
             timerLabel: "SCANNER UNE AEM",
             title: "Photographie ton AEM, je lis tout.",
-            sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
+            sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Plusieurs attestations dans un seul fichier ? Je les détecte toutes. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
             items: [
               { icon: "ti-camera", text: "Scan photo ou PDF : je lis et je remplis les champs" },
               { icon: "ti-eye-check", text: "Tu vérifies, tu corriges si besoin, tu valides" },
