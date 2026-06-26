@@ -4420,11 +4420,27 @@ function AppInner() {
         };
       }
 
-      // 🟡 EN BONNE VOIE — par défaut quand il manque des heures, sans drame.
+      // 🟡 EN BONNE VOIE — par défaut quand il manque des heures.
+      // Titre + phrase dynamiques selon le manque, pour éviter un ton faux
+      // ("plus que 159h" sonne faux). 4 paliers : proche → loin.
+      let titreAmber, phraseAmber;
+      if (manque <= 24) {
+        titreAmber = "Tu y es presque";
+        phraseAmber = `Plus que ${manque} heure${manque > 1 ? "s" : ""} — tu touches au but. Encore un petit effort. 🐾`;
+      } else if (manque <= 72) {
+        titreAmber = "En bonne voie";
+        phraseAmber = `Tu avances bien : ${manque} heures à faire. Continue comme ça, je surveille le reste. 🐾`;
+      } else if (manque <= 150) {
+        titreAmber = "Tu construis ton renouvellement";
+        phraseAmber = `Il te reste ${manque} heures. Tu les construis cachet après cachet — je suis ton avancée de près. 🐾`;
+      } else {
+        titreAmber = "On le prépare ensemble";
+        phraseAmber = `Le renouvellement est encore loin (${manque} heures), mais pas d'inquiétude : on va le préparer étape par étape. 🐾`;
+      }
       return {
-        ton: "amber", emoji: "🟡", titre: "En bonne voie",
+        ton: "amber", emoji: "🟡", titre: titreAmber,
         bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.3)", tc: "#FAC775", st: "#EDD9B0",
-        phrase: `Il ne te manque plus que ${manque} heure${manque > 1 ? "s" : ""}. Continue comme ça, je surveille le reste. 🐾`,
+        phrase: phraseAmber,
       };
     })();
 
@@ -4440,11 +4456,12 @@ function AppInner() {
       // Heures réellement comptabilisées = total moteur (déjà filtré 365j côté backend).
       const heures = calc.heures;
       const seuilOK = calc.secu || calc.manque <= 0;
-      // Période de réf : calculée côté front pour l'instant → 🟠 "calcul fiable", jamais 🟢.
-      // (Passera 🟢 quand backend/expert valideront la date d'ouverture exacte.)
+      // Période de réf : calculée côté front → fiable mais pas "certaine" (jamais 🟢).
+      // Poids visuel réduit : badge 🟠 conservé (honnêteté) mais statut en gris neutre,
+      // pour que l'œil aille d'abord au vrai problème (🔴 AEM), pas ici.
       const periodeStatut = c && c.date_anniversaire
-        ? { badge: "🟠", txt: "12 mois · fiable", coul: "#FAC775" }
-        : { badge: "🟠", txt: "à préciser", coul: "#FAC775" };
+        ? { badge: "🟠", txt: "12 mois · fiable", coul: "#7E97B3" }
+        : { badge: "🟠", txt: "à préciser", coul: "#7E97B3" };
 
       const lignes = [
         {
@@ -4669,19 +4686,24 @@ function AppInner() {
 
     // ═══ NEXT ACTION UNIQUE : une seule prochaine action, toujours ═══
     // Priorité : AEM manquante > heures > prêt. (Défini après `anomalies`, qu'il lit.)
+    // `suivant` = l'objectif d'après (logique 2 temps : règle l'urgent, puis vise le reste).
     const nextAction = (() => {
       if (calc.secu) {
-        return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
+        return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation", suivant: null };
       }
+      const manque = calc.manque;
+      const phraseHeures = manque > 0
+        ? `Encore ${manque} h ≈ ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""} pour sécuriser tes droits.`
+        : null;
       // S'il y a une anomalie AEM manquante, elle prime (sans elle, les heures n'existent pas pour FT).
       const aemAnomalie = (anomalies || []).find(a => a.id === "aem");
       if (aemAnomalie) {
-        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "coffre" };
+        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "coffre", suivant: phraseHeures };
       }
-      if (calc.manque > 0) {
-        return { icon: "ti-arrow-right", txt: `Il te manque ${calc.manque} h ≈ ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""}.`, nav: "activites" };
+      if (manque > 0) {
+        return { icon: "ti-arrow-right", txt: phraseHeures, nav: "activites", suivant: null };
       }
-      return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
+      return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation", suivant: null };
     })();
 
     // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
@@ -5060,6 +5082,9 @@ function AppInner() {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
                   <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
+                  {nextAction.suivant && (
+                    <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>Puis : {nextAction.suivant}</div>
+                  )}
                 </div>
                 <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
               </button>
