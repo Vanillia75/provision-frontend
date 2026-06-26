@@ -4486,23 +4486,6 @@ function AppInner() {
       return { lignes, faits, total: lignes.length };
     })();
 
-    // ═══ NEXT ACTION UNIQUE : une seule prochaine action, toujours ═══
-    // Priorité : AEM manquante > heures > prêt.
-    const nextAction = (() => {
-      if (calc.secu) {
-        return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
-      }
-      // S'il y a une anomalie AEM manquante, elle prime (sans elle, les heures n'existent pas pour FT).
-      const aemAnomalie = (anomalies || []).find(a => a.id === "aem");
-      if (aemAnomalie) {
-        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "coffre" };
-      }
-      if (calc.manque > 0) {
-        return { icon: "ti-arrow-right", txt: `Il te manque ${calc.manque} h ≈ ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""}.`, nav: "activites" };
-      }
-      return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
-    })();
-
     // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
     const analyses = (() => {
       const acts = interActivites || [];
@@ -4683,6 +4666,23 @@ function AppInner() {
       return out;
     })();
     const aDesAnomalies = anomalies.length > 0;
+
+    // ═══ NEXT ACTION UNIQUE : une seule prochaine action, toujours ═══
+    // Priorité : AEM manquante > heures > prêt. (Défini après `anomalies`, qu'il lit.)
+    const nextAction = (() => {
+      if (calc.secu) {
+        return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
+      }
+      // S'il y a une anomalie AEM manquante, elle prime (sans elle, les heures n'existent pas pour FT).
+      const aemAnomalie = (anomalies || []).find(a => a.id === "aem");
+      if (aemAnomalie) {
+        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "coffre" };
+      }
+      if (calc.manque > 0) {
+        return { icon: "ti-arrow-right", txt: `Il te manque ${calc.manque} h ≈ ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""}.`, nav: "activites" };
+      }
+      return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
+    })();
 
     // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
     // Vue d'ensemble visuelle des 12 derniers mois + les 3 prochains (pour montrer les sorties à venir).
