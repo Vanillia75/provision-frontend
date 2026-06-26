@@ -17,6 +17,10 @@ if (typeof window !== "undefined") {
 const API_BASE = "https://provision-backend-production.up.railway.app";
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
+// Connexion bancaire encore en validation production (ticket Powens PCS-75254).
+// Passe à false une fois la prod validée pour réactiver le bouton de connexion.
+const BANK_BIENTOT = true;
+
 const STATUTS = [
   { id: "auto_entrepreneur", label: "Auto-entrepreneur", disponible: true },
   { id: "sarl", label: "SARL (gérant)", disponible: false },
@@ -8022,7 +8026,9 @@ function AppInner() {
                 <div style={{ fontSize: 15, fontWeight: 800, color: "#FFFFFF" }}>Connexion bancaire</div>
                 {bankConnected
                   ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#5DCAA5", background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 10px" }}>Connectée</span>
-                  : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
+                  : BANK_BIENTOT
+                    ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#FAC775", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.45)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
+                    : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
               </div>
 
               {bankSyncing ? (
@@ -8049,7 +8055,9 @@ function AppInner() {
               ) : (
                 <>
                   <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 14px" }}>
-                    Relie ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. C'est <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : tu peux aussi continuer en saisie manuelle.
+                    {BANK_BIENTOT
+                      ? <>Bientôt, tu pourras <strong style={{ color: "#FFFFFF" }}>relier ton compte</strong> pour que ton solde se mette à jour tout seul. On finalise la mise en service avec notre partenaire bancaire — en attendant, continue en <strong style={{ color: "#FFFFFF" }}>saisie manuelle</strong>.</>
+                      : <>Relie ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. C'est <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : tu peux aussi continuer en saisie manuelle.</>}
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
@@ -8065,11 +8073,17 @@ function AppInner() {
                       <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Débranchable quand tu veux.</strong></span>
                     </div>
                   </div>
-                  <button type="button" onClick={handleBankConnect} disabled={bankLoading}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1 }}>
-                    <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 16 }} />
-                    {bankLoading ? "Ouverture…" : "Connecter ma banque"}
-                  </button>
+                  {BANK_BIENTOT ? (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.4)", color: "#FAC775", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700 }}>
+                      <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 16 }} /> Bientôt disponible
+                    </div>
+                  ) : (
+                    <button type="button" onClick={handleBankConnect} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1 }}>
+                      <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 16 }} />
+                      {bankLoading ? "Ouverture…" : "Connecter ma banque"}
+                    </button>
+                  )}
                 </>
               )}
             </div>
