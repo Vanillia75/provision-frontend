@@ -1,1 +1,59 @@
+name: Vérifier regles_intermittent.js (généré)
 
+# Le référentiel maître est regles_intermittent.py. Le .js DOIT être généré à partir
+# de lui (generer_regles_js.py) et committé tel quel. Cette CI régénère le .js dans un
+# espace temporaire et vérifie qu'il est IDENTIQUE à celui présent dans le dépôt.
+#   • Si le .js du dépôt a été modifié à la main → diff → la CI ÉCHOUE.
+#   • Si quelqu'un a changé le .py sans régénérer le .js → diff → la CI ÉCHOUE.
+# Résultat : il est structurellement impossible que le front et le back divergent.
+"on":
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Sauvegarder le .js du dépôt
+        run: |
+          mkdir -p /tmp/depot
+          # On copie les .js présents dans le dépôt (racine et/ou src/) pour comparaison.
+          for f in regles_intermittent.js src/regles_intermittent.js; do
+            if [ -f "$f" ]; then cp "$f" "/tmp/depot/$(echo "$f" | tr '/' '_')"; fi
+          done
+
+      - name: Régénérer le .js depuis le .py
+        run: python generer_regles_js.py
+
+      - name: Comparer généré vs dépôt
+        run: |
+          echec=0
+          for f in regles_intermittent.js src/regles_intermittent.js; do
+            if [ -f "$f" ]; then
+              ref="/tmp/depot/$(echo "$f" | tr '/' '_')"
+              if [ ! -f "$ref" ]; then
+                echo "❌ $f a été généré mais n'existait pas dans le dépôt."
+                echec=1
+              elif ! diff -q "$ref" "$f" > /dev/null; then
+                echo "❌ $f diffère de la version générée depuis le .py."
+                echo "   → Le .js a été modifié à la main, OU le .py a changé sans régénérer le .js."
+                echo "   → Solution : régénérer le .js (python generer_regles_js.py) et le committer."
+                echo "--- Différences ---"
+                diff "$ref" "$f" || true
+                echec=1
+              else
+                echo "✓ $f est à jour (identique à la génération)."
+              fi
+            fi
+          done
+          exit $echec
