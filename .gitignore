@@ -1,0 +1,18 @@
+# Dépendances installées (des milliers de fichiers, à ne jamais versionner)
+node_modules/
+
+# Résultat de build (régénéré à chaque build)
+dist/
+
+# Config locale d'outils (aperçu, etc.)
+.claude/
+
+# Logs et fichiers système
+*.log
+.DS_Store
+Thumbs.db
+
+# Variables d'environnement (secrets)
+.env
+.env.local
+.env.*.local
