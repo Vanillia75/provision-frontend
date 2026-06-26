@@ -4993,7 +4993,7 @@ function AppInner() {
                           <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                             <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, flexShrink: 0, marginTop: 2 }} />
                             <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
-                              <strong>En comptant tes contrats déjà prévus :</strong> tu serais à <strong style={{ color: c.projection_avec_prevus_securise ? "#5DCAA5" : "#FAC775" }}>{c.projection_avec_prevus_heures}h</strong>
+                              <strong>En comptant tes contrats signés déjà saisis :</strong> tu serais à <strong style={{ color: c.projection_avec_prevus_securise ? "#5DCAA5" : "#FAC775" }}>{c.projection_avec_prevus_heures}h</strong>
                               {!c.projection_avec_prevus_securise && <> — il te manquerait <strong style={{ color: "#FAC775" }}>{c.projection_avec_prevus_manquant}h</strong></>}.
                             </div>
                           </div>
@@ -6537,6 +6537,12 @@ function AppInner() {
                       <input type="text" value={interForm.employeur} onChange={e => setInterForm({ ...interForm, employeur: e.target.value })}
                         placeholder="Employeur (optionnel)"
                         style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 8, padding: "9px 11px" }}>
+                      <i className="ti ti-info-circle" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
+                      <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.45 }}>
+                        Ajoute ici uniquement tes contrats <strong style={{ color: "#C8E0F5" }}>déjà réalisés ou déjà signés</strong>. Pour tester un contrat possible, utilise le simulateur <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
+                      </div>
                     </div>
                     <button type="button" disabled={interSaving} onClick={handleAddActivite}
                       style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: interSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interSaving ? 0.6 : 1 }}>
