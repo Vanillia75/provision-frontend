@@ -540,7 +540,7 @@ function AppInner() {
   const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
   const [simResult, setSimResult] = useState(null);
   const [simLoading, setSimLoading] = useState(false);
-  // Brique 5.5 : date anniversaire (échéance des droits)
+  // Brique 5.5 : date anniversaire (date de renouvellement des droits)
   const [anniversaireInput, setAnniversaireInput] = useState("");
   const [anniversaireSaving, setAnniversaireSaving] = useState(false);
   const [anniversaireEdit, setAnniversaireEdit] = useState(false);
@@ -1704,7 +1704,7 @@ function AppInner() {
       return {
         ouv: manque > 0 ? "Je préfère te prévenir." : "On peut souffler.",
         text: manque > 0
-          ? `Si tu fais une pause, ton compteur reste à ${fmtH(heuresActuelles)}h — il ne baisse pas tout de suite, mais il n'avance pas non plus. Or il te manque ${fmtH(manque)}h${joursAnniv ? ` et il te reste ${joursAnniv} jours avant ton échéance` : ""}. Une pause courte, ça va ; un mois entier, je garderais un œil sur le calendrier.`
+          ? `Si tu fais une pause, ton compteur reste à ${fmtH(heuresActuelles)}h — il ne baisse pas tout de suite, mais il n'avance pas non plus. Or il te manque ${fmtH(manque)}h${joursAnniv ? ` et il te reste ${joursAnniv} jours avant ton renouvellement` : ""}. Une pause courte, ça va ; un mois entier, je garderais un œil sur le calendrier.`
           : `Tu as déjà tes ${seuil}h, donc une pause ne met pas tes droits en danger dans l'immédiat. Profite — je veille.`,
       };
     }
@@ -1728,7 +1728,7 @@ function AppInner() {
       return {
         ouv: manque > 0 ? "Voyons ça." : "On peut souffler.",
         text: manque > 0
-          ? `Pour atteindre tes ${seuil}h, il te manque ${fmtH(manque)}h ≈ ${Math.ceil(manque / 12)} cachets${joursAnniv ? `, et il te reste ${joursAnniv} jours avant ton échéance` : ""}. ${joursAnniv && joursAnniv > 0 ? `Ça fait environ ${(Math.ceil(manque / 12) / (joursAnniv / 7)).toFixed(1)} cachets par semaine à tenir.` : "Renseigne ta date anniversaire et je te dirai à quel rythme aller."}`
+          ? `Pour atteindre tes ${seuil}h, il te manque ${fmtH(manque)}h ≈ ${Math.ceil(manque / 12)} cachets${joursAnniv ? `, et il te reste ${joursAnniv} jours avant ton renouvellement` : ""}. ${joursAnniv && joursAnniv > 0 ? `Ça fait environ ${(Math.ceil(manque / 12) / (joursAnniv / 7)).toFixed(1)} cachets par semaine à tenir.` : "Renseigne ta date anniversaire et je te dirai à quel rythme aller."}`
           : `Tu as déjà tes ${seuil}h — l'objectif est atteint. 🎉`,
       };
     }
@@ -4059,7 +4059,7 @@ function AppInner() {
                     "Calcule ton URSSAF et tes impôts en temps réel",
                     "Te dit toujours ce que tu peux dépenser sans danger",
                     "Crée tes devis et factures",
-                    "T'alerte avant chaque échéance",
+                    "T'alerte avant chaque renouvellement",
                   ].map(t => (
                     <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 6, fontSize: 12, color: "#28425E" }}>
                       <span style={{ color: "#1D9E75", flexShrink: 0 }}>✓</span>{t}
@@ -4287,16 +4287,16 @@ function AppInner() {
         conseilNiveau = "green";
         conseilTitre = "Tu peux souffler";
         conseilTexte = aDateAnniv
-          ? `Tes droits sont sécurisés jusqu'à ton échéance du ${formatDateCourt(c.date_anniversaire)}. Chaque heure en plus, c'est du bonus pour après.`
+          ? `Tes droits sont sécurisés jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Chaque heure en plus, c'est du bonus pour après.`
           : "Tes droits sont sécurisés. Continue à déclarer, ça prépare ton prochain renouvellement.";
       } else if (dansLesTemps === true) {
         conseilNiveau = "green";
         conseilTitre = "Tu es sur la bonne voie";
-        conseilTexte = `À ton rythme actuel (~${Math.round(rythmeMensuel)}h/mois), tu devrais atteindre tes 507h${dateProjection ? ` vers ${dateProjection}` : ""}${aDateAnniv ? `, avant ton échéance` : ""}. Garde la cadence.`;
+        conseilTexte = `À ton rythme actuel (~${Math.round(rythmeMensuel)}h/mois), tu devrais atteindre tes 507h${dateProjection ? ` vers ${dateProjection}` : ""}${aDateAnniv ? `, avant ton renouvellement` : ""}. Garde la cadence.`;
       } else if (dansLesTemps === false) {
         conseilNiveau = "orange";
         conseilTitre = "Il faut accélérer";
-        conseilTexte = `À ton rythme actuel, tu risques de ne pas atteindre 507h avant ton échéance du ${formatDateCourt(c.date_anniversaire)}. Il te faudrait environ ${cachetsManquants} cachet${cachetsManquants > 1 ? "s" : ""} de plus — cherche des contrats dès maintenant.`;
+        conseilTexte = `À ton rythme actuel, tu risques de ne pas atteindre 507h avant ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Il te faudrait environ ${cachetsManquants} cachet${cachetsManquants > 1 ? "s" : ""} de plus — cherche des contrats dès maintenant.`;
       } else if (manque > 0) {
         conseilNiveau = "blue";
         conseilTitre = "Continue à déclarer";
@@ -4325,7 +4325,7 @@ function AppInner() {
       // Rythme par semaine (plus parlant que par mois)
       const rythmeSemaine = calc.rythmeMensuel / 4.33;
       const cachetsSemaine = rythmeSemaine / 12; // en cachets isolés
-      // Rythme conseillé pour tenir l'échéance (si date anniv connue)
+      // Rythme conseillé pour tenir le renouvellement (si date anniv connue)
       let cachetsConseillesSemaine = null;
       if (calc.aDateAnniv && calc.joursAnniv > 0 && manque > 0) {
         const semainesDispo = calc.joursAnniv / 7;
@@ -4363,12 +4363,12 @@ function AppInner() {
         niveau = "green";
         titre = "Je veille, tu peux souffler.";
         phrase = calc.aDateAnniv
-          ? `Tes droits sont sécurisés jusqu'à ton échéance du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
+          ? `Tes droits sont sécurisés jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
           : "Tes 507h sont là. Je continue à monter la garde sur ton dossier.";
       } else if (calc.dansLesTemps === true) {
         niveau = "green";
         titre = "Je pense qu'on est sur la bonne voie.";
-        phrase = `À ton rythme, je nous vois atteindre les 507h${calc.dateProjection ? ` vers ${calc.dateProjection}` : ""}${calc.aDateAnniv ? `, avant ton échéance` : ""}. Si c'était mon dossier, je continuerais comme ça.`;
+        phrase = `À ton rythme, je nous vois atteindre les 507h${calc.dateProjection ? ` vers ${calc.dateProjection}` : ""}${calc.aDateAnniv ? `, avant ton renouvellement` : ""}. Si c'était mon dossier, je continuerais comme ça.`;
       } else if (calc.dansLesTemps === false) {
         niveau = "orange";
         titre = "Il va falloir accélérer un peu.";
@@ -4475,7 +4475,7 @@ function AppInner() {
       const sortent30 = lignes.filter(l => l.dansLaFenetre && l.joursAvantSortie <= 30).reduce((s, l) => s + l.heures, 0);
       const sortent60 = lignes.filter(l => l.dansLaFenetre && l.joursAvantSortie <= 60).reduce((s, l) => s + l.heures, 0);
       const sortent90 = lignes.filter(l => l.dansLaFenetre && l.joursAvantSortie <= 90).reduce((s, l) => s + l.heures, 0);
-      // La prochaine activité qui va sortir (la plus proche de l'échéance)
+      // La prochaine activité qui va sortir (la plus proche du renouvellement)
       const prochainesSorties = lignes.filter(l => l.dansLaFenetre).sort((a, b) => a.joursAvantSortie - b.joursAvantSortie).slice(0, 3);
       const totalDansFenetre = lignes.filter(l => l.dansLaFenetre).reduce((s, l) => s + l.heures, 0);
       return { sortent30: Math.round(sortent30), sortent60: Math.round(sortent60), sortent90: Math.round(sortent90), prochainesSorties, totalDansFenetre: Math.round(totalDansFenetre), aDesActivites: lignes.length > 0 };
@@ -5061,7 +5061,7 @@ function AppInner() {
                 {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
-              {/* ── Brique 5.5 : date anniversaire (échéance des droits) ── */}
+              {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
               <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
                 {!anniversaireEdit && c.date_anniversaire && (
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
@@ -5072,8 +5072,11 @@ function AppInner() {
                         <div style={{ fontSize: 14, color: "white", fontWeight: 600, marginTop: 1 }}>
                           {c.jours_avant_anniversaire != null && c.jours_avant_anniversaire >= 0
                             ? `Dans ${c.jours_avant_anniversaire} jour${c.jours_avant_anniversaire > 1 ? "s" : ""}`
-                            : "Échéance dépassée"}
+                            : "Renouvellement dépassé"}
                           <span style={{ color: "#8BA5C0", fontWeight: 400, fontSize: 12 }}> · {c.date_anniversaire}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#9A8050", marginTop: 3, fontStyle: "italic" }}>
+                          C'est la date à laquelle France Travail étudie ton renouvellement.
                         </div>
                       </div>
                     </div>
@@ -5088,7 +5091,8 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
                       <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>
-                        Renseigne ta date anniversaire pour qu'Hector te prévienne avant l'échéance.
+                        Renseigne ta date anniversaire pour qu'Hector te prévienne avant ton renouvellement.
+                        <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton renouvellement.</span>
                       </div>
                     </div>
                     <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
@@ -5507,26 +5511,26 @@ function AppInner() {
                 R.renouveler = () => {
                   if (calc.secu) return {
                     ouv: "On peut souffler.",
-                    text: `D'après ce que je vois, tes droits sont déjà sécurisés${dateAnnivTxt ? ` jusqu'à ton échéance du ${dateAnnivTxt}` : ""}. Tu as tes 507h. Pour moi, on est tranquilles — et chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
+                    text: `D'après ce que je vois, tes droits sont déjà sécurisés${dateAnnivTxt ? ` jusqu'à ton renouvellement du ${dateAnnivTxt}` : ""}. Tu as tes 507h. Pour moi, on est tranquilles — et chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
                     pourquoi: `Tu es à ${calc.heures}h, au-dessus du seuil de ${calc.seuil}h requis. C'est ce seuil, atteint dans ta période de référence, qui ouvre le renouvellement.`,
                     suite: ["combien_manque", "rythme", "si_pause"],
                   };
                   if (!dateAnnivTxt) return {
                     ouv: "Il me manque une info.",
-                    text: `Pour te dire si tu vas renouveler, j'ai besoin de ta date anniversaire — c'est elle qui fixe l'échéance où on examine tes droits. Sans elle, je ne veux pas te donner une réponse à l'aveugle.`,
+                    text: `Pour te dire si tu vas renouveler, j'ai besoin de ta date anniversaire — c'est elle qui fixe le renouvellement où on examine tes droits. Sans elle, je ne veux pas te donner une réponse à l'aveugle.`,
                     manque: true,
                     suite: ["combien_manque", "combien_cachets"],
                   };
                   if (calc.dansLesTemps === true) return {
                     ouv: "Ça sent bon.",
-                    text: `Je nous vois bien. Il te manque ${calc.manque}h, et à ton rythme actuel${calc.dateProjection ? ` tu atteindrais les 507h vers ${calc.dateProjection}` : ""}, avant ton échéance du ${dateAnnivTxt}. Si c'était mon dossier, je continuerais sur cette lancée.`,
+                    text: `Je nous vois bien. Il te manque ${calc.manque}h, et à ton rythme actuel${calc.dateProjection ? ` tu atteindrais les 507h vers ${calc.dateProjection}` : ""}, avant ton renouvellement du ${dateAnnivTxt}. Si c'était mon dossier, je continuerais sur cette lancée.`,
                     pourquoi: `Tu fais ~${calc.rythmeMensuel}h/mois. Il te reste ${calc.joursAnniv} jours avant le ${dateAnnivTxt}, soit assez de temps pour combler les ${calc.manque}h manquantes à ce rythme.`,
                     estimation: true,
                     suite: ["combien_cachets", "si_contrat", "rythme"],
                   };
                   return {
                     ouv: "Je préfère te prévenir.",
-                    text: `Pour l'instant, à ton rythme actuel, j'ai peur qu'on n'y arrive pas avant ton échéance du ${dateAnnivTxt}. Il te manque ${calc.manque}h ≈ ${calc.cachetsManquants} cachets, et il te reste ${calc.joursAnniv} jours. Ce n'est pas perdu — mais à ta place, je chercherais des contrats dès maintenant.`,
+                    text: `Pour l'instant, à ton rythme actuel, j'ai peur qu'on n'y arrive pas avant ton renouvellement du ${dateAnnivTxt}. Il te manque ${calc.manque}h ≈ ${calc.cachetsManquants} cachets, et il te reste ${calc.joursAnniv} jours. Ce n'est pas perdu — mais à ta place, je chercherais des contrats dès maintenant.`,
                     pourquoi: `À ${calc.rythmeMensuel}h/mois, il faudrait environ ${Math.ceil(calc.manque / Math.max(1, calc.rythmeMensuel))} mois pour combler les ${calc.manque}h. Or il ne reste que ${Math.round(calc.joursAnniv / 30)} mois avant le ${dateAnnivTxt}.`,
                     estimation: true,
                     suite: ["rythme", "combien_cachets", "si_contrat"],
@@ -5581,8 +5585,8 @@ function AppInner() {
                   const cadenceConseillee = coach.cachetsConseillesSemaine;
                   return {
                     ouv: pickOuv(),
-                    text: `En ce moment, tu tournes à environ ${(coach.cachetsSemaine).toFixed(1)} cachet${coach.cachetsSemaine >= 2 ? "s" : ""}/semaine (${calc.rythmeMensuel}h/mois).${cadenceConseillee ? ` Pour tenir ton échéance, je viserais plutôt ${cadenceConseillee.toFixed(1)} cachets/semaine.` : ""} ${cadenceConseillee && cadenceConseillee > coach.cachetsSemaine ? "Il va falloir pousser un peu." : "Tu es sur la bonne cadence."}`,
-                    pourquoi: `Je calcule ton rythme sur tes activités des 3 derniers mois : ${calc.rythmeMensuel}h/mois ÷ 4,33 semaines ÷ 12h ≈ ${coach.cachetsSemaine.toFixed(1)} cachets/semaine.${cadenceConseillee ? ` La cadence conseillée = ${calc.manque}h restantes ÷ le temps avant ton échéance.` : ""}`,
+                    text: `En ce moment, tu tournes à environ ${(coach.cachetsSemaine).toFixed(1)} cachet${coach.cachetsSemaine >= 2 ? "s" : ""}/semaine (${calc.rythmeMensuel}h/mois).${cadenceConseillee ? ` Pour ton renouvellement, je viserais plutôt ${cadenceConseillee.toFixed(1)} cachets/semaine.` : ""} ${cadenceConseillee && cadenceConseillee > coach.cachetsSemaine ? "Il va falloir pousser un peu." : "Tu es sur la bonne cadence."}`,
+                    pourquoi: `Je calcule ton rythme sur tes activités des 3 derniers mois : ${calc.rythmeMensuel}h/mois ÷ 4,33 semaines ÷ 12h ≈ ${coach.cachetsSemaine.toFixed(1)} cachets/semaine.${cadenceConseillee ? ` La cadence conseillée = ${calc.manque}h restantes ÷ le temps avant ton renouvellement.` : ""}`,
                     estimation: true,
                     suite: ["combien_cachets", "renouveler", "si_contrat"],
                   };
@@ -6398,10 +6402,10 @@ function AppInner() {
                     sous = "Tes droits sont déjà sécurisés. Celui-là, c'est du bonus pour la suite.";
                   } else if (secu) {
                     niveau = "green"; emoji = "✅"; titre = "Accepte les yeux fermés";
-                    sous = dateAnnivTxt ? `Avec lui, tes droits sont sécurisés pour ton échéance du ${dateAnnivTxt}.` : "Avec lui, tes droits sont sécurisés.";
+                    sous = dateAnnivTxt ? `Avec lui, tes droits sont sécurisés pour ton renouvellement du ${dateAnnivTxt}.` : "Avec lui, tes droits sont sécurisés.";
                   } else {
                     niveau = "orange"; emoji = "🟠"; titre = "Ça aide, mais continue à chercher";
-                    sous = `Bon à prendre, mais il te manquera encore ${manque}h après${dateAnnivTxt ? ` pour ton échéance du ${dateAnnivTxt}` : ""}.`;
+                    sous = `Bon à prendre, mais il te manquera encore ${manque}h après${dateAnnivTxt ? ` pour ton renouvellement du ${dateAnnivTxt}` : ""}.`;
                   }
                   const palette = {
                     green: { bg: "rgba(93,202,165,0.12)", bd: "rgba(93,202,165,0.4)", tc: "#5DCAA5" },
@@ -6431,7 +6435,7 @@ function AppInner() {
                       </div>
                       {!c.date_anniversaire && (
                         <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 11, lineHeight: 1.5 }}>
-                          🐾 Renseigne ta date anniversaire sur le cockpit pour que je te dise si c'est à temps pour ton échéance.
+                          🐾 Renseigne ta date anniversaire sur le cockpit pour que je te dise si c'est à temps pour ton renouvellement.
                         </div>
                       )}
                     </div>
@@ -6734,7 +6738,7 @@ function AppInner() {
                   {profileDetailsSaved && <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600 }}>✓ Enregistré</span>}
                 </div>
                 <div style={{ fontSize: 11, color: "#5A7088", marginTop: 12, lineHeight: 1.5 }}>
-                  🐾 Ta date anniversaire se règle directement sur le cockpit, là où je surveille ton échéance.
+                  🐾 Ta date anniversaire se règle directement sur le cockpit, là où je surveille ton renouvellement.
                 </div>
               </div>
 
@@ -6839,10 +6843,10 @@ function AppInner() {
           {
             img: "/hector-2.png",
             timerLabel: "LA DATE ANNIVERSAIRE",
-            title: "Je veille sur ton échéance.",
+            title: "Je veille sur ton renouvellement.",
             sub: "La date anniversaire, c'est le jour où France Travail réexamine tes droits. Renseigne-la une fois, et je te montre en permanence combien de jours il te reste — et si tu es dans les temps pour avoir tes 507h avant. Plus jamais pris(e) de court.",
             items: [
-              { icon: "ti-calendar-event", text: "Le compte à rebours jusqu'à ton échéance" },
+              { icon: "ti-calendar-event", text: "Le compte à rebours jusqu'à ton renouvellement" },
               { icon: "ti-bell", text: "Je t'alerte si le rythme n'est pas suffisant" },
               { icon: "ti-pencil", text: "Modifiable à tout moment depuis le cockpit" },
             ],
