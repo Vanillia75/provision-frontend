@@ -35,6 +35,23 @@ const safeStorage = {
     catch { delete _memStore[key]; }
   },
 };
+
+// ─── Détection PWA : sait-on déjà installé ? sur quel appareil ? ───
+// Sert à afficher la bonne aide à l'installation (bouton Android / instructions iOS).
+function isStandalonePWA() {
+  try {
+    return window.matchMedia("(display-mode: standalone)").matches
+      || window.navigator.standalone === true; // iOS
+  } catch { return false; }
+}
+function isIOSDevice() {
+  try {
+    const ua = window.navigator.userAgent || "";
+    return /iphone|ipad|ipod/i.test(ua)
+      // iPad récents se font passer pour Mac : on détecte le tactile
+      || (/macintosh/i.test(ua) && "ontouchend" in document);
+  } catch { return false; }
+}
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
@@ -583,6 +600,10 @@ function BadgeConfiance({ niveau }) {
 
 function AppInner() {
   const [token, setToken] = useState(() => safeStorage.getItem("token"));
+  // ─── PWA : aide à l'installation sur l'écran d'accueil ───
+  const [pwaPrompt, setPwaPrompt] = useState(null);     // event Android "beforeinstallprompt"
+  const [showInstallHelp, setShowInstallHelp] = useState(false); // affiche les instructions iOS
+  const [pwaDismissed, setPwaDismissed] = useState(() => safeStorage.getItem("pwa_dismissed") === "1");
   const [legalPage, setLegalPage] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   // Choix de statut sur la landing (avant connexion) : null = écran de choix,
@@ -762,6 +783,37 @@ function AppInner() {
   useEffect(() => {
     if (nav === "contacts" && token) loadContacts();
   }, [nav, token]);
+
+  // ─── PWA : capte l'événement Android qui permet l'installation en 1 clic ───
+  useEffect(() => {
+    const onBeforeInstall = (e) => {
+      e.preventDefault();          // on garde la main pour déclencher au bon moment
+      setPwaPrompt(e);             // Android : on pourra proposer un vrai bouton "Installer"
+    };
+    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    return () => window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+  }, []);
+
+  // Clic sur "Installer" : Android déclenche l'invite native ; iOS affiche les instructions.
+  async function handleInstallClick() {
+    if (pwaPrompt) {
+      pwaPrompt.prompt();
+      try { await pwaPrompt.userChoice; } catch {}
+      setPwaPrompt(null);
+      return;
+    }
+    if (isIOSDevice()) {
+      setShowInstallHelp(true); // on déroule les étapes Safari
+      return;
+    }
+    // Cas restant (desktop ou navigateur sans invite) : on montre l'aide générique.
+    setShowInstallHelp(true);
+  }
+  function dismissPwa() {
+    setPwaDismissed(true);
+    setShowInstallHelp(false);
+    safeStorage.setItem("pwa_dismissed", "1");
+  }
   const [invoicesList, setInvoicesList] = useState([]);
   const [invoicesSummary, setInvoicesSummary] = useState(null);
   const [expensesList, setExpensesList] = useState([]);
@@ -8100,6 +8152,44 @@ function AppInner() {
               <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}>
                 {resendVerifStatus === "sending" ? "Envoi…" : "Renvoyer l'email de vérification"}
               </button>
+            )}
+          </div>
+        )}
+
+        {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
+        {!isStandalonePWA() && !pwaDismissed && (pwaPrompt || isIOSDevice()) && (
+          <div style={{ background: "#07192E", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 11, flex: "1 1 240px" }}>
+                <img src="/hector-icon-192.png" alt="Hector" style={{ width: 38, height: 38, borderRadius: 9, flexShrink: 0 }} />
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "white" }}>Installe Hector sur ton téléphone</div>
+                  <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil. <span style={{ color: "#8BA5C0" }}>(En attendant l'app sur les stores)</span></div>
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                <button type="button" onClick={handleInstallClick}
+                  style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  Installer
+                </button>
+                <button type="button" onClick={dismissPwa} aria-label="Fermer"
+                  style={{ background: "transparent", border: "none", color: "#5A7088", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4, fontFamily: "inherit" }}>
+                  ×
+                </button>
+              </div>
+            </div>
+            {showInstallHelp && isIOSDevice() && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "#C8E0F5", lineHeight: 1.7 }}>
+                <div style={{ fontWeight: 700, marginBottom: 6, color: "white" }}>Sur iPhone, en 3 étapes :</div>
+                1. Appuie sur le bouton <strong>Partager</strong> <i className="ti ti-upload" aria-hidden="true" /> (en bas de Safari)<br />
+                2. Fais défiler et choisis <strong>« Sur l'écran d'accueil »</strong><br />
+                3. Appuie sur <strong>Ajouter</strong> — et voilà l'icône Hector 🐾
+              </div>
+            )}
+            {showInstallHelp && !isIOSDevice() && !pwaPrompt && (
+              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "#C8E0F5", lineHeight: 1.7 }}>
+                Ouvre le menu de ton navigateur (les 3 points), puis choisis <strong>« Installer l'application »</strong> ou <strong>« Ajouter à l'écran d'accueil »</strong>.
+              </div>
             )}
           </div>
         )}
