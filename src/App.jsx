@@ -933,7 +933,8 @@ function AppInner() {
   function clearLocalAccountData() {
     ["profilPrenom", "profilNom", "profilTelephone", "profilEntreprise", "profilSiret", "profilAdresse",
      "objectifAnnuel", "objectifMensuel", "objectifSecurite", "depensesMensuelles", "tmi",
-     "historiqueDeclarations", "nav"].forEach(key => localStorage.removeItem(key));
+     "historiqueDeclarations", "actuHistorique", "landingStatut", "hector_walkthrough_done", "nav"].forEach(key => localStorage.removeItem(key));
+    setActuHistorique([]);
     setProfilPrenom("");
     setProfilNom("");
     setProfilTelephone("");
