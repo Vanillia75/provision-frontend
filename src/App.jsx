@@ -4706,6 +4706,50 @@ function AppInner() {
       return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation", suivant: null };
     })();
 
+    // ═══ PROJECTION : "Quand pourrais-je renouveler ?" (3 scénarios, TOUS conditionnels) ═══
+    // 🔵 uniquement. Toujours "tu pourrais", jamais "tu atteindras".
+    const projection = (() => {
+      if (calc.secu) return { dispo: false };
+      const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+      const now = new Date();
+      const seuil = calc.seuil;
+      const heures = calc.heures;
+      const manque = calc.manque;
+
+      // Scénario 1 — Au rythme actuel (réutilise la date déjà calculée par calc).
+      const rythme = calc.aUnRythme
+        ? { label: "Au rythme actuel", valeur: calc.dateProjection ? calc.dateProjection : "à préciser", ok: !!calc.dateProjection, note: calc.dateProjection ? `~${calc.rythmeMensuel}h/mois` : "ajoute des contrats pour estimer" }
+        : { label: "Au rythme actuel", valeur: "pas encore d'estimation", ok: false, note: "il me faut un peu d'historique" };
+
+      // Scénario 2 — Sans nouveau contrat (plancher backend si dispo).
+      const sansContrat = (c && c.projection_disponible)
+        ? {
+            label: "Sans nouveau contrat",
+            valeur: c.projection_plancher_securise ? `${c.projection_plancher_heures}h — ça passe` : "renouvellement compromis",
+            ok: !!c.projection_plancher_securise,
+            note: c.projection_plancher_securise ? null : `il manquerait ${c.projection_plancher_manquant}h`,
+          }
+        : null;
+
+      // Scénario 3 — Avec 2 cachets de plus par mois (12h/cachet).
+      const cachetsSup = 2;
+      const hSup = cachetsSup * 12; // par mois
+      let avecCachets = null;
+      if (manque > 0 && hSup > 0) {
+        const moisNec = Math.ceil(manque / hSup);
+        const d = new Date(now.getFullYear(), now.getMonth() + moisNec, 1);
+        avecCachets = {
+          label: `Avec ${cachetsSup} cachets/mois en plus`,
+          valeur: `${MOIS[d.getMonth()]} ${d.getFullYear()}`,
+          ok: true,
+          note: `soit ${moisNec} mois`,
+        };
+      }
+
+      const scenarios = [rythme, sansContrat, avecCachets].filter(Boolean);
+      return { dispo: scenarios.length > 0, scenarios };
+    })();
+
     // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
     // Vue d'ensemble visuelle des 12 derniers mois + les 3 prochains (pour montrer les sorties à venir).
     const timeline = (() => {
@@ -5222,7 +5266,7 @@ function AppInner() {
                     {/* LE gros bouton : Hector fait les calculs */}
                     <button type="button" onClick={() => setInterNav("calcul")}
                       style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "15px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
-                      <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Hector, fais les calculs pour moi
+                      <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Analyser ma situation
                     </button>
                     <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
                       <button type="button" onClick={() => setInterNav("activites")}
@@ -5317,10 +5361,10 @@ function AppInner() {
                 )}
               </div>
 
-              {/* ── Brique 5.3 : la frise des paliers d'Hector (le foyer grandit) ── */}
+              {/* ── Brique 5.3 : la frise des paliers (Progression) ── */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>🐾 Hector grandit avec tes heures</div>
-                <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 16, textAlign: "center" }}>Chaque heure déclarée le rapproche de sa niche.</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>Progression</div>
+                <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 16, textAlign: "center" }}>Chaque heure déclarée le fait grandir avec toi.</div>
                 <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 2px" }}>
                   {PALIERS_INTERMITTENT.map((p, i) => {
                     const acquis = c.total_heures >= p.seuil;
@@ -5349,80 +5393,41 @@ function AppInner() {
                 </div>
               </div>
 
-              {/* ═══ HECTOR CALCULE POUR TOI ═══ */}
-              <div style={{ background: "linear-gradient(160deg,#0d2440,#0a1322)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px 20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-calculator" fallbackColor="#5DCAA5" />
+              {/* ═══ PROJECTION : "Quand pourrais-je renouveler ?" ═══ */}
+              {projection.dispo && (
+              <div style={{ background: "linear-gradient(160deg,#0d2440,#0a1322)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "18px 20px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
                   </div>
-                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Hector calcule pour toi 🐾</div>
+                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Quand pourrais-tu renouveler ?</div>
+                </div>
+                <div style={{ fontSize: 11.5, color: "#7E97B3", marginBottom: 14, lineHeight: 1.45 }}>
+                  Des estimations, pas des certitudes — elles dépendent de ce qui va se passer.
                 </div>
 
-                {/* Q1 + Q2 + Q3 : le cercle sûr, en grille de chiffres clairs */}
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 8 }}>
-                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 4 }}>Où j'en suis</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1 }}>{calc.heures}<span style={{ fontSize: 12, color: "#6B8299", fontWeight: 600 }}> / {calc.seuil}h</span></div>
-                  </div>
-                  <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 4 }}>Il me manque</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: calc.manque > 0 ? "#FAC775" : "#5DCAA5", lineHeight: 1 }}>{calc.manque}<span style={{ fontSize: 12, color: "#6B8299", fontWeight: 600 }}>h</span></div>
-                  </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {projection.scenarios.map((s, i) => (
+                    <div key={i} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 11, padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>🔵</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: "#8FB4D8" }}>{s.label}</div>
+                        <div style={{ fontSize: 14.5, fontWeight: 800, color: s.ok ? "white" : "#F0997F", lineHeight: 1.2, marginTop: 1 }}>
+                          {s.ok ? "tu pourrais y être " : ""}{s.valeur}
+                        </div>
+                        {s.note && <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 1 }}>{s.note}</div>}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                {calc.manque > 0 && (
-                  <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 10, padding: "11px 14px", marginBottom: 8, display: "flex", alignItems: "center", gap: 9 }}>
-                    <i className="ti ti-ticket" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
-                    <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.45 }}>
-                      Soit environ <b style={{ color: "white" }}>{calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}</b> à décrocher pour atteindre tes 507h.
-                    </div>
-                  </div>
-                )}
 
-                {/* Cercle estimé : rythme + projection (Hector estime) */}
-                {calc.manque > 0 && calc.aUnRythme && (
-                  <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 10, padding: "11px 14px", marginBottom: 8 }}>
-                    <div style={{ fontSize: 10, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 700, marginBottom: 4, display: "flex", alignItems: "center", gap: 5 }}>
-                      <i className="ti ti-chart-line" aria-hidden="true" /> D'après mes calculs
-                    </div>
-                    <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5 }}>
-                      Tu fais ~<b style={{ color: "white" }}>{calc.rythmeMensuel}h/mois</b> en ce moment{calc.dateProjection ? <>. À ce rythme, tu atteindrais tes 507h vers <b style={{ color: "white" }}>{calc.dateProjection}</b></> : ""}.
-                    </div>
-                  </div>
-                )}
-
-                {/* Clause de rattrapage (estimé) si on est dans la zone */}
-                {calc.procheRattrapage && (
-                  <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 10, padding: "11px 14px", marginBottom: 8, display: "flex", alignItems: "flex-start", gap: 9 }}>
-                    <i className="ti ti-lifebuoy" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0, marginTop: 1 }} />
-                    <div style={{ fontSize: 12.5, color: "#FAE3B6", lineHeight: 1.45 }}>
-                      {calc.filet
-                        ? "Tu as dépassé 338h : c'est la 1re des deux conditions de la clause de rattrapage. La 2e dépend de ton historique (avoir ouvert des droits 5 fois sur 10 ans). À confirmer avec France Travail."
-                        : "Tu approches des 338h, le seuil de la clause de rattrapage (un filet possible). Continue."}
-                    </div>
-                  </div>
-                )}
-
-                {/* Q4 : dois-je agir ? — le conseil tranché */}
-                {(() => {
-                  const pal = {
-                    green: { bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5" },
-                    orange: { bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.32)", tc: "#FAC775" },
-                    blue: { bg: "rgba(55,138,221,0.1)", bd: "rgba(55,138,221,0.3)", tc: "#7FB8F0" },
-                  }[calc.conseilNiveau];
-                  return (
-                    <div style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px", marginTop: 4 }}>
-                      <div style={{ fontSize: 13.5, fontWeight: 800, color: pal.tc, marginBottom: 4 }}>{calc.conseilTitre}</div>
-                      <div style={{ fontSize: 13, color: "#E8F4FF", lineHeight: 1.55 }}>{calc.conseilTexte}</div>
-                    </div>
-                  );
-                })()}
-
-                {!calc.aDateAnniv && !calc.secu && (
-                  <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, lineHeight: 1.5, textAlign: "center" }}>
-                    🐾 Ajoute ta date anniversaire ci-dessus pour que je te dise si tu es dans les temps.
+                {!calc.aDateAnniv && (
+                  <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 12, lineHeight: 1.5, textAlign: "center" }}>
+                    🐾 Ajoute ta date de renouvellement ci-dessus pour affiner ces estimations.
                   </div>
                 )}
               </div>
+              )}
 
                 </div>{/* ── fin colonne droite ── */}
               </div>{/* ── fin grille 2 colonnes ── */}
