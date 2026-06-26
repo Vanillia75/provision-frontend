@@ -7966,6 +7966,43 @@ function AppInner() {
               );
             })()}
 
+            {/* ── OBJECTIF : DISPONIBLE + JAUGE RÉSERVE (style cockpit) ── */}
+            <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px" }}>
+              {argentDisponibleBrut !== null ? (() => {
+                const reserveConstituee = reserveAtteinte ? securiteNum : Math.max(0, securiteNum - manqueReserveDashboard);
+                const reservePct = securiteNum > 0 ? Math.min(100, Math.round((reserveConstituee / securiteNum) * 100)) : 0;
+                return (
+                  <>
+                    <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 4 }}>Disponible aujourd'hui</div>
+                    <div style={{ fontSize: 42, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, letterSpacing: -1 }}>
+                      {argentDisponibleBrut < 0 ? "−" : ""}{formatEUR(Math.abs(argentDisponibleBrut))}
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "#5A7798", marginTop: 6, marginBottom: 16 }}>une fois l'URSSAF et ta réserve mises de côté</div>
+                    {securiteNum > 0 && (
+                      <>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                          <span style={{ fontSize: 11, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Réserve de sécurité</span>
+                          <span style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 800 }}>{reservePct}%</span>
+                        </div>
+                        <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
+                          <div style={{ height: "100%", width: `${reservePct}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#6B8299", marginTop: 6 }}>
+                          <span>{formatEUR(reserveConstituee)} constitués</span>
+                          <span>Objectif · {formatEUR(securiteNum)}</span>
+                        </div>
+                      </>
+                    )}
+                  </>
+                );
+              })() : (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <i className="ti ti-wallet" aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0", flexShrink: 0 }} />
+                  <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>Renseigne ton solde bancaire ci-dessous pour voir ton disponible et ta réserve de sécurité.</div>
+                </div>
+              )}
+            </div>
+
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
