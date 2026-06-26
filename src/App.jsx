@@ -5719,6 +5719,22 @@ function AppInner() {
                 </div>
               </div>
 
+              {/* ── EN RÉSUMÉ ── */}
+              {(() => {
+                const nbAem = (interActivites || []).filter(a => !(a.aem_recue === true || a.source === "ocr")).length;
+                let phrase;
+                if (calc.secu && nbAem === 0) phrase = "Ton dossier est complet et tes droits sont sécurisés. Rien à signaler. 🐾";
+                else if (calc.secu && nbAem > 0) phrase = "Tes droits sont sécurisés, mais il te manque " + nbAem + " AEM. Récupère-les et ton dossier sera nickel.";
+                else if (nbAem > 0) phrase = "Il te manque " + calc.manque + " h et " + nbAem + " AEM. Si tu règles les AEM, ton dossier sera déjà plus propre.";
+                else phrase = "Il te manque " + calc.manque + " h pour sécuriser tes droits. Continue à déclarer tes contrats.";
+                return (
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "14px 16px", marginBottom: 22 }}>
+                    <span style={{ fontSize: 18, flexShrink: 0 }}>🐶</span>
+                    <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55 }}><span style={{ color: "#5DCAA5", fontWeight: 700 }}>En résumé :</span> {phrase}</div>
+                  </div>
+                );
+              })()}
+
               {/* ── 0. CE QUE J'AI DÉTECTÉ (carte unique, style maquette) ── */}
               {aDesAnomalies && (
                 <div style={{ background: "rgba(226,83,61,0.07)", border: "1px solid rgba(226,83,61,0.28)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
@@ -5729,28 +5745,39 @@ function AppInner() {
                     </div>
                     <span style={{ fontSize: 10.5, color: "#F0997F", background: "rgba(226,83,61,0.15)", border: "1px solid rgba(226,83,61,0.3)", borderRadius: 7, padding: "3px 9px", fontWeight: 700 }}>{anomalies.length} {anomalies.length > 1 ? "anomalies" : "anomalie"}</span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                    {anomalies.map(an => {
-                      const pal = {
-                        orange: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
-                        blue: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
-                      }[an.niveau];
-                      return (
-                        <div key={an.id} style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px" }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
-                            <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13.5, fontWeight: 700, color: an.niveau === "orange" ? "#FAE3B6" : "#D6E8FA" }}>{an.titre}</div>
-                              <div style={{ fontSize: 12.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 3 }}>{an.texte}</div>
-                              <button type="button" onClick={() => setInterNav(an.action)}
-                                style={{ marginTop: 9, background: "transparent", border: `1px solid ${pal.bd}`, color: pal.tc, borderRadius: 7, padding: "6px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                                {an.actionLabel}
-                              </button>
-                            </div>
-                          </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                    {[
+                      { cle: "crit", label: "🚨 À corriger immédiatement", tc: "#F0997F", items: anomalies.filter(a => a.id === "aem") },
+                      { cle: "verif", label: "⚠️ À vérifier", tc: "#FAC775", items: anomalies.filter(a => a.id !== "aem" && a.niveau === "orange") },
+                      { cle: "info", label: "💡 Information", tc: "#7FB8F0", items: anomalies.filter(a => a.id !== "aem" && a.niveau === "blue") },
+                    ].filter(g => g.items.length > 0).map(g => (
+                      <div key={g.cle}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: g.tc, marginBottom: 8, letterSpacing: 0.3 }}>{g.label}</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                          {g.items.map(an => {
+                            const pal = {
+                              orange: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
+                              blue: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
+                            }[an.niveau];
+                            return (
+                              <div key={an.id} style={{ background: pal.bg, border: "1px solid " + pal.bd, borderRadius: 12, padding: "13px 15px" }}>
+                                <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+                                  <i className={"ti " + an.icon} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 13.5, fontWeight: 700, color: an.niveau === "orange" ? "#FAE3B6" : "#D6E8FA" }}>{an.titre}</div>
+                                    <div style={{ fontSize: 12.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 3 }}>{an.texte}</div>
+                                    <button type="button" onClick={() => setInterNav(an.action)}
+                                      style={{ marginTop: 9, background: "transparent", border: "1px solid " + pal.bd, color: pal.tc, borderRadius: 7, padding: "6px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                                      {an.actionLabel}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
@@ -5770,7 +5797,7 @@ function AppInner() {
                     <span style={{ fontSize: 18 }}>🟢</span>
                     <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que j'ai analysé</div>
                   </div>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 9 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                     {analyses.map(an => {
                       const pal = {
                         positif: { bg: "rgba(93,202,165,0.06)", tc: "#5DCAA5" },
@@ -5780,13 +5807,35 @@ function AppInner() {
                       return (
                         <div key={an.id} style={{ background: pal.bg, borderRadius: 11, padding: "12px 14px" }}>
                           <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 17 }} />
-                          <div style={{ fontSize: 12, color: "#E8F4FF", lineHeight: 1.45, marginTop: 6 }}>{an.court}</div>
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#E8F4FF", marginTop: 6 }}>{an.court}</div>
+                          <div style={{ fontSize: 11.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 4 }}>{an.long}</div>
                         </div>
                       );
                     })}
                   </div>
                 </div>
               )}
+
+              {/* ── CE QUE JE PENSE ── */}
+              {(() => {
+                const aemAno = (anomalies || []).find(a => a.id === "aem");
+                let opinion = null;
+                if (aemAno) opinion = "Je pense que ton plus gros risque vient des AEM manquantes. Sans elles, des heures que tu as bel et bien travaillées ne comptent pas pour France Travail. Une fois réglées, ton dossier sera beaucoup plus fiable.";
+                else if (!calc.secu && calc.manque > 0) opinion = "Je pense que tu es sur la bonne pente, mais il te reste " + calc.manque + " h à sécuriser. Si tu gardes ton rythme actuel, ça devrait le faire — surtout, ne laisse pas passer un mois creux.";
+                else if (calc.secu) opinion = "Honnêtement, ton dossier est solide. Tes droits sont là. Chaque heure en plus, c'est du bonus pour ton prochain renouvellement.";
+                if (!opinion) return null;
+                return (
+                  <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.4))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+                      <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                        <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que je pense 🐾</div>
+                    </div>
+                    <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6 }}>{opinion}</div>
+                  </div>
+                );
+              })()}
 
               {(() => {
                 // ───────── MOTEUR DE RÉPONSES : fabrique ce qu'Hector dit, à partir des vraies données ─────────
@@ -6244,7 +6293,7 @@ function AppInner() {
               {/* Lien discret vers le scan (le détail conversationnel a déjà tout dit) */}
               <button type="button" onClick={() => setInterNav("coffre")}
                 style={{ width: "100%", background: "rgba(93,202,165,0.08)", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM pour des calculs plus justes
+                <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner mes AEM pour des calculs plus justes
               </button>
 
               {/* Transparence : version du référentiel de règles utilisé */}
