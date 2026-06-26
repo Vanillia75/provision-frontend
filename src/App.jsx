@@ -5719,14 +5719,17 @@ function AppInner() {
                 </div>
               </div>
 
-              {/* ── 0. DÉTECTION D'ERREURS (Hector veille) ── */}
+              {/* ── 0. CE QUE J'AI DÉTECTÉ (carte unique, style maquette) ── */}
               {aDesAnomalies && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18 }} />
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>J'ai vérifié ton dossier</div>
+                <div style={{ background: "rgba(226,83,61,0.07)", border: "1px solid rgba(226,83,61,0.28)", borderRadius: 16, padding: "16px 18px", marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                      <span style={{ fontSize: 18 }}>🔴</span>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que j'ai détecté</div>
+                    </div>
+                    <span style={{ fontSize: 10.5, color: "#F0997F", background: "rgba(226,83,61,0.15)", border: "1px solid rgba(226,83,61,0.3)", borderRadius: 7, padding: "3px 9px", fontWeight: 700 }}>{anomalies.length} {anomalies.length > 1 ? "anomalies" : "anomalie"}</span>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                     {anomalies.map(an => {
                       const pal = {
                         orange: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
@@ -5762,22 +5765,22 @@ function AppInner() {
 
               {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
               {aDesAnalyses && (
-                <div style={{ marginBottom: 18 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <i className="ti ti-bulb" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Ce que j'ai remarqué sur ton dossier</div>
+                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 16, padding: "16px 18px", marginBottom: 18 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
+                    <span style={{ fontSize: 18 }}>🟢</span>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que j'ai analysé</div>
                   </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 9 }}>
                     {analyses.map(an => {
                       const pal = {
-                        positif: { bg: "rgba(93,202,165,0.07)", bd: "rgba(93,202,165,0.25)", tc: "#5DCAA5" },
-                        attention: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
-                        info: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
+                        positif: { bg: "rgba(93,202,165,0.06)", tc: "#5DCAA5" },
+                        attention: { bg: "rgba(250,199,117,0.06)", tc: "#FAC775" },
+                        info: { bg: "rgba(55,138,221,0.06)", tc: "#7FB8F0" },
                       }[an.ton];
                       return (
-                        <div key={an.id} style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "flex-start", gap: 11 }}>
-                          <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
-                          <div style={{ fontSize: 13, color: "#E8F4FF", lineHeight: 1.55 }}>{an.long}</div>
+                        <div key={an.id} style={{ background: pal.bg, borderRadius: 11, padding: "12px 14px" }}>
+                          <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 17 }} />
+                          <div style={{ fontSize: 12, color: "#E8F4FF", lineHeight: 1.45, marginTop: 6 }}>{an.court}</div>
                         </div>
                       );
                     })}
