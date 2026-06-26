@@ -8070,35 +8070,11 @@ function AppInner() {
                           <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
                         </div>
                       )}
-                      {argentDisponibleBrut !== null ? (
-                        <>
-                          <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 4, lineHeight: 1.4 }}>
-                            {argentDisponibleBrut >= 0 ? "Tu peux dépenser jusqu'à" : "Attention —"}
-                          </div>
-                          <div style={{ fontSize: 30, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 10, fontVariantNumeric: "tabular-nums" }}>
-                            {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
-                          </div>
-                          <div style={{ display: "flex", flexDirection: "column", gap: 3, marginBottom: 14 }}>
-                            {[
-                              { label: "URSSAF provisionnée", ok: urssafProvision > 0 },
-                              { label: "Réserve constituée", ok: reserveAtteinte },
-                            ].map(c => (
-                              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 4, fontSize: 10, color: c.ok ? "#B5D4F4" : "#8BA5C0" }}>
-                                <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "!"}</span> {c.label}
-                              </div>
-                            ))}
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 6 }}>
-                            {panique.solde === "" ? "Dis-moi ton solde" : "Ajoute un revenu"}
-                          </div>
-                          <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 12 }}>
-                            {panique.solde === "" ? "Recopie ton solde bancaire ci-dessous. 10 sec." : "H€CTOR calculera ton disponible automatiquement."}
-                          </div>
-                        </>
-                      )}
+                      <div style={{ fontSize: 12, color: "#C2D4E6", lineHeight: 1.5, marginBottom: 14 }}>
+                        {argentDisponibleBrut !== null
+                          ? (hectorEtat?.mot || "Hector veille sur toi.")
+                          : (panique.solde === "" ? "Recopie ton solde ci-dessous pour que je me mette au travail." : "Ajoute un revenu pour voir ton disponible.")}
+                      </div>
                     </div>
                     <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
                       <HectorImage etat={hectorEtat} size={120} cover />
@@ -8138,49 +8114,11 @@ function AppInner() {
                           {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
                         </div>
                       )}
-                      {argentDisponibleBrut !== null ? (
-                        <>
-                          <div style={{ fontSize: 14, color: "#8BA5C0", marginBottom: 6 }}>
-                            {argentDisponibleBrut >= 0 ? "Hector veille sur toi. Tu peux dépenser sereinement jusqu'à" : "Hector veille sur toi. Attention —"}
-                          </div>
-                          <div style={{ fontSize: 52, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, marginBottom: 16, fontVariantNumeric: "tabular-nums" }}>
-                            {argentDisponibleBrut < 0 ? "−" : ""}{new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", maximumFractionDigits: 0 }).format(Math.abs(argentDisponibleBrut))}
-                          </div>
-                          <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 10 }}>
-                            {[
-                              { label: urssafProvision > 0 ? `URSSAF provisionnée : ${formatEUR(urssafProvision)}` : "Ajoute un revenu pour provisionner l'URSSAF", ok: urssafProvision > 0 },
-                              { label: reserveAtteinte ? "Réserve de sécurité constituée" : `Réserve : il manque ${formatEUR(manqueReserveDashboard)}`, ok: reserveAtteinte },
-                            ].map(c => (
-                              <div key={c.label} style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 11, color: c.ok ? "#B5D4F4" : "#FAC775" }}>
-                                <span style={{ color: c.ok ? "#5DCAA5" : "#FAC775" }}>{c.ok ? "✓" : "→"}</span> {c.label}
-                              </div>
-                            ))}
-                          </div>
-                          {[urssafProvision, impotsNum, cfeNum, fraisMoisNum].some(v => v > 0) && (
-                            <details>
-                              <summary style={{ fontSize: 11, color: ACCENT, cursor: "pointer", userSelect: "none" }}>Voir le détail du calcul</summary>
-                              <div style={{ marginTop: 8, background: "rgba(0,0,0,0.3)", borderRadius: 8, padding: "10px 14px", display: "flex", flexDirection: "column", gap: 5, maxWidth: 340 }}>
-                                {urssafProvision > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>URSSAF à provisionner</span><span style={{ color: "#FAC775" }}>−{formatEUR(urssafProvision)}</span></div>}
-                                {impotsNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Impôts estimés (mensuel)</span><span style={{ color: "#FAC775" }}>−{formatEUR(impotsNum)}</span></div>}
-                                {cfeNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>CFE</span><span style={{ color: "#FAC775" }}>−{formatEUR(cfeNum)}</span></div>}
-                                {fraisMoisNum > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Frais ce mois</span><span style={{ color: "#FAC775" }}>−{formatEUR(fraisMoisNum)}</span></div>}
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4", borderTop: "1px solid rgba(255,255,255,0.1)", paddingTop: 5, marginTop: 2 }}><span>Total charges</span><span style={{ color: "#FAC775" }}>−{formatEUR(totalChargesAVenir)}</span></div>
-                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>Solde bancaire</span><span style={{ color: "white" }}>{formatEUR(soldeNum)}</span></div>
-                                {bonusAutresRevenus > 0 && <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4" }}><span>+ Autres revenus (salaire…)</span><span style={{ color: "#5DCAA5" }}>+{formatEUR(bonusAutresRevenus)}</span></div>}
-                              </div>
-                            </details>
-                          )}
-                        </>
-                      ) : (
-                        <>
-                          <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 10 }}>
-                            {panique.solde === "" ? "Dis-moi ton solde pour commencer" : "Ajoute un revenu pour voir ton disponible"}
-                          </div>
-                          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16, maxWidth: 420 }}>
-                            {panique.solde === "" ? "Ouvre ton appli bancaire, lis le solde, recopie-le ci-dessous. 10 secondes." : "H€CTOR mettra automatiquement de côté l'URSSAF dès ton premier revenu ajouté."}
-                          </div>
-                        </>
-                      )}
+                      <div style={{ fontSize: 14, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 6, maxWidth: 420 }}>
+                        {argentDisponibleBrut !== null
+                          ? (hectorEtat?.mot || "Hector veille sur toi.")
+                          : (panique.solde === "" ? "Recopie ton solde ci-dessous et je me mets au travail tout de suite." : "Ajoute un revenu pour voir ton disponible.")}
+                      </div>
                     </div>
                     {/* Hector dans sa colonne — entier, jamais cropé, fondu comme la landing */}
                     <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
