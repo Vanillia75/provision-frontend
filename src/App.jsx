@@ -4966,6 +4966,50 @@ function AppInner() {
                       <span>Objectif · {c.seuil}h</span>
                     </div>
 
+                    {/* ── PROJECTION À L'ÉCHÉANCE (F1) ── */}
+                    {/* Distingue le compteur d'aujourd'hui de ce qu'il y aura à la date anniversaire. */}
+                    {c.projection_disponible && (
+                      <div style={{ marginTop: 14, background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.22)", borderRadius: 11, padding: "13px 15px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
+                          <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 16 }} />
+                          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#D6E8FA" }}>Et à ta date anniversaire ?</span>
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 11 }}>
+                          Je distingue ce que tu as <strong style={{ color: "#C8E0F5" }}>déjà sécurisé</strong> de ce que tu as <strong style={{ color: "#C8E0F5" }}>prévu</strong>. À ton échéance, les contrats de plus de 12 mois sortent du décompte.
+                        </div>
+
+                        {/* Plancher strict */}
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginBottom: c.projection_a_des_contrats_futurs ? 9 : 0 }}>
+                          <i className="ti ti-player-stop" aria-hidden="true" style={{ color: "#FAC775", fontSize: 15, flexShrink: 0, marginTop: 2 }} />
+                          <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
+                            <strong>Si tu ne retravailles plus d'ici là :</strong> tu serais à <strong style={{ color: c.projection_plancher_securise ? "#5DCAA5" : "#FAC775" }}>{c.projection_plancher_heures}h</strong>
+                            {!c.projection_plancher_securise && <> — il te manquerait <strong style={{ color: "#FAC775" }}>{c.projection_plancher_manquant}h</strong></>}.
+                          </div>
+                        </div>
+
+                        {/* Avec contrats prévus — seulement si différent */}
+                        {c.projection_a_des_contrats_futurs && (
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                            <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, flexShrink: 0, marginTop: 2 }} />
+                            <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
+                              <strong>En comptant tes contrats déjà prévus :</strong> tu serais à <strong style={{ color: c.projection_avec_prevus_securise ? "#5DCAA5" : "#FAC775" }}>{c.projection_avec_prevus_heures}h</strong>
+                              {!c.projection_avec_prevus_securise && <> — il te manquerait <strong style={{ color: "#FAC775" }}>{c.projection_avec_prevus_manquant}h</strong></>}.
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Invitation à renseigner la date anniversaire si absente */}
+                    {!c.date_anniversaire && (
+                      <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 10, padding: "11px 13px" }}>
+                        <i className="ti ti-calendar-question" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
+                          Renseigne ta <strong>date anniversaire</strong> pour que je te dise si tu vas renouveler tes droits, pas juste où tu en es aujourd'hui.
+                        </div>
+                      </div>
+                    )}
+
                     {/* Comparaison mois-à-mois (le chien remarque) */}
                     {coach.compa && (
                       <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: coach.compa.sens === "up" ? "rgba(93,202,165,0.07)" : "rgba(250,199,117,0.06)", border: `1px solid ${coach.compa.sens === "up" ? "rgba(93,202,165,0.2)" : "rgba(250,199,117,0.2)"}`, borderRadius: 10, padding: "11px 13px" }}>
