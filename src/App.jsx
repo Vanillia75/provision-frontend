@@ -7822,6 +7822,7 @@ function AppInner() {
       </aside>
 
       <main style={isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
         {nav !== "dashboard" && (
@@ -10651,6 +10652,7 @@ function AppInner() {
             </div>
           </div>
         )}
+        </div>
       </main>
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
