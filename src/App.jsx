@@ -5735,6 +5735,12 @@ function AppInner() {
                 );
               })()}
 
+
+              {/* ═══ GRILLE 2 COLONNES (gauche large / droite étroite) ═══ */}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.6fr 1fr", gap: 16, alignItems: "start", marginBottom: 22 }}>
+
+                {/* ───────── COLONNE GAUCHE ───────── */}
+                <div>
               {/* ── 0. CE QUE J'AI DÉTECTÉ (carte unique, style maquette) ── */}
               {aDesAnomalies && (
                 <div style={{ background: "rgba(226,83,61,0.07)", border: "1px solid rgba(226,83,61,0.28)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
@@ -5787,32 +5793,6 @@ function AppInner() {
                 <div style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px 15px", marginBottom: 14 }}>
                   <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 20, flexShrink: 0 }} />
                   <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5 }}>🐾 J'ai vérifié ton dossier, tout est cohérent. Rien à signaler.</div>
-                </div>
-              )}
-
-              {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
-              {aDesAnalyses && (
-                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
-                    <span style={{ fontSize: 18 }}>🟢</span>
-                    <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que j'ai analysé</div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-                    {analyses.map(an => {
-                      const pal = {
-                        positif: { bg: "rgba(93,202,165,0.06)", tc: "#5DCAA5" },
-                        attention: { bg: "rgba(250,199,117,0.06)", tc: "#FAC775" },
-                        info: { bg: "rgba(55,138,221,0.06)", tc: "#7FB8F0" },
-                      }[an.ton];
-                      return (
-                        <div key={an.id} style={{ background: pal.bg, borderRadius: 11, padding: "12px 14px" }}>
-                          <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 17 }} />
-                          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#E8F4FF", marginTop: 6 }}>{an.court}</div>
-                          <div style={{ fontSize: 11.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 4 }}>{an.long}</div>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </div>
               )}
 
@@ -6182,20 +6162,41 @@ function AppInner() {
                 );
               })()}
 
-              {/* ───── Le détail complet, plus bas (référence visuelle) ───── */}
-              <div style={{ marginTop: 28, paddingTop: 4 }} />
+              {/* Lien discret vers le scan (le détail conversationnel a déjà tout dit) */}
+              <button type="button" onClick={() => setInterNav("coffre")}
+                style={{ width: "100%", background: "rgba(93,202,165,0.08)", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner mes AEM pour des calculs plus justes
+              </button>
 
-              {/* ── MÉMOIRE DE CARRIÈRE (placeholder — à construire) ── */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(159,203,245,0.3)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
-                  <i className="ti ti-paw" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 18 }} />
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Mémoire de carrière</div>
-                  <span style={{ marginLeft: "auto", fontSize: 9.5, color: "#FAC775", background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 6, padding: "3px 8px", fontWeight: 700, letterSpacing: 0.4 }}>BIENTÔT</span>
                 </div>
-                <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.55 }}>
-                  Bientôt, Hector se souviendra de tes meilleurs mois, de tes employeurs récurrents et de tes records. 🐾
+
+                {/* ───────── COLONNE DROITE ───────── */}
+                <div>
+              {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
+              {aDesAnalyses && (
+                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
+                    <span style={{ fontSize: 18 }}>🟢</span>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que j'ai analysé</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                    {analyses.map(an => {
+                      const pal = {
+                        positif: { bg: "rgba(93,202,165,0.06)", tc: "#5DCAA5" },
+                        attention: { bg: "rgba(250,199,117,0.06)", tc: "#FAC775" },
+                        info: { bg: "rgba(55,138,221,0.06)", tc: "#7FB8F0" },
+                      }[an.ton];
+                      return (
+                        <div key={an.id} style={{ background: pal.bg, borderRadius: 11, padding: "12px 14px" }}>
+                          <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 17 }} />
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: "#E8F4FF", marginTop: 6 }}>{an.court}</div>
+                          <div style={{ fontSize: 11.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 4 }}>{an.long}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* ── 3. TIMELINE DES HEURES (vue d'ensemble visuelle) ── */}
               {timeline.aDesDonnees && (
@@ -6290,11 +6291,21 @@ function AppInner() {
                 )}
               </div>
 
-              {/* Lien discret vers le scan (le détail conversationnel a déjà tout dit) */}
-              <button type="button" onClick={() => setInterNav("coffre")}
-                style={{ width: "100%", background: "rgba(93,202,165,0.08)", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner mes AEM pour des calculs plus justes
-              </button>
+              {/* ── MÉMOIRE DE CARRIÈRE (placeholder — à construire) ── */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(159,203,245,0.3)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <i className="ti ti-paw" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 18 }} />
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Mémoire de carrière</div>
+                  <span style={{ marginLeft: "auto", fontSize: 9.5, color: "#FAC775", background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 6, padding: "3px 8px", fontWeight: 700, letterSpacing: 0.4 }}>BIENTÔT</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.55 }}>
+                  Bientôt, Hector se souviendra de tes meilleurs mois, de tes employeurs récurrents et de tes records. 🐾
+                </div>
+              </div>
+
+                </div>
+
+              </div>{/* ── fin grille 2 colonnes ── */}
 
               {/* Transparence : version du référentiel de règles utilisé */}
               <div style={{ marginTop: 16, padding: "12px 14px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 9 }}>
