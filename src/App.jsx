@@ -1414,6 +1414,9 @@ function AppInner() {
       setShowWalkthrough(true);
     } catch (err) {
       setError(err.message);
+      // L'application automatique a échoué (réseau, backend endormi…) :
+      // on autorise une nouvelle tentative pour ne pas bloquer l'utilisateur sur le loader.
+      landingStatutApplied.current = false;
     } finally {
       setLoading(false);
     }
@@ -3935,7 +3938,17 @@ function AppInner() {
             <div style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} className="hector-breathe">
               <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
             </div>
-            <div style={{ color: "#8BA5C0", fontSize: 14 }}>🐾 Je prépare ton espace…</div>
+            {error ? (
+              <div style={{ textAlign: "center", maxWidth: 320 }}>
+                <div style={{ color: "#FAC775", fontSize: 14, lineHeight: 1.5, marginBottom: 16 }}>Hmm, la préparation a coincé. C'est peut-être juste la connexion qui a hésité.</div>
+                <button type="button" disabled={loading} onClick={() => { setError(""); landingStatutApplied.current = false; handleOnboardingStatut(landingStatut); }}
+                  style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 22px", fontSize: 14, fontWeight: 700, cursor: loading ? "default" : "pointer", fontFamily: "inherit", opacity: loading ? 0.6 : 1 }}>
+                  {loading ? "Nouvelle tentative…" : "Réessayer"}
+                </button>
+              </div>
+            ) : (
+              <div style={{ color: "#8BA5C0", fontSize: 14 }}>Je prépare ton espace…</div>
+            )}
           </div>
         );
       }
