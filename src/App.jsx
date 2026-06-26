@@ -5504,96 +5504,132 @@ function AppInner() {
                 </div>
               )}
 
-              {/* ── État DÉJÀ FAIT ── */}
+              {/* ── État DÉJÀ FAIT (raconte le mois, ne liste pas) ── */}
               {dejaActualise && (
-                <div style={{ padding: "20px 0 8px" }}>
-                  <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ padding: "20px 0 8px", maxWidth: 480, margin: "0 auto" }}>
+                  {/* 1. Le mois est le héros */}
+                  <div style={{ textAlign: "center", marginBottom: 22 }}>
                     <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
                     </div>
-                    <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Ton actualisation de {moisDeclNom} est faite ✓</h1>
-                    <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto" }}>Tu es à jour. Je reprends le 28 pour le mois prochain.</p>
+                    <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1.25, margin: "0 auto 8px" }}>✅ {moisDeclNom} terminé</h1>
+                    <p style={{ fontSize: 13.5, color: "#8FB4D8", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
+                      {totalCachetsMois > 0 ? `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""} ajouté${totalCachetsMois > 1 ? "s" : ""}. ` : ""}{Math.round(totalHeuresMois)} heures enregistrées. Tout est cohérent. 🐾
+                    </p>
                   </div>
 
-                  {/* Relevé des déclarations du mois — la liste est le héros */}
-                  {actusDuMois.length > 0 && (
-                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "16px 14px 14px", maxWidth: 480, margin: "0 auto" }}>
+                  {/* 2. Stats en phrase (icône + espace, pas des KPI) */}
+                  <div style={{ display: "flex", justifyContent: "center", gap: 22, marginBottom: 22, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
+                      <span style={{ fontSize: 14, color: "#E8F4FF" }}><strong style={{ fontWeight: 800 }}>{totalCachetsMois}</strong> cachet{totalCachetsMois > 1 ? "s" : ""}</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
+                      <span style={{ fontSize: 14, color: "#E8F4FF" }}><strong style={{ fontWeight: 800 }}>{Math.round(totalHeuresMois)}</strong> heures</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <i className="ti ti-building" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
+                      <span style={{ fontSize: 14, color: "#E8F4FF" }}><strong style={{ fontWeight: 800 }}>{employeursMois.length}</strong> employeur{employeursMois.length > 1 ? "s" : ""}</span>
+                    </div>
+                  </div>
 
-                      {/* Totaux discrets */}
-                      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                        <div style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.035)", borderRadius: 10, padding: "9px 4px" }}>
-                          <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1 }}>{totalCachetsMois}</div>
-                          <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 4 }}>cachet{totalCachetsMois > 1 ? "s" : ""}</div>
+                  {/* 3. Le détail : cartes (pas un tableau) sous ~10 lignes, sinon tableau */}
+                  {actusDuMois.length > 0 && (() => {
+                    const tri = [...actusDuMois].sort((a, b) => new Date(a.date) - new Date(b.date));
+                    const enTableau = tri.length >= 10;
+                    if (enTableau) {
+                      // Vue tableau compacte (beaucoup de lignes)
+                      return (
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "8px 4px", marginBottom: 22 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 12px 8px", borderBottom: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontWeight: 700, letterSpacing: 0.4, color: "#6B8299", textTransform: "uppercase" }}>
+                            <span style={{ width: 44, flexShrink: 0 }}>Date</span>
+                            <span style={{ flex: 1 }}>Employeur</span>
+                            <span style={{ width: 56, textAlign: "right", flexShrink: 0 }}>Heures</span>
+                            <span style={{ width: 54, textAlign: "right", flexShrink: 0 }}>Source</span>
+                          </div>
+                          {tri.map((a, i) => {
+                            const h = Math.round(heuresDe(a));
+                            const dO = new Date(a.date);
+                            const dc = String(dO.getDate()).padStart(2, "0") + "/" + String(dO.getMonth() + 1).padStart(2, "0");
+                            const estAem = a.aem_recue === true || a.source === "ocr";
+                            return (
+                              <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                                <span style={{ width: 44, fontSize: 12, color: "#9FCBF5", flexShrink: 0 }}>{dc}</span>
+                                <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: a.employeur ? "#E8F4FF" : "#FAC775", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.employeur || "À compléter"}</span>
+                                <span style={{ width: 56, textAlign: "right", fontSize: 13, fontWeight: 700, color: "white", flexShrink: 0 }}>{h} h</span>
+                                <span style={{ width: 54, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: estAem ? "#5DCAA5" : "#8BA5C0", flexShrink: 0 }}>{estAem ? "AEM" : "Manuel"}</span>
+                              </div>
+                            );
+                          })}
                         </div>
-                        <div style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.035)", borderRadius: 10, padding: "9px 4px" }}>
-                          <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1 }}>{Math.round(totalHeuresMois)}</div>
-                          <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 4 }}>heures</div>
-                        </div>
-                        <div style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.035)", borderRadius: 10, padding: "9px 4px" }}>
-                          <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1 }}>{employeursMois.length}</div>
-                          <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 4 }}>employeur{employeursMois.length > 1 ? "s" : ""}</div>
-                        </div>
-                      </div>
-
-                      {/* En-tête du relevé */}
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px 7px", borderBottom: "1px solid rgba(255,255,255,0.1)", fontSize: 10, fontWeight: 700, letterSpacing: 0.4, color: "#6B8299", textTransform: "uppercase" }}>
-                        <span style={{ minWidth: 36, flexShrink: 0 }}>Date</span>
-                        <span style={{ flex: 1 }}>Employeur</span>
-                        <span style={{ minWidth: 46, textAlign: "right", flexShrink: 0 }}>Heures</span>
-                        <span style={{ minWidth: 52, textAlign: "right", flexShrink: 0 }}>Source</span>
-                      </div>
-
-                      {/* Une ligne = un contrat, comme un relevé bancaire (pas d'accordéon) */}
-                      <div>
-                        {[...actusDuMois].sort((a, b) => new Date(a.date) - new Date(b.date)).map((a, i) => {
+                      );
+                    }
+                    // Vue cartes riches (peu de lignes)
+                    return (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 22 }}>
+                        {tri.map((a, i) => {
                           const estCachet = a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe";
                           const nb = parseFloat(a.nombre) || 0;
                           const h = Math.round(heuresDe(a));
                           const aEmp = a.employeur && a.employeur.trim();
-                          const dateObj = new Date(a.date);
-                          const dateCourt = `${String(dateObj.getDate()).padStart(2, "0")}/${String(dateObj.getMonth() + 1).padStart(2, "0")}`;
+                          const dO = new Date(a.date);
+                          const dateLong = dO.getDate() + " " + MOIS_FR[dO.getMonth()];
                           const estAem = a.aem_recue === true || a.source === "ocr";
-                          const src = estAem
-                            ? { label: "AEM", color: "#5DCAA5", icon: "ti-file-check" }
-                            : { label: "Manuel", color: "#8BA5C0", icon: "ti-pencil" };
                           return (
-                            <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "11px 4px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-                              <span style={{ minWidth: 36, fontSize: 12, color: "#9FCBF5", flexShrink: 0 }}>{dateCourt}</span>
-                              <span style={{ flex: 1, minWidth: 0 }}>
-                                {aEmp ? (
-                                  <span style={{ fontSize: 13, color: "#E8F4FF", display: "block", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.employeur}</span>
-                                ) : (
-                                  <span onClick={() => { setInterEditId(a.id); setInterEditForm({ date: a.date, type_activite: a.type_activite, nombre: a.nombre, employeur: "" }); setInterNav("activites"); }}
-                                    style={{ fontSize: 12, color: "#FAC775", display: "inline-flex", alignItems: "center", gap: 4, cursor: "pointer" }}>
-                                    <i className="ti ti-alert-circle" aria-hidden="true" style={{ fontSize: 13 }} /> Compléter l'employeur
-                                  </span>
-                                )}
-                                {estAem ? (
-                                  <span style={{ fontSize: 10.5, color: "#8BA5C0", display: "block" }}>{estCachet ? `${nb} cachet${nb > 1 ? "s" : ""}` : `${h}h`}</span>
-                                ) : (
-                                  <span style={{ fontSize: 10.5, color: "#C9A861", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                    <i className="ti ti-alert-circle" aria-hidden="true" style={{ fontSize: 11 }} /> {estCachet ? `${nb} cachet${nb > 1 ? "s" : ""}` : `${h}h`} · AEM à vérifier
-                                  </span>
-                                )}
-                              </span>
-                              <span style={{ minWidth: 46, textAlign: "right", fontSize: 13, fontWeight: 600, color: "#E8F4FF", flexShrink: 0 }}>{h} h</span>
-                              <span style={{ minWidth: 52, textAlign: "right", flexShrink: 0 }}>
-                                <span style={{ fontSize: 10.5, fontWeight: 600, color: src.color, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                  <i className={`ti ${src.icon}`} aria-hidden="true" style={{ fontSize: 12 }} /> {src.label}
+                            <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "15px 17px" }}>
+                              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
+                                <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>{dateLong}</span>
+                                <span style={{ fontSize: 10.5, fontWeight: 700, color: estAem ? "#5DCAA5" : "#8BA5C0", display: "inline-flex", alignItems: "center", gap: 4, background: estAem ? "rgba(93,202,165,0.12)" : "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>
+                                  <i className={`ti ${estAem ? "ti-file-check" : "ti-pencil"}`} aria-hidden="true" style={{ fontSize: 12 }} /> {estAem ? "AEM" : "Manuel"}
                                 </span>
-                              </span>
+                              </div>
+                              {aEmp ? (
+                                <div style={{ fontSize: 13, color: "#E8F4FF", display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+                                  <i className="ti ti-building" aria-hidden="true" style={{ fontSize: 15, color: "#7FB8F0" }} />{a.employeur}
+                                </div>
+                              ) : (
+                                <div onClick={() => { setInterEditId(a.id); setInterEditForm({ date: a.date, type_activite: a.type_activite, nombre: a.nombre, employeur: "" }); setInterNav("activites"); }}
+                                  style={{ fontSize: 13, color: "#FAC775", display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 10, cursor: "pointer" }}>
+                                  <i className="ti ti-alert-circle" aria-hidden="true" style={{ fontSize: 15 }} /> Employeur à compléter
+                                </div>
+                              )}
+                              <div style={{ display: "flex", gap: 18 }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 15, color: "#5DCAA5" }} />
+                                  <span style={{ fontSize: 13, color: "#E8F4FF" }}><strong style={{ fontWeight: 800 }}>{nb}</strong> {estCachet ? `cachet${nb > 1 ? "s" : ""}` : "h"}</span>
+                                </div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 15, color: "#5DCAA5" }} />
+                                  <span style={{ fontSize: 13, color: "#E8F4FF" }}><strong style={{ fontWeight: 800 }}>{h}</strong> heures</span>
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
                       </div>
+                    );
+                  })()}
 
-                      {/* Note de bas : rassurante et brève, pas une alerte */}
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "14px 6px 2px", fontSize: 12, color: "#8BA5C0", lineHeight: 1.5, textAlign: "center" }}>
-                        <i className="ti ti-circle-check" aria-hidden="true" style={{ fontSize: 15, color: "#5DCAA5", flexShrink: 0 }} />
-                        <span>Tes {totalCachetsMois > 0 ? `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""}` : `${Math.round(totalHeuresMois)}h`} sont là. Tu peux comparer avec ton dossier France Travail.</span>
+                  {/* 5. Célébration + lien avec le cockpit */}
+                  {(() => {
+                    const pct = calc.seuil > 0 ? Math.min(100, Math.round((calc.heures / calc.seuil) * 100)) : 0;
+                    return (
+                      <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(10,19,34,0.4))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                        <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                          <span style={{ fontSize: 22, flexShrink: 0 }}>🐶</span>
+                          <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6 }}>
+                            Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? " — tes droits sont sécurisés ✓" : `, soit ${pct} % vers ton renouvellement.`}
+                          </div>
+                        </div>
+                        {!calc.secu && (
+                          <div style={{ marginTop: 12, height: 8, background: "#07192E", borderRadius: 5, overflow: "hidden" }}>
+                            <div style={{ width: pct + "%", height: "100%", background: "linear-gradient(90deg,#2C6E8F,#5DCAA5)", borderRadius: 5, transition: "width 0.7s ease" }} />
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
                 </div>
               )}
 
@@ -5689,17 +5725,33 @@ function AppInner() {
               {/* ── Historique des actualisations ── */}
               {(actuHistorique || []).length > 0 && (
                 <div style={{ marginTop: 32 }}>
-                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "#6B8299", textTransform: "uppercase", margin: "0 2px 10px" }}>Tes actualisations</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {actuHistorique.map((h, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "11px 14px" }}>
-                        <span style={{ color: "#E8F4FF", fontSize: 13, fontWeight: 600, display: "flex", alignItems: "center", gap: 8 }}><i className="ti ti-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15 }} /> {h.label}</span>
-                        <span style={{ color: "#8BA5C0", fontSize: 11.5 }}>{h.cachets} cachets · {h.heures}h</span>
-                      </div>
-                    ))}
+                  <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: 1, color: "#6B8299", textTransform: "uppercase", margin: "0 2px 14px" }}>Tes actualisations</div>
+                  <div style={{ position: "relative", paddingLeft: 8 }}>
+                    {actuHistorique.map((h, i) => {
+                      const dernier = i === actuHistorique.length - 1;
+                      return (
+                        <div key={i} style={{ display: "flex", gap: 14, position: "relative" }}>
+                          {/* Colonne frise : point + trait */}
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                            <div style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(93,202,165,0.15)", border: "1.5px solid rgba(93,202,165,0.5)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <i className="ti ti-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 14 }} />
+                            </div>
+                            {!dernier && <div style={{ width: 2, flex: 1, background: "rgba(93,202,165,0.2)", minHeight: 18 }} />}
+                          </div>
+                          {/* Contenu du mois */}
+                          <div style={{ flex: 1, paddingBottom: dernier ? 0 : 16 }}>
+                            <div style={{ fontSize: 14, fontWeight: 800, color: "white", marginBottom: 5 }}>{h.label}</div>
+                            <div style={{ display: "flex", gap: 16 }}>
+                              <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.cachets} cachet{h.cachets > 1 ? "s" : ""}</span>
+                              <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.heures} h</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                   {actuHistorique.length >= 3 && (
-                    <div style={{ fontSize: 11.5, color: "#5DCAA5", textAlign: "center", marginTop: 12, fontWeight: 600 }}>🐾 Tu t'actualises sans faute depuis {actuHistorique.length} mois. Continue comme ça.</div>
+                    <div style={{ fontSize: 11.5, color: "#5DCAA5", textAlign: "center", marginTop: 16, fontWeight: 600 }}>🐾 Tu t'actualises sans faute depuis {actuHistorique.length} mois. Continue comme ça.</div>
                   )}
                 </div>
               )}
