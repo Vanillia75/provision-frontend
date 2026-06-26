@@ -8028,6 +8028,34 @@ function AppInner() {
               );
             })()}
 
+            {/* ── CHECKLIST DE SÉRÉNITÉ (style cockpit) ── */}
+            {(() => {
+              const items = [
+                { label: "Solde bancaire renseigné", ok: panique.solde !== "" },
+                { label: "Revenus du mois enregistrés", ok: incomeList.length > 0 },
+                { label: "URSSAF provisionnée", ok: urssafProvision > 0 },
+                { label: "Réserve de sécurité constituée", ok: reserveAtteinte === true },
+              ];
+              const faits = items.filter(i => i.ok).length;
+              return (
+                <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de sérénité</div>
+                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{faits} / {items.length}</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    {items.map(it => (
+                      <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 11, opacity: it.ok ? 1 : 0.55 }}>
+                        <i className={`ti ${it.ok ? "ti-circle-check-filled" : "ti-circle"}`} aria-hidden="true" style={{ fontSize: 18, color: it.ok ? "#5DCAA5" : "#FAC775", flexShrink: 0 }} />
+                        <div style={{ flex: 1, fontSize: 13.5, color: it.ok ? "#E8F4FF" : "#B5D4F4" }}>{it.label}</div>
+                        <span style={{ fontSize: 11, color: it.ok ? "#5DCAA5" : "#FAC775" }}>{it.ok ? "fait" : "à faire"}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
