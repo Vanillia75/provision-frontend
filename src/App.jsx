@@ -4957,8 +4957,15 @@ function AppInner() {
     // On déclare le mois civil écoulé. La fenêtre d'actualisation court ~du 28 au 15.
     const MOIS_FR = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
     const maintenant = new Date();
-    // Mois à déclarer = mois précédent
-    const moisDecl = new Date(maintenant.getFullYear(), maintenant.getMonth() - 1, 1);
+    // Mois à déclarer selon le cycle France Travail :
+    // l'actualisation d'un mois s'ouvre vers le 28 de CE mois et court jusqu'au 15 du mois suivant.
+    // - du 16 à la fin du mois (donc à l'approche de l'ouverture du 28) : on déclare le MOIS COURANT
+    //   (ex : le 26 juin, l'actu qui s'ouvre le 28 juin concerne JUIN, pas mai).
+    // - du 1er au 15 : la fenêtre du mois précédent est encore ouverte → on déclare le MOIS PRÉCÉDENT
+    //   (ex : le 5 juillet, on termine l'actu de juin).
+    const jourCourant = maintenant.getDate();
+    const decalageMois = jourCourant >= 16 ? 0 : -1;
+    const moisDecl = new Date(maintenant.getFullYear(), maintenant.getMonth() + decalageMois, 1);
     const moisDeclLabel = `${MOIS_FR[moisDecl.getMonth()]} ${moisDecl.getFullYear()}`;
     const moisDeclNom = MOIS_FR[moisDecl.getMonth()];
     // Activités tombant dans le mois à déclarer
@@ -5000,9 +5007,8 @@ function AppInner() {
     const actuClef = `${moisDecl.getFullYear()}-${String(moisDecl.getMonth() + 1).padStart(2, "0")}`;
     const dejaActualise = (actuHistorique || []).some(h => h.clef === actuClef);
     // Fenêtre : on considère l'actualisation "ouverte" entre le 28 et le 15. Sinon "à venir".
-    const jourActuel = maintenant.getDate();
-    const actuOuverte = jourActuel >= 28 || jourActuel <= 15;
-    const joursAvantOuverture = jourActuel < 28 ? (28 - jourActuel) : 0;
+    const actuOuverte = jourCourant >= 28 || jourCourant <= 15;
+    const joursAvantOuverture = jourCourant < 28 ? (28 - jourCourant) : 0;
 
     // Les entrées du menu intermittent (reflètent les 6 promesses de la landing)
     const interMenuItems = [
