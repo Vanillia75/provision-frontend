@@ -52,6 +52,50 @@ function isIOSDevice() {
       || (/macintosh/i.test(ua) && "ontouchend" in document);
   } catch { return false; }
 }
+
+// Bannière d'installation réutilisable (s'affiche avant ET après connexion).
+// Props : pwaPrompt (event Android), onInstall, onDismiss, showHelp, compact.
+function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
+  if (isStandalonePWA()) return null;
+  if (!pwaPrompt && !isIOSDevice()) return null; // rien à proposer sur desktop classique
+  return (
+    <div style={{ background: "#07192E", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 12, padding: compact ? "11px 13px" : "14px 16px", marginBottom: 14 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 11, flex: "1 1 220px" }}>
+          <img src="/hector-icon-192.png" alt="Hector" style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0 }} />
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Installe Hector sur ton téléphone</div>
+            <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil. <span style={{ color: "#8BA5C0" }}>(En attendant l'app sur les stores)</span></div>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <button type="button" onClick={onInstall}
+            style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+            Installer
+          </button>
+          <button type="button" onClick={onDismiss} aria-label="Fermer"
+            style={{ background: "transparent", border: "none", color: "#5A7088", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4, fontFamily: "inherit" }}>
+            ×
+          </button>
+        </div>
+      </div>
+      {showHelp && isIOSDevice() && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "#C8E0F5", lineHeight: 1.7 }}>
+          <div style={{ fontWeight: 700, marginBottom: 6, color: "white" }}>Sur iPhone (dans Safari) :</div>
+          1. Appuie sur le bouton <strong>Partager</strong> <i className="ti ti-upload" aria-hidden="true" /> (en bas de l'écran)<br />
+          2. Choisis <strong>« Sur l'écran d'accueil »</strong><br />
+          3. Appuie sur <strong>Ajouter</strong> 🐾
+          <div style={{ marginTop: 8, fontSize: 11.5, color: "#8BA5C0" }}>Si tu es dans Chrome, ouvre d'abord hector-app.fr dans <strong style={{ color: "#9FCBF5" }}>Safari</strong> (l'install marche que là sur iPhone).</div>
+        </div>
+      )}
+      {showHelp && !isIOSDevice() && !pwaPrompt && (
+        <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "#C8E0F5", lineHeight: 1.7 }}>
+          Ouvre le menu de ton navigateur (⋮), puis <strong>« Installer l'application »</strong>.
+        </div>
+      )}
+    </div>
+  );
+}
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
@@ -3784,6 +3828,7 @@ function AppInner() {
             ) : (
               <form onSubmit={handleAuth}>
                 <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte intermittent"}</h2>
+                {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
                 {error && <div style={S.errorBanner}>{error}</div>}
                 <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                 <p style={S.orDivider}>ou avec un email</p>
@@ -4124,6 +4169,7 @@ function AppInner() {
             ) : (
               <form onSubmit={handleAuth}>
                 <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer un compte"}</h2>
+                {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
                 {error && <div style={S.errorBanner}>{error}</div>}
                 <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                 <p style={S.orDivider}>ou avec un email</p>
@@ -8157,41 +8203,8 @@ function AppInner() {
         )}
 
         {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
-        {!isStandalonePWA() && !pwaDismissed && (pwaPrompt || isIOSDevice()) && (
-          <div style={{ background: "#07192E", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 12, padding: "14px 16px", marginBottom: 16 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 11, flex: "1 1 240px" }}>
-                <img src="/hector-icon-192.png" alt="Hector" style={{ width: 38, height: 38, borderRadius: 9, flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "white" }}>Installe Hector sur ton téléphone</div>
-                  <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil. <span style={{ color: "#8BA5C0" }}>(En attendant l'app sur les stores)</span></div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <button type="button" onClick={handleInstallClick}
-                  style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                  Installer
-                </button>
-                <button type="button" onClick={dismissPwa} aria-label="Fermer"
-                  style={{ background: "transparent", border: "none", color: "#5A7088", cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 4, fontFamily: "inherit" }}>
-                  ×
-                </button>
-              </div>
-            </div>
-            {showInstallHelp && isIOSDevice() && (
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "#C8E0F5", lineHeight: 1.7 }}>
-                <div style={{ fontWeight: 700, marginBottom: 6, color: "white" }}>Sur iPhone, en 3 étapes :</div>
-                1. Appuie sur le bouton <strong>Partager</strong> <i className="ti ti-upload" aria-hidden="true" /> (en bas de Safari)<br />
-                2. Fais défiler et choisis <strong>« Sur l'écran d'accueil »</strong><br />
-                3. Appuie sur <strong>Ajouter</strong> — et voilà l'icône Hector 🐾
-              </div>
-            )}
-            {showInstallHelp && !isIOSDevice() && !pwaPrompt && (
-              <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12.5, color: "#C8E0F5", lineHeight: 1.7 }}>
-                Ouvre le menu de ton navigateur (les 3 points), puis choisis <strong>« Installer l'application »</strong> ou <strong>« Ajouter à l'écran d'accueil »</strong>.
-              </div>
-            )}
-          </div>
+        {!pwaDismissed && (
+          <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
         )}
 
         {nav === "dashboard" && estimateData && (
