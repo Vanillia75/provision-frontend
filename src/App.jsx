@@ -5514,7 +5514,7 @@ function AppInner() {
                     </div>
                     <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1.25, margin: "0 auto 8px" }}>✅ {moisDeclNom} terminé</h1>
                     <p style={{ fontSize: 13.5, color: "#8FB4D8", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
-                      {totalCachetsMois > 0 ? `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""} ajouté${totalCachetsMois > 1 ? "s" : ""}. ` : ""}{Math.round(totalHeuresMois)} heures enregistrées. Tout est cohérent. 🐾
+                      {totalCachetsMois > 0 ? `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""} ajouté${totalCachetsMois > 1 ? "s" : ""}. ` : ""}{Math.round(totalHeuresMois)} heures enregistrées. Tout est cohérent.
                     </p>
                   </div>
 
@@ -5617,7 +5617,9 @@ function AppInner() {
                     return (
                       <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(10,19,34,0.4))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 16, padding: "18px 20px" }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                          <span style={{ fontSize: 22, flexShrink: 0 }}>🐶</span>
+                          <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                          </div>
                           <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6 }}>
                             Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? " — tes droits sont sécurisés ✓" : `, soit ${pct} % vers ton renouvellement.`}
                           </div>
@@ -5781,7 +5783,9 @@ function AppInner() {
                 else phrase = "Il te manque " + calc.manque + " h pour sécuriser tes droits. Continue à déclarer tes contrats.";
                 return (
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "14px 16px", marginBottom: 22 }}>
-                    <span style={{ fontSize: 18, flexShrink: 0 }}>🐶</span>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                    </div>
                     <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55 }}><span style={{ color: "#5DCAA5", fontWeight: 700 }}>En résumé :</span> {phrase}</div>
                   </div>
                 );
@@ -6204,7 +6208,7 @@ function AppInner() {
                         <i className="ti ti-sparkles" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
                         <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Que se passe-t-il si… ?</div>
                       </div>
-                      <div style={{ fontSize: 12, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 12 }}>Je connais ton dossier par cœur — pose-moi ta question ou choisis-en une plus bas. 🐾</div>
+                      <div style={{ fontSize: 12, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 12 }}>Je connais ton dossier par cœur — pose-moi ta question ou choisis-en une plus bas.</div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <input type="text" value={etSiInput} onChange={e => setEtSiInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") poserEtSi(); }}
                           placeholder="Ex : et si j'accepte 3 cachets ?" disabled={etSiLoading || calcThinking}
@@ -6340,7 +6344,7 @@ function AppInner() {
                     const trois = passes.slice(-3);
                     const monte = trois.length === 3 && trois[0].heuresFaites < trois[1].heuresFaites && trois[1].heuresFaites < trois[2].heuresFaites;
                     const concl = monte
-                      ? "Tu progresses depuis 3 mois — garde cette dynamique. 🐾"
+                      ? "Tu progresses depuis 3 mois — garde cette dynamique."
                       : "Ton meilleur mois est " + best.label + " avec " + best.heuresFaites + " h.";
                     return (
                       <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 12, display: "flex", alignItems: "center", gap: 7 }}>
