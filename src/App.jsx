@@ -5069,6 +5069,104 @@ function AppInner() {
               {interNav === "cockpit" && (<>
 
 
+
+              {/* ═══ EN-TÊTE COCKPIT : Hector + état (le héros) ═══ */}
+              <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 20 }}>{etat.emoji}</span>
+                      <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
+                    </div>
+                    <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══ */}
+              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
+                {!calc.secu ? (
+                  <>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 4 }}>
+                      Plus que <span style={{ color: "#5DCAA5" }}>{calc.manque} h</span> pour sécuriser tes droits.
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "#5A7798", marginBottom: 16 }}>
+                      {calc.heures} / {calc.seuil} h validées · ≈ {calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 16 }}>
+                    Tes <span style={{ color: "#5DCAA5" }}>{calc.seuil} h</span> sont là. 🎉
+                  </div>
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                  <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Renouvellement</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#5DCAA5" }}>{coach.pctChemin}%</div>
+                </div>
+                <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${coach.pctChemin}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
+                </div>
+                {fenetre.aDesActivites && fenetre.sortent60 > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
+                    <span style={{ fontSize: 11, color: "#5DCAA5" }}>🟢 {calc.heures} h certaines</span>
+                    <span style={{ fontSize: 11, color: "#5A7798" }}>·</span>
+                    <span style={{ fontSize: 11, color: "#7FB8F0" }}>🔵 {fenetre.sortent60} h sortent dans 60 j</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ═══ NEXT ACTION UNIQUE ═══ */}
+              <button type="button" onClick={() => setInterNav(nextAction.nav)}
+                style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <i className={`ti ${nextAction.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
+                  <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
+                  {nextAction.suivant && (
+                    <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>Puis : {nextAction.suivant}</div>
+                  )}
+                </div>
+                <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
+              </button>
+
+              {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
+              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de renouvellement</div>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {checklist.lignes.map(l => (
+                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
+                      <span style={{ fontSize: 16 }}>{l.badge}</span>
+                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
+                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Alerte détection d'erreurs (seulement si Hector a repéré quelque chose) */}
+              {aDesAnomalies && (
+                <button type="button" onClick={() => setInterNav("calcul")}
+                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
+                    <div style={{ fontSize: 12, color: "#C9A861", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{anomalies.map(a => a.titre).join(" · ")}</div>
+                  </div>
+                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0 }} />
+                </button>
+              )}
+
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
                 {/* ───────── COLONNE GAUCHE : Hector (la star) ───────── */}
@@ -5132,21 +5230,6 @@ function AppInner() {
                       </div>
                     )}
 
-                    {/* LE gros bouton : Hector fait les calculs */}
-                    <button type="button" onClick={() => setInterNav("calcul")}
-                      style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "15px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
-                      <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Analyser ma situation
-                    </button>
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                      <button type="button" onClick={() => setInterNav("activites")}
-                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} /> Ajouter un contrat
-                      </button>
-                      <button type="button" onClick={() => setInterNav("coffre")}
-                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                        <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} /> Scanner une AEM
-                      </button>
-                    </div>
                   </div>
 
                   {/* ── ACCROCHE ANALYSE D'HECTOR (il remarque des choses) ── */}
@@ -5303,102 +5386,24 @@ function AppInner() {
                 </div>{/* ── fin colonne droite ── */}
               </div>{/* ── fin grille 2 colonnes ── */}
 
-              {/* ═══ EN-TÊTE COCKPIT : Hector + état (le héros) ═══ */}
-              <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
-                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>{etat.emoji}</span>
-                      <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
+              {/* ═══ ACTIONS (tout en bas : on agit après avoir lu) ═══ */}
+              <div style={{ marginTop: 4 }}>
+                    {/* LE gros bouton : Hector fait les calculs */}
+                    <button type="button" onClick={() => setInterNav("calcul")}
+                      style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "15px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
+                      <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Analyser ma situation
+                    </button>
+                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <button type="button" onClick={() => setInterNav("activites")}
+                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} /> Ajouter un contrat
+                      </button>
+                      <button type="button" onClick={() => setInterNav("coffre")}
+                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} /> Scanner une AEM
+                      </button>
                     </div>
-                    <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
-                  </div>
-                </div>
               </div>
-
-              {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══ */}
-              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
-                {!calc.secu ? (
-                  <>
-                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 4 }}>
-                      Plus que <span style={{ color: "#5DCAA5" }}>{calc.manque} h</span> pour sécuriser tes droits.
-                    </div>
-                    <div style={{ fontSize: 12.5, color: "#5A7798", marginBottom: 16 }}>
-                      {calc.heures} / {calc.seuil} h validées · ≈ {calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 16 }}>
-                    Tes <span style={{ color: "#5DCAA5" }}>{calc.seuil} h</span> sont là. 🎉
-                  </div>
-                )}
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                  <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Renouvellement</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#5DCAA5" }}>{coach.pctChemin}%</div>
-                </div>
-                <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${coach.pctChemin}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
-                </div>
-                {fenetre.aDesActivites && fenetre.sortent60 > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
-                    <span style={{ fontSize: 11, color: "#5DCAA5" }}>🟢 {calc.heures} h certaines</span>
-                    <span style={{ fontSize: 11, color: "#5A7798" }}>·</span>
-                    <span style={{ fontSize: 11, color: "#7FB8F0" }}>🔵 {fenetre.sortent60} h sortent dans 60 j</span>
-                  </div>
-                )}
-              </div>
-
-              {/* ═══ NEXT ACTION UNIQUE ═══ */}
-              <button type="button" onClick={() => setInterNav(nextAction.nav)}
-                style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <i className={`ti ${nextAction.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
-                  <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
-                  {nextAction.suivant && (
-                    <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>Puis : {nextAction.suivant}</div>
-                  )}
-                </div>
-                <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
-              </button>
-
-              {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
-              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de renouvellement</div>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {checklist.lignes.map(l => (
-                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
-                      <span style={{ fontSize: 16 }}>{l.badge}</span>
-                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
-                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Alerte détection d'erreurs (seulement si Hector a repéré quelque chose) */}
-              {aDesAnomalies && (
-                <button type="button" onClick={() => setInterNav("calcul")}
-                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
-                    <div style={{ fontSize: 12, color: "#C9A861", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{anomalies.map(a => a.titre).join(" · ")}</div>
-                  </div>
-                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0 }} />
-                </button>
-              )}
 
               </>)}
 
