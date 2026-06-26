@@ -5068,6 +5068,36 @@ function AppInner() {
               {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
 
+              {/* ═══ HECTOR EN BANNIÈRE (le compagnon accueille, pleine largeur) ═══ */}
+              <div style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", marginBottom: 12, animation: "paliersHalo 6s ease-in-out infinite" }}>
+                  {/* Header immersif Hector (agrandi : il est la star) */}
+                  <div style={{ position: "relative", width: "100%", height: isMobile ? 300 : 360, overflow: "hidden" }}>
+                    {/* halo doux derrière Hector */}
+                    <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
+                    <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`} className="hector-breathe"
+                      onError={(e) => { e.currentTarget.style.display = "none"; }}
+                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
+
+                    {/* Badge palier en haut à droite */}
+                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
+                      <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
+                      <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
+                    </div>
+
+                    {/* Fondu vers le fond de la carte */}
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 190, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)", zIndex: 1 }} />
+
+                    {/* Titre + message en bas à gauche */}
+                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20, zIndex: 2 }}>
+                      <div style={{ fontSize: 28, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                        Hector {palierActuel.nom}
+                      </div>
+                      <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
+                        {c.hector_message}
+                      </div>
+                    </div>
+                  </div>
+              </div>
               {/* ═══ EN-TÊTE COCKPIT : Hector + état (le héros) ═══ */}
               <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
@@ -5169,36 +5199,9 @@ function AppInner() {
 
                 {/* ───────── COLONNE GAUCHE : Hector (la star) + objectif + pensée ───────── */}
                 <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", animation: "paliersHalo 6s ease-in-out infinite" }}>
-                  {/* Header immersif Hector (agrandi : il est la star) */}
-                  <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
-                    {/* halo doux derrière Hector */}
-                    <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
-                    <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`} className="hector-breathe"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
-
-                    {/* Badge palier en haut à droite */}
-                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
-                      <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
-                      <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
-                    </div>
-
-                    {/* Fondu vers le fond de la carte */}
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 190, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)", zIndex: 1 }} />
-
-                    {/* Titre + message en bas à gauche */}
-                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20, zIndex: 2 }}>
-                      <div style={{ fontSize: 28, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                        Hector {palierActuel.nom}
-                      </div>
-                      <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
-                        {c.hector_message}
-                      </div>
-                    </div>
-                  </div>
 
                   {/* ── Progression en phrase + barre ── */}
-                  <div style={{ padding: "16px 22px 18px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                  <div style={{ padding: "16px 22px 18px" }}>
                     <div style={{ fontSize: 14, color: "white", fontWeight: 700, marginBottom: 10 }}>
                       Tu as déjà parcouru <span style={{ color: "#5DCAA5" }}>{coach.pctChemin}%</span> du chemin.
                     </div>
