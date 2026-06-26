@@ -5068,8 +5068,8 @@ function AppInner() {
               {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
 
-              {/* ═══ HECTOR (image seule, en haut) ═══ */}
-              <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", marginBottom: 12, animation: "paliersHalo 6s ease-in-out infinite" }}>
+              {/* ═══ HECTOR (image seule, en haut, format vertical contenu) ═══ */}
+              <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", marginBottom: 12, animation: "paliersHalo 6s ease-in-out infinite", maxWidth: 440, marginLeft: "auto", marginRight: "auto" }}>
                   {/* Header immersif Hector (agrandi : il est la star) */}
                   <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
                     {/* halo doux derrière Hector */}
