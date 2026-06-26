@@ -5114,41 +5114,6 @@ function AppInner() {
                       <span>Objectif · {c.seuil}h</span>
                     </div>
 
-                    {/* ── PROJECTION À L'ÉCHÉANCE (F1) ── */}
-                    {/* Distingue le compteur d'aujourd'hui de ce qu'il y aura à la date anniversaire. */}
-                    {c.projection_disponible && (
-                      <div style={{ marginTop: 14, background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.22)", borderRadius: 11, padding: "13px 15px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 9 }}>
-                          <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 16 }} />
-                          <span style={{ fontSize: 12.5, fontWeight: 700, color: "#D6E8FA" }}>Et à ton renouvellement ?</span>
-                        </div>
-                        <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 11 }}>
-                          Je distingue ce que tu as <strong style={{ color: "#C8E0F5" }}>déjà sécurisé</strong> de ce que tu as <strong style={{ color: "#C8E0F5" }}>prévu</strong>. À ton renouvellement, les contrats de plus de 12 mois sortent du décompte.
-                        </div>
-
-                        {/* Plancher strict */}
-                        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, marginBottom: c.projection_a_des_contrats_futurs ? 9 : 0 }}>
-                          <i className="ti ti-player-stop" aria-hidden="true" style={{ color: "#FAC775", fontSize: 15, flexShrink: 0, marginTop: 2 }} />
-                          <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
-                            <span style={{ display: "inline-block", fontSize: 9.5, fontWeight: 800, color: "#FAC775", background: "rgba(250,199,117,0.14)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 5, padding: "1px 6px", marginRight: 5, textTransform: "uppercase", letterSpacing: 0.4 }}>Pire cas</span>
-                            <strong>Si tu ne retravailles plus du tout d'ici là :</strong> tu serais à <strong style={{ color: c.projection_plancher_securise ? "#5DCAA5" : "#FAC775" }}>{c.projection_plancher_heures}h</strong>
-                            {!c.projection_plancher_securise && <> — il te manquerait <strong style={{ color: "#FAC775" }}>{c.projection_plancher_manquant}h</strong></>}. <span style={{ color: "#8FB4D8" }}>C'est le scénario le plus pessimiste, pas ton résultat final.</span>
-                          </div>
-                        </div>
-
-                        {/* Avec contrats prévus — seulement si différent */}
-                        {c.projection_a_des_contrats_futurs && (
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                            <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, flexShrink: 0, marginTop: 2 }} />
-                            <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
-                              <strong>En comptant tes contrats signés déjà saisis :</strong> tu serais à <strong style={{ color: c.projection_avec_prevus_securise ? "#5DCAA5" : "#FAC775" }}>{c.projection_avec_prevus_heures}h</strong>
-                              {!c.projection_avec_prevus_securise && <> — il te manquerait <strong style={{ color: "#FAC775" }}>{c.projection_avec_prevus_manquant}h</strong></>}.
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-
                     {/* Invitation à renseigner la date anniversaire si absente */}
                     {!c.date_anniversaire && (
                       <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 10, padding: "11px 13px" }}>
