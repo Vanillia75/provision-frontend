@@ -1420,6 +1420,11 @@ function AppInner() {
       await apiFetch("/profile/statut", { method: "POST", body: JSON.stringify({ statut: "intermittent" }) });
       await apiFetch("/profile/complete-onboarding", { method: "POST" });
       await loadEverything();
+      // IMPORTANT : on purge landingStatut dès le succès. Sinon l'écran de transition
+      // "Je prépare ton espace" reste affiché tant que ce flag existe, et seul un
+      // rafraîchissement manuel débloque. On le retire avant de naviguer.
+      resetLandingStatut();
+      setOnbStep("done");
       setNav("dashboard");
       // Nouvelle inscription intermittent → on lance la visite guidée.
       // On purge le flag pour qu'un nouveau compte la voie toujours, même si
@@ -1452,6 +1457,15 @@ function AppInner() {
       handleOnboardingStatut(landingStatut);
     }
   }, [token, profile, onbStep, landingStatut]);
+
+  // Ceinture de sécurité : si l'onboarding est déjà terminé mais qu'un landingStatut
+  // traîne encore (state ou localStorage), on le purge pour ne JAMAIS rester bloqué
+  // sur l'écran "Je prépare ton espace". Un rafraîchissement ne doit pas être nécessaire.
+  useEffect(() => {
+    if (profile && profile.onboarding_complete && landingStatut) {
+      resetLandingStatut();
+    }
+  }, [profile, landingStatut]);
 
   async function handleLookupSiret() {
     if (!profilSiret) return;
