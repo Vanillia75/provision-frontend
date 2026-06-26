@@ -423,6 +423,42 @@ function formatPeriode(a, court = true) {
   return court ? fmt(a.date) : a.date;
 }
 
+// Normalise un nom d'employeur pour comparaison souple : minuscules, sans accents,
+// espaces multiples réduits. "ÉTOILE DE RÊVE" et "etoile de reve" deviennent identiques.
+function normEmployeur(nom) {
+  if (!nom) return "";
+  return nom
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // retire les accents
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// Retrouve les contrats passés chez un employeur donné, pour servir de repère
+// lors d'une estimation. Ne renvoie QUE des données réelles déjà enregistrées,
+// du même type (heures/cachets) que celui en cours de saisie. Jamais d'invention.
+// Retourne { count, moyenne, derniers: [{date, nombre, type}] } ou null si rien.
+function historiqueEmployeur(activites, nomEmployeur, typeActivite) {
+  const cible = normEmployeur(nomEmployeur);
+  if (!cible || !Array.isArray(activites)) return null;
+  // Même famille de type : on regroupe les cachets ensemble, les heures ensemble.
+  const memeFamille = (t) => {
+    const estCachet = (x) => x === "cachet_isole" || x === "cachet_groupe" || x === "cachet";
+    return estCachet(typeActivite) ? estCachet(t) : t === "heures";
+  };
+  const passes = activites
+    .filter(a => normEmployeur(a.employeur) === cible && memeFamille(a.type_activite) && (a.nombre || 0) > 0)
+    .sort((x, y) => String(y.date).localeCompare(String(x.date))); // plus récent d'abord
+  if (passes.length === 0) return null;
+  const total = passes.reduce((s, a) => s + (a.nombre || 0), 0);
+  const moyenne = Math.round((total / passes.length) * 10) / 10;
+  return {
+    count: passes.length,
+    moyenne,
+    derniers: passes.slice(0, 3).map(a => ({ date: a.date, nombre: a.nombre, type: a.type_activite })),
+  };
+}
+
 // Total des heures sur la fenêtre glissante de 365 jours (identique au backend).
 // On ignore ce qui est hors fenêtre ou dans le futur. C'est CE total qui doit
 // être affiché partout (cockpit, "Que se passe-t-il si", analyses), pour ne jamais
@@ -7297,6 +7333,35 @@ function AppInner() {
                         <div style={{ fontSize: 11, color: "#8FB4D8", lineHeight: 1.4, marginTop: 2 }}>Coche si tu déclares de mémoire en attendant la paie. Tu corrigeras quand l'attestation arrivera.</div>
                       </div>
                     </label>
+                    {interForm.estime && (() => {
+                      const histo = historiqueEmployeur(interActivites, interForm.employeur, interForm.type_activite);
+                      if (!histo) return null;
+                      const estCachet = interForm.type_activite !== "heures";
+                      const unite = estCachet ? "cachets" : "h";
+                      return (
+                        <div style={{ background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 8, padding: "11px 13px" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 7, marginBottom: 7 }}>
+                            <i className="ti ti-history" aria-hidden="true" style={{ fontSize: 15, color: "#9FCBF5" }} />
+                            <div style={{ fontSize: 12.5, color: "#C8E0F5", fontWeight: 700 }}>
+                              Chez {interForm.employeur.trim()}, tu as déjà fait :
+                            </div>
+                          </div>
+                          <div style={{ fontSize: 12, color: "#9FCBF5", lineHeight: 1.6 }}>
+                            {histo.derniers.map((d, i) => (
+                              <span key={i}>
+                                {formatPeriode({ date: d.date })} · <strong style={{ color: "#E8F4FF" }}>{d.nombre} {estCachet ? "cachet" + (d.nombre > 1 ? "s" : "") : "h"}</strong>
+                                {i < histo.derniers.length - 1 ? "  ·  " : ""}
+                              </span>
+                            ))}
+                          </div>
+                          {histo.count > 1 && (
+                            <div style={{ fontSize: 11.5, color: "#8FB4D8", marginTop: 6 }}>
+                              Moyenne sur tes {histo.count} derniers contrats : <strong style={{ color: "#C8E0F5" }}>≈ {histo.moyenne} {unite}</strong>. À toi de voir ce qui colle.
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
                     <button type="button" disabled={interSaving} onClick={handleAddActivite}
                       style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: interSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interSaving ? 0.6 : 1 }}>
                       {interSaving ? "Enregistrement…" : "Enregistrer"}
