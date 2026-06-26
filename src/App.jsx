@@ -5327,12 +5327,57 @@ function AppInner() {
 
               {/* ── État DÉJÀ FAIT ── */}
               {dejaActualise && (
-                <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
-                  <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
+                <div style={{ padding: "20px 0 8px" }}>
+                  <div style={{ textAlign: "center", marginBottom: 24 }}>
+                    <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
+                    </div>
+                    <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Ton actualisation de {moisDeclNom} est faite ✓</h1>
+                    <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto" }}>Tu es à jour. Je reprends le 28 pour le mois prochain.</p>
                   </div>
-                  <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Ton actualisation de {moisDeclNom} est faite ✓</h1>
-                  <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 8px" }}>Tu es à jour. Je reprends le 28 pour le mois prochain.</p>
+
+                  {/* Récap détaillé de ce qui a été déclaré */}
+                  {employeursMois.length > 0 && (
+                    <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "16px 18px", maxWidth: 460, margin: "0 auto" }}>
+                      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: 0.6, color: "#6B8299", textTransform: "uppercase", marginBottom: 14 }}>Ce que tu as déclaré</div>
+
+                      {/* Totaux en bandeau */}
+                      <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+                        <div style={{ flex: 1, textAlign: "center", background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 10, padding: "10px 4px" }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>{totalCachetsMois}</div>
+                          <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 5 }}>cachet{totalCachetsMois > 1 ? "s" : ""}</div>
+                        </div>
+                        <div style={{ flex: 1, textAlign: "center", background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 10, padding: "10px 4px" }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "#9FCBF5", lineHeight: 1 }}>{Math.round(totalHeuresMois)}</div>
+                          <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 5 }}>heures</div>
+                        </div>
+                        <div style={{ flex: 1, textAlign: "center", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "10px 4px" }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1 }}>{employeursMois.length}</div>
+                          <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 5 }}>employeur{employeursMois.length > 1 ? "s" : ""}</div>
+                        </div>
+                      </div>
+
+                      {/* Détail par employeur */}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {employeursMois.map((e, i) => (
+                          <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "11px 13px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                              <div style={{ width: 30, height: 30, borderRadius: 8, background: "rgba(93,202,165,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <i className="ti ti-building" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15 }} />
+                              </div>
+                              <div style={{ minWidth: 0 }}>
+                                <div style={{ fontSize: 13, fontWeight: 600, color: "#E8F4FF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{e.nom}</div>
+                                <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 1 }}>{e.cachets > 0 ? `${e.cachets} cachet${e.cachets > 1 ? "s" : ""}` : `${Math.round(e.heures)}h`}</div>
+                              </div>
+                            </div>
+                            {e.brut > 0 && (
+                              <div style={{ fontSize: 12.5, fontWeight: 700, color: "#B5D4F4", flexShrink: 0 }}>{new Intl.NumberFormat("fr-FR").format(Math.round(e.brut))} €</div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
