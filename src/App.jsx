@@ -8022,9 +8022,8 @@ function AppInner() {
 
             {/* ── TA PROCHAINE ACTION (style cockpit) ── */}
             {(() => {
-              const action = panique.solde === ""
-                ? { txt: "Renseigne ton solde bancaire", sub: "10 secondes, pour voir ton disponible", icon: "ti-wallet", nav: "dashboard" }
-                : incomeList.length === 0
+              if (panique.solde === "") return null;
+              const action = incomeList.length === 0
                 ? { txt: "Ajoute ton premier revenu", sub: "Hector mettra l'URSSAF de côté automatiquement", icon: "ti-plus", nav: "revenus" }
                 : reserveAtteinte === false
                 ? { txt: "Renforce ta réserve de sécurité", sub: `Il te manque ${formatEUR(manqueReserveDashboard)}`, icon: "ti-shield-half", nav: "revenus" }
