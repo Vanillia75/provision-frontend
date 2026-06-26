@@ -5005,6 +5005,11 @@ function AppInner() {
 
         <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
 
+          {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
+          {!pwaDismissed && (
+            <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
+          )}
+
           {/* Chargement */}
           {interCockpitLoading && !c && (
             <div style={{ textAlign: "center", padding: "80px 0", color: "#6B8299" }}>
