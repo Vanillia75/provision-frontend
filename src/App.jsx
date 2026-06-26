@@ -5751,6 +5751,28 @@ function AppInner() {
                     </div>
                     <span style={{ fontSize: 10.5, color: "#F0997F", background: "rgba(226,83,61,0.15)", border: "1px solid rgba(226,83,61,0.3)", borderRadius: 7, padding: "3px 9px", fontWeight: 700 }}>{anomalies.length} {anomalies.length > 1 ? "anomalies" : "anomalie"}</span>
                   </div>
+                  {(() => {
+                    const nbAem = (interActivites || []).filter(a => !(a.aem_recue === true || a.source === "ocr")).length;
+                    const nbOrange = anomalies.filter(a => a.niveau === "orange" && a.id !== "aem").length;
+                    let conf = 100 - (nbAem * 6) - (nbOrange * 4);
+                    if (conf < 40) conf = 40;
+                    const note = nbAem > 0
+                      ? "Il me reste " + nbAem + " AEM à vérifier pour être sûr à 100 %."
+                      : "Toutes tes AEM connues ont été analysées.";
+                    const cc = conf >= 85 ? "#5DCAA5" : conf >= 65 ? "#FAC775" : "#F0997F";
+                    return (
+                      <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "12px 14px", marginBottom: 14 }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                          <span style={{ fontSize: 12, color: "#A9C2DC", fontWeight: 600 }}>Confiance de l'analyse</span>
+                          <span style={{ fontSize: 13, fontWeight: 800, color: cc }}>{conf} %</span>
+                        </div>
+                        <div style={{ height: 7, background: "#07192E", borderRadius: 5, overflow: "hidden" }}>
+                          <div style={{ width: conf + "%", height: "100%", background: cc, borderRadius: 5, transition: "width 0.6s ease" }} />
+                        </div>
+                        <div style={{ fontSize: 11, color: "#7E97B3", marginTop: 7, lineHeight: 1.45 }}>{note}</div>
+                      </div>
+                    );
+                  })()}
                   <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                     {[
                       { cle: "crit", label: "🚨 À corriger immédiatement", tc: "#F0997F", items: anomalies.filter(a => a.id === "aem") },
@@ -5944,8 +5966,32 @@ function AppInner() {
                   };
                 };
 
+                R.que_faire = () => {
+                  const aemAno = (anomalies || []).find(a => a.id === "aem");
+                  const etapes = [];
+                  if (aemAno) etapes.push("récupérer tes AEM manquantes (ce sont des heures déjà travaillées qui ne comptent pas encore)");
+                  if (!calc.secu && calc.manque > 0) etapes.push(`viser ${calc.manque}h ≈ ${calc.cachetsManquants} cachets pour atteindre tes 507h`);
+                  if (etapes.length === 0) return {
+                    ouv: "Bonne nouvelle.",
+                    text: "Pour l'instant, tu n'as rien d'urgent à faire : ton dossier est propre et tes droits sont sécurisés. Continue à déclarer tes contrats au fur et à mesure, et on garde le cap.",
+                    suite: ["renouveler", "rythme", "si_pause"],
+                  };
+                  const txt = etapes.length === 1
+                    ? `Le plus important maintenant, c'est de ${etapes[0]}.`
+                    : `Dans l'ordre : d'abord ${etapes[0]}. Ensuite, ${etapes[1]}.`;
+                  return {
+                    ouv: "Voici ce que je ferais à ta place.",
+                    text: txt + " Concentre-toi là-dessus, le reste suivra.",
+                    pourquoi: aemAno
+                      ? "Les AEM manquantes sont prioritaires car elles débloquent des heures que tu as déjà faites — c'est le gain le plus rapide avant de chercher de nouveaux contrats."
+                      : `Il te manque ${calc.manque}h sur les ${calc.seuil}h requises. C'est l'écart à combler avant ton renouvellement.`,
+                    suite: ["combien_cachets", "renouveler", "rythme"],
+                  };
+                };
+
                 // Catalogue des questions (label affiché + icône)
                 const QUESTIONS = {
+                  que_faire: { icon: "ti-target-arrow", label: "Que dois-je faire maintenant ?" },
                   renouveler: { icon: "ti-calendar-check", label: "Est-ce que je vais renouveler ?" },
                   combien_manque: { icon: "ti-target", label: "Combien me manque-t-il ?" },
                   si_contrat: { icon: "ti-briefcase", label: "Si j'accepte un contrat ?" },
@@ -5962,18 +6008,7 @@ function AppInner() {
                 return (
                   <>
                     {/* Zone de conversation */}
-                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 18 }}>
-                      {/* Message d'accueil */}
-                      {calcConvo.length === 0 && (
-                        <div style={{ display: "flex", gap: 10 }}>
-                          <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
-                          </div>
-                          <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "4px 14px 14px 14px", padding: "12px 15px", fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55, maxWidth: "85%" }}>
-                            Salut 🐾 Je connais ton dossier par cœur. Qu'est-ce qui t'inquiète ? Choisis une question, je regarde et je te réponds.
-                          </div>
-                        </div>
-                      )}
+                    <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: calcConvo.length === 0 ? 0 : 18 }}>
 
                       {/* Fil de la conversation */}
                       {calcConvo.map((m, i) => (
@@ -6113,10 +6148,11 @@ function AppInner() {
 
                     {/* ── LE CHAMP SIGNATURE : "Que se passe-t-il si…" ── */}
                     <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.08), rgba(55,138,221,0.05))", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: "16px 16px 14px", marginBottom: 16 }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                         <i className="ti ti-sparkles" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
                         <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Que se passe-t-il si… ?</div>
                       </div>
+                      <div style={{ fontSize: 12, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 12 }}>Je connais ton dossier par cœur — pose-moi ta question ou choisis-en une plus bas. 🐾</div>
                       <div style={{ display: "flex", gap: 8 }}>
                         <input type="text" value={etSiInput} onChange={e => setEtSiInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") poserEtSi(); }}
                           placeholder="Ex : et si j'accepte 3 cachets ?" disabled={etSiLoading || calcThinking}
@@ -6245,6 +6281,21 @@ function AppInner() {
                     <span style={{ display: "flex", alignItems: "center", gap: 5 }}><span style={{ width: 9, height: 9, borderRadius: 2, background: "#5DCAA5" }} /> ce mois</span>
                     <span style={{ display: "flex", alignItems: "center", gap: 5 }}>⚠️ heures qui sortent</span>
                   </div>
+                  {(() => {
+                    const passes = (timeline.buckets || []).filter(b => !b.futur && b.heuresFaites > 0);
+                    if (passes.length === 0) return null;
+                    const best = passes.reduce((m, b) => b.heuresFaites > m.heuresFaites ? b : m, passes[0]);
+                    const trois = passes.slice(-3);
+                    const monte = trois.length === 3 && trois[0].heuresFaites < trois[1].heuresFaites && trois[1].heuresFaites < trois[2].heuresFaites;
+                    const concl = monte
+                      ? "Tu progresses depuis 3 mois — garde cette dynamique. 🐾"
+                      : "Ton meilleur mois est " + best.label + " avec " + best.heuresFaites + " h.";
+                    return (
+                      <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 12, display: "flex", alignItems: "center", gap: 7 }}>
+                        <i className="ti ti-chart-line" aria-hidden="true" style={{ fontSize: 15 }} />{concl}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
