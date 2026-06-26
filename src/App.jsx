@@ -4388,6 +4388,121 @@ function AppInner() {
       return { niveau, titre, phrase, pctChemin, rythmeSemaine, cachetsSemaine, cachetsConseillesSemaine, compa, joursInactif, hCeMois, hMoisDernier };
     })();
 
+    // ═══ ÉTAT ÉMOTIONNEL (le héros) : 1 état clair en 3 tons, voix d'Hector ═══
+    // 🟢 sécurisé (certain) · 🟡 en bonne voie (continue) · 🔴 ça se joue (agis vite)
+    // Règle : 🟢 UNIQUEMENT si droits_securises (donnée certaine du moteur).
+    // Une projection positive ne donne JAMAIS de vert.
+    const etat = (() => {
+      const manque = calc.manque;
+      const joursAnniv = calc.aDateAnniv ? calc.joursAnniv : null;
+
+      // 🟢 SÉCURISÉ — seul cas vert : le moteur confirme les droits.
+      if (calc.secu) {
+        return {
+          ton: "green", emoji: "🟢", titre: "Tes droits sont sécurisés",
+          bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5", st: "#BFE6D6",
+          phrase: calc.aDateAnniv
+            ? `C'est bon jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Je monte la garde, tu peux souffler. 🐾`
+            : "Tes 507h sont là. Je continue à veiller sur ton dossier, tranquille. 🐾",
+        };
+      }
+
+      // 🔴 ÇA SE JOUE — date connue + à ce rythme on n'y arrive pas, ou très peu de temps.
+      const urgent = (calc.dansLesTemps === false) ||
+        (joursAnniv != null && joursAnniv <= 30 && manque > 24);
+      if (urgent) {
+        return {
+          ton: "red", emoji: "🔴", titre: "Là, ça se joue",
+          bg: "rgba(226,83,61,0.1)", bd: "rgba(226,83,61,0.3)", tc: "#F0997F", st: "#F0C4B8",
+          phrase: joursAnniv != null
+            ? `Il te reste ${joursAnniv} jour${joursAnniv > 1 ? "s" : ""} et ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""} à décrocher. C'est jouable, mais ne laisse rien passer ce mois-ci.`
+            : `Il te manque ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""}. À ta place, je chercherais des contrats dès maintenant.`,
+        };
+      }
+
+      // 🟡 EN BONNE VOIE — par défaut quand il manque des heures, sans drame.
+      return {
+        ton: "amber", emoji: "🟡", titre: "En bonne voie",
+        bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.3)", tc: "#FAC775", st: "#EDD9B0",
+        phrase: `Il ne te manque plus que ${manque} heure${manque > 1 ? "s" : ""}. Continue comme ça, je surveille le reste. 🐾`,
+      };
+    })();
+
+    // ═══ CHECKLIST DE RENOUVELLEMENT (vraie checklist, pas déco) ═══
+    // Ordre logique : période → AEM → heures → seuil → dossier.
+    // Chaque ligne : badge + libellé + statut court à droite.
+    const checklist = (() => {
+      const acts = interActivites || [];
+      const nbActs = acts.length;
+      // AEM : une activité a son AEM si aem_recue===true OU issue d'un scan OCR.
+      const sansAEM = acts.filter(a => !(a.aem_recue === true || a.source === "ocr"));
+      const aemOK = nbActs > 0 && sansAEM.length === 0;
+      // Heures réellement comptabilisées = total moteur (déjà filtré 365j côté backend).
+      const heures = calc.heures;
+      const seuilOK = calc.secu || calc.manque <= 0;
+      // Période de réf : calculée côté front pour l'instant → 🟠 "calcul fiable", jamais 🟢.
+      // (Passera 🟢 quand backend/expert valideront la date d'ouverture exacte.)
+      const periodeStatut = c && c.date_anniversaire
+        ? { badge: "🟠", txt: "12 mois · fiable", coul: "#FAC775" }
+        : { badge: "🟠", txt: "à préciser", coul: "#FAC775" };
+
+      const lignes = [
+        {
+          id: "periode", label: "Période de référence calculée",
+          badge: periodeStatut.badge, statut: periodeStatut.txt, coul: periodeStatut.coul,
+          fait: true, // étape "traitée" (fiable), compte dans la barre
+        },
+        {
+          id: "aem", label: "AEM présentes",
+          badge: aemOK ? "🟢" : "🔴",
+          statut: nbActs === 0 ? "aucun contrat" : (aemOK ? `${nbActs} / ${nbActs}` : `${sansAEM.length} manquante${sansAEM.length > 1 ? "s" : ""}`),
+          coul: aemOK ? "#5DCAA5" : "#F0997F",
+          fait: aemOK,
+        },
+        {
+          id: "heures", label: "Heures comptabilisées",
+          badge: nbActs > 0 ? "🟢" : "⬜",
+          statut: nbActs > 0 ? `${heures} h` : "à saisir",
+          coul: nbActs > 0 ? "#5DCAA5" : "#5A7798",
+          fait: nbActs > 0,
+        },
+        {
+          id: "seuil", label: `Seuil ${calc.seuil} h atteint`,
+          badge: seuilOK ? "🟢" : "🔴",
+          statut: seuilOK ? "atteint" : `il manque ${calc.manque} h`,
+          coul: seuilOK ? "#5DCAA5" : "#F0997F",
+          fait: seuilOK,
+        },
+        {
+          id: "dossier", label: "Dossier prêt à préparer",
+          badge: seuilOK ? "🟢" : "⬜",
+          statut: seuilOK ? "prêt" : "en attente",
+          coul: seuilOK ? "#5DCAA5" : "#5A7798",
+          fait: seuilOK,
+          attente: !seuilOK, // grisé tant que le seuil n'est pas atteint
+        },
+      ];
+      const faits = lignes.filter(l => l.fait).length;
+      return { lignes, faits, total: lignes.length };
+    })();
+
+    // ═══ NEXT ACTION UNIQUE : une seule prochaine action, toujours ═══
+    // Priorité : AEM manquante > heures > prêt.
+    const nextAction = (() => {
+      if (calc.secu) {
+        return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
+      }
+      // S'il y a une anomalie AEM manquante, elle prime (sans elle, les heures n'existent pas pour FT).
+      const aemAnomalie = (anomalies || []).find(a => a.id === "aem");
+      if (aemAnomalie) {
+        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "coffre" };
+      }
+      if (calc.manque > 0) {
+        return { icon: "ti-arrow-right", txt: `Il te manque ${calc.manque} h ≈ ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""}.`, nav: "activites" };
+      }
+      return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation" };
+    })();
+
     // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
     const analyses = (() => {
       const acts = interActivites || [];
@@ -4887,6 +5002,85 @@ function AppInner() {
               {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
 
+              {/* ═══ EN-TÊTE COCKPIT : Hector + état (le héros) ═══ */}
+              <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
+                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 20 }}>{etat.emoji}</span>
+                      <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
+                    </div>
+                    <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══ */}
+              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
+                {!calc.secu ? (
+                  <>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 4 }}>
+                      Plus que <span style={{ color: "#5DCAA5" }}>{calc.manque} h</span> pour sécuriser tes droits.
+                    </div>
+                    <div style={{ fontSize: 12.5, color: "#5A7798", marginBottom: 16 }}>
+                      {calc.heures} / {calc.seuil} h validées · ≈ {calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}
+                    </div>
+                  </>
+                ) : (
+                  <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 16 }}>
+                    Tes <span style={{ color: "#5DCAA5" }}>{calc.seuil} h</span> sont là. 🎉
+                  </div>
+                )}
+
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                  <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Renouvellement</div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#5DCAA5" }}>{coach.pctChemin}%</div>
+                </div>
+                <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
+                  <div style={{ height: "100%", width: `${coach.pctChemin}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
+                </div>
+                {fenetre.aDesActivites && fenetre.sortent60 > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
+                    <span style={{ fontSize: 11, color: "#5DCAA5" }}>🟢 {calc.heures} h certaines</span>
+                    <span style={{ fontSize: 11, color: "#5A7798" }}>·</span>
+                    <span style={{ fontSize: 11, color: "#7FB8F0" }}>🔵 {fenetre.sortent60} h sortent dans 60 j</span>
+                  </div>
+                )}
+              </div>
+
+              {/* ═══ NEXT ACTION UNIQUE ═══ */}
+              <button type="button" onClick={() => setInterNav(nextAction.nav)}
+                style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <i className={`ti ${nextAction.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
+                  <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
+                </div>
+                <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
+              </button>
+
+              {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
+              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de renouvellement</div>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {checklist.lignes.map(l => (
+                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
+                      <span style={{ fontSize: 16 }}>{l.badge}</span>
+                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
+                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
               {/* Alerte détection d'erreurs (seulement si Hector a repéré quelque chose) */}
               {aDesAnomalies && (
                 <button type="button" onClick={() => setInterNav("calcul")}
@@ -4933,25 +5127,6 @@ function AppInner() {
                       </div>
                     </div>
                   </div>
-
-                  {/* ── LE VERDICT-HÉROS (juste sous Hector) ── */}
-                  {(() => {
-                    const pal = {
-                      green: { bg: "rgba(93,202,165,0.12)", bd: "rgba(93,202,165,0.35)", tc: "#5DCAA5", emoji: "🟢" },
-                      orange: { bg: "rgba(250,199,117,0.12)", bd: "rgba(250,199,117,0.35)", tc: "#FAC775", emoji: "🟠" },
-                      red: { bg: "rgba(226,83,61,0.12)", bd: "rgba(226,83,61,0.35)", tc: "#F0997F", emoji: "🔴" },
-                      blue: { bg: "rgba(55,138,221,0.1)", bd: "rgba(55,138,221,0.3)", tc: "#7FB8F0", emoji: "🐾" },
-                    }[coach.niveau];
-                    return (
-                      <div style={{ padding: "20px 22px", borderTop: "1px solid rgba(93,202,165,0.15)", background: pal.bg }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 8 }}>
-                          <span style={{ fontSize: 22 }}>{pal.emoji}</span>
-                          <div style={{ fontSize: 20, fontWeight: 800, color: pal.tc, lineHeight: 1.15 }}>{coach.titre}</div>
-                        </div>
-                        <div style={{ fontSize: 14, color: "#E8F4FF", lineHeight: 1.55 }}>{coach.phrase}</div>
-                      </div>
-                    );
-                  })()}
 
                   {/* ── Progression en phrase + barre ── */}
                   <div style={{ padding: "16px 22px 18px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
