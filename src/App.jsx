@@ -385,6 +385,24 @@ function heuresDe(activite) {
   return 0; // type inconnu : on ne devine pas (comme le backend)
 }
 
+// Affiche la date d'une activité, ou la période "JJ/MM → JJ/MM" si une date de fin
+// distincte existe (AEM couvrant plusieurs jours). N'affecte jamais le calcul,
+// purement cosmétique. Format court par défaut, ou la date ISO brute en repli.
+function formatPeriode(a, court = true) {
+  if (!a || !a.date) return "";
+  const fmt = (iso) => {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso;
+    return court
+      ? String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0")
+      : iso;
+  };
+  if (a.date_fin && a.date_fin !== a.date) {
+    return fmt(a.date) + " → " + fmt(a.date_fin);
+  }
+  return court ? fmt(a.date) : a.date;
+}
+
 // Total des heures sur la fenêtre glissante de 365 jours (identique au backend).
 // On ignore ce qui est hors fenêtre ou dans le futur. C'est CE total qui doit
 // être affiché partout (cockpit, "Que se passe-t-il si", analyses), pour ne jamais
@@ -1617,6 +1635,7 @@ function AppInner() {
       const toForm = (d) => ({
         employeur: d.employeur || "",
         date: d.date || "",
+        date_fin: d.date_fin || "",
         type_activite: d.type_activite || "cachet_isole",
         nombre: d.nombre != null ? String(d.nombre) : "",
         salaire_brut: d.salaire_brut != null ? String(d.salaire_brut) : "",
@@ -1648,6 +1667,7 @@ function AppInner() {
         method: "POST",
         body: JSON.stringify({
           date: aemExtrait.date,
+          date_fin: aemExtrait.date_fin || null,
           type_activite: aemExtrait.type_activite,
           nombre,
           employeur: aemExtrait.employeur || null,
@@ -6894,8 +6914,12 @@ function AppInner() {
                         style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                     </label>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Date
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 110px" }}>Début
                         <input type="date" value={aemExtrait.date} onChange={e => setAemExtrait({ ...aemExtrait, date: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 110px" }}>Fin <span style={{ color: "#5A7088", fontWeight: 400 }}>(si période)</span>
+                        <input type="date" value={aemExtrait.date_fin} onChange={e => setAemExtrait({ ...aemExtrait, date_fin: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       </label>
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Type
@@ -7281,7 +7305,7 @@ function AppInner() {
                         <div key={a.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${detailOuvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, overflow: "hidden" }}>
                           <div style={{ display: "flex", alignItems: "center", padding: "11px 14px", gap: 8 }}>
                             {/* Date */}
-                            <div style={{ width: 96, flexShrink: 0, fontSize: 12, color: "#9FB6CE", fontVariantNumeric: "tabular-nums" }}>{a.date}</div>
+                            <div style={{ width: 96, flexShrink: 0, fontSize: 12, color: "#9FB6CE", fontVariantNumeric: "tabular-nums" }}>{formatPeriode(a)}</div>
                             {/* Employeur */}
                             <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                               <span style={{ fontSize: 13, color: a.employeur ? "white" : "#5A7088", fontWeight: a.employeur ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
@@ -7321,7 +7345,7 @@ function AppInner() {
                               </div>
                               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "8px 16px", fontSize: 12.5 }}>
                                 <div><span style={{ color: "#6B8299" }}>Employeur</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.employeur || "—"}</span></div>
-                                <div><span style={{ color: "#6B8299" }}>Date</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.date}</span></div>
+                                <div><span style={{ color: "#6B8299" }}>Date</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.date_fin && a.date_fin !== a.date ? "du " + a.date + " au " + a.date_fin : a.date}</span></div>
                                 <div><span style={{ color: "#6B8299" }}>Type</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{typeLabelComplet}</span></div>
                                 <div><span style={{ color: "#6B8299" }}>{a.type_activite === "heures" ? "Heures" : "Cachets"}</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.nombre}</span></div>
                                 <div><span style={{ color: "#6B8299" }}>Salaire brut</span><br /><span style={{ color: "#E8F4FF", fontWeight: 600 }}>{a.salaire_brut ? `${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : "—"}</span></div>
