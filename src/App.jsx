@@ -553,6 +553,11 @@ function AppInner() {
   const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
   const [aemSaving, setAemSaving] = useState(false);
   const [aemError, setAemError] = useState("");
+  // Import attestation ARE (date anniversaire + montant journalier lus, jamais calculés).
+  const [areUploading, setAreUploading] = useState(false);
+  const [areExtrait, setAreExtrait] = useState(null); // résultat lu, en attente de validation
+  const [areSaving, setAreSaving] = useState(false);
+  const [areError, setAreError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
   // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
@@ -2008,6 +2013,61 @@ function AppInner() {
       setError(err.message);
     } finally {
       setAnniversaireSaving(false);
+    }
+  }
+
+  // ─── Import attestation ARE : Hector LIT (date anniversaire + montant journalier),
+  // il ne calcule rien. On affiche ce que France Travail a déjà décidé. ───
+  // BACKEND À FAIRE — endpoint POST /intermittent/are/extract (multipart "file"),
+  // qui doit renvoyer un JSON : { date_anniversaire: "AAAA-MM-JJ"|null,
+  //   montant_journalier: number|null, filename: string }.
+  async function handleImportARE(file) {
+    setAreUploading(true);
+    setAreError("");
+    setAreExtrait(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const data = await apiFetch("/intermittent/are/extract", { method: "POST", body: form });
+      // Pré-remplit l'écran de vérification avec ce qu'Hector a lu (tout reste éditable).
+      setAreExtrait({
+        date_anniversaire: data.date_anniversaire || "",
+        montant_journalier: data.montant_journalier != null ? String(data.montant_journalier) : "",
+        filename: data.filename || file.name,
+      });
+    } catch (err) {
+      setAreError(err.message || "Lecture impossible. Réessaie avec un document plus net.");
+    } finally {
+      setAreUploading(false);
+    }
+  }
+
+  // ─── Confirme l'ARE lue : enregistre la date anniversaire (+ le montant journalier,
+  // affiché tel quel, jamais recalculé). ───
+  async function handleConfirmARE() {
+    if (!areExtrait || !areExtrait.date_anniversaire) {
+      setAreError("Vérifie la date anniversaire avant d'enregistrer.");
+      return;
+    }
+    setAreSaving(true);
+    setAreError("");
+    try {
+      const mj = areExtrait.montant_journalier !== "" ? parseFloat(areExtrait.montant_journalier) : null;
+      // BACKEND À FAIRE — accepter un champ optionnel "montant_journalier" sur cet endpoint
+      // (ou un endpoint dédié) pour stocker le montant lu et le ressortir dans le cockpit.
+      await apiFetch("/profile/date-anniversaire", {
+        method: "POST",
+        body: JSON.stringify({
+          date_anniversaire: areExtrait.date_anniversaire || null,
+          montant_journalier: mj != null && !isNaN(mj) ? mj : null,
+        }),
+      });
+      setAreExtrait(null);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setAreError(err.message);
+    } finally {
+      setAreSaving(false);
     }
   }
 
@@ -5363,6 +5423,63 @@ function AppInner() {
                       style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
                       Annuler
                     </button>
+                  </div>
+                )}
+
+                {/* ── Import attestation ARE : Hector lit la date anniversaire + le montant (ne calcule rien) ── */}
+                {!anniversaireEdit && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(250,199,117,0.15)" }}>
+                    {areExtrait ? (
+                      // Écran de vérification : ce qu'Hector a lu, éditable avant enregistrement.
+                      <div>
+                        <div style={{ fontSize: 12.5, color: "#FAE3B6", fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 7 }}>
+                          <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 16 }} /> Voici ce que j'ai lu sur ton attestation
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "#9A8050", marginBottom: 12, fontStyle: "italic" }}>Vérifie et corrige si besoin — je n'affiche que ce que France Travail a écrit, je ne calcule rien.</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Date anniversaire</label>
+                            <input type="date" value={areExtrait.date_anniversaire} onChange={e => setAreExtrait({ ...areExtrait, date_anniversaire: e.target.value })}
+                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Montant journalier (€)</label>
+                            <input type="text" inputMode="text" value={areExtrait.montant_journalier} onChange={e => setAreExtrait({ ...areExtrait, montant_journalier: e.target.value })}
+                              placeholder="ex : 52,30"
+                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                          </div>
+                        </div>
+                        {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
+                        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                          <button type="button" disabled={areSaving} onClick={handleConfirmARE}
+                            style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: areSaving ? "default" : "pointer", fontFamily: "inherit", opacity: areSaving ? 0.6 : 1 }}>
+                            {areSaving ? "Enregistrement…" : "C'est bon, enregistre"}
+                          </button>
+                          <button type="button" onClick={() => { setAreExtrait(null); setAreError(""); }}
+                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      // Bouton d'import (upload PDF/photo de l'attestation ARE).
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20, flexShrink: 0 }} />
+                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                            Tu as ton attestation France Travail ?
+                            <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 2 }}>Glisse-la, je lis ta date anniversaire et ton montant journalier pour toi.</span>
+                          </div>
+                        </div>
+                        <label style={{ background: areUploading ? "rgba(250,199,117,0.4)" : "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                          <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 15 }} />
+                          {areUploading ? "Lecture…" : "Importer mon ARE"}
+                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                            style={{ display: "none" }} />
+                        </label>
+                      </div>
+                    )}
+                    {areError && !areExtrait && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
                   </div>
                 )}
               </div>
