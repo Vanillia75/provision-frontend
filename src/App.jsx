@@ -569,14 +569,14 @@ function AppInner() {
   const [interActivites, setInterActivites] = useState([]);
   const [interShowAdd, setInterShowAdd] = useState(true);
   const [interSaving, setInterSaving] = useState(false);
-  const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+  const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", estime: false });
   // Report des heures déjà faites (saisie de départ)
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   // Édition d'une activité existante
   const [interEditId, setInterEditId] = useState(null);
-  const [interEditForm, setInterEditForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+  const [interEditForm, setInterEditForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", estime: false });
   const [interEditSaving, setInterEditSaving] = useState(false);
   // Brique 5.4 : "Parle à Hector" — simulation de contrat
   const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
@@ -1619,9 +1619,10 @@ function AppInner() {
           type_activite: interForm.type_activite,
           nombre,
           employeur: interForm.employeur || null,
+          estime: !!interForm.estime,
         }),
       });
-      setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "" });
+      setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
       setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
@@ -2022,6 +2023,7 @@ function AppInner() {
       type_activite: a.type_activite || "cachet_isole",
       nombre: String(a.nombre ?? ""),
       employeur: a.employeur || "",
+      estime: a.estime === true,
     });
   }
   async function handleSaveEditActivite() {
@@ -2039,6 +2041,7 @@ function AppInner() {
           type_activite: interEditForm.type_activite,
           nombre,
           employeur: interEditForm.employeur || null,
+          estime: !!interEditForm.estime,
         }),
       });
       setInterEditId(null);
@@ -5842,7 +5845,7 @@ function AppInner() {
                                   <i className="ti ti-building" aria-hidden="true" style={{ fontSize: 15, color: "#7FB8F0" }} />{a.employeur}
                                 </div>
                               ) : (
-                                <div onClick={() => { setInterEditId(a.id); setInterEditForm({ date: a.date, type_activite: a.type_activite, nombre: a.nombre, employeur: "" }); setInterNav("activites"); }}
+                                <div onClick={() => { setInterEditId(a.id); setInterEditForm({ date: a.date, type_activite: a.type_activite, nombre: a.nombre, employeur: "", estime: a.estime === true }); setInterNav("activites"); }}
                                   style={{ fontSize: 13, color: "#FAC775", display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 10, cursor: "pointer" }}>
                                   <i className="ti ti-alert-circle" aria-hidden="true" style={{ fontSize: 15 }} /> Employeur à compléter
                                 </div>
@@ -7286,6 +7289,14 @@ function AppInner() {
                         Ajoute ici uniquement tes contrats <strong style={{ color: "#C8E0F5" }}>déjà réalisés ou déjà signés</strong>. Pour tester un contrat possible, utilise le simulateur <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
                       </div>
                     </div>
+                    <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer", background: interForm.estime ? "rgba(55,138,221,0.10)" : "rgba(255,255,255,0.02)", border: "1px solid " + (interForm.estime ? "rgba(55,138,221,0.4)" : "rgba(255,255,255,0.1)"), borderRadius: 8, padding: "10px 12px" }}>
+                      <input type="checkbox" checked={!!interForm.estime} onChange={e => setInterForm({ ...interForm, estime: e.target.checked })}
+                        style={{ marginTop: 2, width: 16, height: 16, accentColor: "#378ADD", flexShrink: 0, cursor: "pointer" }} />
+                      <div>
+                        <div style={{ fontSize: 12.5, color: "#C8E0F5", fontWeight: 600 }}>C'est une estimation (je n'ai pas encore l'AEM)</div>
+                        <div style={{ fontSize: 11, color: "#8FB4D8", lineHeight: 1.4, marginTop: 2 }}>Coche si tu déclares de mémoire en attendant la paie. Tu corrigeras quand l'attestation arrivera.</div>
+                      </div>
+                    </label>
                     <button type="button" disabled={interSaving} onClick={handleAddActivite}
                       style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: interSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interSaving ? 0.6 : 1 }}>
                       {interSaving ? "Enregistrement…" : "Enregistrer"}
@@ -7330,6 +7341,11 @@ function AppInner() {
                               <input type="text" value={interEditForm.employeur} onChange={e => setInterEditForm({ ...interEditForm, employeur: e.target.value })} placeholder="Employeur (optionnel)"
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                             </div>
+                            <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, fontSize: 12, color: "#9FCBF5" }}>
+                              <input type="checkbox" checked={!!interEditForm.estime} onChange={e => setInterEditForm({ ...interEditForm, estime: e.target.checked })}
+                                style={{ width: 15, height: 15, accentColor: "#378ADD", cursor: "pointer" }} />
+                              Estimation (décoche une fois l'AEM reçue et le chiffre confirmé)
+                            </label>
                             <div style={{ display: "flex", gap: 8 }}>
                               <button type="button" disabled={interEditSaving} onClick={handleSaveEditActivite}
                                 style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "9px", fontSize: 13, fontWeight: 700, cursor: interEditSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interEditSaving ? 0.6 : 1 }}>
@@ -7359,6 +7375,11 @@ function AppInner() {
                               {estAEM && (
                                 <span style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
                                   <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
+                                </span>
+                              )}
+                              {a.estime === true && (
+                                <span style={{ fontSize: 9.5, color: "#9FCBF5", background: "rgba(55,138,221,0.14)", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-bulb" aria-hidden="true" style={{ fontSize: 11 }} /> Estimé
                                 </span>
                               )}
                             </div>
