@@ -5719,6 +5719,47 @@ function AppInner() {
                 </div>
               </div>
 
+              {/* ── 0. DÉTECTION D'ERREURS (Hector veille) ── */}
+              {aDesAnomalies && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                    <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18 }} />
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>J'ai vérifié ton dossier</div>
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {anomalies.map(an => {
+                      const pal = {
+                        orange: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
+                        blue: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
+                      }[an.niveau];
+                      return (
+                        <div key={an.id} style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px" }}>
+                          <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
+                            <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13.5, fontWeight: 700, color: an.niveau === "orange" ? "#FAE3B6" : "#D6E8FA" }}>{an.titre}</div>
+                              <div style={{ fontSize: 12.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 3 }}>{an.texte}</div>
+                              <button type="button" onClick={() => setInterNav(an.action)}
+                                style={{ marginTop: 9, background: "transparent", border: `1px solid ${pal.bd}`, color: pal.tc, borderRadius: 7, padding: "6px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                                {an.actionLabel}
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Message rassurant si tout est clean */}
+              {!aDesAnomalies && (interActivites || []).length > 0 && (
+                <div style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px 15px", marginBottom: 14 }}>
+                  <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 20, flexShrink: 0 }} />
+                  <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5 }}>🐾 J'ai vérifié ton dossier, tout est cohérent. Rien à signaler.</div>
+                </div>
+              )}
+
               {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
               {aDesAnalyses && (
                 <div style={{ marginBottom: 18 }}>
@@ -6092,46 +6133,17 @@ function AppInner() {
               {/* ───── Le détail complet, plus bas (référence visuelle) ───── */}
               <div style={{ marginTop: 28, paddingTop: 4 }} />
 
-              {/* ── 0. DÉTECTION D'ERREURS (Hector veille) ── */}
-              {aDesAnomalies && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18 }} />
-                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>J'ai vérifié ton dossier</div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {anomalies.map(an => {
-                      const pal = {
-                        orange: { bg: "rgba(250,199,117,0.07)", bd: "rgba(250,199,117,0.25)", tc: "#FAC775" },
-                        blue: { bg: "rgba(55,138,221,0.06)", bd: "rgba(55,138,221,0.22)", tc: "#7FB8F0" },
-                      }[an.niveau];
-                      return (
-                        <div key={an.id} style={{ background: pal.bg, border: `1px solid ${pal.bd}`, borderRadius: 12, padding: "13px 15px" }}>
-                          <div style={{ display: "flex", alignItems: "flex-start", gap: 11 }}>
-                            <i className={`ti ${an.icon}`} aria-hidden="true" style={{ color: pal.tc, fontSize: 19, flexShrink: 0, marginTop: 1 }} />
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13.5, fontWeight: 700, color: an.niveau === "orange" ? "#FAE3B6" : "#D6E8FA" }}>{an.titre}</div>
-                              <div style={{ fontSize: 12.5, color: "#A9C2DC", lineHeight: 1.5, marginTop: 3 }}>{an.texte}</div>
-                              <button type="button" onClick={() => setInterNav(an.action)}
-                                style={{ marginTop: 9, background: "transparent", border: `1px solid ${pal.bd}`, color: pal.tc, borderRadius: 7, padding: "6px 12px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                                {an.actionLabel}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
+              {/* ── MÉMOIRE DE CARRIÈRE (placeholder — à construire) ── */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(159,203,245,0.3)", borderRadius: 16, padding: "16px 20px", marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                  <i className="ti ti-paw" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 18 }} />
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Mémoire de carrière</div>
+                  <span style={{ marginLeft: "auto", fontSize: 9.5, color: "#FAC775", background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 6, padding: "3px 8px", fontWeight: 700, letterSpacing: 0.4 }}>BIENTÔT</span>
                 </div>
-              )}
-
-              {/* Message rassurant si tout est clean */}
-              {!aDesAnomalies && (interActivites || []).length > 0 && (
-                <div style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px 15px", marginBottom: 14 }}>
-                  <i className="ti ti-shield-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 20, flexShrink: 0 }} />
-                  <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5 }}>🐾 J'ai vérifié ton dossier, tout est cohérent. Rien à signaler.</div>
+                <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.55 }}>
+                  Bientôt, Hector se souviendra de tes meilleurs mois, de tes employeurs récurrents et de tes records. 🐾
                 </div>
-              )}
+              </div>
 
               {/* ── 3. TIMELINE DES HEURES (vue d'ensemble visuelle) ── */}
               {timeline.aDesDonnees && (
