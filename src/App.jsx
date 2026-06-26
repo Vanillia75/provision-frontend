@@ -6950,6 +6950,13 @@ function AppInner() {
                 )}
                 {interActivites.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* En-tête de colonnes (style tableau) */}
+                    <div style={{ display: "flex", alignItems: "center", padding: "4px 14px", fontSize: 10.5, color: "#5A7088", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
+                      <div style={{ width: 96, flexShrink: 0 }}>Date</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>Employeur</div>
+                      <div style={{ width: 90, flexShrink: 0, textAlign: "right" }}>Volume</div>
+                      <div style={{ width: 96, flexShrink: 0 }} />
+                    </div>
                     {interActivites.map(a => {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
@@ -6990,21 +6997,24 @@ function AppInner() {
                       const detailOuvert = aemDetailId === a.id;
                       return (
                         <div key={a.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${detailOuvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, overflow: "hidden" }}>
-                          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 14px" }}>
-                            <div style={{ minWidth: 0 }}>
-                              <div style={{ fontSize: 13, color: "white", fontWeight: 600, display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                                {typeLabel}
-                                {estAEM && (
-                                  <span style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                    <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
-                                  </span>
-                                )}
-                              </div>
-                              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 2 }}>
-                                {a.date}{a.employeur ? ` · ${a.employeur}` : ""}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}
-                              </div>
+                          <div style={{ display: "flex", alignItems: "center", padding: "11px 14px", gap: 8 }}>
+                            {/* Date */}
+                            <div style={{ width: 96, flexShrink: 0, fontSize: 12, color: "#9FB6CE", fontVariantNumeric: "tabular-nums" }}>{a.date}</div>
+                            {/* Employeur */}
+                            <div style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 13, color: a.employeur ? "white" : "#5A7088", fontWeight: a.employeur ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                {a.employeur || "—"}
+                              </span>
+                              {estAEM && (
+                                <span style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
+                                </span>
+                              )}
                             </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+                            {/* Volume (heures/cachets) */}
+                            <div style={{ width: 90, flexShrink: 0, textAlign: "right", fontSize: 13, color: "white", fontWeight: 700 }}>{typeLabel}</div>
+                            {/* Actions */}
+                            <div style={{ width: 96, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 2 }}>
                               {estAEM && (
                                 <button type="button" onClick={() => setAemDetailId(detailOuvert ? null : a.id)} aria-label="Revoir l'AEM"
                                   style={{ background: "transparent", border: "none", color: detailOuvert ? "#5DCAA5" : "#6B8299", cursor: "pointer", fontSize: 16, padding: 6 }}>
