@@ -15,6 +15,26 @@ if (typeof window !== "undefined") {
 }
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
+
+// Accès localStorage sécurisé : en navigation privée (Safari surtout), ou si le quota
+// est plein, localStorage peut LEVER une exception et faire planter toute l'app (écran blanc).
+// safeStorage encapsule chaque accès dans un try/catch : en cas d'échec, on retombe sur un
+// stockage mémoire temporaire (perdu au refresh, mais l'app ne crashe jamais).
+const _memStore = {};
+const safeStorage = {
+  getItem(key) {
+    try { return window.localStorage.getItem(key); }
+    catch { return key in _memStore ? _memStore[key] : null; }
+  },
+  setItem(key, value) {
+    try { window.localStorage.setItem(key, value); }
+    catch { _memStore[key] = String(value); }
+  },
+  removeItem(key) {
+    try { window.localStorage.removeItem(key); }
+    catch { delete _memStore[key]; }
+  },
+};
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
@@ -526,15 +546,15 @@ function BadgeConfiance({ niveau }) {
 }
 
 function AppInner() {
-  const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [token, setToken] = useState(() => safeStorage.getItem("token"));
   const [legalPage, setLegalPage] = useState(null);
   const [authMode, setAuthMode] = useState("login");
   // Choix de statut sur la landing (avant connexion) : null = écran de choix,
   // "auto_entrepreneur" = landing AE, "intermittent" = écran "bientôt dispo".
   // On retient le choix entre visites pour ne pas le redemander à chaque fois.
-  const [landingStatut, setLandingStatut] = useState(() => localStorage.getItem("landingStatut") || null);
-  const chooseLandingStatut = (s) => { localStorage.setItem("landingStatut", s); setLandingStatut(s); };
-  const resetLandingStatut = () => { localStorage.removeItem("landingStatut"); setLandingStatut(null); };
+  const [landingStatut, setLandingStatut] = useState(() => safeStorage.getItem("landingStatut") || null);
+  const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
+  const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
   // Fake door intermittent : on collecte les emails intéressés pour mesurer la demande.
   const [intermittentEmail, setIntermittentEmail] = useState("");
   const [intermittentSent, setIntermittentSent] = useState(false);
@@ -604,7 +624,7 @@ function AppInner() {
   const [actuCopied, setActuCopied] = useState("");
   // Historique des actualisations marquées comme faites (persistées localement pour la V1).
   const [actuHistorique, setActuHistorique] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("actuHistorique") || "[]"); } catch { return []; }
+    try { return JSON.parse(safeStorage.getItem("actuHistorique") || "[]"); } catch { return []; }
   });
   // Navigation interne du cockpit intermittent (sidebar)
   const [interNav, setInterNav] = useState("cockpit");
@@ -648,7 +668,7 @@ function AppInner() {
   const [authPassword, setAuthPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [nav, setNav] = useState(() => localStorage.getItem("nav") || "dashboard");
+  const [nav, setNav] = useState(() => safeStorage.getItem("nav") || "dashboard");
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
   const [estimateData, setEstimateData] = useState(null);
@@ -716,7 +736,7 @@ function AppInner() {
   const [hectorMessages, setHectorMessages] = useState([]);
   const [onbPremierRevenu, setOnbPremierRevenu] = useState("");
   const [briefingOuvert, setBriefingOuvert] = useState(false);
-  const [briefingVuAujourdhui, setBriefingVuAujourdhui] = useState(() => localStorage.getItem("briefingVu") === new Date().toISOString().slice(0, 10));
+  const [briefingVuAujourdhui, setBriefingVuAujourdhui] = useState(() => safeStorage.getItem("briefingVu") === new Date().toISOString().slice(0, 10));
   const [parlerMontant, setParlerMontant] = useState("");
   const [parlerType, setParlerType] = useState("achat");
   const [parlerVerdict, setParlerVerdict] = useState(null);
@@ -822,23 +842,23 @@ function AppInner() {
   const reserveMounted = useRef(false);
   const tmiMounted = useRef(false);
   const trainDeVieMounted = useRef(false);
-  const [tmi, setTmi] = useState(() => localStorage.getItem("tmi") || "0");
+  const [tmi, setTmi] = useState(() => safeStorage.getItem("tmi") || "0");
   const [simCa, setSimCa] = useState("");
   const [simActivite, setSimActivite] = useState("services");
-  const [objectifAnnuel, setObjectifAnnuel] = useState(() => localStorage.getItem("objectifAnnuel") || "");
-  const [objectifMensuel, setObjectifMensuel] = useState(() => localStorage.getItem("objectifMensuel") || "");
+  const [objectifAnnuel, setObjectifAnnuel] = useState(() => safeStorage.getItem("objectifAnnuel") || "");
+  const [objectifMensuel, setObjectifMensuel] = useState(() => safeStorage.getItem("objectifMensuel") || "");
   const [objectifSaved, setObjectifSaved] = useState(false);
   const objectifMounted = useRef(false);
   const [objectifAnnuelSaved, setObjectifAnnuelSaved] = useState(false);
   const objectifAnnuelMounted = useRef(false);
   const [editingObjectifMensuel, setEditingObjectifMensuel] = useState(false);
   const [editingObjectifAnnuel, setEditingObjectifAnnuel] = useState(false);
-  const [profilPrenom, setProfilPrenom] = useState(() => localStorage.getItem("profilPrenom") || "");
-  const [profilNom, setProfilNom] = useState(() => localStorage.getItem("profilNom") || "");
-  const [profilTelephone, setProfilTelephone] = useState(() => localStorage.getItem("profilTelephone") || "");
-  const [profilEntreprise, setProfilEntreprise] = useState(() => localStorage.getItem("profilEntreprise") || "");
-  const [profilSiret, setProfilSiret] = useState(() => localStorage.getItem("profilSiret") || "");
-  const [profilAdresse, setProfilAdresse] = useState(() => localStorage.getItem("profilAdresse") || "");
+  const [profilPrenom, setProfilPrenom] = useState(() => safeStorage.getItem("profilPrenom") || "");
+  const [profilNom, setProfilNom] = useState(() => safeStorage.getItem("profilNom") || "");
+  const [profilTelephone, setProfilTelephone] = useState(() => safeStorage.getItem("profilTelephone") || "");
+  const [profilEntreprise, setProfilEntreprise] = useState(() => safeStorage.getItem("profilEntreprise") || "");
+  const [profilSiret, setProfilSiret] = useState(() => safeStorage.getItem("profilSiret") || "");
+  const [profilAdresse, setProfilAdresse] = useState(() => safeStorage.getItem("profilAdresse") || "");
   const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
   const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [outilsOpen, setOutilsOpen] = useState(false);
@@ -852,12 +872,12 @@ function AppInner() {
   const [editingDeclarationCa, setEditingDeclarationCa] = useState(false);
   const [editingDeclarationCotisations, setEditingDeclarationCotisations] = useState(false);
   const [historiqueDeclarations, setHistoriqueDeclarations] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("historiqueDeclarations") || "[]"); } catch { return []; }
+    try { return JSON.parse(safeStorage.getItem("historiqueDeclarations") || "[]"); } catch { return []; }
   });
-  const [objectifSecurite, setObjectifSecurite] = useState(() => localStorage.getItem("objectifSecurite") || "3000");
-  const [depensesMensuelles, setDepensesMensuelles] = useState(() => localStorage.getItem("depensesMensuelles") || "");
-  const [autresRevenus, setAutresRevenus] = useState(() => localStorage.getItem("autresRevenus") || "");
-  const [inclureAutresRevenus, setInclureAutresRevenus] = useState(() => localStorage.getItem("inclureAutresRevenus") === "true");
+  const [objectifSecurite, setObjectifSecurite] = useState(() => safeStorage.getItem("objectifSecurite") || "3000");
+  const [depensesMensuelles, setDepensesMensuelles] = useState(() => safeStorage.getItem("depensesMensuelles") || "");
+  const [autresRevenus, setAutresRevenus] = useState(() => safeStorage.getItem("autresRevenus") || "");
+  const [inclureAutresRevenus, setInclureAutresRevenus] = useState(() => safeStorage.getItem("inclureAutresRevenus") === "true");
   const [achatMontant, setAchatMontant] = useState("");
   const [tarifMontant, setTarifMontant] = useState("");
   const [tarifUnite, setTarifUnite] = useState("heure");
@@ -941,7 +961,7 @@ function AppInner() {
         // État de la connexion bancaire (Powens) — best effort, n'interrompt rien.
         loadBankStatus();
         // Ouvrir le walkthrough au premier login uniquement
-        if (!localStorage.getItem("hector_walkthrough_done")) {
+        if (!safeStorage.getItem("hector_walkthrough_done")) {
           setShowWalkthrough(true);
         }
       }
@@ -958,7 +978,7 @@ function AppInner() {
   function clearLocalAccountData() {
     ["profilPrenom", "profilNom", "profilTelephone", "profilEntreprise", "profilSiret", "profilAdresse",
      "objectifAnnuel", "objectifMensuel", "objectifSecurite", "depensesMensuelles", "tmi",
-     "historiqueDeclarations", "actuHistorique", "landingStatut", "hector_walkthrough_done", "nav"].forEach(key => localStorage.removeItem(key));
+     "historiqueDeclarations", "actuHistorique", "landingStatut", "hector_walkthrough_done", "nav"].forEach(key => safeStorage.removeItem(key));
     setActuHistorique([]);
     setProfilPrenom("");
     setProfilNom("");
@@ -983,42 +1003,42 @@ function AppInner() {
     setError("");
     setLoading(true);
     apiFetch("/auth/google", { method: "POST", body: JSON.stringify({ credential: response.credential }) })
-      .then(data => { clearLocalAccountData(); localStorage.setItem("token", data.token); setToken(data.token); })
+      .then(data => { clearLocalAccountData(); safeStorage.setItem("token", data.token); setToken(data.token); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }
 
-  useEffect(() => { localStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
+  useEffect(() => { safeStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
   useEffect(() => {
     if (!objectifAnnuelMounted.current) { objectifAnnuelMounted.current = true; return; }
     setObjectifAnnuelSaved(true);
     const t = setTimeout(() => setObjectifAnnuelSaved(false), 1200);
     return () => clearTimeout(t);
   }, [objectifAnnuel]);
-  useEffect(() => { localStorage.setItem("objectifMensuel", objectifMensuel); }, [objectifMensuel]);
+  useEffect(() => { safeStorage.setItem("objectifMensuel", objectifMensuel); }, [objectifMensuel]);
   useEffect(() => {
     if (!objectifMounted.current) { objectifMounted.current = true; return; }
     setObjectifSaved(true);
     const t = setTimeout(() => setObjectifSaved(false), 1200);
     return () => clearTimeout(t);
   }, [objectifMensuel]);
-  useEffect(() => { localStorage.setItem("profilPrenom", profilPrenom); }, [profilPrenom]);
-  useEffect(() => { localStorage.setItem("profilNom", profilNom); }, [profilNom]);
-  useEffect(() => { localStorage.setItem("profilTelephone", profilTelephone); }, [profilTelephone]);
-  useEffect(() => { localStorage.setItem("profilEntreprise", profilEntreprise); }, [profilEntreprise]);
-  useEffect(() => { localStorage.setItem("profilSiret", profilSiret); }, [profilSiret]);
-  useEffect(() => { localStorage.setItem("profilAdresse", profilAdresse); }, [profilAdresse]);
-  useEffect(() => { localStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
-  useEffect(() => { localStorage.setItem("depensesMensuelles", depensesMensuelles); }, [depensesMensuelles]);
-  useEffect(() => { localStorage.setItem("autresRevenus", autresRevenus); }, [autresRevenus]);
-  useEffect(() => { localStorage.setItem("inclureAutresRevenus", String(inclureAutresRevenus)); }, [inclureAutresRevenus]);
-  useEffect(() => { localStorage.setItem("tmi", tmi); }, [tmi]);
-  useEffect(() => { localStorage.setItem("nav", nav); }, [nav]);
+  useEffect(() => { safeStorage.setItem("profilPrenom", profilPrenom); }, [profilPrenom]);
+  useEffect(() => { safeStorage.setItem("profilNom", profilNom); }, [profilNom]);
+  useEffect(() => { safeStorage.setItem("profilTelephone", profilTelephone); }, [profilTelephone]);
+  useEffect(() => { safeStorage.setItem("profilEntreprise", profilEntreprise); }, [profilEntreprise]);
+  useEffect(() => { safeStorage.setItem("profilSiret", profilSiret); }, [profilSiret]);
+  useEffect(() => { safeStorage.setItem("profilAdresse", profilAdresse); }, [profilAdresse]);
+  useEffect(() => { safeStorage.setItem("objectifSecurite", objectifSecurite); }, [objectifSecurite]);
+  useEffect(() => { safeStorage.setItem("depensesMensuelles", depensesMensuelles); }, [depensesMensuelles]);
+  useEffect(() => { safeStorage.setItem("autresRevenus", autresRevenus); }, [autresRevenus]);
+  useEffect(() => { safeStorage.setItem("inclureAutresRevenus", String(inclureAutresRevenus)); }, [inclureAutresRevenus]);
+  useEffect(() => { safeStorage.setItem("tmi", tmi); }, [tmi]);
+  useEffect(() => { safeStorage.setItem("nav", nav); }, [nav]);
 
   // Message Hector si solde périmé (calcul interne, déclenché une fois par session)
   useEffect(() => {
     if (nav !== "dashboard") return;
-    const updatedAt = localStorage.getItem("soldeUpdatedAt") || "";
+    const updatedAt = safeStorage.getItem("soldeUpdatedAt") || "";
     if (!updatedAt || panique.solde === "") return;
     const jours = Math.floor((Date.now() - new Date(updatedAt).getTime()) / (1000 * 60 * 60 * 24));
     if (jours >= 7 && !hectorMessagesSentRef.current.soldePerime) {
@@ -1031,16 +1051,16 @@ function AppInner() {
   useEffect(() => {
     if (!token) return;
     const today = new Date().toISOString().slice(0, 10);
-    const lastDay = localStorage.getItem("streakLastDay") || "";
+    const lastDay = safeStorage.getItem("streakLastDay") || "";
     if (lastDay === today) return; // déjà compté aujourd'hui
     const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-    const current = parseInt(localStorage.getItem("streakCount") || "0", 10);
+    const current = parseInt(safeStorage.getItem("streakCount") || "0", 10);
     let newStreak;
     if (lastDay === yesterday) newStreak = current + 1; // continuité
     else if (lastDay === "") newStreak = 1; // première fois
     else newStreak = 1; // streak cassé, on repart à 1
-    localStorage.setItem("streakCount", String(newStreak));
-    localStorage.setItem("streakLastDay", today);
+    safeStorage.setItem("streakCount", String(newStreak));
+    safeStorage.setItem("streakLastDay", today);
     // Célébration si on vient de franchir un palier
     const paliers = [7, 14, 30, 90, 180, 365];
     const palierMots = {
@@ -1162,7 +1182,7 @@ function AppInner() {
         body: JSON.stringify({ email: authEmail, password: authPassword }),
       });
       clearLocalAccountData();
-      localStorage.setItem("token", data.token);
+      safeStorage.setItem("token", data.token);
       setToken(data.token);
     } catch (err) {
       setError(err.message);
@@ -1298,7 +1318,7 @@ function AppInner() {
   }
 
   function handleLogout() {
-    localStorage.removeItem("token");
+    safeStorage.removeItem("token");
     clearLocalAccountData();
     setToken(null);
     setProfile(null);
@@ -1338,7 +1358,7 @@ function AppInner() {
     setDeletingAccount(true);
     try {
       await apiFetch("/account", { method: "DELETE" });
-      localStorage.clear();
+      safeStorage.clear();
       setToken(null);
       setProfile(null);
       setEstimateData(null);
@@ -1398,7 +1418,7 @@ function AppInner() {
       if (soldeVal != null) {
         await apiFetch("/profile/solde", { method: "POST", body: JSON.stringify({ solde: soldeVal }) });
         setPanique(prev => ({ ...prev, solde: String(soldeVal) }));
-        localStorage.setItem("soldeUpdatedAt", new Date().toISOString());
+        safeStorage.setItem("soldeUpdatedAt", new Date().toISOString());
       }
       // 2bis. SIRET saisi pendant l'onboarding (si validé via lookup INSEE)
       if (onbSiretData && onbSiretData.siret) {
@@ -1455,7 +1475,7 @@ function AppInner() {
       // Nouvelle inscription intermittent → on lance la visite guidée.
       // On purge le flag pour qu'un nouveau compte la voie toujours, même si
       // ce navigateur en avait déjà vu une (ex : un compte AE précédent).
-      localStorage.removeItem("hector_walkthrough_done");
+      safeStorage.removeItem("hector_walkthrough_done");
       setShowWalkthrough(true);
     } catch (err) {
       // Échec (réseau, backend qui se réveille…) : on réessaie TOUT SEUL jusqu'à 3 fois,
@@ -2135,7 +2155,7 @@ function AppInner() {
       loadIntermittentCockpit();
       // Walkthrough intermittent au premier accès (indépendant de loadEverything,
       // qui appelle des endpoints AE pouvant échouer pour un intermittent).
-      if (profile.onboarding_complete && !localStorage.getItem("hector_walkthrough_done")) {
+      if (profile.onboarding_complete && !safeStorage.getItem("hector_walkthrough_done")) {
         setShowWalkthrough(true);
       }
     }
@@ -2809,7 +2829,7 @@ function AppInner() {
 
   // --- Fraîcheur du solde (rituel de mise à jour manuelle) ---
   // Stockée en localStorage, zéro dépendance backend. Le solde est "périmé" au-delà de 7 jours.
-  const soldeUpdatedAt = localStorage.getItem("soldeUpdatedAt") || "";
+  const soldeUpdatedAt = safeStorage.getItem("soldeUpdatedAt") || "";
   const soldeJours = (() => {
     if (!soldeUpdatedAt || panique.solde === "") return null;
     const diff = Date.now() - new Date(soldeUpdatedAt).getTime();
@@ -3035,7 +3055,7 @@ function AppInner() {
 
   // ─── STREAK ÉMOTIONNEL : jours consécutifs d'ouverture ───
   // Calcul au render (pas d'effet de bord ici). La mise à jour se fait dans un useEffect plus bas.
-  const streakCount = parseInt(localStorage.getItem("streakCount") || "0", 10);
+  const streakCount = parseInt(safeStorage.getItem("streakCount") || "0", 10);
   // Paliers émotionnels : Hector évolue avec la fidélité, pas avec un chiffre froid
   const PALIERS_STREAK = [
     { seuil: 365, emoji: "👑", titre: "Gardien légendaire du foyer", mot: "365 jours ensemble. Hector est devenu le gardien légendaire de ta tranquillité. Personne ne veille mieux que lui." },
@@ -3096,10 +3116,10 @@ function AppInner() {
     if (argentDisponibleBrut === null) return null;        // pas assez d'infos → silence
     if (!(moyenneMensuelleCA > 0)) return null;            // pas de CA connu → silence
     if (moyenneMensuelleCA > 3000) return null;            // CA clairement trop élevé → on ne dit rien
-    const force = localStorage.getItem("hectorForce") === "ppa";
+    const force = safeStorage.getItem("hectorForce") === "ppa";
     // Anti-répétition : pas plus d'une fois tous les 60 jours
     if (!force) {
-      const derniere = localStorage.getItem("hectorPPaVue");
+      const derniere = safeStorage.getItem("hectorPPaVue");
       if (derniere) {
         const jours = (Date.now() - new Date(derniere).getTime()) / 86400000;
         if (jours < 60) return null;
@@ -3117,7 +3137,7 @@ function AppInner() {
   // Une pensée par jour MAX, et seulement ~1 jour sur 3 (sélection déterministe par date).
   const penseeHector = (() => {
     if (argentDisponibleBrut === null) return null; // pas assez d'infos → silence
-    const force = localStorage.getItem("hectorForce") === "pensee";
+    const force = safeStorage.getItem("hectorForce") === "pensee";
     const today = new Date().toISOString().slice(0, 10);
     // Déterminisme : un "dé" basé sur la date, stable sur la journée
     const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
@@ -3152,8 +3172,8 @@ function AppInner() {
   // Affiché rarement (~1 jour sur 4), un seul à la fois, le plus émouvant disponible.
   const souvenirHector = (() => {
     let souvenirs;
-    try { souvenirs = JSON.parse(localStorage.getItem("hectorSouvenirs") || "{}"); } catch { return null; }
-    const force = localStorage.getItem("hectorForce") === "souvenir";
+    try { souvenirs = JSON.parse(safeStorage.getItem("hectorSouvenirs") || "{}"); } catch { return null; }
+    const force = safeStorage.getItem("hectorForce") === "souvenir";
     const today = new Date().toISOString().slice(0, 10);
     const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
     if (!force && seed % 4 !== 1) return null; // ~1 jour sur 4
@@ -3185,7 +3205,7 @@ function AppInner() {
   // Hector pourra les rappeler plus tard, en langage humain.
   useEffect(() => {
     if (!token || argentDisponibleBrut === null) return;
-    const lire = () => { try { return JSON.parse(localStorage.getItem("hectorSouvenirs") || "{}"); } catch { return {}; } };
+    const lire = () => { try { return JSON.parse(safeStorage.getItem("hectorSouvenirs") || "{}"); } catch { return {}; } };
     const souvenirs = lire();
     const today = new Date().toISOString().slice(0, 10);
     let modifie = false;
@@ -3196,9 +3216,9 @@ function AppInner() {
     // Premier mois positif (disponible brut > 0)
     if (argentDisponibleBrut > 0) noter("premier_positif");
     // Record de trésorerie : on garde le max vu
-    const recordActuel = parseFloat(localStorage.getItem("hectorRecordTreso") || "0");
+    const recordActuel = parseFloat(safeStorage.getItem("hectorRecordTreso") || "0");
     if (argentDisponibleBrut > recordActuel && argentDisponibleBrut > 0) {
-      localStorage.setItem("hectorRecordTreso", String(argentDisponibleBrut));
+      safeStorage.setItem("hectorRecordTreso", String(argentDisponibleBrut));
       if (recordActuel > 0) noter("record_treso"); // pas au tout premier (sinon trivial)
     }
     // Sortie de zone d'alerte : on a connu l'alerte, et là on n'y est plus
@@ -3208,7 +3228,7 @@ function AppInner() {
       noter("sortie_alerte");
     }
 
-    if (modifie) localStorage.setItem("hectorSouvenirs", JSON.stringify(souvenirs));
+    if (modifie) safeStorage.setItem("hectorSouvenirs", JSON.stringify(souvenirs));
   }, [token, argentDisponibleBrut, reserveAtteinte, joursTranquillite]);
 
   // ─── MOTEUR DE DÉCISION D'HECTOR — 100% local, zéro crédit, totalement transparent ───
@@ -5658,7 +5678,7 @@ function AppInner() {
                   const entry = { clef: actuClef, label: moisDeclLabel, date: new Date().toISOString(), heures: Math.round(totalHeuresMois), cachets: totalCachetsMois, brut: Math.round(totalBrutMois), employeurs: nbEmployeursMois };
                   const next = [entry, ...(actuHistorique || []).filter(h => h.clef !== actuClef)].slice(0, 24);
                   setActuHistorique(next);
-                  localStorage.setItem("actuHistorique", JSON.stringify(next));
+                  safeStorage.setItem("actuHistorique", JSON.stringify(next));
                 };
                 return (
                   <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.94)", backdropFilter: "blur(8px)", zIndex: 300, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
@@ -7756,7 +7776,7 @@ function AppInner() {
           const [wtStep, setWtStep] = useState(0);
           const s = wtSteps[wtStep];
           const closeWalkthrough = () => {
-            localStorage.setItem("hector_walkthrough_done", "1");
+            safeStorage.setItem("hector_walkthrough_done", "1");
             setShowWalkthrough(false);
           };
           return (
@@ -8007,7 +8027,7 @@ function AppInner() {
               const couleurTon = b.ton === "alerte" ? "#E24B4A" : b.ton === "vigilant" ? "#EF9F27" : b.ton === "serein" ? "#5DCAA5" : "#8BA5C0";
               const ouvert = briefingOuvert || !briefingVuAujourdhui;
               const marquerVu = () => {
-                localStorage.setItem("briefingVu", new Date().toISOString().slice(0, 10));
+                safeStorage.setItem("briefingVu", new Date().toISOString().slice(0, 10));
                 setBriefingVuAujourdhui(true);
                 setBriefingOuvert(false);
               };
@@ -8090,7 +8110,7 @@ function AppInner() {
                         href="https://www.caf.fr"
                         target="_blank"
                         rel="noopener noreferrer"
-                        onClick={() => { try { localStorage.setItem("hectorPPaVue", new Date().toISOString()); } catch {} }}
+                        onClick={() => { try { safeStorage.setItem("hectorPPaVue", new Date().toISOString()); } catch {} }}
                         style={{ display: "inline-block", marginTop: 6, color: "#378ADD", fontStyle: "normal", fontWeight: 600, textDecoration: "none" }}
                       >
                         Faire la simulation sur caf.fr →
@@ -8173,7 +8193,7 @@ function AppInner() {
                         type="number" step="0.01" inputMode="text"
                         placeholder="Solde bancaire"
                         value={panique.solde}
-                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
                       />
                       <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
                     </div>
@@ -8262,7 +8282,7 @@ function AppInner() {
                           type="number" step="0.01" inputMode="text"
                           placeholder="Ex : 3 500"
                           value={panique.solde}
-                          onChange={e => { setPanique({ ...panique, solde: e.target.value }); localStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                          onChange={e => { setPanique({ ...panique, solde: e.target.value }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
                         />
                         <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
                       </div>
@@ -8892,7 +8912,7 @@ function AppInner() {
                     const entry = { periode: periodeAffichee, ca: caAffiche, cotisations: cotisationsAffichees, date: new Date().toISOString() };
                     const next = [entry, ...historiqueDeclarations].slice(0, 12);
                     setHistoriqueDeclarations(next);
-                    localStorage.setItem("historiqueDeclarations", JSON.stringify(next));
+                    safeStorage.setItem("historiqueDeclarations", JSON.stringify(next));
                   }}
                 >
                   <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 16 }} />
@@ -10969,7 +10989,7 @@ function AppInner() {
           const [wtStep, setWtStep] = useState(0);
           const s = wtSteps[wtStep];
           const closeWalkthrough = () => {
-            localStorage.setItem("hector_walkthrough_done", "1");
+            safeStorage.setItem("hector_walkthrough_done", "1");
             setShowWalkthrough(false);
           };
           return (
