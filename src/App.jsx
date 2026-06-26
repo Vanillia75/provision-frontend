@@ -859,14 +859,28 @@ function AppInner() {
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
   async function apiFetch(path, options = {}) {
-    const res = await fetch(`${API_BASE}${path}`, {
-      ...options,
-      headers: {
-        ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
-        ...(token ? authHeaders() : {}),
-        ...options.headers,
-      },
-    });
+    // Timeout de sécurité : si le backend ne répond pas (ex : serveur qui se réveille
+    // d'une mise en veille), on coupe au bout de 45s au lieu d'attendre indéfiniment.
+    // 45s laisse le temps à Railway de se réveiller, sans bloquer l'utilisateur sans fin.
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 45000);
+    let res;
+    try {
+      res = await fetch(`${API_BASE}${path}`, {
+        ...options,
+        signal: ctrl.signal,
+        headers: {
+          ...(options.body && !(options.body instanceof FormData) ? { "Content-Type": "application/json" } : {}),
+          ...(token ? authHeaders() : {}),
+          ...options.headers,
+        },
+      });
+    } catch (e) {
+      clearTimeout(timer);
+      if (e.name === "AbortError") throw new Error("Le serveur met du temps à répondre. Vérifie ta connexion et réessaie.");
+      throw new Error("Connexion impossible. Vérifie ta connexion internet et réessaie.");
+    }
+    clearTimeout(timer);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       const isObj = body.detail && typeof body.detail === "object";
@@ -1392,7 +1406,7 @@ function AppInner() {
   }
 
   // ─── Brique 4b : choisir le statut pendant l'onboarding ───
-  async function handleOnboardingStatut(statut) {
+  async function handleOnboardingStatut(statut, tentative = 1) {
     if (statut === "auto_entrepreneur") {
       // Flux auto-entrepreneur classique : on passe au formulaire d'onboarding habituel.
       setProfileForm({ ...profileForm, statut: "auto_entrepreneur" });
@@ -1413,9 +1427,15 @@ function AppInner() {
       localStorage.removeItem("hector_walkthrough_done");
       setShowWalkthrough(true);
     } catch (err) {
+      // Échec (réseau, backend qui se réveille…) : on réessaie TOUT SEUL jusqu'à 3 fois,
+      // avec une pause grandissante. L'utilisateur n'a rien à faire — surtout pas vider un cache.
+      if (tentative < 3) {
+        setLoading(false);
+        await new Promise(r => setTimeout(r, tentative * 1500));
+        return handleOnboardingStatut(statut, tentative + 1);
+      }
+      // Après 3 essais ratés : là seulement on montre l'erreur + le bouton Réessayer.
       setError(err.message);
-      // L'application automatique a échoué (réseau, backend endormi…) :
-      // on autorise une nouvelle tentative pour ne pas bloquer l'utilisateur sur le loader.
       landingStatutApplied.current = false;
     } finally {
       setLoading(false);
