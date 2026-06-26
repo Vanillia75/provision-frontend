@@ -4185,7 +4185,7 @@ function AppInner() {
     const pct = c ? Math.min(100, c.pourcentage) : 0;
     const etatLabels = {
       oeuf: "Hector couve", chiot: "Hector chiot", ado: "Hector ado",
-      filet: "Filet de sécurité atteint", adulte: "Hector adulte", niche: "Droits sécurisés",
+      filet: "Seuil du filet franchi", adulte: "Hector adulte", niche: "Droits sécurisés",
     };
     // Palier actuel + prochain palier (pour l'affichage immersif d'Hector au centre)
     const heuresActuelles = c ? c.total_heures : 0;
@@ -5147,8 +5147,8 @@ function AppInner() {
                     <i className="ti ti-lifebuoy" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0, marginTop: 1 }} />
                     <div style={{ fontSize: 12.5, color: "#FAE3B6", lineHeight: 1.45 }}>
                       {calc.filet
-                        ? "Tu as dépassé 338h : la clause de rattrapage peut te servir de filet. À confirmer avec France Travail."
-                        : "Tu approches des 338h, le seuil de la clause de rattrapage (un filet de sécurité). Continue."}
+                        ? "Tu as dépassé 338h : c'est la 1re des deux conditions de la clause de rattrapage. La 2e dépend de ton historique (avoir ouvert des droits 5 fois sur 10 ans). À confirmer avec France Travail."
+                        : "Tu approches des 338h, le seuil de la clause de rattrapage (un filet possible). Continue."}
                     </div>
                   </div>
                 )}
