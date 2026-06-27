@@ -62,7 +62,7 @@ export const S = {
   sidebarTop: { padding: "0 16px 24px", display: "flex", justifyContent: "center" },
   sidebarBottom: { marginTop: "auto", borderTop: "1px solid rgba(255,255,255,0.08)", padding: "16px 0 0" },
   navItem: { display: "flex", alignItems: "center", gap: 10, padding: "10px 18px", fontSize: 13, color: "#8BA5C0", cursor: "pointer", background: "none", border: "none", width: "100%", textAlign: "left", borderLeft: "3px solid transparent" },
-  navItemActive: { color: "white", background: "rgba(255,255,255,0.06)", borderLeftColor: ACCENT },
+  navItemActive: { color: "white", background: "rgba(255,255,255,0.06)", borderLeft: `3px solid ${ACCENT}` },
   navLabel: { whiteSpace: "nowrap" },
   userRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 18px" },
   avatar: { width: 30, height: 30, borderRadius: "50%", background: ACCENT, display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontSize: 11, fontWeight: 600, flexShrink: 0 },

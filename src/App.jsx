@@ -7822,7 +7822,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: nav === "dashboard" ? "#061018" : undefined }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
@@ -8039,7 +8039,7 @@ function AppInner() {
                 : { txt: "Tout est à jour, profite", sub: "Hector veille, tu peux souffler", icon: "ti-check", nav: "revenus" };
               return (
                 <button type="button" onClick={() => setNav(action.nav)}
-                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", cursor: "pointer", fontFamily: "inherit" }}>
+                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "#0e1f35", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 14, padding: "15px 18px", cursor: "pointer", fontFamily: "inherit" }}>
                   <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <i className={`ti ${action.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
                   </div>
