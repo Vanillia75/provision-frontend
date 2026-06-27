@@ -7973,7 +7973,7 @@ function AppInner() {
               );
             })()}
 
-            {/* ── RANGÉE 2 COLONNES : Disponible + Checklist ── */}
+            {/* ── RANGÉE 2 COLONNES (PC) : Disponible + Checklist ── */}
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "start" }}>
             {/* ── OBJECTIF : DISPONIBLE + JAUGE RÉSERVE (style cockpit) ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px" }}>
@@ -8081,6 +8081,20 @@ function AppInner() {
               );
             })()}
             </div>
+
+            {/* ── MINI-STATS 2 COLONNES (téléphone) ── */}
+            {isMobile && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-pig-money" aria-hidden="true" style={{ fontSize: 14, color: "#FAC775" }} /> URSSAF de côté</div>
+                  <div style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{formatEUR(urssafProvision)}</div>
+                </div>
+                <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-shield-half" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} /> Réserve visée</div>
+                  <div style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{formatEUR(securiteNum)}</div>
+                </div>
+              </div>
+            )}
 
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
