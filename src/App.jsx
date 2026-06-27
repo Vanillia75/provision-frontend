@@ -11152,7 +11152,34 @@ function AppInner() {
   );
 }
 
+// ─── Auto-récupération « version périmée » ───
+// La grande majorité des écrans blancs ne viennent PAS d'un bug du code, mais d'un
+// utilisateur qui tourne encore sur une ANCIENNE version en cache après un déploiement
+// (symptômes typiques : "before initialization", "React is not defined", "Rendered
+// fewer/more hooks", "Loading chunk failed"). Dans ce cas on vide le cache et on
+// recharge UNE seule fois, en silence, pour qu'il récupère la version à jour sans rien faire.
+function tenterAutoRecuperation(error) {
+  try {
+    const msg = String((error && error.message) || "");
+    const versionPerimee = /before initialization|is not defined|Rendered (fewer|more) hooks|Loading chunk|dynamically imported module|Importing a module script failed|Unexpected token/i.test(msg);
+    if (!versionPerimee) return; // vraie erreur applicative -> on laisse l'écran "petit souci"
+    const KEY = "hector_auto_reload";
+    if (sessionStorage.getItem(KEY)) return; // déjà tenté cette session -> on évite toute boucle
+    sessionStorage.setItem(KEY, String(Date.now()));
+    if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+      navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(() => {});
+    }
+    const reload = () => window.location.reload();
+    if (window.caches && caches.keys) {
+      caches.keys().then(ks => Promise.all(ks.map(k => caches.delete(k)))).then(reload).catch(reload);
+    } else {
+      reload();
+    }
+  } catch (_) { /* on n'aggrave jamais une erreur d'erreur */ }
+}
+
 export default Sentry.withErrorBoundary(AppInner, {
+  onError: tenterAutoRecuperation,
   fallback: ({ resetError }) => (
     <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
       <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>Hector a eu un petit souci 🐾</p>
