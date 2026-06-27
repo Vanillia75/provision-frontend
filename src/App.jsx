@@ -7822,7 +7822,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: nav === "dashboard" ? "#061018" : undefined }}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: (nav === "dashboard" && isMobile) ? "#061018" : undefined }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
