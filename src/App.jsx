@@ -417,6 +417,7 @@ function AppInner() {
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
   const [estimateData, setEstimateData] = useState(null);
+  const [projectionData, setProjectionData] = useState(null); // projection trésorerie (carte "mois prochain")
   const [incomeList, setIncomeList] = useState([]);
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeForm, setIncomeForm] = useState({ date: "", amount: "", description: "" });
@@ -730,10 +731,11 @@ function AppInner() {
       if (p.reserve_securite != null) setObjectifSecurite(String(p.reserve_securite));
       if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
-        const [est, inc, expSummary] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary")]);
+        const [est, inc, expSummary, proj] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary"), apiFetch("/projection").catch(() => null)]);
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
+        setProjectionData(proj);
         // État de la connexion bancaire (Powens) — best effort, n'interrompt rien.
         loadBankStatus();
         // Ouvrir le walkthrough au premier login uniquement
@@ -822,6 +824,13 @@ function AppInner() {
       addHectorMessage("Ça fait plus de 7 jours que je n'ai pas vu ton vrai solde. Mes calculs sont moins précis là. 10 secondes pour me mettre à jour ?", "#FAC775");
     }
   }, [nav, panique.solde]);
+
+  // Rafraîchit la projection trésorerie dès que le solde est (re)sauvegardé côté serveur.
+  useEffect(() => {
+    if (soldeSaveStatus === "saved" && token) {
+      apiFetch("/projection").then(setProjectionData).catch(() => {});
+    }
+  }, [soldeSaveStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── STREAK : mise à jour une fois par jour à l'ouverture ───
   useEffect(() => {
@@ -8045,30 +8054,6 @@ function AppInner() {
               )}
             </div>
 
-            {/* ── TA PROCHAINE ACTION (style cockpit) ── */}
-            {(() => {
-              if (panique.solde === "") return null;
-              const action = incomeList.length === 0
-                ? { txt: "Ajoute ton premier revenu", sub: "Hector mettra l'URSSAF de côté automatiquement", icon: "ti-plus", nav: "revenus" }
-                : reserveAtteinte === false
-                ? { txt: "Renforce ta réserve de sécurité", sub: `Il te manque ${formatEUR(manqueReserveDashboard)}`, icon: "ti-shield-half", nav: "revenus" }
-                : { txt: "Tout est à jour, profite", sub: "Hector veille, tu peux souffler", icon: "ti-check", nav: "revenus" };
-              return (
-                <button type="button" onClick={() => setNav(action.nav)}
-                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "#0e1f35", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 14, padding: "15px 18px", cursor: "pointer", fontFamily: "inherit" }}>
-                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <i className={`ti ${action.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
-                    <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{action.txt}</div>
-                    {action.sub && <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>{action.sub}</div>}
-                  </div>
-                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
-                </button>
-              );
-            })()}
-
             {/* ── CHECKLIST DE SÉRÉNITÉ (style cockpit) ── */}
             {(() => {
               const items = [
@@ -8105,6 +8090,89 @@ function AppInner() {
               );
             })()}
             </div>
+
+            {/* ── TA PROCHAINE ACTION (pleine largeur, masquée pendant l'onboarding) ── */}
+            {(() => {
+              if (panique.solde === "" || incomeList.length === 0) return null;
+              const action = reserveAtteinte === false
+                ? { txt: "Renforce ta réserve de sécurité", sub: `Il te manque ${formatEUR(manqueReserveDashboard)}`, icon: "ti-shield-half", nav: "revenus" }
+                : { txt: "Tout est à jour, profite", sub: "Hector veille, tu peux souffler", icon: "ti-check", nav: "revenus" };
+              return (
+                <button type="button" onClick={() => setNav(action.nav)}
+                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "#0e1f35", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 14, padding: "15px 18px", cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <i className={`ti ${action.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
+                    <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{action.txt}</div>
+                    {action.sub && <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>{action.sub}</div>}
+                  </div>
+                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
+                </button>
+              );
+            })()}
+
+            {/* ── PROJECTION TRÉSORERIE : « Hector regarde ton mois prochain » ── */}
+            {projectionData?.disponible && (() => {
+              const pr = projectionData;
+              const accent = pr.ton === "alerte" ? "#F09595" : pr.ton === "vigilant" ? "#FAC775" : "#5DCAA5";
+              const couleurMontant = (v) => (v >= 0 ? "#5DCAA5" : "#F09595");
+              return (
+                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 16, padding: "18px 20px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(93,202,165,0.14)", display: "flex", alignItems: "center", justifyContent: "center", color: "#5DCAA5", flexShrink: 0 }}>
+                      <i className="ti ti-telescope" aria-hidden="true" style={{ fontSize: 20 }} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Hector regarde ton mois prochain</div>
+                      <div style={{ fontSize: 11.5, color: "#6B8299" }}>à {pr.horizon_label} · une projection, pas une certitude</div>
+                    </div>
+                    <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", color: "#7FB8F0", background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap" }}>Estimation</span>
+                  </div>
+
+                  {pr.devis_count > 0 ? (
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                    <div style={{ background: "rgba(250,199,117,0.07)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 12, padding: "13px 14px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#FAC775", fontSize: 11, fontWeight: 600, marginBottom: 6 }}><i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 14 }} /> Au minimum</div>
+                      <div style={{ fontSize: 23, fontWeight: 800, color: couleurMontant(pr.plancher), lineHeight: 1 }}>{pr.plancher < 0 ? "−" : ""}{formatEUR(Math.abs(pr.plancher))}</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>ce qui est certain</div>
+                    </div>
+                    <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "13px 14px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#5DCAA5", fontSize: 11, fontWeight: 600, marginBottom: 6 }}><i className="ti ti-trending-up" aria-hidden="true" style={{ fontSize: 14 }} /> Avec tes devis</div>
+                      <div style={{ fontSize: 23, fontWeight: 800, color: couleurMontant(pr.optimiste), lineHeight: 1 }}>{pr.optimiste < 0 ? "−" : ""}{formatEUR(Math.abs(pr.optimiste))}</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 4 }}>si tes devis rentrent</div>
+                    </div>
+                  </div>
+                  ) : (
+                  <div style={{ background: "rgba(93,202,165,0.06)", border: `1px solid ${accent}33`, borderRadius: 12, padding: "14px 16px", marginBottom: 14, textAlign: "center" }}>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>Solde projeté à {pr.horizon_label}</div>
+                    <div style={{ fontSize: 28, fontWeight: 800, color: couleurMontant(pr.plancher), lineHeight: 1 }}>{pr.plancher < 0 ? "−" : ""}{formatEUR(Math.abs(pr.plancher))}</div>
+                  </div>
+                  )}
+
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: `${accent}0D`, border: `1px solid ${accent}33`, borderRadius: 12, padding: "12px 14px", marginBottom: (pr.leviers && pr.leviers.length) ? 14 : 0 }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: `1.5px solid ${accent}66`, display: "flex", alignItems: "center", justifyContent: "center", color: accent, flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={accent} />
+                    </div>
+                    <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.55 }}>{pr.message}</div>
+                  </div>
+
+                  {pr.leviers && pr.leviers.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                      {pr.leviers.map((l, i) => (
+                        <button key={i} type="button" onClick={() => setNav(l.type === "devis" ? "devis" : "factures")}
+                          style={{ display: "flex", alignItems: "center", gap: 11, background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 10, padding: "11px 14px", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+                          <i className={`ti ${l.type === "devis" ? "ti-cash" : "ti-bell-ringing"}`} aria-hidden="true" style={{ fontSize: 17, color: "#7FB8F0", flexShrink: 0 }} />
+                          <span style={{ flex: 1, color: "#E4EEF8", fontSize: 13.5, fontWeight: 500 }}>{l.label}</span>
+                          <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 16, color: "#7FB8F0", flexShrink: 0 }} />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
