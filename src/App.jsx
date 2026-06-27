@@ -7706,11 +7706,12 @@ function AppInner() {
       )}
 
       <aside
-        style={
-          isMobile
+        style={{
+          ...(isMobile
             ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }
-            : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }
-        }
+            : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
+          background: nav === "dashboard" ? "#07192E" : INK,
+        }}
       >
         <div style={S.sidebarTop}>
           {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={36} dark />}
@@ -7823,7 +7824,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: (nav === "dashboard" && isMobile) ? "#061018" : undefined }}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: nav === "dashboard" ? "#07192E" : undefined }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
