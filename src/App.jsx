@@ -4238,9 +4238,14 @@ function AppInner() {
       recent.forEach(a => { heuresRecentes += heuresDe(a); });
       const rythmeMensuel = heuresRecentes / 3; // h/mois sur les 3 derniers mois
       const aUnRythme = rythmeMensuel > 0;
+      // Les 507h doivent tenir dans une fenêtre GLISSANTE de 12 mois : à un rythme régulier de r h/mois,
+      // le maximum atteignable est ~12×r (les heures de plus de 12 mois sortent de la fenêtre).
+      // Si 12×r < seuil (~43h/mois pour 507h), le renouvellement est hors d'atteinte à ce rythme,
+      // quel que soit le nombre de mois → on n'affiche PAS de fausse date lointaine.
+      const rythmeSuffisant = aUnRythme && rythmeMensuel * 12 >= seuil;
       const moisPourCombler = aUnRythme ? Math.ceil(manque / rythmeMensuel) : null;
       let dateProjection = null;
-      if (aUnRythme && moisPourCombler != null && manque > 0) {
+      if (aUnRythme && rythmeSuffisant && moisPourCombler != null && manque > 0) {
         const dp = new Date(now.getFullYear(), now.getMonth() + moisPourCombler, now.getDate());
         const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
         dateProjection = `${MOIS[dp.getMonth()]} ${dp.getFullYear()}`;
@@ -4255,7 +4260,8 @@ function AppInner() {
         dansLesTemps = true;
       } else if (aDateAnniv && aUnRythme && moisPourCombler != null) {
         const moisDispo = joursAnniv / 30;
-        dansLesTemps = moisPourCombler <= moisDispo;
+        // À un rythme qui ne tient pas 507h sur 12 mois glissants, on n'y arrivera pas → false.
+        dansLesTemps = rythmeSuffisant ? (moisPourCombler <= moisDispo) : false;
       }
 
       // — Clause de rattrapage (cercle estimé) : zone 338–506h —
@@ -4282,7 +4288,7 @@ function AppInner() {
         conseilNiveau = "blue";
         conseilTitre = "Continue à déclarer";
         conseilTexte = aUnRythme
-          ? `Il te manque ${manque}h ≈ ${cachetsManquants} cachet${cachetsManquants > 1 ? "s" : ""}. À ton rythme${dateProjection ? `, tu y seras vers ${dateProjection}` : ""}. Renseigne ta date anniversaire pour que je te dise si c'est à temps.`
+          ? `Il te manque ${manque}h ≈ ${cachetsManquants} cachet${cachetsManquants > 1 ? "s" : ""}.${dateProjection ? ` À ton rythme, tu y seras vers ${dateProjection}.` : ""} Renseigne ta date anniversaire pour que je te dise si c'est à temps.`
           : `Il te manque ${manque}h ≈ ${cachetsManquants} cachet${cachetsManquants > 1 ? "s" : ""}. Ajoute tes contrats au fur et à mesure, je suis ton avancée.`;
       } else {
         conseilNiveau = "green";
@@ -4292,7 +4298,7 @@ function AppInner() {
 
       return {
         heures, seuil, manque, secu, cachetsManquants,
-        rythmeMensuel: Math.round(rythmeMensuel), aUnRythme, dateProjection,
+        rythmeMensuel: Math.round(rythmeMensuel), aUnRythme, rythmeSuffisant, dateProjection,
         aDateAnniv, joursAnniv, dansLesTemps,
         filet, procheRattrapage,
         conseilNiveau, conseilTitre, conseilTexte,
@@ -4698,9 +4704,12 @@ function AppInner() {
       const manque = calc.manque;
 
       // Scénario 1 — Au rythme actuel (réutilise la date déjà calculée par calc).
-      const rythme = calc.aUnRythme
-        ? { label: "Au rythme actuel", valeur: calc.dateProjection ? calc.dateProjection : "à préciser", ok: !!calc.dateProjection, note: calc.dateProjection ? `~${calc.rythmeMensuel}h/mois` : "ajoute des contrats pour estimer" }
-        : { label: "Au rythme actuel", valeur: "pas encore d'estimation", ok: false, note: "il me faut un peu d'historique" };
+      const rythmeMiniMensuel = Math.ceil(seuil / 12); // ~43h/mois : minimum pour tenir 507h sur 12 mois glissants
+      const rythme = !calc.aUnRythme
+        ? { label: "Au rythme actuel", valeur: "pas encore d'estimation", ok: false, note: "il me faut un peu d'historique" }
+        : !calc.rythmeSuffisant
+        ? { label: "Au rythme actuel", valeur: "rythme insuffisant", ok: false, note: `~${calc.rythmeMensuel}h/mois — il en faudrait ~${rythmeMiniMensuel}` }
+        : { label: "Au rythme actuel", valeur: calc.dateProjection ? calc.dateProjection : "à préciser", ok: !!calc.dateProjection, note: calc.dateProjection ? `~${calc.rythmeMensuel}h/mois` : "ajoute des contrats pour estimer" };
 
       // Scénario 2 — Sans nouveau contrat (plancher backend si dispo).
       const sansContrat = (c && c.projection_disponible)
@@ -4712,19 +4721,31 @@ function AppInner() {
           }
         : null;
 
-      // Scénario 3 — Avec 2 cachets de plus par mois (12h/cachet).
+      // Scénario 3 — Avec 2 cachets de plus par mois (12h/cachet), EN PLUS du rythme actuel.
       const cachetsSup = 2;
-      const hSup = cachetsSup * 12; // par mois
+      const hSup = cachetsSup * 12; // heures ajoutées par mois
+      const rythmeAvecCachets = (calc.rythmeMensuel || 0) + hSup; // total mensuel = rythme actuel + cachets ajoutés
       let avecCachets = null;
-      if (manque > 0 && hSup > 0) {
-        const moisNec = Math.ceil(manque / hSup);
-        const d = new Date(now.getFullYear(), now.getMonth() + moisNec, 1);
-        avecCachets = {
-          label: `Avec ${cachetsSup} cachets/mois en plus`,
-          valeur: `${MOIS[d.getMonth()]} ${d.getFullYear()}`,
-          ok: true,
-          note: `soit ${moisNec} mois`,
-        };
+      if (manque > 0) {
+        if (rythmeAvecCachets * 12 >= seuil) {
+          // Ce rythme total permet bien de tenir 507h sur 12 mois glissants → on estime la date.
+          const moisNec = Math.ceil(manque / rythmeAvecCachets);
+          const d = new Date(now.getFullYear(), now.getMonth() + moisNec, 1);
+          avecCachets = {
+            label: `Avec ${cachetsSup} cachets/mois en plus`,
+            valeur: `${MOIS[d.getMonth()]} ${d.getFullYear()}`,
+            ok: true,
+            note: `soit ${moisNec} mois`,
+          };
+        } else {
+          // Même avec 2 cachets en plus, le rythme reste sous le seuil de ~43h/mois → on reste honnête.
+          avecCachets = {
+            label: `Avec ${cachetsSup} cachets/mois en plus`,
+            valeur: "toujours pas suffisant",
+            ok: false,
+            note: `il faudrait ~${Math.ceil(seuil / 12)}h/mois`,
+          };
+        }
       }
 
       const scenarios = [rythme, sansContrat, avecCachets].filter(Boolean);
