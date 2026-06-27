@@ -8803,7 +8803,7 @@ function AppInner() {
               )}
 
               {echeances.length > 0 && (
-                <div style={{ marginTop: 14, padding: "14px 18px", background: "#F7F9F5", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
+                <div style={{ marginTop: 14, padding: "14px 18px", background: "rgba(255,255,255,0.05)", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
                   <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 18, color: "#8BA5C0", flexShrink: 0 }} />
                   <span style={{ fontSize: 13, color: "#8BA5C0" }}>Total à provisionner sur les 30 prochains jours : <strong style={{ color: "#E6EDF5" }}>{formatEUR(totalProche)}</strong></span>
                 </div>
@@ -9029,12 +9029,12 @@ function AppInner() {
                           </div>
 
                           <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                            <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "#F7F9F5", borderRadius: 8 }}>
+                            <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: 8 }}>
                               <div style={{ fontSize: 10, color: "#8BA5C0", textTransform: "uppercase" }}>Disponible avant</div>
                               <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(Math.max(0, apresReserve))}</div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: "#8BA5C0" }}>→</div>
-                            <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "#F7F9F5", borderRadius: 8 }}>
+                            <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "rgba(255,255,255,0.05)", borderRadius: 8 }}>
                               <div style={{ fontSize: 10, color: "#8BA5C0", textTransform: "uppercase" }}>Disponible après</div>
                               <div style={{ fontSize: 18, fontWeight: 700, color: resteApres < 0 ? "#A32D2D" : "#1D9E75" }}>{formatEUR(Math.max(0, resteApres))}</div>
                             </div>
@@ -9785,7 +9785,7 @@ function AppInner() {
               <div style={{ ...S.card, marginBottom: 16 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
 
-                <div style={{ background: "#F7F9F5", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
+                <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
                   {(profilEntreprise || profilPrenom) && profilSiret && profilAdresse ? (
                     <div style={{ fontSize: 13, color: "#E6EDF5", lineHeight: 1.6 }}>
@@ -10282,7 +10282,7 @@ function AppInner() {
                     return (
                       <div key={c.categorie} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
                         <span style={{ fontSize: 13, color: "#E6EDF5", width: 140, flexShrink: 0 }}>{labelCategorie(c.categorie)}</span>
-                        <div style={{ flex: 1, height: 8, background: "#EEF2F7", borderRadius: 4, overflow: "hidden" }}>
+                        <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.05)", borderRadius: 4, overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${pct}%`, background: ACCENT }} />
                         </div>
                         <span style={{ fontSize: 12, color: "#8BA5C0", width: 36, textAlign: "right", flexShrink: 0 }}>{pct}%</span>
@@ -10329,7 +10329,7 @@ function AppInner() {
                     onMouseEnter={e => e.currentTarget.style.background = "#F9FAFB"}
                     onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                   >
-                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF2F7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🧾</div>
+                    <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🧾</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 14, fontWeight: 500, color: "#E6EDF5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {exp.description || labelCategorie(exp.categorie)}
@@ -10682,7 +10682,7 @@ function AppInner() {
             <div style={S.card}>
               {CONSEILS.map((c, i) => (
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 0", borderBottom: i < CONSEILS.length - 1 ? "1px solid #EEF2F7" : "none" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF2F7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{c.emoji}</div>
+                  <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(255,255,255,0.05)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{c.emoji}</div>
                   <div>
                     <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>{c.titre}</div>
                     <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>{c.texte}</div>
@@ -10808,7 +10808,7 @@ function AppInner() {
                       Continuer gratuitement
                     </button>
                   ) : (
-                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "#EEF2F7", color: "#9098A6", cursor: "not-allowed", border: "1px solid #DDE5EE" }} disabled>
+                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "rgba(255,255,255,0.05)", color: "#9098A6", cursor: "not-allowed", border: "1px solid #DDE5EE" }} disabled>
                       Gratuit pendant la bêta
                     </button>
                   )}
@@ -11118,12 +11118,12 @@ function AppInner() {
                 <span style={{ fontSize: 13, color: "#6B7A8D" }}>Date</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{formatDate(selectedExpense.date)}</span>
               </div>
-              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", padding: "10px 14px", background: "rgba(255,255,255,0.05)", borderRadius: 10 }}>
                 <span style={{ fontSize: 13, color: "#6B7A8D" }}>Catégorie</span>
                 <span style={{ fontSize: 13, fontWeight: 600, color: INK }}>{labelCategorie(selectedExpense.categorie)}</span>
               </div>
               {selectedExpense.description && (
-                <div style={{ padding: "10px 14px", background: "#F9FAFB", borderRadius: 10 }}>
+                <div style={{ padding: "10px 14px", background: "rgba(255,255,255,0.05)", borderRadius: 10 }}>
                   <div style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 4 }}>Description</div>
                   <div style={{ fontSize: 13, color: INK }}>{selectedExpense.description}</div>
                 </div>
@@ -11154,7 +11154,7 @@ function AppInner() {
 
 export default Sentry.withErrorBoundary(AppInner, {
   fallback: ({ resetError }) => (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
       <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>Hector a eu un petit souci 🐾</p>
       <p style={{ fontSize: 14, color: "#8BA5C0", maxWidth: 380 }}>Quelque chose a coincé de mon côté — j'ai prévenu l'équipe automatiquement. Recharge la page, je reviens tout de suite.</p>
       <button onClick={() => { resetError(); window.location.reload(); }} style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
