@@ -406,6 +406,7 @@ function AppInner() {
   const [bankLoading, setBankLoading] = useState(false);
   const [bankSyncing, setBankSyncing] = useState(false);
   const [bankCardOpen, setBankCardOpen] = useState(false); // carte connexion bancaire repliée par défaut (accordéon)
+  const [serenityOpen, setSerenityOpen] = useState(false); // checklist de sérénité repliée par défaut sur mobile
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [authEmail, setAuthEmail] = useState("");
@@ -7863,7 +7864,7 @@ function AppInner() {
             {(() => {
               const b = briefingMatin;
               const couleurTon = b.ton === "alerte" ? "#E24B4A" : b.ton === "vigilant" ? "#EF9F27" : b.ton === "serein" ? "#5DCAA5" : "#8BA5C0";
-              const ouvert = briefingOuvert || !briefingVuAujourdhui;
+              const ouvert = briefingOuvert || (!briefingVuAujourdhui && !isMobile);
               const marquerVu = () => {
                 safeStorage.setItem("briefingVu", new Date().toISOString().slice(0, 10));
                 setBriefingVuAujourdhui(true);
@@ -8078,10 +8079,17 @@ function AppInner() {
               const faits = items.filter(i => i.ok).length;
               return (
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div onClick={isMobile ? () => setSerenityOpen(o => !o) : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: (isMobile && !serenityOpen) ? 0 : 14, cursor: isMobile ? "pointer" : "default" }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de sérénité</div>
-                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{faits} / {items.length}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{faits} / {items.length}</div>
+                      {isMobile && <i className={`ti ti-chevron-${serenityOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#6B8299" }} />}
+                    </div>
                   </div>
+                  {isMobile && !serenityOpen && (
+                    <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 4, overflow: "hidden", marginTop: 12 }}><div style={{ width: `${Math.round((faits / items.length) * 100)}%`, height: "100%", background: "#5DCAA5", borderRadius: 4 }} /></div>
+                  )}
+                  {(!isMobile || serenityOpen) && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     {items.map(it => (
                       <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 11, opacity: it.ok ? 1 : 0.55 }}>
@@ -8091,6 +8099,7 @@ function AppInner() {
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
               );
             })()}
