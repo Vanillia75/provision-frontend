@@ -7690,7 +7690,7 @@ function AppInner() {
   const userInitials = (profile?.email || "").slice(0, 2).toUpperCase();
 
   return (
-    <div style={isMobile ? { ...S.appWrap, display: "block" } : S.appWrap}>
+    <div style={isMobile ? { ...S.appWrap, display: "block", background: "#07192E" } : { ...S.appWrap, background: "#07192E" }}>
       <style>{CSS}</style>
 
       {isMobile && (
@@ -7720,7 +7720,7 @@ function AppInner() {
           ...(isMobile
             ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
-          background: nav === "dashboard" ? "#07192E" : INK,
+          background: "#07192E",
         }}
       >
         <div style={S.sidebarTop}>
@@ -7834,14 +7834,14 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: nav === "dashboard" ? "#07192E" : undefined }}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: "#07192E" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
         {nav !== "dashboard" && (
           <button
             onClick={() => setNav("dashboard")}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid rgba(10,37,64,0.15)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: INK, cursor: "pointer", marginBottom: 16 }}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "white", cursor: "pointer", marginBottom: 16 }}
           >
             ← Retour au cockpit
           </button>
@@ -7895,7 +7895,7 @@ function AppInner() {
               }
               return (
                 <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #0e1b30 100%)", border: `1px solid ${couleurTon}44`, borderRadius: 16, padding: "20px 22px", position: "relative", animation: "fadeInDown 0.4s ease" }}>
-                  <button onClick={marquerVu} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#4A6280", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
+                  <button onClick={marquerVu} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#8BA5C0", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
                   <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                     <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", border: `2px solid ${couleurTon}55`, flexShrink: 0 }}>
                       <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
@@ -8414,7 +8414,7 @@ function AppInner() {
                     <div style={{ height: "100%", background: msg.couleur, width: "100%", animation: "shrink 7s linear forwards" }} />
                   </div>
                 </div>
-                <button onClick={() => setHectorMessages(prev => prev.filter(m => m.id !== msg.id))} style={{ background: "none", border: "none", color: "#4A6280", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
+                <button onClick={() => setHectorMessages(prev => prev.filter(m => m.id !== msg.id))} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
               </div>
             ))}
 
@@ -8605,7 +8605,7 @@ function AppInner() {
               <div style={{ background: "rgba(55,138,221,0.05)", border: "1px solid rgba(55,138,221,0.15)", borderRadius: 12, padding: "12px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
                 <div>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0" }}>Train de vie mensuel</div>
-                  <div style={{ fontSize: 10, color: "#4A6280", marginTop: 2 }}>Tes dépenses perso estimées par mois</div>
+                  <div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 2 }}>Tes dépenses perso estimées par mois</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
                   <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(trainDeVieNum)}</div>
@@ -8762,11 +8762,11 @@ function AppInner() {
                       <div key={e.id} style={{ ...S.card, display: "flex", alignItems: "center", gap: 16, flexWrap: isMobile ? "wrap" : "nowrap" }}>
                         <div style={{ width: 10, height: 10, borderRadius: "50%", background: st.color, flexShrink: 0 }} />
                         <div style={{ flex: 1, minWidth: 140 }}>
-                          <div style={{ fontSize: 15, fontWeight: 600, color: INK }}>{e.label}</div>
+                          <div style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5" }}>{e.label}</div>
                           <div style={{ fontSize: 13, color: st.color, marginTop: 2 }}>{st.label}</div>
                         </div>
                         <div style={{ textAlign: "right", flexShrink: 0 }}>
-                          <div style={{ fontSize: 20, fontWeight: 600, color: INK }}>{e.estime ? "~ " : ""}{formatEUR(e.montant)}</div>
+                          <div style={{ fontSize: 20, fontWeight: 600, color: "#E6EDF5" }}>{e.estime ? "~ " : ""}{formatEUR(e.montant)}</div>
                           <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>échéance {e.dateLabel}</div>
                         </div>
                         <button
@@ -8783,8 +8783,8 @@ function AppInner() {
 
               {echeances.length > 0 && (
                 <div style={{ marginTop: 14, padding: "14px 18px", background: "#F7F9F5", borderRadius: 10, display: "flex", alignItems: "center", gap: 10 }}>
-                  <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 18, color: "#6B7A8D", flexShrink: 0 }} />
-                  <span style={{ fontSize: 13, color: "#5B6573" }}>Total à provisionner sur les 30 prochains jours : <strong style={{ color: INK }}>{formatEUR(totalProche)}</strong></span>
+                  <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 18, color: "#8BA5C0", flexShrink: 0 }} />
+                  <span style={{ fontSize: 13, color: "#8BA5C0" }}>Total à provisionner sur les 30 prochains jours : <strong style={{ color: "#E6EDF5" }}>{formatEUR(totalProche)}</strong></span>
                 </div>
               )}
 
@@ -8801,8 +8801,8 @@ function AppInner() {
           <div>
             <div style={{ ...S.card, textAlign: "center", padding: "40px 28px", maxWidth: 480, margin: "40px auto 0" }}>
               <div style={{ fontSize: 40, marginBottom: 12 }}>🐾</div>
-              <h2 style={{ fontSize: 19, color: "#0A2540", fontWeight: 700, marginBottom: 8 }}>Il me faut d'abord un revenu</h2>
-              <p style={{ fontSize: 14, color: "#6B7A8D", lineHeight: 1.55, marginBottom: 22 }}>
+              <h2 style={{ fontSize: 19, color: "#E6EDF5", fontWeight: 700, marginBottom: 8 }}>Il me faut d'abord un revenu</h2>
+              <p style={{ fontSize: 14, color: "#8BA5C0", lineHeight: 1.55, marginBottom: 22 }}>
                 Pour préparer ça, j'ai besoin que tu enregistres au moins une rentrée d'argent. Dès que c'est fait, je calcule tout automatiquement et cette page se remplit toute seule.
               </p>
               <button style={{ ...S.btnPrimary, maxWidth: 260, margin: "0 auto" }} onClick={() => setNav("revenus")}>
@@ -8837,7 +8837,7 @@ function AppInner() {
                 {/* CA à déclarer */}
                 <div style={{ padding: "14px 0", borderBottom: "1px solid #EEF2F7" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: "#6B7A8D" }}>📊 CA à déclarer</span>
+                    <span style={{ fontSize: 13, color: "#8BA5C0" }}>📊 CA à déclarer</span>
                     {!editingDeclarationCa && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
                   {editingDeclarationCa ? (
@@ -8851,7 +8851,7 @@ function AppInner() {
                   ) : (
                     <div
                       onClick={() => setEditingDeclarationCa(true)}
-                      style={{ fontSize: 32, fontWeight: 800, color: "#0A2540", textAlign: "center", padding: "8px 0", cursor: "pointer", borderRadius: 8, transition: "background 0.15s" }}
+                      style={{ fontSize: 32, fontWeight: 800, color: "#E6EDF5", textAlign: "center", padding: "8px 0", cursor: "pointer", borderRadius: 8, transition: "background 0.15s" }}
                       onMouseEnter={e => e.currentTarget.style.background = "#F3F4F6"}
                       onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                     >{formatEUR(caAffiche)}</div>
@@ -8861,7 +8861,7 @@ function AppInner() {
                 {/* Cotisations */}
                 <div style={{ padding: "14px 0", borderBottom: "1px solid #EEF2F7" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                    <span style={{ fontSize: 13, color: "#6B7A8D" }}>💰 Cotisations estimées <span style={{ fontSize: 11, color: "#8BA5C0" }}>({estimateData.taux_global_pct}%)</span></span>
+                    <span style={{ fontSize: 13, color: "#8BA5C0" }}>💰 Cotisations estimées <span style={{ fontSize: 11, color: "#8BA5C0" }}>({estimateData.taux_global_pct}%)</span></span>
                     {!editingDeclarationCotisations && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
                   {editingDeclarationCotisations ? (
@@ -8884,8 +8884,8 @@ function AppInner() {
 
                 {/* Activité */}
                 <div style={{ padding: "12px 0", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 13, color: "#6B7A8D" }}>🏷️ Activité / statut</span>
-                  <span style={{ fontSize: 12, color: "#0A2540", fontWeight: 600 }}>{ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · Auto-entrepreneur</span>
+                  <span style={{ fontSize: 13, color: "#8BA5C0" }}>🏷️ Activité / statut</span>
+                  <span style={{ fontSize: 12, color: "#E6EDF5", fontWeight: 600 }}>{ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · Auto-entrepreneur</span>
                 </div>
 
                 {(declarationCa !== "" || declarationCotisations !== "" || declarationPeriode !== "") && (
@@ -9010,7 +9010,7 @@ function AppInner() {
                           <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                             <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "#F7F9F5", borderRadius: 8 }}>
                               <div style={{ fontSize: 10, color: "#8BA5C0", textTransform: "uppercase" }}>Disponible avant</div>
-                              <div style={{ fontSize: 18, fontWeight: 700, color: INK }}>{formatEUR(Math.max(0, apresReserve))}</div>
+                              <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(Math.max(0, apresReserve))}</div>
                             </div>
                             <div style={{ display: "flex", alignItems: "center", fontSize: 18, color: "#8BA5C0" }}>→</div>
                             <div style={{ flex: 1, textAlign: "center", padding: "10px", background: "#F7F9F5", borderRadius: 8 }}>
@@ -9026,7 +9026,7 @@ function AppInner() {
                             </div>
                           )}
                           <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur vos provisions (URSSAF/CFE)</span><span>{chargesFutures <= 0 ? "— aucune provision en cours" : tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
-                          <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 8 }}>
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 8 }}>
                             {verdict === "ok" && "Cet achat ne compromet ni vos charges futures ni votre réserve de sécurité."}
                             {verdict === "prudence" && "L'achat passe, mais il ne vous restera presque plus de marge ensuite."}
                             {verdict === "non" && <>Il vous manquerait <strong>{formatEUR(Math.abs(resteApres))}</strong> pour garder votre réserve de sécurité intacte.</>}
@@ -9070,7 +9070,7 @@ function AppInner() {
 
             <div style={S.card}>
               <label style={S.label}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>Je veux gagner net, par mois</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Je veux gagner net, par mois</span>
                 <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="100" placeholder="Ex : 5000" value={revenuViseMensuel} onChange={e => setRevenuViseMensuel(e.target.value)} />
               </label>
             </div>
@@ -9130,11 +9130,11 @@ function AppInner() {
                   return (
                     <div key={niveau.label} style={{ ...S.card, border: niveau.border }}>
                       <div style={S.salaireRow}>
-                        <div><div style={{ fontSize: 13, fontWeight: 600, color: INK }}>{niveau.emoji} {niveau.label}</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>{niveau.desc}</div></div>
+                        <div><div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5" }}>{niveau.emoji} {niveau.label}</div><div style={{ fontSize: 11, color: "#8BA5C0" }}>{niveau.desc}</div></div>
                         <div style={{ fontSize: 22, fontWeight: 700, color: niveau.color }}>{formatEUR(niveau.montant)}</div>
                       </div>
                       {moisApres !== null && (
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 10, paddingTop: 10, borderTop: "0.5px solid #EEF2F7" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#8BA5C0", marginTop: 10, paddingTop: 10, borderTop: "0.5px solid #EEF2F7" }}>
                           <span>Trésorerie restante</span>
                           <span style={{ fontWeight: 600 }}>{formatEUR(Math.max(0, tresorerieRestante))} · 🛡️ {moisApres} mois de sécurité</span>
                         </div>
@@ -9189,7 +9189,7 @@ function AppInner() {
                   {pctCotis > 0 && <div style={{ ...S.simBarSeg, width: `${pctCotis}%`, background: "#EF9F27" }} />}
                   {pctImpots > 0 && <div style={{ ...S.simBarSeg, width: `${pctImpots}%`, background: "#A32D2D" }} />}
                 </div>
-                <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: 11, color: "#6B7A8D" }}>
+                <div style={{ display: "flex", gap: 16, marginTop: 10, flexWrap: "wrap", fontSize: 11, color: "#8BA5C0" }}>
                   <span><span style={{ ...S.legendDot, background: "#1D9E75" }} />Disponible {Math.round(pctDispo)}%</span>
                   <span><span style={{ ...S.legendDot, background: "#EF9F27" }} />URSSAF {Math.round(pctCotis)}%</span>
                   {impotsSim > 0 && <span><span style={{ ...S.legendDot, background: "#A32D2D" }} />Impôts {Math.round(pctImpots)}%</span>}
@@ -9211,7 +9211,7 @@ function AppInner() {
                   {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
                 <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e.target.value)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
@@ -9229,11 +9229,11 @@ function AppInner() {
                 return (
                   <div style={{ display: "flex", gap: 24 }}>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>À mettre de côté</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0" }}>À mettre de côté</div>
                       <div style={{ fontSize: 22, fontWeight: 600, color: "#854F0B" }}>{formatEUR(urssafSim)}</div>
                     </div>
                     <div>
-                      <div style={{ fontSize: 11, color: "#6B7A8D" }}>Argent réellement disponible</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0" }}>Argent réellement disponible</div>
                       <div style={{ fontSize: 22, fontWeight: 600, color: ACCENT }}>{formatEUR(netSim)}</div>
                     </div>
                   </div>
@@ -9252,7 +9252,7 @@ function AppInner() {
               <div style={{ ...S.card, textAlign: "center", padding: "40px 24px" }}>
                 <div style={{ fontSize: 56, fontWeight: 700, color: info.color, lineHeight: 1 }}>{scoreSante !== null ? `${scoreSante}` : "—"}<span style={{ fontSize: 24, color: "#8BA5C0" }}>/100</span></div>
                 <div style={{ fontSize: 16, fontWeight: 600, color: info.color, marginTop: 10 }}>{info.label}</div>
-                <div style={{ fontSize: 13, color: "#6B7A8D", marginTop: 8, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>{info.desc}</div>
+                <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: 8, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>{info.desc}</div>
               </div>
               {scoreSante !== null && (
                 <div style={{ ...S.card, marginTop: 14 }}>
@@ -9267,11 +9267,11 @@ function AppInner() {
                     <div key={i} style={S.scoreDetailRow}>
                       <span style={S.paniqueLineLabel}><i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />{f.label}</span>
                       <div style={S.scoreBarTrack}><div style={{ ...S.scoreBarFill, width: `${(f.pts / f.max) * 100}%`, background: f.pts / f.max > 0.6 ? "#1D9E75" : f.pts / f.max > 0.3 ? "#EF9F27" : "#E24B4A" }} /></div>
-                      <span style={{ fontSize: 12, color: "#6B7A8D", width: 50, textAlign: "right" }}>{f.pts}/{f.max}</span>
+                      <span style={{ fontSize: 12, color: "#8BA5C0", width: 50, textAlign: "right" }}>{f.pts}/{f.max}</span>
                     </div>
                   ))}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "0.5px solid #EEF2F7" }}>
-                    <span style={{ fontSize: 12, color: "#6B7A8D" }}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 14, marginRight: 6 }} />Dettes / emprunts en cours</span>
+                    <span style={{ fontSize: 12, color: "#8BA5C0" }}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 14, marginRight: 6 }} />Dettes / emprunts en cours</span>
                     <input style={S.inlineEditValue} type="number" step="0.01" value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e.target.value })} />
                   </div>
                 </div>
@@ -9286,7 +9286,7 @@ function AppInner() {
 
             <div style={S.card}>
               <label style={S.label}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>Combien facturez-vous actuellement ?</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Combien facturez-vous actuellement ?</span>
                 <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="1" placeholder="Ex : 500" value={tarifMontant} onChange={e => setTarifMontant(e.target.value)} />
               </label>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
@@ -9336,7 +9336,7 @@ function AppInner() {
                       <button key={p} type="button" onClick={() => setHaussePct(String(p))} style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "8px 16px", ...(haussePct === String(p) ? S.toggleBtnActive : {}) }}>+{p}%</button>
                     ))}
                     <input style={{ ...S.input, width: 70 }} type="number" min="0" max="100" value={haussePct} onChange={e => setHaussePct(e.target.value)} />
-                    <span style={{ fontSize: 13, color: INK }}>%</span>
+                    <span style={{ fontSize: 13, color: "#E6EDF5" }}>%</span>
                   </div>
                   {tauxHoraireApresHausse !== null && (
                     <>
@@ -9354,11 +9354,11 @@ function AppInner() {
                   <div style={S.cardTitle}>🎯 Pour atteindre votre objectif</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                     <input style={{ ...S.input, width: 100 }} type="number" value={objectifHoraire} onChange={e => setObjectifHoraire(e.target.value)} />
-                    <span style={{ fontSize: 14, color: INK }}>€/h</span>
+                    <span style={{ fontSize: 14, color: "#E6EDF5" }}>€/h</span>
                   </div>
                   {ecartPctVersObjectif !== null && (
                     ecartPctVersObjectif > 0 ? (
-                      <div style={{ fontSize: 14, color: "#5B6573" }}>
+                      <div style={{ fontSize: 14, color: "#8BA5C0" }}>
                         Pour atteindre {formatEUR(objHoraireNum)}/h, augmentez vos tarifs de <strong style={{ color: "#1D9E75", fontSize: 18 }}>+{ecartPctVersObjectif}%</strong>.
                       </div>
                     ) : (
@@ -9390,8 +9390,8 @@ function AppInner() {
                 <div style={{ ...S.card, display: "flex", alignItems: "center", gap: 16 }}>
                   <div style={{ width: 16, height: 16, borderRadius: "50%", background: colors[niveau], flexShrink: 0 }} />
                   <div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{titre}</div>
-                    <div style={{ fontSize: 13, color: "#6B7A8D", marginTop: 4 }}>{texte}</div>
+                    <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{titre}</div>
+                    <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: 4 }}>{texte}</div>
                   </div>
                 </div>
               );
@@ -9399,9 +9399,9 @@ function AppInner() {
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>Les grandes différences</div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, fontSize: 12 }}>
-                <div><strong>Auto-entrepreneur</strong><p style={{ color: "#6B7A8D" }}>Simple, % fixe sur le CA, plafonné</p></div>
-                <div><strong>EURL</strong><p style={{ color: "#6B7A8D" }}>Charges déductibles, IS ou IR, comptabilité complète</p></div>
-                <div><strong>SASU</strong><p style={{ color: "#6B7A8D" }}>Statut assimilé salarié, charges plus lourdes mais protection sociale renforcée</p></div>
+                <div><strong>Auto-entrepreneur</strong><p style={{ color: "#8BA5C0" }}>Simple, % fixe sur le CA, plafonné</p></div>
+                <div><strong>EURL</strong><p style={{ color: "#8BA5C0" }}>Charges déductibles, IS ou IR, comptabilité complète</p></div>
+                <div><strong>SASU</strong><p style={{ color: "#8BA5C0" }}>Statut assimilé salarié, charges plus lourdes mais protection sociale renforcée</p></div>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14 }}>Cette analyse est indicative. Un expert-comptable reste indispensable avant de changer de statut.</p>
             </div>
@@ -9420,7 +9420,7 @@ function AppInner() {
               ].map((m, i) => (
                 <div key={i} style={S.card}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: INK }}>{m.titre}</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>{m.titre}</span>
                     <button style={S.btnSecondary} onClick={() => navigator.clipboard?.writeText(m.texte)}>
                       <i className="ti ti-copy" aria-hidden="true" style={{ fontSize: 14, marginRight: 4 }} />Copier
                     </button>
@@ -9498,7 +9498,7 @@ function AppInner() {
                 <>
                   <div style={{ ...S.card, marginTop: 14, border: `2px solid ${ACCENT}` }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🎯 Objectif du mois</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#E6EDF5" }}>🎯 Objectif du mois</span>
                       {objectifMensuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>}
                     </div>
                     <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
@@ -9525,7 +9525,7 @@ function AppInner() {
                       <>
                         <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(caCeMoisCi)}</span>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(caCeMoisCi)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
                           <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
                           <input style={S.objectifInputBig} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
@@ -9545,7 +9545,7 @@ function AppInner() {
 
                   <div style={{ ...S.card, marginTop: 14, marginBottom: 20, border: "1.5px solid #5DCAA5" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: INK }}>🗓️ Objectif de l'année</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#E6EDF5" }}>🗓️ Objectif de l'année</span>
                       {objectifAnnuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>}
                     </div>
                     <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
@@ -9572,7 +9572,7 @@ function AppInner() {
                       <>
                         <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
-                          <span style={{ fontSize: 24, fontWeight: 700, color: INK }}>{formatEUR(estimateData?.ca_annuel || 0)}</span>
+                          <span style={{ fontSize: 24, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(estimateData?.ca_annuel || 0)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
                           <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
                           <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
@@ -9765,9 +9765,9 @@ function AppInner() {
                 <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
 
                 <div style={{ background: "#F7F9F5", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, color: "#6B7A8D", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
+                  <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
                   {(profilEntreprise || profilPrenom) && profilSiret && profilAdresse ? (
-                    <div style={{ fontSize: 13, color: INK, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 13, color: "#E6EDF5", lineHeight: 1.6 }}>
                       <strong>{profilEntreprise || `${profilPrenom} ${profilNom}`.trim()}</strong><br />
                       {profilAdresse}<br />
                       SIRET : {profilSiret}{profile?.statut === "auto_entrepreneur" && <> · Auto-entrepreneur, dispensé d'immatriculation au RCS et au RM</>}
@@ -9804,10 +9804,10 @@ function AppInner() {
                   </label>
                 </div>
                 <div style={S.factureHeaderRow}>
-                  <span style={{ flex: 3, fontSize: 12, color: "#6B7A8D" }}>Description</span>
-                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "center" }}>Qté</span>
-                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "right" }}>Prix unitaire</span>
-                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "right" }}>Total</span>
+                  <span style={{ flex: 3, fontSize: 12, color: "#8BA5C0" }}>Description</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Qté</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#8BA5C0", textAlign: "right" }}>Prix unitaire</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#8BA5C0", textAlign: "right" }}>Total</span>
                 </div>
                 {factureForm.lignes.map((l, i) => (
                   <div key={i} style={S.factureRow}>
@@ -9820,7 +9820,7 @@ function AppInner() {
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addFactureLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
                   <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalFacture())}</span></div>
-                  <div style={{ ...S.netRow, fontSize: 11, color: "#6B7A8D" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
                   <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalFacture())}</span></div>
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
@@ -9846,18 +9846,18 @@ function AppInner() {
                 return (
                   <div key={inv.id} onClick={() => setViewingInvoice(inv)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", background: overdue ? "#FCEBEB" : "transparent", margin: overdue ? "0 -20px" : 0, paddingLeft: overdue ? 20 : 0, paddingRight: overdue ? 20 : 0, cursor: "pointer" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{inv.client_nom}</div>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{inv.client_nom}</div>
                       {overdue ? (
                         <div style={{ fontSize: 12, color: "#A32D2D", marginTop: 2 }}>
                           <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, verticalAlign: -2 }} /> {inv.numero} · en retard de {joursDeRetard(inv)}j (échéance {formatDate(inv.date_echeance)})
                         </div>
                       ) : (
-                        <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>
                           {inv.numero} · émise le {formatDate(inv.date_emission)}{inv.date_echeance ? ` · échéance ${formatDate(inv.date_echeance)}` : ""}
                         </div>
                       )}
                     </div>
-                    <span style={{ fontSize: 18, fontWeight: 600, color: INK, minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(inv.montant)}</span>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5", minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(inv.montant)}</span>
                     {inv.statut === "envoyee" || inv.statut === "impayee" ? (
                       <select onClick={e => e.stopPropagation()} style={{ ...S.toggleBtn, flex: "0 0 auto", padding: "5px 8px", fontSize: 11 }} value={inv.statut} onChange={e => handleInvoiceStatus(inv.id, e.target.value)}>
                         <option value="envoyee">Envoyée</option>
@@ -9870,13 +9870,13 @@ function AppInner() {
                     {inv.statut === "brouillon" && (
                       <button onClick={e => { e.stopPropagation(); handleInvoiceStatus(inv.id, "envoyee"); }} style={{ ...S.linkBtn, fontSize: 11, whiteSpace: "nowrap" }}>Marquer envoyée</button>
                     )}
-                    <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                    <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
-                    <button aria-label="PDF" onClick={e => { e.stopPropagation(); handleViewInvoicePdf(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                    <button aria-label="PDF" onClick={e => { e.stopPropagation(); handleViewInvoicePdf(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
-                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
                     <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteInvoice(inv.id); }} style={S.deleteBtn}>✕</button>
@@ -10035,10 +10035,10 @@ function AppInner() {
                   </label>
                 </div>
                 <div style={S.factureHeaderRow}>
-                  <span style={{ flex: 3, fontSize: 12, color: "#6B7A8D" }}>Description</span>
-                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "center" }}>Qté</span>
-                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "right" }}>Prix unitaire</span>
-                  <span style={{ flex: 1, fontSize: 12, color: "#6B7A8D", textAlign: "right" }}>Total</span>
+                  <span style={{ flex: 3, fontSize: 12, color: "#8BA5C0" }}>Description</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#8BA5C0", textAlign: "center" }}>Qté</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#8BA5C0", textAlign: "right" }}>Prix unitaire</span>
+                  <span style={{ flex: 1, fontSize: 12, color: "#8BA5C0", textAlign: "right" }}>Total</span>
                 </div>
                 {quoteForm.lignes.map((l, i) => (
                   <div key={i} style={S.factureRow}>
@@ -10051,7 +10051,7 @@ function AppInner() {
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addQuoteLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
                   <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalQuote())}</span></div>
-                  <div style={{ ...S.netRow, fontSize: 11, color: "#6B7A8D" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
                   <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalQuote())}</span></div>
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={quoteForm.notes} onChange={e => setQuoteForm({ ...quoteForm, notes: e.target.value })} />
@@ -10073,13 +10073,13 @@ function AppInner() {
                 return (
                   <div key={q.id} onClick={() => setViewingQuote(q)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", cursor: "pointer" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{q.client_nom}</div>
-                      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>
+                      <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{q.client_nom}</div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>
                         {q.numero} · émis le {formatDate(q.date_emission)}{q.date_validite ? ` · valable jusqu'au ${formatDate(q.date_validite)}` : ""}
                         {q.converted_invoice_id && <span style={{ color: "#0F6E56", fontWeight: 600 }}> · converti en facture</span>}
                       </div>
                     </div>
-                    <span style={{ fontSize: 18, fontWeight: 600, color: INK, minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(q.montant)}</span>
+                    <span style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5", minWidth: 80, textAlign: "right", flexShrink: 0 }}>{formatEUR(q.montant)}</span>
                     {q.statut === "envoye" ? (
                       <select onClick={e => e.stopPropagation()} style={{ ...S.toggleBtn, flex: "0 0 auto", padding: "5px 8px", fontSize: 11 }} value={q.statut} onChange={e => handleQuoteStatus(q.id, e.target.value)}>
                         <option value="envoye">Envoyé</option>
@@ -10090,10 +10090,10 @@ function AppInner() {
                     ) : (
                       <span style={{ background: info.bg, color: info.color, fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{info.label}</span>
                     )}
-                    <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                    <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
-                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#6B7A8D", flexShrink: 0, cursor: "pointer" }}>
+                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
                     <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteQuote(q.id); }} style={S.deleteBtn}>✕</button>
@@ -10260,12 +10260,12 @@ function AppInner() {
                     const pct = totalAnnee > 0 ? Math.round((c.montant / totalAnnee) * 100) : 0;
                     return (
                       <div key={c.categorie} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
-                        <span style={{ fontSize: 13, color: INK, width: 140, flexShrink: 0 }}>{labelCategorie(c.categorie)}</span>
+                        <span style={{ fontSize: 13, color: "#E6EDF5", width: 140, flexShrink: 0 }}>{labelCategorie(c.categorie)}</span>
                         <div style={{ flex: 1, height: 8, background: "#EEF2F7", borderRadius: 4, overflow: "hidden" }}>
                           <div style={{ height: "100%", width: `${pct}%`, background: ACCENT }} />
                         </div>
                         <span style={{ fontSize: 12, color: "#8BA5C0", width: 36, textAlign: "right", flexShrink: 0 }}>{pct}%</span>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: INK, width: 70, textAlign: "right", flexShrink: 0 }}>{formatEUR(c.montant)}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", width: 70, textAlign: "right", flexShrink: 0 }}>{formatEUR(c.montant)}</span>
                       </div>
                     );
                   })}
@@ -10298,7 +10298,7 @@ function AppInner() {
                 ) : expensesList.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "32px 20px" }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>🧾</div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: INK, marginBottom: 8 }}>Aucun frais enregistré</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>Aucun frais enregistré</div>
                     <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 16 }}>Importe une facture ou ajoute un frais manuellement.</div>
                   </div>
                 ) : expensesList.map(exp => (
@@ -10310,13 +10310,13 @@ function AppInner() {
                   >
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF2F7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0 }}>🧾</div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14, fontWeight: 500, color: INK, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      <div style={{ fontSize: 14, fontWeight: 500, color: "#E6EDF5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {exp.description || labelCategorie(exp.categorie)}
                       </div>
-                      <div style={{ fontSize: 12, color: "#6B7A8D", marginTop: 2 }}>{formatDate(exp.date)}</div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{formatDate(exp.date)}</div>
                     </div>
                     <span style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{labelCategorie(exp.categorie)}</span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: INK, minWidth: 60, textAlign: "right", flexShrink: 0 }}>{formatEUR(exp.montant)}</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5", minWidth: 60, textAlign: "right", flexShrink: 0 }}>{formatEUR(exp.montant)}</span>
                     <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteExpense(exp.id); }} style={S.deleteBtn}>✕</button>
                   </div>
                 ))}
@@ -10389,14 +10389,14 @@ function AppInner() {
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
                 <div style={S.profilAvatar}>{(profilPrenom?.[0] || profile?.email?.[0] || "?").toUpperCase()}{profilNom?.[0]?.toUpperCase() || ""}</div>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: INK }}>{profilPrenom || profilNom ? `${profilPrenom} ${profilNom}`.trim() : "Complétez votre profil"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{profilPrenom || profilNom ? `${profilPrenom} ${profilNom}`.trim() : "Complétez votre profil"}</div>
                   <div style={{ fontSize: 12, color: "#8BA5C0" }}>{profile?.email}</div>
                 </div>
               </div>
 
               {/* ── Statut du compte (bascule auto-entrepreneur / intermittent) ── */}
               <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Ton statut</div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Ton statut</div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Change le cockpit affiché par H€CTOR. Réversible à tout moment.</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
@@ -10499,7 +10499,7 @@ function AppInner() {
                   <input style={S.input} type="number" step="50" inputMode="text" value={autresRevenus} onChange={e => setAutresRevenus(e.target.value)} placeholder="Ex : salaire 1 800 €/mois" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Salaire ou autre revenu en dehors de ton auto-entreprise. Hector ne calcule jamais d'URSSAF dessus — c'est juste pour avoir une vue complète de ce que tu peux te permettre.</span>
                   {autresRevenusNum > 0 && (
-                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 12, color: INK, fontWeight: 500 }}>
+                    <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 12, color: "#E6EDF5", fontWeight: 500 }}>
                       <input type="checkbox" checked={inclureAutresRevenus} onChange={e => setInclureAutresRevenus(e.target.checked)} style={{ width: 16, height: 16, cursor: "pointer" }} />
                       Inclure ce revenu dans « ce que je peux dépenser »
                     </label>
@@ -10508,7 +10508,7 @@ function AppInner() {
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous vos appareils.</p>
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #EEF2F7" }}>
-                <div style={{ fontSize: 12, fontWeight: 600, color: INK, marginBottom: 6 }}>Fixer ma réserve en mois de sécurité</div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: "#E6EDF5", marginBottom: 6 }}>Fixer ma réserve en mois de sécurité</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {[1, 3, 6].map(m => (
                     <button key={m} type="button"
@@ -10524,7 +10524,7 @@ function AppInner() {
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Tes données bancaires</div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <span style={{ fontSize: 13, color: "#5B6573" }}>C'est toi qui gardes le contrôle</span>
+                <span style={{ fontSize: 13, color: "#8BA5C0" }}>C'est toi qui gardes le contrôle</span>
                 <span style={{ ...S.badge, ...S.badgeGreen }}>🟢 Tes données chez toi</span>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, lineHeight: 1.5 }}>
@@ -10534,7 +10534,7 @@ function AppInner() {
 
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Mes données</div>
-              <p style={{ fontSize: 12, color: "#6B7A8D", margin: "0 0 14px", lineHeight: 1.5 }}>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 14px", lineHeight: 1.5 }}>
                 Conformément au RGPD, vous pouvez exporter l'ensemble de vos données ou supprimer définitivement votre compte H€CTOR.
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
@@ -10663,8 +10663,8 @@ function AppInner() {
                 <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 14, padding: "14px 0", borderBottom: i < CONSEILS.length - 1 ? "1px solid #EEF2F7" : "none" }}>
                   <div style={{ width: 36, height: 36, borderRadius: 10, background: "#EEF2F7", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{c.emoji}</div>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>{c.titre}</div>
-                    <div style={{ fontSize: 13, color: "#5B6573", lineHeight: 1.55 }}>{c.texte}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>{c.titre}</div>
+                    <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>{c.texte}</div>
                   </div>
                 </div>
               ))}
@@ -10705,7 +10705,7 @@ function AppInner() {
                           <div style={{ fontSize: 12, fontWeight: 700, color: ACCENT, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
                             <i className={`ti ${devis.type === "facture" ? "ti-file-invoice" : "ti-file-description"}`} aria-hidden="true" style={{ fontSize: 16 }} /> {devis.type === "facture" ? "Facture préparée" : "Devis préparé"} par Hector
                           </div>
-                          <div style={{ fontSize: 13, color: INK, marginBottom: 4 }}><strong>Client :</strong> {devis.data.client_nom}</div>
+                          <div style={{ fontSize: 13, color: "#E6EDF5", marginBottom: 4 }}><strong>Client :</strong> {devis.data.client_nom}</div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 2, margin: "8px 0", paddingLeft: 4 }}>
                             {devis.data.lignes.map((l, j) => (
                               <div key={j} style={{ fontSize: 12.5, color: "#42566B", display: "flex", justifyContent: "space-between", gap: 10 }}>
@@ -10714,7 +10714,7 @@ function AppInner() {
                               </div>
                             ))}
                           </div>
-                          <div style={{ borderTop: "1px solid #D6E8FA", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: INK }}>
+                          <div style={{ borderTop: "1px solid #D6E8FA", paddingTop: 8, display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, color: "#E6EDF5" }}>
                             <span>Total</span><span>{formatEUR(devis.montant)}</span>
                           </div>
                           {devisCreated[i] ? (
@@ -10772,10 +10772,10 @@ function AppInner() {
               {PLANS.map((p, i) => (
                 <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
                   {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
-                  <div style={{ fontSize: 16, fontWeight: 600, color: INK, marginBottom: 4 }}>{p.nom}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>{p.nom}</div>
                   <div style={{ marginBottom: 16 }}>
                     <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>{p.prix}</span>
-                    <span style={{ fontSize: 13, color: "#6B7A8D" }}>{p.periode}</span>
+                    <span style={{ fontSize: 13, color: "#8BA5C0" }}>{p.periode}</span>
                   </div>
                   {p.features.map((f, j) => (
                     <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 8, lineHeight: 1.4 }}>
@@ -11134,8 +11134,8 @@ function AppInner() {
 export default Sentry.withErrorBoundary(AppInner, {
   fallback: ({ resetError }) => (
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
-      <p style={{ fontSize: 18, fontWeight: 600, color: "#0A2540" }}>Hector a eu un petit souci 🐾</p>
-      <p style={{ fontSize: 14, color: "#6B7A8D", maxWidth: 380 }}>Quelque chose a coincé de mon côté — j'ai prévenu l'équipe automatiquement. Recharge la page, je reviens tout de suite.</p>
+      <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>Hector a eu un petit souci 🐾</p>
+      <p style={{ fontSize: 14, color: "#8BA5C0", maxWidth: 380 }}>Quelque chose a coincé de mon côté — j'ai prévenu l'équipe automatiquement. Recharge la page, je reviens tout de suite.</p>
       <button onClick={() => { resetError(); window.location.reload(); }} style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
         Recharger la page
       </button>
