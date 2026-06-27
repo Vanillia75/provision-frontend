@@ -418,6 +418,7 @@ function AppInner() {
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
   const [estimateData, setEstimateData] = useState(null);
   const [projectionData, setProjectionData] = useState(null); // projection trésorerie (carte "mois prochain")
+  const [projDetailOpen, setProjDetailOpen] = useState(false); // détail de la projection replié par défaut
   const [incomeList, setIncomeList] = useState([]);
   const [showAddIncome, setShowAddIncome] = useState(false);
   const [incomeForm, setIncomeForm] = useState({ date: "", amount: "", description: "" });
@@ -8118,6 +8119,9 @@ function AppInner() {
               const pr = projectionData;
               const accent = pr.ton === "alerte" ? "#F09595" : pr.ton === "vigilant" ? "#FAC775" : "#5DCAA5";
               const couleurMontant = (v) => (v >= 0 ? "#5DCAA5" : "#F09595");
+              const det = pr.detail || {};
+              const hasDetail = (det.factures_a_encaisser?.count > 0) || (det.devis_probables?.count > 0) || (det.train_de_vie > 0) || (det.charges > 0);
+              const hasLeviers = pr.leviers && pr.leviers.length > 0;
               return (
                 <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 16, padding: "18px 20px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
@@ -8151,14 +8155,55 @@ function AppInner() {
                   </div>
                   )}
 
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: `${accent}0D`, border: `1px solid ${accent}33`, borderRadius: 12, padding: "12px 14px", marginBottom: (pr.leviers && pr.leviers.length) ? 14 : 0 }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: `${accent}0D`, border: `1px solid ${accent}33`, borderRadius: 12, padding: "12px 14px", marginBottom: (hasDetail || hasLeviers) ? 14 : 0 }}>
                     <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: `1.5px solid ${accent}66`, display: "flex", alignItems: "center", justifyContent: "center", color: accent, flexShrink: 0, overflow: "hidden" }}>
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={accent} />
                     </div>
                     <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.55 }}>{pr.message}</div>
                   </div>
 
-                  {pr.leviers && pr.leviers.length > 0 && (
+                  {hasDetail && (
+                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 14, marginBottom: hasLeviers ? 14 : 0 }}>
+                      <div onClick={() => setProjDetailOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: projDetailOpen ? 10 : 0 }}>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5 }}>Ce qu'Hector a pris en compte</span>
+                        <i className={`ti ti-chevron-${projDetailOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 16, color: "#6B8299" }} />
+                      </div>
+                      {projDetailOpen && (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+                        {det.factures_a_encaisser?.count > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                            <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0 }} />
+                            <span style={{ flex: 1, color: "#C2D4E6" }}>{det.factures_a_encaisser.count} facture{det.factures_a_encaisser.count > 1 ? "s" : ""} à encaisser</span>
+                            <span style={{ color: "#5DCAA5", fontWeight: 600 }}>+{formatEUR(det.factures_a_encaisser.montant)}</span>
+                          </div>
+                        )}
+                        {det.devis_probables?.count > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                            <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 16, color: "#5DA9F0", flexShrink: 0 }} />
+                            <span style={{ flex: 1, color: "#C2D4E6" }}>{det.devis_probables.count} devis accepté{det.devis_probables.count > 1 ? "s" : ""} (probable)</span>
+                            <span style={{ color: "#5DA9F0", fontWeight: 600 }}>+{formatEUR(det.devis_probables.montant)}</span>
+                          </div>
+                        )}
+                        {det.train_de_vie > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                            <i className="ti ti-home" aria-hidden="true" style={{ fontSize: 16, color: "#F0C36D", flexShrink: 0 }} />
+                            <span style={{ flex: 1, color: "#C2D4E6" }}>Train de vie ({pr.nb_mois} mois)</span>
+                            <span style={{ color: "#F0C36D", fontWeight: 600 }}>−{formatEUR(det.train_de_vie)}</span>
+                          </div>
+                        )}
+                        {det.charges > 0 && (
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13 }}>
+                            <i className="ti ti-receipt" aria-hidden="true" style={{ fontSize: 16, color: "#F0C36D", flexShrink: 0 }} />
+                            <span style={{ flex: 1, color: "#C2D4E6" }}>URSSAF sur les encaissements</span>
+                            <span style={{ color: "#F0C36D", fontWeight: 600 }}>−{formatEUR(det.charges)}</span>
+                          </div>
+                        )}
+                      </div>
+                      )}
+                    </div>
+                  )}
+
+                  {hasLeviers && (
                     <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                       {pr.leviers.map((l, i) => (
                         <button key={i} type="button" onClick={() => setNav(l.type === "devis" ? "devis" : "factures")}
