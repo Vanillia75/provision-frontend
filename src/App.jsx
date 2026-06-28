@@ -6,6 +6,7 @@ import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiq
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { LegalPageView } from "./LegalPage";
 import { CARNET } from "./carnetHector";
+import HectorRunnerGame from "./HectorRunnerGame";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -1174,6 +1175,7 @@ function AppInner() {
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
   const [updateReady, setUpdateReady] = useState(false); // une nouvelle version a été déployée
+  const [showGame, setShowGame] = useState(false); // mini-jeu "Course avec Hector"
 
   async function startCheckout(code = null) {
     setBillingBusy(true);
@@ -1362,6 +1364,31 @@ function AppInner() {
         <div style={{ fontSize: 40, marginBottom: 10 }}>🐶</div>
         <div style={{ fontSize: 15.5, fontWeight: 600, color: "white", lineHeight: 1.5 }}>Une nouvelle version est prête, je me mets à jour…</div>
       </div>
+    </div>
+  ) : null;
+
+  // Bouton flottant pour ouvrir le mini-jeu "Course avec Hector" (petite pause détente).
+  const gameButton = !showGame ? (
+    <button
+      type="button"
+      onClick={() => setShowGame(true)}
+      title="Une pause ? Cours avec Hector 🐾"
+      aria-label="Ouvrir le mini-jeu Course avec Hector"
+      style={{
+        position: "fixed", left: 16, bottom: 16, zIndex: 500,
+        width: 48, height: 48, borderRadius: "50%",
+        background: "#0d1f38", border: "1px solid rgba(93,202,165,0.4)",
+        color: "white", fontSize: 22, lineHeight: 1, cursor: "pointer",
+        boxShadow: "0 4px 14px rgba(0,0,0,0.4)", display: "flex",
+        alignItems: "center", justifyContent: "center", padding: 0,
+      }}
+    >🎮</button>
+  ) : null;
+
+  // Modal plein écran du mini-jeu. Le jeu garde son propre record en localStorage.
+  const gameOverlay = showGame ? (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <HectorRunnerGame onClose={() => setShowGame(false)} />
     </div>
   ) : null;
 
@@ -5402,6 +5429,8 @@ function AppInner() {
         {premiumGateModal}
         {billingSuccessOverlay}
         {updateOverlay}
+        {gameButton}
+        {gameOverlay}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
         {celebPalier && (
@@ -11257,6 +11286,8 @@ function AppInner() {
       {premiumGateModal}
       {billingSuccessOverlay}
       {updateOverlay}
+      {gameButton}
+      {gameOverlay}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
         const estIntermittent = profile && profile.statut === "intermittent";
