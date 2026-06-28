@@ -8519,12 +8519,12 @@ function AppInner() {
                   <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
                     <div style={{ position: "relative", flex: 1, minWidth: 160, maxWidth: 220 }}>
-                      <input
+                      <MontantInput
                         style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "10px 30px 10px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        type="number" step="0.01" inputMode="text"
+                        decimales
                         placeholder="Ex : 3 500"
                         value={panique.solde}
-                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
                       />
                       <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>€</span>
                     </div>
@@ -8728,12 +8728,12 @@ function AppInner() {
                   <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
                     <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
                     <div style={{ position: "relative", flex: 1 }}>
-                      <input
+                      <MontantInput
                         style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        type="number" step="0.01" inputMode="text"
+                        decimales
                         placeholder="Solde bancaire"
                         value={panique.solde}
-                        onChange={e => { setPanique({ ...panique, solde: e.target.value }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
                       />
                       <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
                     </div>
@@ -8779,12 +8779,12 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
                       <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
                       <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
-                        <input
+                        <MontantInput
                           style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                          type="number" step="0.01" inputMode="text"
+                          decimales
                           placeholder="Ex : 3 500"
                           value={panique.solde}
-                          onChange={e => { setPanique({ ...panique, solde: e.target.value }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                          onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
                         />
                         <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
                       </div>
