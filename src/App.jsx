@@ -1122,6 +1122,7 @@ function AppInner() {
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
+  const [updateReady, setUpdateReady] = useState(false); // une nouvelle version a été déployée
 
   async function startCheckout(code = null) {
     setBillingBusy(true);
@@ -1205,6 +1206,44 @@ function AppInner() {
     return () => clearInterval(iv);
   }, [token]);
 
+  // ── Détection de nouvelle version (sans service worker) ──
+  // L'app installée (PWA) garde la page en mémoire et ne se recharge pas après un
+  // déploiement. On compare l'id embarqué (__BUILD_ID__) à /version.json (servi frais)
+  // au retour au premier plan + périodiquement. Si une version plus récente existe,
+  // on lève updateReady → message Hector + rechargement propre (jamais pendant une saisie).
+  useEffect(() => {
+    const APP_VERSION = (typeof __BUILD_ID__ !== "undefined") ? __BUILD_ID__ : null;
+    if (!APP_VERSION) return;
+    let stopped = false;
+    async function checkForUpdate() {
+      try {
+        const res = await fetch(`/version.json?t=${Date.now()}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!stopped && data && data.id && data.id !== APP_VERSION) setUpdateReady(true);
+      } catch { /* hors-ligne / réseau : on ignore, on retentera */ }
+    }
+    const t0 = setTimeout(checkForUpdate, 4000);
+    const onVis = () => { if (document.visibilityState === "visible") checkForUpdate(); };
+    document.addEventListener("visibilitychange", onVis);
+    const iv = setInterval(checkForUpdate, 15 * 60 * 1000); // toutes les 15 min si l'app reste ouverte
+    return () => { stopped = true; clearTimeout(t0); clearInterval(iv); document.removeEventListener("visibilitychange", onVis); };
+  }, []);
+
+  // Rechargement propre quand une nouvelle version est prête — JAMAIS pendant une saisie en cours.
+  useEffect(() => {
+    if (!updateReady) return;
+    const enSaisie = () => {
+      const el = document.activeElement;
+      return !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable);
+    };
+    let done = false;
+    const iv = setInterval(() => {
+      if (!enSaisie() && !done) { done = true; clearInterval(iv); window.location.reload(); }
+    }, 1500);
+    return () => clearInterval(iv);
+  }, [updateReady]);
+
   // Écran « montre puis débloque » — s'affiche quand un quota gratuit est atteint (402).
   // Universel : rendu côté auto-entrepreneur ET intermittent (le scan AEM est intermittent).
   const premiumGateModal = premiumGate ? (
@@ -1242,6 +1281,16 @@ function AppInner() {
         <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>C'est tout bon !</div>
         <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55 }}>Je mets tout en place… ton Premium s'active dans quelques secondes. 🎉</div>
         <div style={{ marginTop: 16, fontSize: 12, color: "#5DCAA5" }}>Activation en cours…</div>
+      </div>
+    </div>
+  ) : null;
+
+  // Overlay « nouvelle version » — message dans la voix d'Hector, puis rechargement propre.
+  const updateOverlay = updateReady ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", zIndex: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 18, padding: "28px 26px", maxWidth: 360, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>🐶</div>
+        <div style={{ fontSize: 15.5, fontWeight: 600, color: "white", lineHeight: 1.5 }}>Une nouvelle version est prête, je me mets à jour…</div>
       </div>
     </div>
   ) : null;
@@ -5159,6 +5208,7 @@ function AppInner() {
         <style>{CSS}</style>
         {premiumGateModal}
         {billingSuccessOverlay}
+        {updateOverlay}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
         {celebPalier && (
@@ -11002,6 +11052,7 @@ function AppInner() {
       </main>
       {premiumGateModal}
       {billingSuccessOverlay}
+      {updateOverlay}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
         const estIntermittent = profile && profile.statut === "intermittent";
