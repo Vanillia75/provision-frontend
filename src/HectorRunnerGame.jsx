@@ -128,6 +128,9 @@ function createAudio() {
   };
 }
 
+/* ── version des assets : à incrémenter quand on remplace un PNG (force le rechargement, contourne le cache navigateur) ── */
+const ASSET_VER = "3";
+
 /* ── persistance locale ── */
 const LS_KEY = "hector_runner_best_v1";
 const loadLocal = () => { try { return JSON.parse(localStorage.getItem(LS_KEY)) || { best: 0, bestDist: 0 }; } catch { return { best: 0, bestDist: 0 }; } };
@@ -183,7 +186,7 @@ export default function HectorRunnerGame({
       const img = new Image();
       img.onload = () => { imagesRef.current[n] = img; done(); };
       img.onerror = () => { done(); }; // manquant → fallback vectoriel
-      img.src = assetBase + n;
+      img.src = assetBase + n + "?v=" + ASSET_VER;
     });
     // sécurité : démarre quand même après 4s si un asset traîne
     const to = setTimeout(() => setLoaded(true), 4000);
@@ -549,7 +552,7 @@ export default function HectorRunnerGame({
 
         {loaded && screen === "menu" && (
           <div style={ST.menuWrap} onClick={start}>
-            <img src={assetBase + "game_menu.png"} alt="Course avec Hector" style={ST.menuImg} draggable={false} />
+            <img src={assetBase + "game_menu.png?v=" + ASSET_VER} alt="Course avec Hector" style={ST.menuImg} draggable={false} />
             <div style={ST.menuActions}>
               <button style={ST.play} onClick={start}>🐾 Jouer</button>
               {best.bestDist > 0 && <p style={ST.bestL}>🏆 Record : {best.bestDist} m · {best.best} €</p>}
