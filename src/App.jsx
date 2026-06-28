@@ -1167,7 +1167,7 @@ function AppInner() {
         setProfile(p);
         setPremiumGate(null);
         setPromoInput("");
-        setPromoStatus({ ok: true, msg: `🎉 Premium activé${r.months ? ` pour ${r.months} mois` : ""} ! Profite bien.` });
+        setPromoStatus({ ok: true, msg: "🐶 C'est tout bon, tu as maintenant accès à tout ❤️" });
       } else if (r.kind === "influencer") {
         // Code de réduction → on enchaîne sur le paiement avec le coupon attaché.
         setPromoStatus({ ok: true, msg: "Code appliqué — direction le paiement…" });
@@ -1243,6 +1243,19 @@ function AppInner() {
     }, 1500);
     return () => clearInterval(iv);
   }, [updateReady]);
+
+  // Au retour de l'app au premier plan (PWA, pas de F5 possible), on rafraîchit le profil
+  // pour refléter l'état à jour : premium activé entre-temps (code/paiement), etc.
+  useEffect(() => {
+    if (!token) return;
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        apiFetch("/profile").then(setProfile).catch(() => {});
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => document.removeEventListener("visibilitychange", onVisible);
+  }, [token]);
 
   // Écran « montre puis débloque » — s'affiche quand un quota gratuit est atteint (402).
   // Universel : rendu côté auto-entrepreneur ET intermittent (le scan AEM est intermittent).
