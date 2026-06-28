@@ -129,7 +129,7 @@ function createAudio() {
 }
 
 /* ── version des assets : à incrémenter quand on remplace un PNG (force le rechargement, contourne le cache navigateur) ── */
-const ASSET_VER = "3";
+const ASSET_VER = "4";
 
 /* ── persistance locale ── */
 const LS_KEY = "hector_runner_best_v1";
