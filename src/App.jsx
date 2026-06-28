@@ -139,34 +139,6 @@ const CONSEILS = [
   { emoji: "⚠️", titre: "Surveillez le plafond", texte: "Au-delà de 83 600€ deux années consécutives, vous basculez en régime réel. Anticipez ce changement avec votre comptable." },
 ];
 
-const PLANS = [
-  {
-    nom: "Gratuit",
-    prix: "0€",
-    periode: "/mois",
-    features: [
-      "Cockpit complet + la progression d'Hector",
-      "Factures, devis, projections, calculs, PDF — illimités",
-      "Scan de justificatifs : 3 / mois",
-      "Chat avec Hector : 3 / mois",
-      "Scan d'AEM (intermittent) : 2 / mois",
-    ],
-  },
-  {
-    nom: "Premium",
-    prix: "9,99€",
-    periode: "/mois",
-    badge: "Sans limites",
-    features: [
-      "Tout le Gratuit, sans aucune limite",
-      "Scans de justificatifs illimités",
-      "Chat avec Hector illimité",
-      "Scans d'AEM illimités",
-      "Connexion bancaire (bientôt) & futures nouveautés",
-    ],
-  },
-];
-
 const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
 
 
@@ -1263,11 +1235,16 @@ function AppInner() {
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.78)", backdropFilter: "blur(3px)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setPremiumGate(null)}>
       <div onClick={e => e.stopPropagation()} style={{ background: "#0d1f38", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 18, padding: "26px 24px", maxWidth: 420, width: "100%", textAlign: "center", position: "relative" }}>
         <button onClick={() => setPremiumGate(null)} style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", color: "#4A6280", fontSize: 22, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }} aria-label="Fermer">×</button>
-        <div style={{ fontSize: 40, marginBottom: 6 }}>🚀</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>Tu as atteint ta limite gratuite</div>
-        <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55, marginBottom: 18 }}>{premiumGate.message || "Passe en Premium pour continuer sans limite ce mois-ci."}</div>
+        <div style={{ fontSize: 40, marginBottom: 10 }}>🐶</div>
+        <div style={{ fontSize: 14.5, color: "#E6EDF5", lineHeight: 1.55, marginBottom: 18 }}>
+          {({
+            aem_scan: "C'est bon, je l'ai reconnue. Il ne me reste plus qu'à l'ajouter à ton suivi. Laisse-moi m'en occuper autant de fois que tu veux. 🔓",
+            chat: "Je reste là quand tu as besoin de moi. On a utilisé nos messages du mois. Laisse-moi rester dispo non-stop. 🔓",
+            doc_scan: "Laisse-moi le faire. Tu as utilisé tes scans gratuits du mois. Je peux m'occuper de toute ta paperasse. 🔓",
+          })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
+        </div>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
-          {billingBusy ? "…" : "Passer en Premium — 9,99€/mois"}
+          {billingBusy ? "…" : "🐶 Je laisse Hector s'en occuper"}
         </button>
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
           <input
@@ -1291,8 +1268,8 @@ function AppInner() {
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.8)", backdropFilter: "blur(4px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 18, padding: "30px 28px", maxWidth: 380, width: "100%", textAlign: "center" }}>
         <div style={{ fontSize: 44, marginBottom: 10 }}>🐶</div>
-        <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>C'est tout bon !</div>
-        <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55 }}>Je mets tout en place… ton Premium s'active dans quelques secondes. 🎉</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>Merci ❤️</div>
+        <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55 }}>À partir de maintenant… ce qui te prend du temps, c'est mon problème.</div>
         <div style={{ marginTop: 16, fontSize: 12, color: "#5DCAA5" }}>Activation en cours…</div>
       </div>
     </div>
@@ -1311,13 +1288,13 @@ function AppInner() {
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
   const renderAbonnement = (onBack) => (
     <div>
-      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>{profile?.is_premium ? "Tu es Premium — merci de soutenir Hector. 🐾" : "Passe en Premium pour lever toutes les limites."}</p></div></div>
+      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
 
       {profile?.is_premium ? (
         <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: `2px solid ${ACCENT}` }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>{profile?.premium_source === "stripe" ? "✨" : "🎁"}</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{profile?.premium_source === "stripe" ? "Tu es Premium" : "Premium offert à vie"}</div>
-          <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>Toutes les limites sont levées : scans de justificatifs, chat avec Hector et AEM — illimités.</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>{profile?.premium_source === "stripe" ? "🐶" : "🎁"}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{profile?.premium_source === "stripe" ? "Je m'occupe de tout pour toi" : "Accès offert à vie"}</div>
+          <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️</div>
           {profile?.premium_source === "stripe" ? (
             <>
               <button style={{ ...S.btnPrimary }} disabled={billingBusy} onClick={openBillingPortal}>
@@ -1332,30 +1309,45 @@ function AppInner() {
       ) : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 340px))", gap: 16, justifyContent: "center" }}>
-            {PLANS.map((p, i) => (
-              <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
-                {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
-                <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>{p.nom}</div>
-                <div style={{ marginBottom: 16 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>{p.prix}</span>
-                  <span style={{ fontSize: 13, color: "#8BA5C0" }}>{p.periode}</span>
+            {/* Gratuit — Je t'accompagne */}
+            <div style={{ ...S.card }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je t'accompagne</div>
+              <div style={{ marginBottom: 16 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>Gratuit</span></div>
+              {(profile?.statut === "intermittent"
+                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression d'Hector", "2 scans d'AEM par mois", "3 échanges avec Hector par mois"]
+                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression d'Hector", "3 scans de factures/frais par mois", "3 échanges avec Hector par mois", "Factures et devis illimités"]
+              ).map((f, j) => (
+                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
+                  <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
                 </div>
-                {p.features.map((f, j) => (
-                  <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
-                    <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
-                  </div>
-                ))}
-                {i === 0 ? (
-                  <button style={{ ...S.btnPrimary, marginTop: 16, background: "rgba(255,255,255,0.05)", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.15)" }} onClick={onBack}>
-                    Continuer gratuitement
-                  </button>
-                ) : (
-                  <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout()}>
-                    {billingBusy ? "…" : "Passer en Premium"}
-                  </button>
-                )}
-              </div>
-            ))}
+              ))}
+              <button style={{ ...S.btnPrimary, marginTop: 16, background: "rgba(255,255,255,0.05)", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.15)" }} onClick={onBack}>
+                Continuer gratuitement
+              </button>
+            </div>
+
+            {/* Payant — Je prends le relais */}
+            <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je prends le relais</div>
+              <div style={{ marginBottom: 4 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span></div>
+              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
+              {(profile?.statut === "intermittent"
+                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Hector illimités"]
+                : ["Tout ce qui est gratuit, sans limite", "Scans illimités — je m'occupe de ta paperasse", "Échanges avec Hector illimités"]
+              ).map((f, j) => (
+                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
+                  <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
+                </div>
+              ))}
+              <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout()}>
+                {billingBusy ? "…" : "🐶 Je laisse Hector s'en occuper"}
+              </button>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>Essaye aujourd'hui. Annule quand tu veux.</div>
+            </div>
+          </div>
+
+          <div style={{ fontSize: 12, color: "#8FB4D8", textAlign: "center", marginTop: 16 }}>
+            ✨ Toutes les prochaines fonctionnalités seront incluses dans ton abonnement.
           </div>
 
           <div style={{ ...S.card, maxWidth: 460, margin: "18px auto 0" }}>
@@ -1363,7 +1355,7 @@ function AppInner() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input
                 style={{ ...S.input, flex: 1, minWidth: 160, textTransform: "uppercase" }}
-                placeholder="Ex : HECTOR2026"
+                placeholder="Ex : BETA-XXXXX"
                 value={promoInput}
                 onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
                 onKeyDown={e => { if (e.key === "Enter") applyPromo(); }}
