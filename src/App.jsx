@@ -1126,9 +1126,11 @@ function AppInner() {
   async function startCheckout(code = null) {
     setBillingBusy(true);
     try {
+      // On mémorise le mode + l'origine pour revenir au bon endroit après paiement.
+      if (profile?.statut) safeStorage.setItem("billing_return_mode", profile.statut);
       const { url } = await apiFetch("/billing/create-checkout-session", {
         method: "POST",
-        body: JSON.stringify({ promo_code: code }),
+        body: JSON.stringify({ promo_code: code, mode: profile?.statut || null, origin: window.location.origin }),
       });
       window.location = url; // redirection vers le paiement hébergé Stripe
     } catch (e) {
@@ -1181,14 +1183,20 @@ function AppInner() {
     if (!token) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("billing") !== "success") return;
+    // Mode à restaurer : priorité à l'URL (?mode=), sinon ce qu'on avait mémorisé au lancement.
+    const desiredMode = params.get("mode") || safeStorage.getItem("billing_return_mode") || null;
+    safeStorage.removeItem("billing_return_mode");
     window.history.replaceState({}, "", window.location.pathname); // évite de re-déclencher au refresh
     setBillingSuccess(true);
+    let restored = false;
     let tries = 0;
     const iv = setInterval(async () => {
       tries++;
       try {
         const p = await apiFetch("/profile");
         setProfile(p);
+        // Si on n'est pas dans le mode d'où le paiement a été lancé, on y revient (une fois).
+        if (!restored && desiredMode && p.statut !== desiredMode) { restored = true; handleChangeStatut(desiredMode); }
         if (p.is_premium || tries >= 6) { clearInterval(iv); setBillingSuccess(false); }
       } catch {
         if (tries >= 6) { clearInterval(iv); setBillingSuccess(false); }
