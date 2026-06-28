@@ -1124,7 +1124,7 @@ function AppInner() {
   }
 
   async function applyPromo() {
-    const code = promoInput.trim();
+    const code = promoInput.trim().toUpperCase();
     if (!code) return;
     setPromoStatus({ ok: null, msg: "Vérification…" });
     try {
@@ -1250,6 +1250,7 @@ function AppInner() {
           <input
             style={{ ...S.input, flex: 1, minWidth: 0, textTransform: "uppercase", fontSize: 13 }}
             placeholder="Un code ?"
+            autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
             value={promoInput}
             onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
             onKeyDown={e => { if (e.key === "Enter") applyPromo(); }}
@@ -1356,6 +1357,7 @@ function AppInner() {
               <input
                 style={{ ...S.input, flex: 1, minWidth: 160, textTransform: "uppercase" }}
                 placeholder="Ex : BETA-XXXXX"
+                autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
                 value={promoInput}
                 onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
                 onKeyDown={e => { if (e.key === "Enter") applyPromo(); }}
