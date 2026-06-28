@@ -1253,13 +1253,19 @@ function AppInner() {
 
       {profile?.is_premium ? (
         <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: `2px solid ${ACCENT}` }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>Tu es Premium</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>{profile?.premium_source === "stripe" ? "✨" : "🎁"}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{profile?.premium_source === "stripe" ? "Tu es Premium" : "Premium offert à vie"}</div>
           <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>Toutes les limites sont levées : scans de justificatifs, chat avec Hector et AEM — illimités.</div>
-          <button style={{ ...S.btnPrimary }} disabled={billingBusy} onClick={openBillingPortal}>
-            {billingBusy ? "…" : "Gérer mon abonnement"}
-          </button>
-          <div style={{ fontSize: 11, color: "#6B8299", marginTop: 10 }}>Changer de carte ou résilier, en 2 clics (via Stripe).</div>
+          {profile?.premium_source === "stripe" ? (
+            <>
+              <button style={{ ...S.btnPrimary }} disabled={billingBusy} onClick={openBillingPortal}>
+                {billingBusy ? "…" : "Gérer mon abonnement"}
+              </button>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 10 }}>Changer de carte ou résilier, en 2 clics (via Stripe).</div>
+            </>
+          ) : (
+            <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 600 }}>🐾 Accès offert — rien à gérer, profite à fond !</div>
+          )}
         </div>
       ) : (
         <>
