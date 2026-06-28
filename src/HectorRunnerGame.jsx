@@ -112,6 +112,14 @@ const HECTOR_SPRITES = {
   idle: "hector_idle.png",
 };
 
+/* Calques de décor (parallaxe). Si une image manque → fallback dessiné par le code. */
+const DECOR = {
+  ciel: "decor_ciel.png",
+  skyline: "decor_skyline.png",
+  nuages: "decor_nuages.png",
+  toits: "decor_toits.png",
+};
+
 const RECORD_LINES = [
   "Wouaf ! On forme une sacrée équipe ❤️",
   "Je savais qu'on pouvait aller plus loin.",
@@ -179,6 +187,7 @@ export default function HectorRunnerGame({
       HECTOR_SPRITES.jump, HECTOR_SPRITES.fall, HECTOR_SPRITES.land,
       HECTOR_SPRITES.ko, HECTOR_SPRITES.idle,
       ...OBSTACLE_DEFS.map((o) => o.sprite),
+      ...Object.values(DECOR),
     ];
     let pending = names.length;
     const done = () => { if (--pending <= 0) setLoaded(true); };
@@ -314,7 +323,7 @@ export default function HectorRunnerGame({
       if (o.x + o.w < -20) { g.obstacles.splice(i, 1); continue; }
       const ob = { x: o.x - o.w / 2 + 6, y: o.y - o.dh + 4, w: o.w - 12, h: o.dh - 8 };
       if (g.invuln <= 0 && aabb(hb, ob)) {
-        g.lives -= 1; g.invuln = CONFIG.invuln; g.shake = 0.35;
+        g.lives -= 1; g.invuln = CONFIG.invuln; g.shake = 0.22;
         audioRef.current?.hit();
         for (let k = 0; k < 16; k++) g.particles.push(burst(h.x, h.y - 40, o.color));
         g.obstacles.splice(i, 1);
@@ -360,7 +369,7 @@ export default function HectorRunnerGame({
     ctx.clearRect(0, 0, W, H);          // nettoyage complet : plus aucun résidu de la frame précédente
     drawBackground(ctx, g, DC);          // décor dessiné NON secoué (il couvre tout l'écran, donc plus de bord bleu)
     ctx.save();
-    if (g && g.shake > 0) { const s = g.shake * 14; ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s); } // secousse appliquée au jeu seulement
+    if (g && g.shake > 0) { const s = g.shake * 7; ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s); } // secousse appliquée au jeu seulement
     if (g) {
       g.coins.forEach((c) => drawCoin(ctx, c, g));
       g.obstacles.forEach((o) => drawObstacle(ctx, o, g));
@@ -372,7 +381,46 @@ export default function HectorRunnerGame({
     ctx.restore();
   }
 
+  // Répète une image horizontalement (à sa taille mise à l'échelle destH), avec défilement scrollX.
+  function blitTiled(ctx, img, destY, destH, scrollX) {
+    const tw = img.width * (destH / img.height);
+    let x = -(((scrollX % tw) + tw) % tw);
+    for (; x < CONFIG.width; x += tw) ctx.drawImage(img, x, destY, tw, destH);
+  }
+
+  // Décor en images (4 calques parallaxe). Réglages visuels regroupés ici.
+  function drawDecorImages(ctx, off, t) {
+    const W = CONFIG.width, H = CONFIG.height, GR = CONFIG.ground;
+    const ciel = getImg(DECOR.ciel), sky = getImg(DECOR.skyline), nu = getImg(DECOR.nuages), toits = getImg(DECOR.toits);
+    // 0) Fond bleu dégradé (remplit les zones transparentes du ciel)
+    const grad = ctx.createLinearGradient(0, 0, 0, GR);
+    grad.addColorStop(0, "#2C82F0"); grad.addColorStop(1, "#9FC8F2");
+    ctx.fillStyle = grad; ctx.fillRect(0, 0, W, H);
+    // 1) Ciel — couvre tout l'écran (quasi statique)
+    ctx.drawImage(ciel, 0, 0, W, H);
+    // 2) Nuages — dérive lente dans le ciel
+    if (nu) { ctx.globalAlpha = 0.92; blitTiled(ctx, nu, 4, 150, off * 0.05 + t * 5); ctx.globalAlpha = 1; }
+    // 3) Skyline — la base des immeubles (~0.80) passe DERRIÈRE les toits → cache le reflet bleu
+    if (sky) { const dh = 270; blitTiled(ctx, sky, GR - 0.80 * dh, dh, off * 0.18); }
+    // bandeau sombre : masque le reflet de la skyline + bouche tout interstice sous les toits
+    ctx.fillStyle = "#1b2536"; ctx.fillRect(0, GR, W, H - GR);
+    // 4) Toits — premier plan, Hector court DESSUS (même vitesse que le jeu)
+    if (toits) {
+      const dh = 250, roofFrac = 0.63;            // 0.63 = surface de marche du toit dans l'image
+      blitTiled(ctx, toits, GR - roofFrac * dh, dh, off);
+    } else {
+      ctx.fillStyle = "#241a14"; ctx.fillRect(0, GR, W, H - GR);
+    }
+  }
+
   function drawBackground(ctx, g, DC) {
+    const off = g ? g.bgOffset : 0;
+    const t = g ? g.t : performance.now() / 1000;
+    if (getImg(DECOR.ciel)) { drawDecorImages(ctx, off, t); return; }
+    drawBackgroundFallback(ctx, g, DC);   // décor dessiné par le code si les images manquent
+  }
+
+  function drawBackgroundFallback(ctx, g, DC) {
     const W = CONFIG.width, GR = CONFIG.ground, t = g ? g.t : performance.now() / 1000;
     const sky = ctx.createLinearGradient(0, 0, 0, GR);
     sky.addColorStop(0, DC.skyTop); sky.addColorStop(0.55, DC.skyMid); sky.addColorStop(1, DC.skyLow);
