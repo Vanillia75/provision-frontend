@@ -663,6 +663,9 @@ function AppInner() {
   const [objectifAnnuel, setObjectifAnnuel] = useState(() => safeStorage.getItem("objectifAnnuel") || "");
   const [objectifMensuel, setObjectifMensuel] = useState(() => safeStorage.getItem("objectifMensuel") || "");
   const [objectifSaved, setObjectifSaved] = useState(false);
+  // Brouillons pour les champs "Montant personnalisé" (saisie avant validation Entrée/blur)
+  const [objMensuelDraft, setObjMensuelDraft] = useState("");
+  const [objAnnuelDraft, setObjAnnuelDraft] = useState("");
   const objectifMounted = useRef(false);
   const [objectifAnnuelSaved, setObjectifAnnuelSaved] = useState(false);
   const objectifAnnuelMounted = useRef(false);
@@ -7250,7 +7253,7 @@ function AppInner() {
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       </label>
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Salaire brut (€)
-                        <input type="number" min="0" value={aemExtrait.salaire_brut} onChange={e => setAemExtrait({ ...aemExtrait, salaire_brut: e.target.value })} placeholder="Optionnel"
+                        <MontantInput decimales value={aemExtrait.salaire_brut} onChange={v => setAemExtrait({ ...aemExtrait, salaire_brut: v })} placeholder="Optionnel"
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       </label>
                     </div>
@@ -9996,7 +9999,7 @@ function AppInner() {
                           ))}
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifMensuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifMensuel(e.target.value); }} />
+                          <MontantInput style={{ ...S.input, flex: 1 }} decimales placeholder="Montant personnalisé" autoFocus value={objMensuelDraft} onChange={v => setObjMensuelDraft(v)} onBlur={() => { if (objMensuelDraft) { setObjectifMensuel(objMensuelDraft); setObjMensuelDraft(""); } }} onKeyDown={e => { if (e.key === "Enter" && objMensuelDraft) { setObjectifMensuel(objMensuelDraft); setObjMensuelDraft(""); } }} />
                           <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifMensuel(false)}>Annuler</button>
                         </div>
                       </div>
@@ -10043,7 +10046,7 @@ function AppInner() {
                           ))}
                         </div>
                         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                          <input style={{ ...S.input, flex: 1 }} type="number" placeholder="Montant personnalisé" autoFocus onBlur={e => { if (e.target.value) setObjectifAnnuel(e.target.value); }} onKeyDown={e => { if (e.key === "Enter" && e.target.value) setObjectifAnnuel(e.target.value); }} />
+                          <MontantInput style={{ ...S.input, flex: 1 }} decimales placeholder="Montant personnalisé" autoFocus value={objAnnuelDraft} onChange={v => setObjAnnuelDraft(v)} onBlur={() => { if (objAnnuelDraft) { setObjectifAnnuel(objAnnuelDraft); setObjAnnuelDraft(""); } }} onKeyDown={e => { if (e.key === "Enter" && objAnnuelDraft) { setObjectifAnnuel(objAnnuelDraft); setObjAnnuelDraft(""); } }} />
                           <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setEditingObjectifAnnuel(false)}>Annuler</button>
                         </div>
                       </div>
