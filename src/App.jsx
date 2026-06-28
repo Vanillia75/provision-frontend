@@ -1367,23 +1367,7 @@ function AppInner() {
     </div>
   ) : null;
 
-  // Bouton flottant pour ouvrir le mini-jeu "Course avec Hector" (petite pause détente).
-  const gameButton = !showGame ? (
-    <button
-      type="button"
-      onClick={() => setShowGame(true)}
-      title="Une pause ? Cours avec Hector 🐾"
-      aria-label="Ouvrir le mini-jeu Course avec Hector"
-      style={{
-        position: "fixed", left: 16, bottom: 16, zIndex: 500,
-        width: 48, height: 48, borderRadius: "50%",
-        background: "#0d1f38", border: "1px solid rgba(93,202,165,0.4)",
-        color: "white", fontSize: 22, lineHeight: 1, cursor: "pointer",
-        boxShadow: "0 4px 14px rgba(0,0,0,0.4)", display: "flex",
-        alignItems: "center", justifyContent: "center", padding: 0,
-      }}
-    >🎮</button>
-  ) : null;
+  // (Le mini-jeu s'ouvre depuis l'entrée "Course avec Hector" du menu de gauche, dans les deux modes.)
 
   // Modal plein écran du mini-jeu. Le jeu garde son propre record en localStorage.
   const gameOverlay = showGame ? (
@@ -5405,6 +5389,11 @@ function AppInner() {
               </button>
             );
           })}
+          <button type="button" onClick={() => { setShowGame(true); setInterMenuOpen(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+            <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
+            <span>Course avec Hector</span>
+          </button>
         </div>
         <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 2 }}>
           <button type="button" onClick={() => { setInterNav("reglages"); setInterMenuOpen(false); }}
@@ -5429,7 +5418,6 @@ function AppInner() {
         {premiumGateModal}
         {billingSuccessOverlay}
         {updateOverlay}
-        {gameButton}
         {gameOverlay}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
@@ -8265,6 +8253,12 @@ function AppInner() {
             {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
           </button>
         ))}
+
+        {/* Course avec Hector — ouvre le mini-jeu (action, pas une page de nav). */}
+        <button style={{ ...S.navItem }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
+          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
+        </button>
 
         {/* Groupe "Facturer" : factures + devis (même flux commercial). */}
         <button
@@ -11286,7 +11280,6 @@ function AppInner() {
       {premiumGateModal}
       {billingSuccessOverlay}
       {updateOverlay}
-      {gameButton}
       {gameOverlay}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {

@@ -548,12 +548,12 @@ export default function HectorRunnerGame({
         )}
 
         {loaded && screen === "menu" && (
-          <div style={ST.overlay}>
-            <h2 style={ST.title}>Course avec <span style={{ color: C.accent }}>Hector</span></h2>
-            <p style={ST.sub}>Aide Hector à éviter les galères et attraper les € !</p>
-            <button style={ST.play} onClick={start}>🐾 Jouer</button>
-            <p style={ST.hint}>Espace / clic / tap pour sauter</p>
-            {best.bestDist > 0 && <p style={ST.bestL}>🏆 Record : {best.bestDist} m · {best.best} €</p>}
+          <div style={ST.menuWrap} onClick={start}>
+            <img src={assetBase + "game_menu.png"} alt="Course avec Hector" style={ST.menuImg} draggable={false} />
+            <div style={ST.menuActions}>
+              <button style={ST.play} onClick={start}>🐾 Jouer</button>
+              {best.bestDist > 0 && <p style={ST.bestL}>🏆 Record : {best.bestDist} m · {best.best} €</p>}
+            </div>
           </div>
         )}
 
@@ -602,6 +602,10 @@ const ST = {
   val: { fontSize: 22, fontWeight: 700 },
   pause: { pointerEvents: "auto", background: "rgba(10,37,64,0.7)", color: "#fff", border: "none", borderRadius: 8, width: 34, height: 34, fontSize: 15, cursor: "pointer" },
   overlay: { position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", color: "#fff", background: "rgba(10,37,64,0.55)", borderRadius: 14, padding: 16 },
+  // Écran de menu : l'illustration de présentation + un vrai bouton Jouer par-dessus.
+  menuWrap: { position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center", background: "#07192E", borderRadius: 14, overflow: "hidden", cursor: "pointer" },
+  menuImg: { maxWidth: "100%", maxHeight: "100%", objectFit: "contain", userSelect: "none", pointerEvents: "none" },
+  menuActions: { position: "absolute", bottom: "6%", left: 0, right: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 },
   title: { fontSize: 30, fontWeight: 700, margin: "0 0 6px" },
   sub: { fontSize: 14, color: "#9FE1CB", maxWidth: 360, margin: "0 0 18px" },
   hint: { fontSize: 12, opacity: 0.75, margin: "12px 0 0" },
