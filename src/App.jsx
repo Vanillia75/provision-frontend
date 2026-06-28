@@ -686,7 +686,12 @@ function AppInner() {
       err.status = res.status;
       throw err;
     }
-    return res.json();
+    const data = await res.json();
+    // Après une action qui consomme un quota, on rafraîchit le profil → la jauge reste à jour.
+    if (["/assistant/chat", "/intermittent/aem/extract", "/income/extract", "/expenses/extract"].some(p => path.startsWith(p))) {
+      apiFetch("/profile").then(setProfile).catch(() => {});
+    }
+    return data;
   }
 
   async function loadEverything() {
@@ -1376,6 +1381,32 @@ function AppInner() {
       )}
     </div>
   );
+
+  // Jauge de quota — côté GRATUIT uniquement. Lit profile.quotas[type] = { used, limit }.
+  // Masquée si abonné (pas de limite) OU si la limite est neutralisée (> 100, ex. 9999).
+  // Formule positive (ce qu'il reste) + phrase-promesse récurrente. Couleurs de marque.
+  const renderQuotaJauge = (type, nomSingulier) => {
+    if (profile?.is_premium) return null;
+    const q = profile?.quotas?.[type];
+    if (!q || typeof q.limit !== "number" || q.limit > 100) return null;
+    const used = Math.max(0, Math.min(q.used, q.limit));
+    const reste = Math.max(0, q.limit - used);
+    return (
+      <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "12px 14px", marginBottom: 14 }}>
+        <div style={{ display: "flex", gap: 4 }}>
+          {Array.from({ length: q.limit }).map((_, i) => (
+            <div key={i} style={{ flex: 1, height: 6, borderRadius: 3, background: i < used ? ACCENT : "rgba(255,255,255,0.12)" }} />
+          ))}
+        </div>
+        <div style={{ fontSize: 12.5, color: "#E6EDF5", fontWeight: 600, marginTop: 8 }}>
+          {reste > 0
+            ? `🐶 Il te reste ${reste} ${nomSingulier}${reste > 1 ? "s" : ""} ce mois-ci`
+            : `🐶 Tu as fait le plein de ${nomSingulier}s ce mois-ci 👏`}
+        </div>
+        <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 3 }}>🐶 Je pourrais m'en occuper autant de fois que tu veux.</div>
+      </div>
+    );
+  };
 
   const [exportingData, setExportingData] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -6964,6 +6995,8 @@ function AppInner() {
                 <p style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>Employeur, cachets, heures, salaire brut — je remplis tout pour toi. Tu n'as qu'à vérifier. <strong style={{ color: "#9FCBF5", fontWeight: 700 }}>Plusieurs attestations dans un même fichier ? Je les lis toutes.</strong></p>
               </div>
 
+              <div style={{ maxWidth: 420, margin: "0 auto" }}>{renderQuotaJauge("aem_scan", "scan")}</div>
+
               {/* Zone d'upload (si pas de résultat en cours) */}
               {!aemExtrait && (
                 <>
@@ -7112,6 +7145,8 @@ function AppInner() {
                   <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Ton expert du régime intermittent. Pose-lui tes questions.</div>
                 </div>
               </div>
+
+              {renderQuotaJauge("chat", "message")}
 
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 {/* Fil de discussion */}
@@ -9767,6 +9802,8 @@ function AppInner() {
                 <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
               </div>
 
+              <div style={{ maxWidth: 460 }}>{renderQuotaJauge("doc_scan", "scan")}</div>
+
               <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : S.kpiGrid}>
                 <div style={S.kpiCard}><span style={S.kpiLabel}>CA ce mois</span><span style={S.kpiValue}>{formatEUR(caMoisCi)}</span></div>
                 <div style={S.kpiCard}><span style={S.kpiLabel}>Factures / revenus</span><span style={S.kpiValue}>{nbFactures}</span></div>
@@ -10533,6 +10570,8 @@ function AppInner() {
                 </div>
               </div>
 
+              <div style={{ maxWidth: 460 }}>{renderQuotaJauge("doc_scan", "scan")}</div>
+
               {expensesSummary && (
                 <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
                   <div style={S.kpiCard}><span style={S.kpiLabel}>Frais du mois</span><span style={S.kpiValue}>{formatEUR(expensesSummary.frais_mois)}</span></div>
@@ -10975,6 +11014,7 @@ function AppInner() {
                 </div>
               </div>
             </div>
+            <div style={{ maxWidth: 460 }}>{renderQuotaJauge("chat", "message")}</div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
