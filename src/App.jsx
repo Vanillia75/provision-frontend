@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
@@ -142,6 +142,76 @@ const CONSEILS = [
 
 const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
 
+
+// ============================================================================
+//  MontantInput — champ de saisie de MONTANT (€) avec séparateur de milliers.
+//  - Affichage FR pendant la frappe : "8787850" → "8 787 850" (espace insécable).
+//  - Valeur STOCKÉE propre : `onChange` renvoie un nombre-string sans espaces
+//    ("8787850" / "1234.56"), drop-in des `setX(e.target.value)` existants.
+//  - type="text" + inputMode (un type="number" ne peut pas afficher d'espaces).
+//  - Curseur préservé : on compte les chiffres à gauche du curseur et on le
+//    repositionne après reformatage (pas de saut quand on corrige au milieu).
+//  - decimales : true → autorise la virgule (2 décimales max) ; false → entier.
+// ============================================================================
+const NBSP = " ";
+
+function MontantInput({ value, onChange, decimales = false, style, ...rest }) {
+  const ref = useRef(null);
+  const caretDigits = useRef(null);   // nb de chiffres à gauche du curseur à restaurer
+  const caretAfterSep = useRef(false); // le curseur était juste après la virgule
+
+  const toDisplay = (clean) => {
+    if (clean == null || clean === "") return "";
+    const [ent, dec] = String(clean).split(".");
+    const e = (ent || "").replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
+    return dec != null ? `${e},${dec}` : e;
+  };
+
+  const handleChange = (e) => {
+    const el = e.target;
+    const pos = el.selectionStart ?? el.value.length;
+    const left = el.value.slice(0, pos);
+    caretDigits.current = (left.match(/\d/g) || []).length;
+    caretAfterSep.current = /[.,]$/.test(left);
+
+    let raw = el.value.replace(/[^\d.,]/g, "").replace(/,/g, ".");
+    if (decimales) {
+      const i = raw.indexOf(".");
+      if (i !== -1) raw = raw.slice(0, i + 1) + raw.slice(i + 1).replace(/\./g, "").slice(0, 2);
+    } else {
+      raw = raw.replace(/\./g, "");
+    }
+    onChange(raw);
+  };
+
+  useLayoutEffect(() => {
+    if (caretDigits.current == null || !ref.current) return;
+    const disp = ref.current.value;
+    let seen = 0, pos = 0;
+    while (pos < disp.length && seen < caretDigits.current) {
+      if (/\d/.test(disp[pos])) seen++;
+      pos++;
+    }
+    if (caretAfterSep.current) {
+      const c = disp.indexOf(",");
+      if (c !== -1) pos = c + 1;
+    }
+    ref.current.setSelectionRange(pos, pos);
+    caretDigits.current = null;
+  });
+
+  return (
+    <input
+      ref={ref}
+      type="text"
+      inputMode={decimales ? "decimal" : "numeric"}
+      value={toDisplay(value)}
+      onChange={handleChange}
+      style={style}
+      {...rest}
+    />
+  );
+}
 
 
 function HectorTete({ size = 32 }) {
@@ -4482,20 +4552,20 @@ function AppInner() {
 
             {/* Question 3 — solde */}
             <p style={S.sectionLabel}>3. Combien y a-t-il sur ton compte, là, maintenant ?</p>
-            <input
+            <MontantInput
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="0.01" inputMode="text" placeholder="Exemple : 1750 €"
-              value={onbSolde} onChange={e => setOnbSolde(e.target.value)} autoFocus
+              decimales placeholder="Exemple : 1 750 €"
+              value={onbSolde} onChange={setOnbSolde} autoFocus
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
-              Pour l'instant, ouvre l'appli de ta banque, lis ton solde et recopie-le ici (10 sec). Bientôt tu pourras aussi le synchroniser automatiquement, si tu veux.
+              Pour l'instant, ouvre l'appli de ta banque, lis ton solde et recopie-le ici (10 sec). Un jour, je pourrai le faire pour toi.
             </p>
 
             <p style={S.sectionLabel}>4. Environ combien dépenses-tu par mois pour vivre ?</p>
-            <input
+            <MontantInput
               style={{ ...S.input, fontSize: 20, fontWeight: 600, padding: "14px 16px" }}
-              type="number" step="50" inputMode="decimal" placeholder="Exemple : 1800 €"
-              value={onbTrainDeVie} onChange={e => setOnbTrainDeVie(e.target.value)}
+              decimales placeholder="Exemple : 1 800 €"
+              value={onbTrainDeVie} onChange={setOnbTrainDeVie}
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
               Loyer, courses, abonnements, dépenses perso importantes — juste une estimation, tu pourras la modifier après. Ça permet à Hector de veiller sur ta tranquillité dès maintenant.
