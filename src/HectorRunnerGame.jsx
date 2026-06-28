@@ -153,6 +153,15 @@ export default function HectorRunnerGame({
   const [hud, setHud] = useState({ dist: 0, score: 0, lives: CONFIG.startLives });
   const [result, setResult] = useState({ dist: 0, score: 0, isRecord: false, line: "" });
   const [loaded, setLoaded] = useState(false);
+  // Téléphone tenu à la verticale : on pivote le jeu pour qu'il remplisse l'écran en grand.
+  const [portrait, setPortrait] = useState(false);
+  useEffect(() => {
+    const check = () => setPortrait(window.innerWidth < 760 && window.innerHeight > window.innerWidth);
+    check();
+    window.addEventListener("resize", check);
+    window.addEventListener("orientationchange", check);
+    return () => { window.removeEventListener("resize", check); window.removeEventListener("orientationchange", check); };
+  }, []);
 
   const bestRef = useRef({
     best: Math.max(initialBest, loadLocal().best),
@@ -345,9 +354,10 @@ export default function HectorRunnerGame({
     const W = CONFIG.width, H = CONFIG.height;
     const dist = g ? g.dist : 0;
     const DC = decorFor(dist);
+    ctx.clearRect(0, 0, W, H);          // nettoyage complet : plus aucun résidu de la frame précédente
+    drawBackground(ctx, g, DC);          // décor dessiné NON secoué (il couvre tout l'écran, donc plus de bord bleu)
     ctx.save();
-    if (g && g.shake > 0) { const s = g.shake * 14; ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s); }
-    drawBackground(ctx, g, DC);
+    if (g && g.shake > 0) { const s = g.shake * 14; ctx.translate((Math.random() - 0.5) * s, (Math.random() - 0.5) * s); } // secousse appliquée au jeu seulement
     if (g) {
       g.coins.forEach((c) => drawCoin(ctx, c, g));
       g.obstacles.forEach((o) => drawObstacle(ctx, o, g));
@@ -428,7 +438,18 @@ export default function HectorRunnerGame({
     const img = getImg(name);
     ctx.save();
     ctx.translate(h.x, h.y);
-    if (g.invuln > 0 && Math.floor(g.t * 12) % 2 === 0) ctx.globalAlpha = 0.4;
+    // Invincibilité (après un choc) : anneau vert pulsant — Hector RESTE opaque (plus de bleu qui le traverse).
+    if (g.invuln > 0) {
+      const pulse = 0.5 + 0.5 * Math.sin(g.t * 16);
+      ctx.save();
+      ctx.globalAlpha = 0.30 + 0.45 * pulse;
+      ctx.strokeStyle = "#5DCAA5";
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(0, -CONFIG.hectorScreenH * 0.42, 40, 48, 0, 0, 7);
+      ctx.stroke();
+      ctx.restore();
+    }
     const zoom = 1 + (g.coinPulse > 0 ? g.coinPulse * 0.4 : 0);
     ctx.scale(zoom / h.squash, zoom * h.squash);
     if (img) {
@@ -502,9 +523,14 @@ export default function HectorRunnerGame({
   const C = { green: "#5DCAA5", accent: "#378ADD", red: "#E24B4A", gold: "#F0B429" };
   const best = bestRef.current;
 
+  // Cadre du jeu : remplit l'espace dispo. En portrait sur téléphone, on pivote pour jouer EN GRAND.
+  const frameStyle = portrait
+    ? { position: "absolute", top: "50%", left: "50%", width: "min(100vh, calc(96vw * 800 / 360))", aspectRatio: `${CONFIG.width} / ${CONFIG.height}`, transform: "translate(-50%, -50%) rotate(90deg)", transformOrigin: "center center" }
+    : { position: "relative", width: "100%", maxWidth: "min(96vw, calc(94vh * 800 / 360))", aspectRatio: `${CONFIG.width} / ${CONFIG.height}` };
+
   return (
     <div style={ST.wrap}>
-      <div style={ST.frame}>
+      <div style={frameStyle}>
         <canvas ref={canvasRef} width={CONFIG.width} height={CONFIG.height} onPointerDown={onPointerDown} onPointerUp={release} style={ST.canvas} />
 
         {!loaded && <div style={ST.overlay}><div style={{ fontSize: 16 }}>Chargement d'Hector…</div></div>}
@@ -568,8 +594,7 @@ function roundRect(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); 
 
 /* ---------- styles ---------- */
 const ST = {
-  wrap: { width: "100%", display: "flex", justifyContent: "center", fontFamily: "system-ui, sans-serif" },
-  frame: { position: "relative", width: "100%", maxWidth: 800, aspectRatio: `${CONFIG.width} / ${CONFIG.height}` },
+  wrap: { position: "relative", width: "100%", height: "100%", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", fontFamily: "system-ui, sans-serif" },
   canvas: { display: "block", width: "100%", height: "100%", borderRadius: 14, background: "#0A2540", cursor: "pointer", touchAction: "none" },
   hud: { position: "absolute", top: 0, left: 0, right: 0, display: "flex", justifyContent: "space-between", gap: 8, padding: "12px 16px", color: "#fff", pointerEvents: "none" },
   col: { display: "flex", flexDirection: "column", lineHeight: 1.1 },

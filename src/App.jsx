@@ -1387,7 +1387,7 @@ function AppInner() {
 
   // Modal plein écran du mini-jeu. Le jeu garde son propre record en localStorage.
   const gameOverlay = showGame ? (
-    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, background: "#04101f", display: "flex", alignItems: "center", justifyContent: "center", padding: 0 }}>
       <HectorRunnerGame onClose={() => setShowGame(false)} />
     </div>
   ) : null;
