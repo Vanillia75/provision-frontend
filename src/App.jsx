@@ -144,31 +144,25 @@ const PLANS = [
     nom: "Gratuit",
     prix: "0€",
     periode: "/mois",
-    couleur: "#E6F1FB",
-    couleurTexte: "#0C447C",
     features: [
-      "Ce que tu peux vraiment dépenser, calculé en temps réel",
-      "Calcul automatique URSSAF, impôts et seuil TVA",
-      "Suivi de tes revenus encaissés",
-      "3 factures par mois (PDF inclus)",
-      "Connexion bancaire optionnelle (bientôt) — ou saisie manuelle, c'est toi qui choisis",
+      "Cockpit complet + la progression d'Hector",
+      "Factures, devis, projections, calculs, PDF — illimités",
+      "Scan de justificatifs : 3 / mois",
+      "Chat avec Hector : 3 / mois",
+      "Scan d'AEM (intermittent) : 2 / mois",
     ],
   },
   {
-    nom: "Pro",
-    prix: "9€",
+    nom: "Premium",
+    prix: "9,99€",
     periode: "/mois",
-    couleur: "#378ADD",
-    couleurTexte: "white",
-    badge: "Prix prévu",
+    badge: "Sans limites",
     features: [
-      "Tout le plan Gratuit, sans limite",
-      "Factures illimitées + envoi par email au client",
-      "Devis et conversion en facture",
-      "Carnet de contacts clients",
-      "Hector, ton compagnon financier (assistant IA)",
-      "Scan automatique de tes factures de frais",
-      "Export complet de tes données (RGPD)",
+      "Tout le Gratuit, sans aucune limite",
+      "Scans de justificatifs illimités",
+      "Chat avec Hector illimité",
+      "Scans d'AEM illimités",
+      "Connexion bancaire (bientôt) & futures nouveautés",
     ],
   },
 ];
@@ -681,6 +675,10 @@ function AppInner() {
 
   const authHeaders = useCallback(() => ({ Authorization: `Bearer ${token}` }), [token]);
 
+  // Abonnement : quand un quota gratuit mensuel est atteint, le backend renvoie un 402.
+  // On stocke le détail ici pour afficher l'écran « passe en Premium » (montre puis débloque).
+  const [premiumGate, setPremiumGate] = useState(null);
+
   async function apiFetch(path, options = {}) {
     // Timeout de sécurité : si le backend ne répond pas (ex : serveur qui se réveille
     // d'une mise en veille), on coupe au bout de 45s au lieu d'attendre indéfiniment.
@@ -707,8 +705,13 @@ function AppInner() {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       const isObj = body.detail && typeof body.detail === "object";
+      // Quota gratuit mensuel atteint → on déclenche l'écran « passe en Premium ».
+      if (isObj && body.detail.code === "quota_gratuit_atteint") {
+        setPremiumGate(body.detail);
+      }
       const err = new Error(isObj ? (body.detail.message || "Erreur") : (body.detail || `Erreur (code ${res.status})`));
       if (isObj) err.detail = body.detail;
+      err.status = res.status;
       throw err;
     }
     return res.json();
@@ -1113,6 +1116,196 @@ function AppInner() {
     setMobileMenuOpen(false);
     setNav("dashboard");
   }
+
+  // ── Abonnement Stripe (Premium) ──
+  const [billingBusy, setBillingBusy] = useState(false);
+  const [promoInput, setPromoInput] = useState("");
+  const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
+  const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
+
+  async function startCheckout(code = null) {
+    setBillingBusy(true);
+    try {
+      const { url } = await apiFetch("/billing/create-checkout-session", {
+        method: "POST",
+        body: JSON.stringify({ promo_code: code }),
+      });
+      window.location = url; // redirection vers le paiement hébergé Stripe
+    } catch (e) {
+      setBillingBusy(false);
+      setError(e.message || "Impossible d'ouvrir le paiement.");
+    }
+  }
+
+  async function openBillingPortal() {
+    setBillingBusy(true);
+    try {
+      const { url } = await apiFetch("/billing/create-portal-session", { method: "POST" });
+      window.location = url;
+    } catch (e) {
+      setBillingBusy(false);
+      setError(e.message || "Impossible d'ouvrir la gestion de l'abonnement.");
+    }
+  }
+
+  async function applyPromo() {
+    const code = promoInput.trim();
+    if (!code) return;
+    setPromoStatus({ ok: null, msg: "Vérification…" });
+    try {
+      const r = await apiFetch("/billing/apply-promo", { method: "POST", body: JSON.stringify({ code }) });
+      if (!r.ok) {
+        setPromoStatus({ ok: false, msg: "Code invalide ou expiré." });
+        return;
+      }
+      if (r.kind === "tester" && r.premium) {
+        // Premium offert activé côté serveur → on relit le profil pour récupérer is_premium.
+        const p = await apiFetch("/profile");
+        setProfile(p);
+        setPremiumGate(null);
+        setPromoInput("");
+        setPromoStatus({ ok: true, msg: `🎉 Premium activé${r.months ? ` pour ${r.months} mois` : ""} ! Profite bien.` });
+      } else if (r.kind === "influencer") {
+        // Code de réduction → on enchaîne sur le paiement avec le coupon attaché.
+        setPromoStatus({ ok: true, msg: "Code appliqué — direction le paiement…" });
+        startCheckout(code);
+      }
+    } catch (e) {
+      setPromoStatus({ ok: false, msg: e.message || "Code invalide." });
+    }
+  }
+
+  // Retour du paiement Stripe (?billing=success) : on affiche un message rassurant et on
+  // recharge le profil quelques fois, le temps que le webhook active le premium (asynchrone).
+  useEffect(() => {
+    if (!token) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("billing") !== "success") return;
+    window.history.replaceState({}, "", window.location.pathname); // évite de re-déclencher au refresh
+    setBillingSuccess(true);
+    let tries = 0;
+    const iv = setInterval(async () => {
+      tries++;
+      try {
+        const p = await apiFetch("/profile");
+        setProfile(p);
+        if (p.is_premium || tries >= 6) { clearInterval(iv); setBillingSuccess(false); }
+      } catch {
+        if (tries >= 6) { clearInterval(iv); setBillingSuccess(false); }
+      }
+    }, 3000);
+    return () => clearInterval(iv);
+  }, [token]);
+
+  // Écran « montre puis débloque » — s'affiche quand un quota gratuit est atteint (402).
+  // Universel : rendu côté auto-entrepreneur ET intermittent (le scan AEM est intermittent).
+  const premiumGateModal = premiumGate ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.78)", backdropFilter: "blur(3px)", zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setPremiumGate(null)}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "#0d1f38", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 18, padding: "26px 24px", maxWidth: 420, width: "100%", textAlign: "center", position: "relative" }}>
+        <button onClick={() => setPremiumGate(null)} style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", color: "#4A6280", fontSize: 22, cursor: "pointer", fontFamily: "inherit", lineHeight: 1 }} aria-label="Fermer">×</button>
+        <div style={{ fontSize: 40, marginBottom: 6 }}>🚀</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>Tu as atteint ta limite gratuite</div>
+        <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55, marginBottom: 18 }}>{premiumGate.message || "Passe en Premium pour continuer sans limite ce mois-ci."}</div>
+        <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
+          {billingBusy ? "…" : "Passer en Premium — 9,99€/mois"}
+        </button>
+        <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
+          <input
+            style={{ ...S.input, flex: 1, minWidth: 0, textTransform: "uppercase", fontSize: 13 }}
+            placeholder="Un code ?"
+            value={promoInput}
+            onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
+            onKeyDown={e => { if (e.key === "Enter") applyPromo(); }}
+          />
+          <button style={{ ...S.btnSecondary, flexShrink: 0 }} disabled={!promoInput.trim()} onClick={applyPromo}>Valider</button>
+        </div>
+        {promoStatus && (
+          <div style={{ fontSize: 12, marginTop: 8, color: promoStatus.ok === true ? "#5DCAA5" : promoStatus.ok === false ? "#F0997F" : "#8BA5C0" }}>{promoStatus.msg}</div>
+        )}
+      </div>
+    </div>
+  ) : null;
+
+  // Message rassurant au retour du paiement, le temps que le webhook active le premium.
+  const billingSuccessOverlay = billingSuccess ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.8)", backdropFilter: "blur(4px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 18, padding: "30px 28px", maxWidth: 380, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 44, marginBottom: 10 }}>🐶</div>
+        <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>C'est tout bon !</div>
+        <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55 }}>Je mets tout en place… ton Premium s'active dans quelques secondes. 🎉</div>
+        <div style={{ marginTop: 16, fontSize: 12, color: "#5DCAA5" }}>Activation en cours…</div>
+      </div>
+    </div>
+  ) : null;
+
+  // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
+  const renderAbonnement = (onBack) => (
+    <div>
+      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>{profile?.is_premium ? "Tu es Premium — merci de soutenir Hector. 🐾" : "Passe en Premium pour lever toutes les limites."}</p></div></div>
+
+      {profile?.is_premium ? (
+        <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: `2px solid ${ACCENT}` }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>✨</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>Tu es Premium</div>
+          <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>Toutes les limites sont levées : scans de justificatifs, chat avec Hector et AEM — illimités.</div>
+          <button style={{ ...S.btnPrimary }} disabled={billingBusy} onClick={openBillingPortal}>
+            {billingBusy ? "…" : "Gérer mon abonnement"}
+          </button>
+          <div style={{ fontSize: 11, color: "#6B8299", marginTop: 10 }}>Changer de carte ou résilier, en 2 clics (via Stripe).</div>
+        </div>
+      ) : (
+        <>
+          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 340px))", gap: 16, justifyContent: "center" }}>
+            {PLANS.map((p, i) => (
+              <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
+                {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
+                <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>{p.nom}</div>
+                <div style={{ marginBottom: 16 }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>{p.prix}</span>
+                  <span style={{ fontSize: 13, color: "#8BA5C0" }}>{p.periode}</span>
+                </div>
+                {p.features.map((f, j) => (
+                  <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
+                    <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
+                  </div>
+                ))}
+                {i === 0 ? (
+                  <button style={{ ...S.btnPrimary, marginTop: 16, background: "rgba(255,255,255,0.05)", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.15)" }} onClick={onBack}>
+                    Continuer gratuitement
+                  </button>
+                ) : (
+                  <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout()}>
+                    {billingBusy ? "…" : "Passer en Premium"}
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <div style={{ ...S.card, maxWidth: 460, margin: "18px auto 0" }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5", marginBottom: 10 }}>J'ai un code</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                style={{ ...S.input, flex: 1, minWidth: 160, textTransform: "uppercase" }}
+                placeholder="Ex : HECTOR2026"
+                value={promoInput}
+                onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
+                onKeyDown={e => { if (e.key === "Enter") applyPromo(); }}
+              />
+              <button style={{ ...S.btnSecondary }} disabled={!promoInput.trim()} onClick={applyPromo}>Valider</button>
+            </div>
+            {promoStatus && (
+              <div style={{ fontSize: 12, marginTop: 8, color: promoStatus.ok === true ? "#5DCAA5" : promoStatus.ok === false ? "#F0997F" : "#8BA5C0" }}>{promoStatus.msg}</div>
+            )}
+          </div>
+
+          <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14 }}>
+            Paiement sécurisé par Stripe · Sans engagement · Résiliable en 1 clic.
+          </div>
+        </>
+      )}
+    </div>
+  );
 
   const [exportingData, setExportingData] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
@@ -4910,6 +5103,7 @@ function AppInner() {
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "coffre", icon: "ti-camera", label: "Scanner une AEM", dispo: true },
+      { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
     ];
     const interSidebar = (
       <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: "100vh" }}>
@@ -4949,6 +5143,8 @@ function AppInner() {
     return (
       <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex" }}>
         <style>{CSS}</style>
+        {premiumGateModal}
+        {billingSuccessOverlay}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
         {celebPalier && (
@@ -5036,7 +5232,7 @@ function AppInner() {
           </button>
         </nav>
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
 
           {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
           {!pwaDismissed && (
@@ -7318,6 +7514,7 @@ function AppInner() {
               </>)}
 
               {/* ═══ PAGE RÉGLAGES ═══ */}
+              {interNav === "abonnement" && renderAbonnement(() => setInterNav("cockpit"))}
               {interNav === "reglages" && (<>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
@@ -10786,39 +10983,11 @@ function AppInner() {
         )}
 
 
-        {nav === "abonnement" && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>H€CTOR est gratuit pendant la bêta. Voici ce qui est prévu — tu ne paies rien pour l'instant.</p></div></div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 360px))", gap: 16, justifyContent: "center" }}>
-              {PLANS.map((p, i) => (
-                <div key={i} style={{ ...S.card, ...(i === 1 ? { border: `2px solid ${ACCENT}` } : {}), position: "relative" }}>
-                  {p.badge && <span style={{ position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)", background: ACCENT, color: "white", fontSize: 11, fontWeight: 600, padding: "3px 12px", borderRadius: 20 }}>{p.badge}</span>}
-                  <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>{p.nom}</div>
-                  <div style={{ marginBottom: 16 }}>
-                    <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>{p.prix}</span>
-                    <span style={{ fontSize: 13, color: "#8BA5C0" }}>{p.periode}</span>
-                  </div>
-                  {p.features.map((f, j) => (
-                    <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 8, lineHeight: 1.4 }}>
-                      <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
-                    </div>
-                  ))}
-                  {i === 0 ? (
-                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "white", color: ACCENT, border: `1px solid ${ACCENT}` }} onClick={() => setNav("dashboard")}>
-                      Continuer gratuitement
-                    </button>
-                  ) : (
-                    <button style={{ ...S.btnPrimary, marginTop: 16, background: "rgba(255,255,255,0.05)", color: "#9098A6", cursor: "not-allowed", border: "1px solid #DDE5EE" }} disabled>
-                      Gratuit pendant la bêta
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {nav === "abonnement" && renderAbonnement(() => setNav("dashboard"))}
         </div>
       </main>
+      {premiumGateModal}
+      {billingSuccessOverlay}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
         const estIntermittent = profile && profile.statut === "intermittent";
