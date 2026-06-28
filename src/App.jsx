@@ -4099,9 +4099,8 @@ function AppInner() {
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 12 }}>Essaie avec ton propre CA</div>
                   <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
                     <div style={{ flex: 1, position: "relative" }}>
-                      <input
-                        type="number" value={simCaLanding} min="0"
-                        onChange={e => setSimCaLanding(e.target.value)}
+                      <MontantInput decimales value={simCaLanding}
+                        onChange={e => setSimCaLanding(e)}
                         style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 28px 8px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }}
                       />
                       <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 13, fontWeight: 700 }}>€</span>
@@ -4412,12 +4411,11 @@ function AppInner() {
           <div style={S.authRight}>
             <div style={S.authCard}>
               <div style={{ fontSize: 13, fontWeight: 600, color: "#6B7A8D", marginBottom: 12 }}>Ton dernier encaissement :</div>
-              <input
+              <MontantInput decimales
                 style={{ ...S.input, fontSize: 24, fontWeight: 800, textAlign: "center", marginBottom: 16 }}
-                type="number" step="0.01" inputMode="decimal"
                 placeholder="Ex : 2 500"
                 value={onbPremierRevenu}
-                onChange={e => setOnbPremierRevenu(e.target.value)}
+                onChange={e => setOnbPremierRevenu(e)}
                 autoFocus
               />
               {onbPremierRevenuNum > 0 && (
@@ -8946,11 +8944,10 @@ function AppInner() {
                 </div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <div style={{ position: "relative", flex: 1 }}>
-                    <input
-                      style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "11px 32px 11px 14px", fontSize: 16, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                      type="number" inputMode="decimal" placeholder={parlerType === "versement" ? "Montant à te verser" : "Prix de l'achat"}
+                    <MontantInput decimales
+                      style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 10, padding: "11px 32px 11px 14px", fontSize: 16, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} placeholder={parlerType === "versement" ? "Montant à te verser" : "Prix de l'achat"}
                       value={parlerMontant}
-                      onChange={e => { setParlerMontant(e.target.value); setParlerVerdict(null); }}
+                      onChange={e => { setParlerMontant(e); setParlerVerdict(null); }}
                       onKeyDown={e => { if (e.key === "Enter") { setParlerVerdict(verdictHector(parlerMontant, parlerType)); setParlerPourquoi(false); } }}
                     />
                     <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: "#5DCAA5", fontWeight: 700 }}>€</span>
@@ -9321,11 +9318,11 @@ function AppInner() {
                     {!editingDeclarationCa && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
                   {editingDeclarationCa ? (
-                    <input
+                    <MontantInput
                       style={{ ...S.input, fontSize: 28, fontWeight: 800, textAlign: "center" }}
-                      type="number" step="0.01" autoFocus
+                      decimales autoFocus
                       value={declarationCa !== "" ? declarationCa : String(estimateData.ca_periode_courante)}
-                      onChange={e => setDeclarationCa(e.target.value)}
+                      onChange={e => setDeclarationCa(e)}
                       onBlur={() => setEditingDeclarationCa(false)}
                     />
                   ) : (
@@ -9345,11 +9342,11 @@ function AppInner() {
                     {!editingDeclarationCotisations && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
                   {editingDeclarationCotisations ? (
-                    <input
+                    <MontantInput
                       style={{ ...S.input, fontSize: 28, fontWeight: 800, textAlign: "center" }}
-                      type="number" step="0.01" autoFocus
+                      decimales autoFocus
                       value={declarationCotisations !== "" ? declarationCotisations : String(cotisationsAffichees)}
-                      onChange={e => setDeclarationCotisations(e.target.value)}
+                      onChange={e => setDeclarationCotisations(e)}
                       onBlur={() => setEditingDeclarationCotisations(false)}
                     />
                   ) : (
@@ -9465,7 +9462,7 @@ function AppInner() {
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
                     <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                      <input style={{ ...S.input, flex: 1 }} type="number" step="0.01" placeholder="Ex : Jaguar E-PACE → tapez 18000" value={achatMontant} onChange={e => setAchatMontant(e.target.value)} />
+                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tapez 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
                     </div>
                     {achatMontant && parseFloat(achatMontant) > 0 && (() => {
                       const montant = parseFloat(achatMontant);
@@ -9551,7 +9548,7 @@ function AppInner() {
             <div style={S.card}>
               <label style={S.label}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Je veux gagner net, par mois</span>
-                <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="100" placeholder="Ex : 5000" value={revenuViseMensuel} onChange={e => setRevenuViseMensuel(e.target.value)} />
+                <MontantInput decimales style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} placeholder="Ex : 5000" value={revenuViseMensuel} onChange={e => setRevenuViseMensuel(e)} />
               </label>
             </div>
 
@@ -9659,7 +9656,7 @@ function AppInner() {
                   <button type="button" onClick={() => setSimFiscalPeriode("mensuel")} style={{ ...S.toggleBtn, ...(simFiscalPeriode === "mensuel" ? S.toggleBtnActive : {}) }}>Par mois</button>
                   <button type="button" onClick={() => setSimFiscalPeriode("annuel")} style={{ ...S.toggleBtn, ...(simFiscalPeriode === "annuel" ? S.toggleBtnActive : {}) }}>Par an</button>
                 </div>
-                <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px" }} type="number" step="100" value={simFiscalCa} onChange={e => setSimFiscalCa(e.target.value)} />
+                <MontantInput decimales style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px" }} value={simFiscalCa} onChange={e => setSimFiscalCa(e)} />
               </div>
 
               <div style={{ ...S.card, marginTop: 14 }}>
@@ -9693,7 +9690,7 @@ function AppInner() {
               </div>
               <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-                <input style={{ ...S.input, flex: "1 1 160px" }} type="number" placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e.target.value)} />
+                <MontantInput decimales style={{ ...S.input, flex: "1 1 160px" }} placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
                   <option value="vente">Vente de marchandises (12,3%)</option>
                   <option value="services">Prestations de services (21,2%)</option>
@@ -9752,7 +9749,7 @@ function AppInner() {
                   ))}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "0.5px solid #EEF2F7" }}>
                     <span style={{ fontSize: 12, color: "#8BA5C0" }}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 14, marginRight: 6 }} />Dettes / emprunts en cours</span>
-                    <input style={S.inlineEditValue} type="number" step="0.01" value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e.target.value })} />
+                    <MontantInput decimales style={S.inlineEditValue} value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e })} />
                   </div>
                 </div>
               )}
@@ -9767,7 +9764,7 @@ function AppInner() {
             <div style={S.card}>
               <label style={S.label}>
                 <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Combien facturez-vous actuellement ?</span>
-                <input style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} type="number" step="1" placeholder="Ex : 500" value={tarifMontant} onChange={e => setTarifMontant(e.target.value)} />
+                <MontantInput decimales style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} placeholder="Ex : 500" value={tarifMontant} onChange={e => setTarifMontant(e)} />
               </label>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
                 {[{ id: "jour", l: "par jour" }, { id: "heure", l: "par heure" }, { id: "prestation", l: "par prestation" }].map(u => (
@@ -9833,7 +9830,7 @@ function AppInner() {
                 <div style={{ ...S.card, marginTop: 14 }}>
                   <div style={S.cardTitle}>🎯 Pour atteindre votre objectif</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                    <input style={{ ...S.input, width: 100 }} type="number" value={objectifHoraire} onChange={e => setObjectifHoraire(e.target.value)} />
+                    <MontantInput decimales style={{ ...S.input, width: 100 }} value={objectifHoraire} onChange={e => setObjectifHoraire(e)} />
                     <span style={{ fontSize: 14, color: "#E6EDF5" }}>€/h</span>
                   </div>
                   {ecartPctVersObjectif !== null && (
@@ -10010,7 +10007,7 @@ function AppInner() {
                           <span style={{ fontSize: 24, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(caCeMoisCi)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
                           <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
-                          <input style={S.objectifInputBig} type="number" value={objectifMensuel} onChange={e => setObjectifMensuel(e.target.value)} />
+                          <MontantInput decimales style={S.objectifInputBig} value={objectifMensuel} onChange={e => setObjectifMensuel(e)} />
                           <span style={{ fontSize: 12, color: objectifSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                         </div>
                         <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
@@ -10057,7 +10054,7 @@ function AppInner() {
                           <span style={{ fontSize: 24, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(estimateData?.ca_annuel || 0)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
                           <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 13, color: "#8BA5C0" }} />
-                          <input style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} type="number" value={objectifAnnuel} onChange={e => setObjectifAnnuel(e.target.value)} />
+                          <MontantInput decimales style={{ ...S.objectifInputBig, color: "#0F6E56", borderColor: "#5DCAA5", background: "#F0FAF6" }} value={objectifAnnuel} onChange={e => setObjectifAnnuel(e)} />
                           <span style={{ fontSize: 12, color: objectifAnnuelSaved ? "#1D9E75" : "transparent", transition: "opacity 0.3s", marginLeft: 4 }}>✓ enregistré</span>
                         </div>
                         <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
@@ -10084,7 +10081,7 @@ function AppInner() {
                   <p style={S.orDivider}>ou saisie manuelle</p>
                   <form style={{ display: "flex", flexDirection: "column", gap: 10 }} onSubmit={handleAddIncome}>
                     <input style={S.input} type="date" value={incomeForm.date} onChange={e => setIncomeForm({ ...incomeForm, date: e.target.value })} required />
-                    <input style={S.input} type="number" step="0.01" placeholder="Montant reçu du client €" value={incomeForm.amount} onChange={e => setIncomeForm({ ...incomeForm, amount: e.target.value })} required />
+                    <MontantInput decimales style={S.input} placeholder="Montant reçu du client €" value={incomeForm.amount} onChange={e => setIncomeForm({ ...incomeForm, amount: e })} required />
                     {incomeForm.amount && parseFloat(incomeForm.amount) > 0 && (() => {
                       const taux = estimateData?.taux_global_pct ? estimateData.taux_global_pct / 100 : 0.214;
                       const brut = parseFloat(incomeForm.amount);
@@ -10125,7 +10122,7 @@ function AppInner() {
 
                       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 6 }}>
                         <label style={S.label}>Montant détecté
-                          <input style={S.input} type="number" step="0.01" value={factureExtraite.amount} onChange={e => setFactureExtraite({ ...factureExtraite, amount: e.target.value })} />
+                          <MontantInput decimales style={S.input} value={factureExtraite.amount} onChange={e => setFactureExtraite({ ...factureExtraite, amount: e })} />
                         </label>
                         <label style={S.label}>Date
                           <input style={S.input} type="date" value={factureExtraite.date} onChange={e => setFactureExtraite({ ...factureExtraite, date: e.target.value })} />
@@ -10295,7 +10292,7 @@ function AppInner() {
                   <div key={i} style={S.factureRow}>
                     <input style={{ ...S.input, flex: 3 }} placeholder="Prestation" value={l.description} onChange={e => updateLigne(i, "description", e.target.value)} />
                     <input style={{ ...S.input, flex: 1, textAlign: "center" }} type="number" min="1" value={l.quantite} onChange={e => updateLigne(i, "quantite", e.target.value)} />
-                    <input style={{ ...S.input, flex: 1, textAlign: "right" }} type="number" step="0.01" placeholder="0,00" value={l.prix_unitaire} onChange={e => updateLigne(i, "prix_unitaire", e.target.value)} />
+                    <MontantInput decimales style={{ ...S.input, flex: 1, textAlign: "right" }} placeholder="0,00" value={l.prix_unitaire} onChange={e => updateLigne(i, "prix_unitaire", e)} />
                     <span style={{ flex: 1, textAlign: "right", fontSize: 13, fontWeight: 500, padding: "0 8px" }}>{formatEUR((parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0))}</span>
                   </div>
                 ))}
@@ -10526,7 +10523,7 @@ function AppInner() {
                   <div key={i} style={S.factureRow}>
                     <input style={{ ...S.input, flex: 3 }} placeholder="Prestation" value={l.description} onChange={e => updateQuoteLigne(i, "description", e.target.value)} />
                     <input style={{ ...S.input, flex: 1, textAlign: "center" }} type="number" min="1" value={l.quantite} onChange={e => updateQuoteLigne(i, "quantite", e.target.value)} />
-                    <input style={{ ...S.input, flex: 1, textAlign: "right" }} type="number" step="0.01" placeholder="0,00" value={l.prix_unitaire} onChange={e => updateQuoteLigne(i, "prix_unitaire", e.target.value)} />
+                    <MontantInput decimales style={{ ...S.input, flex: 1, textAlign: "right" }} placeholder="0,00" value={l.prix_unitaire} onChange={e => updateQuoteLigne(i, "prix_unitaire", e)} />
                     <span style={{ flex: 1, textAlign: "right", fontSize: 13, fontWeight: 500, padding: "0 8px" }}>{formatEUR((parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0))}</span>
                   </div>
                 ))}
@@ -10762,7 +10759,7 @@ function AppInner() {
                   <form style={{ display: "flex", flexDirection: "column", gap: 10 }} onSubmit={handleAddExpense}>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                       <input style={S.input} type="date" value={expenseForm.date} onChange={e => setExpenseForm({ ...expenseForm, date: e.target.value })} required />
-                      <input style={S.input} type="number" step="0.01" placeholder="Montant €" value={expenseForm.montant} onChange={e => setExpenseForm({ ...expenseForm, montant: e.target.value })} required />
+                      <MontantInput decimales style={S.input} placeholder="Montant €" value={expenseForm.montant} onChange={e => setExpenseForm({ ...expenseForm, montant: e })} required />
                     </div>
                     <select style={S.input} value={expenseForm.categorie} onChange={e => setExpenseForm({ ...expenseForm, categorie: e.target.value })}>
                       {CATEGORIES_FRAIS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
@@ -10964,7 +10961,7 @@ function AppInner() {
               </p>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                 <label style={S.label}>Réserve de sécurité
-                  <input style={S.input} type="number" step="50" value={objectifSecurite} onChange={e => setObjectifSecurite(e.target.value)} placeholder="Ex : 3000" />
+                  <MontantInput decimales style={S.input} value={objectifSecurite} onChange={e => setObjectifSecurite(e)} placeholder="Ex : 3000" />
                 </label>
                 <label style={S.label}>Tranche marginale d'imposition (TMI)
                   <select style={S.input} value={tmi} onChange={e => setTmi(e.target.value)}>
@@ -10972,15 +10969,15 @@ function AppInner() {
                   </select>
                 </label>
                 <label style={S.label}>Cotisation Foncière des Entreprises (CFE)
-                  <input style={S.input} type="number" step="0.01" value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e.target.value })} placeholder="Souvent ~200 €/an" />
+                  <MontantInput decimales style={S.input} value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e })} placeholder="Souvent ~200 €/an" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Impôt local annuel dû par la plupart des entreprises, même sans local. Variable selon la commune.</span>
                 </label>
                 <label style={S.label}>Mon train de vie mensuel
-                  <input style={S.input} type="number" step="50" value={depensesMensuelles} onChange={e => setDepensesMensuelles(e.target.value)} placeholder="Ex : 1800 €/mois" />
+                  <MontantInput decimales style={S.input} value={depensesMensuelles} onChange={e => setDepensesMensuelles(e)} placeholder="Ex : 1800 €/mois" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Ce que tu dépenses environ chaque mois pour vivre. Sert à Hector pour calculer tes jours de tranquillité.</span>
                 </label>
                 <label style={S.label}>Mes autres revenus mensuels (optionnel)
-                  <input style={S.input} type="number" step="50" inputMode="text" value={autresRevenus} onChange={e => setAutresRevenus(e.target.value)} placeholder="Ex : salaire 1 800 €/mois" />
+                  <MontantInput decimales style={S.input} value={autresRevenus} onChange={e => setAutresRevenus(e)} placeholder="Ex : salaire 1 800 €/mois" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Salaire ou autre revenu en dehors de ton auto-entreprise. Hector ne calcule jamais d'URSSAF dessus — c'est juste pour avoir une vue complète de ce que tu peux te permettre.</span>
                   {autresRevenusNum > 0 && (
                     <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 12, color: "#E6EDF5", fontWeight: 500 }}>
