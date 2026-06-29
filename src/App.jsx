@@ -8623,11 +8623,12 @@ function AppInner() {
                 // - orange : réserve pas encore complète mais PAS de déficit → on montre ce qu'il a VRAIMENT (brut),
                 //            en neutre, et on guide pour compléter la réserve. JAMAIS de gros négatif anxiogène.
                 // - rouge  : déficit réel (le compte ne couvre pas les charges) → là le négatif rouge est légitime.
+                const chargesAVenir = totalChargesAVenir > 0;   // rien à payer ? alors on n'évoque pas l'URSSAF (nouvel utilisateur)
                 let heroVal, heroColor, heroSub, heroLigne;
                 if (niveauFinancier === "orange") {
                   heroVal = argentDisponibleBrut;
                   heroColor = "#E6EDF5";
-                  heroSub = "sur ton compte une fois l'URSSAF payée";
+                  heroSub = chargesAVenir ? "sur ton compte une fois l'URSSAF payée" : "sur ton compte";
                   heroLigne = `Il te reste ${formatEUR(manqueReserveDashboard)} à mettre de côté pour compléter ta réserve de ${formatEUR(securiteNum)}. On y va ensemble.`;
                 } else if (niveauFinancier === "rouge") {
                   heroVal = argentDisponibleBrut;
@@ -8637,9 +8638,9 @@ function AppInner() {
                 } else {
                   heroVal = disponibleAujourdhui;
                   heroColor = "#5DCAA5";
-                  heroSub = "une fois l'URSSAF et ta réserve mises de côté";
+                  heroSub = chargesAVenir ? "une fois l'URSSAF et ta réserve mises de côté" : "une fois ta réserve mise de côté";
                   heroLigne = securiteNum > 0
-                    ? `Tu as ${formatEUR(argentDisponibleBrut)} sur ton compte une fois l'URSSAF payée, dont ${formatEUR(securiteNum)} de réserve que je garde de côté.`
+                    ? `Tu as ${formatEUR(argentDisponibleBrut)} sur ton compte${chargesAVenir ? " une fois l'URSSAF payée" : ""}, dont ${formatEUR(securiteNum)} de réserve que je garde de côté.`
                     : null;
                 }
                 return (
