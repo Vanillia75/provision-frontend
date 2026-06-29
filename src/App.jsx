@@ -1446,7 +1446,7 @@ function AppInner() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input
                 style={{ ...S.input, flex: 1, minWidth: 160, textTransform: "uppercase" }}
-                placeholder="Ex : BETA-XXXXX"
+                placeholder="Ex : VIP-XXXX"
                 autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
                 value={promoInput}
                 onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
@@ -8016,7 +8016,7 @@ function AppInner() {
             img: "/hector-tete.png",
             timerLabel: "BIENVENUE SUR H€CTOR",
             title: "Bonjour, moi c'est H€CTOR.",
-            sub: "Je suis ton copilote pour le régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
+            sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
             items: [
               { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
               { icon: "ti-check", text: "Tu déclares tes contrats, je m'occupe des calculs" },
@@ -11398,7 +11398,7 @@ function AppInner() {
             img: "/hector-tete.png",
             timerLabel: "BIENVENUE SUR H€CTOR",
             title: "Bonjour, moi c'est H€CTOR.",
-            sub: "Je suis ton copilote pour le régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
+            sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
             items: [
               { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
               { icon: "ti-check", text: "Tu déclares tes contrats, je m'occupe des calculs" },
