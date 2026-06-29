@@ -940,6 +940,10 @@ function AppInner() {
           body: JSON.stringify({ solde: panique.solde !== "" ? parseFloat(panique.solde) : null }),
         });
         setSoldeSaveStatus("saved");
+        // Solde désormais persisté côté serveur : on le reflète dans `profile` pour que la
+        // bascule carte « Renseigne ton solde » → héros se fasse APRÈS sauvegarde, et non à
+        // chaque caractère tapé (sinon l'input se démonte en pleine frappe).
+        setProfile(p => p ? { ...p, solde_bancaire: panique.solde !== "" ? parseFloat(panique.solde) : null } : p);
         showSavedToast();
       } catch (err) {
         setSoldeSaveStatus("error");
@@ -8722,7 +8726,7 @@ function AppInner() {
             <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "start" }}>
             {/* ── OBJECTIF : DISPONIBLE + JAUGE RÉSERVE (style cockpit) ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px" }}>
-              {argentDisponibleBrut !== null ? (() => {
+              {(argentDisponibleBrut !== null && profile?.solde_bancaire != null) ? (() => {
                 const reserveConstituee = reserveAtteinte ? securiteNum : Math.max(0, securiteNum - manqueReserveDashboard);
                 const reservePct = securiteNum > 0 ? Math.min(100, Math.round((reserveConstituee / securiteNum) * 100)) : 0;
                 // 3 états du chiffre héros (présentation only — variables & niveauFinancier inchangés) :
@@ -10559,7 +10563,7 @@ function AppInner() {
 
                 <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
-                  {(profilEntreprise || profilPrenom) && profilSiret && profilAdresse ? (
+                  {(profile?.entreprise || profile?.prenom) && profile?.siret && profile?.adresse ? (
                     <div style={{ fontSize: 13, color: "#E6EDF5", lineHeight: 1.6 }}>
                       <strong>{profilEntreprise || `${profilPrenom} ${profilNom}`.trim()}</strong><br />
                       {profilAdresse}<br />
@@ -10570,13 +10574,13 @@ function AppInner() {
                     <div>
                       <p style={{ fontSize: 12, color: "#854F0B", margin: "0 0 10px" }}>⚠️ Complétez ces informations une fois — elles seront ensuite préremplies sur toutes vos factures.</p>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {!(profilEntreprise || profilPrenom) && (
+                        {!(profile?.entreprise || profile?.prenom) && (
                           <input style={S.input} placeholder="Votre nom ou nom d'entreprise" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} />
                         )}
-                        {!profilAdresse && (
+                        {!profile?.adresse && (
                           <input style={S.input} placeholder="Adresse professionnelle (ex : 12 rue de la Paix, 75002 Paris)" value={profilAdresse} onChange={e => setProfilAdresse(e.target.value)} />
                         )}
-                        {!profilSiret && (
+                        {!profile?.siret && (
                           <input style={S.input} placeholder="SIRET (14 chiffres)" value={profilSiret} onChange={e => setProfilSiret(e.target.value)} />
                         )}
                       </div>
