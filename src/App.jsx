@@ -9913,6 +9913,9 @@ function AppInner() {
         {nav === "simulateur" && estimateData && estimateData.disponible !== false && (() => {
           const caInput = parseFloat(simFiscalCa) || 0;
           const caAnnuelSim = simFiscalPeriode === "mensuel" ? caInput * 12 : caInput;
+          // Seuils sur le CA SIMULÉ (annuel) — hiérarchie : plafond micro = majeur, TVA = secondaire.
+          const sp = profile?.activite ? statutPlafond(profile.activite, caAnnuelSim) : null;
+          const st = profile?.activite ? statutTVA(profile.activite, caAnnuelSim) : null;
           const caAffiche = caInput;
           const tauxUrssaf = (estimateData.taux_global_pct || 0) / 100;
           const cotisationsSim = Math.round(caAffiche * tauxUrssaf * 100) / 100;
@@ -9941,6 +9944,34 @@ function AppInner() {
                 </div>
                 <MontantInput decimales style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px" }} value={simFiscalCa} onChange={e => setSimFiscalCa(e)} />
               </div>
+
+              {/* ── ALERTE MAJEURE : plafond micro (touche le statut). Ton rassurant. ── */}
+              {sp && sp.depasse && (
+                <div style={{ marginTop: 14, background: "rgba(226,75,74,0.08)", border: "1px solid rgba(226,75,74,0.35)", borderRadius: 14, padding: "16px 18px", display: "flex", gap: 13 }}>
+                  <div style={{ fontSize: 24, flexShrink: 0 }}>🐾</div>
+                  <div>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "#F0A0A0", marginBottom: 4 }}>Ce CA dépasse ton plafond micro ({formatEUR(sp.plafond)})</div>
+                    <div style={{ fontSize: 12.5, color: "#D8A9A9", lineHeight: 1.5 }}>Pas de panique : un dépassement <strong>une seule année</strong>, ça passe. Tu ne sors du régime micro qu'après <strong>deux années consécutives</strong> au-dessus.</div>
+                  </div>
+                </div>
+              )}
+              {sp && !sp.depasse && sp.proche && (
+                <div style={{ marginTop: 14, background: "rgba(239,159,39,0.08)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 14, padding: "16px 18px", display: "flex", gap: 13 }}>
+                  <div style={{ fontSize: 24, flexShrink: 0 }}>🐾</div>
+                  <div>
+                    <div style={{ fontSize: 14.5, fontWeight: 700, color: "#FAE3B6", marginBottom: 4 }}>Tu approches du plafond micro ({formatEUR(sp.plafond)})</div>
+                    <div style={{ fontSize: 12.5, color: "#C9A861", lineHeight: 1.5 }}>Encore {formatEUR(sp.restant)} avant le plafond. Rien d'urgent — je t'aurai prévenu bien avant.</div>
+                  </div>
+                </div>
+              )}
+              {/* ── ALERTE SECONDAIRE : TVA (change juste la facturation). Discrète, base vs majoré. ── */}
+              {st && st.depasse && (
+                <div style={{ marginTop: 10, fontSize: 12, color: "#8BA5C0", lineHeight: 1.5, padding: "0 4px" }}>
+                  💡 À ce CA, tu factureras la TVA {st.depasseMajore
+                    ? <>dès le dépassement (seuil majoré {formatEUR(st.seuilMajore)} franchi)</>
+                    : <>à partir du 1ᵉʳ janvier suivant (franchise {formatEUR(st.seuil)} franchie)</>}. Tu restes auto-entrepreneur — tu ajoutes juste la TVA à tes factures.
+                </div>
+              )}
 
               <div style={{ ...S.card, marginTop: 14 }}>
                 <div style={S.cardTitle}>Répartition de votre CA</div>

@@ -41,7 +41,8 @@ export const FISCALITE = {
       sourcePlafond: "economie.gouv.fr — seuils micro 2026",
       // Seuil de franchise en base de TVA (au-delà : TVA à facturer)
       seuilTVA: 85000, // €
-      sourceTVA: "Franchise en base TVA — seuil vente 2026",
+      seuilTVAMajore: 93500, // € — au-delà : TVA dès le jour du dépassement (seuil majoré 2026)
+      sourceTVA: "Franchise en base TVA — seuils vente 2026 (base 85 000 / majoré 93 500)",
       // Versement libératoire de l'IR (option) : taux ajouté au CA
       tauxVersementLiberatoire: 0.01, // 1 %
     },
@@ -55,7 +56,8 @@ export const FISCALITE = {
       plafondCA: 83600, // € — valeur 2026
       sourcePlafond: "economie.gouv.fr — seuils micro 2026",
       seuilTVA: 37500, // €
-      sourceTVA: "Franchise en base TVA — seuil services 2026",
+      seuilTVAMajore: 41250, // € — au-delà : TVA dès le jour du dépassement (seuil majoré 2026)
+      sourceTVA: "Franchise en base TVA — seuils services 2026 (base 37 500 / majoré 41 250)",
       tauxVersementLiberatoire: 0.017, // 1,7 %
     },
     bnc: {
@@ -70,7 +72,8 @@ export const FISCALITE = {
       plafondCA: 83600, // € — valeur 2026
       sourcePlafond: "economie.gouv.fr — seuils micro 2026",
       seuilTVA: 37500, // €
-      sourceTVA: "Franchise en base TVA — seuil BNC 2026",
+      seuilTVAMajore: 41250, // € — au-delà : TVA dès le jour du dépassement (seuil majoré 2026)
+      sourceTVA: "Franchise en base TVA — seuils BNC 2026 (base 37 500 / majoré 41 250)",
       tauxVersementLiberatoire: 0.022, // 2,2 %
     },
   },
@@ -164,13 +167,18 @@ export function statutPlafond(activiteId, caAnnuel) {
   };
 }
 
-// Position vs seuil TVA : { depasse, proche, restant }
+// Position vs seuils TVA : { seuil, seuilMajore, restant, proche, depasse, depasseMajore }
+// - depasse (base) → TVA à facturer à partir du 1er janvier suivant
+// - depasseMajore  → TVA à facturer dès le jour du dépassement
 export function statutTVA(activiteId, caAnnuel) {
   const r = getRegime(activiteId);
+  const seuilMajore = r.seuilTVAMajore || r.seuilTVA;
   return {
     seuil: r.seuilTVA,
+    seuilMajore,
     restant: Math.max(0, r.seuilTVA - caAnnuel),
     proche: caAnnuel >= r.seuilTVA * 0.9 && caAnnuel < r.seuilTVA,
     depasse: caAnnuel > r.seuilTVA,
+    depasseMajore: caAnnuel > seuilMajore,
   };
 }
