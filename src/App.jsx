@@ -8618,13 +8618,21 @@ function AppInner() {
               {argentDisponibleBrut !== null ? (() => {
                 const reserveConstituee = reserveAtteinte ? securiteNum : Math.max(0, securiteNum - manqueReserveDashboard);
                 const reservePct = securiteNum > 0 ? Math.min(100, Math.round((reserveConstituee / securiteNum) * 100)) : 0;
+                // Couleur du chiffre héros = état réel, aligné sur le PRUDENT affiché (disponibleAujourdhui) :
+                // vert = sain · orange = réserve entamée · rouge = déficit réel (avant même la réserve).
+                const couleurDispo = niveauFinancier === "rouge" ? "#F09595" : niveauFinancier === "orange" ? "#F0B429" : "#5DCAA5";
                 return (
                   <>
                     <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 4 }}>Disponible aujourd'hui</div>
-                    <div style={{ fontSize: 42, fontWeight: 800, color: argentDisponibleBrut >= 0 ? "#5DCAA5" : "#F09595", lineHeight: 1, letterSpacing: -1 }}>
-                      {argentDisponibleBrut < 0 ? "−" : ""}{formatEUR(Math.abs(argentDisponibleBrut))}
+                    <div style={{ fontSize: 42, fontWeight: 800, color: couleurDispo, lineHeight: 1, letterSpacing: -1 }}>
+                      {disponibleAujourdhui < 0 ? "−" : ""}{formatEUR(Math.abs(disponibleAujourdhui))}
                     </div>
-                    <div style={{ fontSize: 12.5, color: "#5A7798", marginTop: 6, marginBottom: 16 }}>une fois l'URSSAF et ta réserve mises de côté</div>
+                    <div style={{ fontSize: 12.5, color: "#5A7798", marginTop: 6, marginBottom: securiteNum > 0 ? 8 : 16 }}>une fois l'URSSAF et ta réserve mises de côté</div>
+                    {securiteNum > 0 && (
+                      <div style={{ fontSize: 11.5, color: "#6B8299", marginBottom: 16, lineHeight: 1.5 }}>
+                        Tu as {formatEUR(argentDisponibleBrut)} sur ton compte une fois l'URSSAF payée, dont {formatEUR(securiteNum)} de réserve que je garde de côté.
+                      </div>
+                    )}
                     {securiteNum > 0 && (
                       <>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
