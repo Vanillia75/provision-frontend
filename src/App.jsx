@@ -8618,19 +8618,40 @@ function AppInner() {
               {argentDisponibleBrut !== null ? (() => {
                 const reserveConstituee = reserveAtteinte ? securiteNum : Math.max(0, securiteNum - manqueReserveDashboard);
                 const reservePct = securiteNum > 0 ? Math.min(100, Math.round((reserveConstituee / securiteNum) * 100)) : 0;
-                // Couleur du chiffre héros = état réel, aligné sur le PRUDENT affiché (disponibleAujourdhui) :
-                // vert = sain · orange = réserve entamée · rouge = déficit réel (avant même la réserve).
-                const couleurDispo = niveauFinancier === "rouge" ? "#F09595" : niveauFinancier === "orange" ? "#F0B429" : "#5DCAA5";
+                // 3 états du chiffre héros (présentation only — variables & niveauFinancier inchangés) :
+                // - vert   : tout couvert, réserve incluse → on montre le PRUDENT (dépensable sans entamer la réserve).
+                // - orange : réserve pas encore complète mais PAS de déficit → on montre ce qu'il a VRAIMENT (brut),
+                //            en neutre, et on guide pour compléter la réserve. JAMAIS de gros négatif anxiogène.
+                // - rouge  : déficit réel (le compte ne couvre pas les charges) → là le négatif rouge est légitime.
+                let heroVal, heroColor, heroSub, heroLigne;
+                if (niveauFinancier === "orange") {
+                  heroVal = argentDisponibleBrut;
+                  heroColor = "#E6EDF5";
+                  heroSub = "sur ton compte une fois l'URSSAF payée";
+                  heroLigne = `Il te reste ${formatEUR(manqueReserveDashboard)} à mettre de côté pour compléter ta réserve de ${formatEUR(securiteNum)}. On y va ensemble.`;
+                } else if (niveauFinancier === "rouge") {
+                  heroVal = argentDisponibleBrut;
+                  heroColor = "#F09595";
+                  heroSub = "tes charges à venir dépassent ce que tu as — on regarde ça ensemble";
+                  heroLigne = null;
+                } else {
+                  heroVal = disponibleAujourdhui;
+                  heroColor = "#5DCAA5";
+                  heroSub = "une fois l'URSSAF et ta réserve mises de côté";
+                  heroLigne = securiteNum > 0
+                    ? `Tu as ${formatEUR(argentDisponibleBrut)} sur ton compte une fois l'URSSAF payée, dont ${formatEUR(securiteNum)} de réserve que je garde de côté.`
+                    : null;
+                }
                 return (
                   <>
                     <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 4 }}>Disponible aujourd'hui</div>
-                    <div style={{ fontSize: 42, fontWeight: 800, color: couleurDispo, lineHeight: 1, letterSpacing: -1 }}>
-                      {disponibleAujourdhui < 0 ? "−" : ""}{formatEUR(Math.abs(disponibleAujourdhui))}
+                    <div style={{ fontSize: 42, fontWeight: 800, color: heroColor, lineHeight: 1, letterSpacing: -1 }}>
+                      {heroVal < 0 ? "−" : ""}{formatEUR(Math.abs(heroVal))}
                     </div>
-                    <div style={{ fontSize: 12.5, color: "#5A7798", marginTop: 6, marginBottom: securiteNum > 0 ? 8 : 16 }}>une fois l'URSSAF et ta réserve mises de côté</div>
-                    {securiteNum > 0 && (
+                    <div style={{ fontSize: 12.5, color: "#5A7798", marginTop: 6, marginBottom: heroLigne ? 8 : 16 }}>{heroSub}</div>
+                    {heroLigne && (
                       <div style={{ fontSize: 11.5, color: "#6B8299", marginBottom: 16, lineHeight: 1.5 }}>
-                        Tu as {formatEUR(argentDisponibleBrut)} sur ton compte une fois l'URSSAF payée, dont {formatEUR(securiteNum)} de réserve que je garde de côté.
+                        {heroLigne}
                       </div>
                     )}
                     {securiteNum > 0 && (
