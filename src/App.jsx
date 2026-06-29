@@ -4570,29 +4570,33 @@ function AppInner() {
             <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti — ensuite, c'est moi qui compte pour toi.</p>
             {error && <div style={S.errorBanner}>{error}</div>}
 
-            {/* Import ARE — Hector lit la date anniversaire + le montant journalier */}
-            <div style={{ textAlign: "left", marginBottom: 14 }}>
-              <p style={S.sectionLabel}>📎 Ton attestation France Travail (ARE)</p>
-              <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>Glisse-la (ou prends-la en photo) et je lis ta date anniversaire + ton montant journalier tout seul.</p>
-              <label style={{ ...S.btnSecondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: areUploading ? "default" : "pointer", opacity: areUploading ? 0.6 : 1 }}>
-                {areUploading ? "Lecture en cours…" : "📎 Importer mon ARE"}
-                <input type="file" accept="image/*,application/pdf" disabled={areUploading} style={{ display: "none" }}
-                  onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }} />
-              </label>
-              {areError && <p style={{ color: "#E8927C", fontSize: 12, margin: "6px 0 0" }}>{areError}</p>}
-              {areExtrait && (
-                <p style={{ color: "#5DCAA5", fontSize: 12.5, margin: "8px 0 0", lineHeight: 1.5 }}>
-                  🐶 J'ai lu ton attestation{areExtrait.montant_journalier ? ` · ${areExtrait.montant_journalier} €/jour` : ""}. Vérifie juste la date ci-dessous.
-                </p>
-              )}
+            <p style={{ ...S.sectionLabel, textAlign: "left" }}>📅 Ta date anniversaire</p>
+            <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 14px", textAlign: "left", lineHeight: 1.5 }}>C'est la date où France Travail réexamine tes droits. Donne-la-moi comme tu veux :</p>
+
+            {/* Choix 1 — importer l'ARE (Hector lit tout) */}
+            <label style={{ ...S.btnSecondary, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: areUploading ? "default" : "pointer", opacity: areUploading ? 0.6 : 1, marginBottom: 6 }}>
+              {areUploading ? "Lecture en cours…" : "📎 Importer mon attestation (ARE)"}
+              <input type="file" accept="image/*,application/pdf" disabled={areUploading} style={{ display: "none" }}
+                onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }} />
+            </label>
+            <p style={{ fontSize: 11.5, color: "#8BA5C0", margin: 0, textAlign: "center", lineHeight: 1.5 }}>Je lis la date (et ton montant journalier) tout seul — le plus simple.</p>
+            {areError && <p style={{ color: "#E8927C", fontSize: 12, margin: "6px 0 0", textAlign: "center" }}>{areError}</p>}
+            {areExtrait && (
+              <p style={{ color: "#5DCAA5", fontSize: 12.5, margin: "8px 0 0", textAlign: "center", lineHeight: 1.5 }}>
+                🐶 C'est lu{areExtrait.montant_journalier ? ` · ${areExtrait.montant_journalier} €/jour` : ""} ❤️
+              </p>
+            )}
+
+            {/* séparateur "ou" */}
+            <div style={{ display: "flex", alignItems: "center", gap: 10, margin: "16px 0" }}>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
+              <span style={{ fontSize: 12, color: "#6B8299" }}>ou</span>
+              <div style={{ flex: 1, height: 1, background: "rgba(255,255,255,0.1)" }} />
             </div>
 
-            {/* Date anniversaire (pré-remplie par l'ARE, éditable à la main) */}
-            <div style={{ textAlign: "left", marginBottom: 22 }}>
-              <p style={S.sectionLabel}>📅 Ta date anniversaire</p>
-              <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>Pour compter les jours avant le renouvellement de tes droits.</p>
-              <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)} style={{ ...S.input, colorScheme: "dark" }} />
-            </div>
+            {/* Choix 2 — saisie à la main */}
+            <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", textAlign: "left" }}>✍️ L'écrire à la main, si tu l'as sous les yeux :</p>
+            <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)} style={{ ...S.input, colorScheme: "dark", marginBottom: 22 }} />
 
             <button type="button" disabled={loading} onClick={finishInterOnboarding} style={{ ...S.btnPrimary, marginBottom: 12 }}>
               {loading ? "…" : "C'est parti →"}
