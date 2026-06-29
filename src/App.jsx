@@ -10564,9 +10564,9 @@ function AppInner() {
 
                 <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
-                  {(profile?.entreprise || profile?.prenom) && profile?.siret && profile?.adresse ? (
+                  {(profile?.entreprise || profile?.raison_sociale || profile?.prenom) && profile?.siret && profile?.adresse ? (
                     <div style={{ fontSize: 13, color: "#E6EDF5", lineHeight: 1.6 }}>
-                      <strong>{appendEiMention(profilEntreprise || `${profilPrenom} ${profilNom}`.trim(), profile?.statut)}</strong><br />
+                      <strong>{appendEiMention(profilEntreprise || profile?.raison_sociale || `${profilPrenom} ${profilNom}`.trim(), profile?.statut)}</strong><br />
                       {profilAdresse}<br />
                       SIRET : {profilSiret}{profile?.statut === "auto_entrepreneur" && <> · Auto-entrepreneur, dispensé d'immatriculation au RCS et au RM</>}
                       <button type="button" style={{ ...S.linkBtn, fontSize: 11, display: "block", marginTop: 6 }} onClick={() => setNav("profil")}>Modifier dans Profil →</button>
@@ -10575,7 +10575,7 @@ function AppInner() {
                     <div>
                       <p style={{ fontSize: 12, color: "#854F0B", margin: "0 0 10px" }}>⚠️ Complétez ces informations une fois — elles seront ensuite préremplies sur toutes vos factures.</p>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {!(profile?.entreprise || profile?.prenom) && (
+                        {!(profile?.entreprise || profile?.raison_sociale || profile?.prenom) && (
                           <input style={S.input} placeholder="Votre nom ou nom d'entreprise" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} />
                         )}
                         {!profile?.adresse && (
