@@ -1706,24 +1706,15 @@ function AppInner() {
       setOnbStep("form");
       return;
     }
-    // Intermittent : on enregistre le statut + on marque l'onboarding comme fait,
-    // puis on file direct au cockpit intermittent (qui a son propre flux d'entrée).
+    // Intermittent : on enregistre le statut, on recharge le profil, puis on affiche
+    // la mini-étape d'accueil intermittent (onbStep "inter"). L'onboarding ne sera
+    // marqué TERMINÉ qu'à la FIN de cette mini-étape (finishInterOnboarding), pas ici.
     setLoading(true);
     try {
       await apiFetch("/profile/statut", { method: "POST", body: JSON.stringify({ statut: "intermittent" }) });
-      await apiFetch("/profile/complete-onboarding", { method: "POST" });
       await loadEverything();
-      // IMPORTANT : on purge landingStatut dès le succès. Sinon l'écran de transition
-      // "Je prépare ton espace" reste affiché tant que ce flag existe, et seul un
-      // rafraîchissement manuel débloque. On le retire avant de naviguer.
       resetLandingStatut();
-      setOnbStep("done");
-      setNav("dashboard");
-      // Nouvelle inscription intermittent → on lance la visite guidée.
-      // On purge le flag pour qu'un nouveau compte la voie toujours, même si
-      // ce navigateur en avait déjà vu une (ex : un compte AE précédent).
-      safeStorage.removeItem("hector_walkthrough_done");
-      setShowWalkthrough(true);
+      setOnbStep("inter");
     } catch (err) {
       // Échec (réseau, backend qui se réveille…) : on réessaie TOUT SEUL jusqu'à 3 fois,
       // avec une pause grandissante. L'utilisateur n'a rien à faire — surtout pas vider un cache.
@@ -1735,6 +1726,29 @@ function AppInner() {
       // Après 3 essais ratés : là seulement on montre l'erreur + le bouton Réessayer.
       setError(err.message);
       landingStatutApplied.current = false;
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Fin de la mini-étape intermittent : sauve la date anniversaire (si renseignée),
+  // termine l'onboarding, puis va au cockpit — ou directement à l'outil de scan AEM.
+  async function finishInterOnboarding({ goScan }) {
+    setLoading(true);
+    setError("");
+    try {
+      await apiFetch("/profile/date-anniversaire", {
+        method: "POST",
+        body: JSON.stringify({ date_anniversaire: anniversaireInput || null }),
+      });
+      // S'il file scanner, on n'ouvre pas la visite guidée par-dessus l'outil.
+      if (goScan) safeStorage.setItem("hector_walkthrough_done", "1");
+      await apiFetch("/profile/complete-onboarding", { method: "POST" });
+      await loadEverything();
+      setOnbStep("done");
+      setInterNav(goScan ? "coffre" : "cockpit");
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -1759,6 +1773,17 @@ function AppInner() {
       resetLandingStatut();
     }
   }, [profile, landingStatut]);
+
+  // Anti-blocage : si on atterrit sur un état d'onboarding NON géré (ex. "done" en transit)
+  // alors que l'onboarding n'est pas terminé, on revient à un écran SÛR. Garantit que
+  // l'écran neutre de secours ne soit jamais une impasse. (Boucle impossible : dès que
+  // onbStep="statut", la condition est fausse.)
+  useEffect(() => {
+    if (token && profile && !profile.onboarding_complete &&
+        !["statut", "aha", "result", "inter", "form"].includes(onbStep)) {
+      setOnbStep("statut");
+    }
+  }, [token, profile, onbStep]);
 
   async function handleLookupSiret() {
     if (!profilSiret) return;
@@ -4520,7 +4545,40 @@ function AppInner() {
       );
     }
 
-    // ─── PHASE FORM : 3 questions, rien de plus ───
+    // ─── MINI-ÉTAPE INTERMITTENT (date anniversaire + scan AEM). JAMAIS le form AE. ───
+    if (onbStep === "inter") {
+      return (
+        <div style={{ background: "#0a1322", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+          <style>{CSS}</style>
+          <div style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
+            <div className="hector-breathe" style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", margin: "0 auto 18px" }}>
+              <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
+            </div>
+            <h1 style={{ fontSize: 23, fontWeight: 800, color: "white", margin: "0 0 8px", lineHeight: 1.3 }}>Bonjour, moi c'est Hector. À partir d'ici, je m'occupe de toi.</h1>
+            <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti — ensuite, c'est moi qui compte pour toi.</p>
+            {error && <div style={S.errorBanner}>{error}</div>}
+
+            <div style={{ textAlign: "left", marginBottom: 22 }}>
+              <p style={S.sectionLabel}>📅 Ta date anniversaire</p>
+              <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>Pour compter les jours avant le renouvellement de tes droits, dis-moi ta date anniversaire.</p>
+              <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)} style={{ ...S.input, colorScheme: "dark" }} />
+            </div>
+
+            <button type="button" disabled={loading} onClick={() => finishInterOnboarding({ goScan: true })} style={{ ...S.btnPrimary, marginBottom: 10 }}>
+              {loading ? "…" : "📸 Scanner mes AEM"}
+            </button>
+            <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 16px", lineHeight: 1.5 }}>Je lis tes attestations employeur et je remplis tes heures tout seul — pas de saisie à la main.</p>
+
+            <button type="button" disabled={loading} onClick={() => finishInterOnboarding({ goScan: false })} style={{ ...S.linkBtn, fontSize: 13, color: "#8BA5C0" }}>
+              Je le ferai plus tard
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // ─── PHASE FORM : 3 questions AE — UNIQUEMENT pour le flux auto-entrepreneur ───
+    if (onbStep === "form") {
     return (
       <div style={S.authPage}>
         <style>{CSS}</style>
@@ -4612,6 +4670,19 @@ function AppInner() {
             </button>
           </form>
         </div>
+      </div>
+    );
+    }
+
+    // Filet de sécurité : tout autre état (ex. "done" en transit) → écran neutre,
+    // JAMAIS le formulaire AE (évite que l'intermittent voie les questions AE).
+    // L'effet anti-blocage ci-dessus le ramène aussitôt vers un écran sûr / le cockpit.
+    return (
+      <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
+        <div className="hector-breathe" style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+          <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+        </div>
+        <div style={{ color: "#8BA5C0", fontSize: 14 }}>Je prépare ton espace…</div>
       </div>
     );
   }
