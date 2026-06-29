@@ -454,6 +454,9 @@ function AppInner() {
   const [nav, setNav] = useState(() => safeStorage.getItem("nav") || "dashboard");
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
+  // Onboarding : choix du mode d'imposition. "inconnu" = défaut neutre (→ non-libératoire, le cas courant).
+  const [onbLiberatoireChoix, setOnbLiberatoireChoix] = useState("inconnu");
+  const [liberatoireSaving, setLiberatoireSaving] = useState(false);
   const [estimateData, setEstimateData] = useState(null);
   const [projectionData, setProjectionData] = useState(null); // projection trésorerie (carte "mois prochain")
   const [projDetailOpen, setProjDetailOpen] = useState(false); // détail de la projection replié par défaut
@@ -1859,6 +1862,20 @@ function AppInner() {
     }
   }
 
+  // ─── Mode d'imposition (versement libératoire ou non) : sauvegarde immédiate + recalcul cockpit ───
+  async function handleChangeLiberatoire(value) {
+    if (!profile || !!profile.versement_liberatoire === value) return;
+    setLiberatoireSaving(true);
+    try {
+      await apiFetch("/profile/settings", { method: "POST", body: JSON.stringify({ versement_liberatoire: value }) });
+      await loadEverything();   // recalcule l'estimation URSSAF (25,8 % → 28 % en BNC libératoire) + impôt
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLiberatoireSaving(false);
+    }
+  }
+
   // ─── Brique 5.1 : charge l'état du cockpit intermittent depuis le backend ───
   async function loadIntermittentCockpit() {
     setInterCockpitLoading(true);
@@ -3151,6 +3168,13 @@ function AppInner() {
   const cfeNum = parseFloat(panique.cfe) || 0;
   const fraisMoisNum = expensesSummary?.frais_mois || 0;
   const totalChargesAVenir = urssafProvision + impotsNum + cfeNum + fraisMoisNum;
+  // Décomposition du taux URSSAF (transparence — jamais le sigle "CFP" brut) : cotisations + formation
+  // (+ impôt si versement libératoire). Permet à qui connaît le taux "officiel" de comprendre les 0,2 %.
+  const _fmtPct = (x) => (x * 100).toFixed(1).replace(".", ",");
+  const _regimeAE = getRegime(profile?.activite);
+  const _cfpRate = (FISCALITE.cfp && FISCALITE.cfp[profile?.activite]) || 0;
+  const urssafDecompo = `tes cotisations (${_fmtPct(_regimeAE.tauxCotisations)} %) + ta contribution à la formation (${_fmtPct(_cfpRate)} %)`
+    + (profile?.versement_liberatoire ? ` + ton impôt (${_fmtPct(_regimeAE.tauxVersementLiberatoire)} %, prélevé avec)` : "");
   const securiteNum = parseFloat(objectifSecurite) || 0;
   const disponibleAujourdhui = panique.solde !== "" ? Math.round((soldeNum + bonusAutresRevenus - totalChargesAVenir - securiteNum) * 100) / 100 : null;
   // Argent reellement sur le compte apres charges, AVANT reserve - ne doit jamais etre clampe a 0 a tort
@@ -4637,6 +4661,23 @@ function AppInner() {
                   style={{ ...S.statutCard, ...(profileForm.activite === a.id ? S.statutCardActive : {}), display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span>{a.label}</span>
                   <span style={{ fontSize: 12, color: "#8BA5C0" }}>{a.taux} URSSAF</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Sous-question fiscale rattachée à l'activité — défaut neutre « je ne sais pas », ne bloque personne */}
+            <p style={{ ...S.sectionLabel }}>Et ton impôt sur le revenu ? <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(si tu ne sais pas, aucun souci)</span></p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 20 }}>
+              {[
+                { id: "liberatoire", lib: true, label: "Je le paie avec mes cotisations", desc: "un petit % prélevé sur ce que tu encaisses (versement libératoire)" },
+                { id: "classique", lib: false, label: "Je le paie à part, une fois par an", desc: "via ta déclaration de revenus" },
+                { id: "inconnu", lib: false, label: "Je ne sais pas encore", desc: "pas de souci, je pars sur le cas le plus courant. Tu changeras dans les Réglages quand tu veux." },
+              ].map(opt => (
+                <button type="button" key={opt.id}
+                  onClick={() => { setOnbLiberatoireChoix(opt.id); setProfileForm({ ...profileForm, versement_liberatoire: opt.lib }); }}
+                  style={{ ...S.statutCard, ...(onbLiberatoireChoix === opt.id ? S.statutCardActive : {}), display: "block", textAlign: "left" }}>
+                  <div>{opt.label}</div>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 2, lineHeight: 1.4, fontWeight: 400 }}>{opt.desc}</div>
                 </button>
               ))}
             </div>
@@ -8603,6 +8644,7 @@ function AppInner() {
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-pig-money" aria-hidden="true" style={{ fontSize: 14, color: "#FAC775" }} /> URSSAF de côté</div>
                   <div style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{formatEUR(urssafProvision)}</div>
+                  {urssafProvision > 0 && <div style={{ fontSize: 9.5, color: "#6B8299", marginTop: 4, lineHeight: 1.4 }}>{urssafDecompo}</div>}
                 </div>
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-shield-half" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} /> Réserve visée</div>
@@ -9505,6 +9547,7 @@ function AppInner() {
                     <span style={{ fontSize: 13, color: "#8BA5C0" }}>💰 Cotisations estimées <span style={{ fontSize: 11, color: "#8BA5C0" }}>({estimateData.taux_global_pct}%)</span></span>
                     {!editingDeclarationCotisations && <span style={{ fontSize: 11, color: "#8BA5C0" }}>Clique sur le montant pour modifier</span>}
                   </div>
+                  <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8, lineHeight: 1.45 }}>{urssafDecompo}</div>
                   {editingDeclarationCotisations ? (
                     <MontantInput
                       style={{ ...S.input, fontSize: 28, fontWeight: 800, textAlign: "center" }}
@@ -11067,6 +11110,34 @@ function AppInner() {
                       >
                         <i className={`ti ${opt.icon}`} aria-hidden="true" style={{ fontSize: 20 }} />
                         {opt.label}
+                        {actif && <span style={{ fontSize: 10, fontWeight: 700 }}>✓ Actif</span>}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* ── Mode d'imposition : versement libératoire ou impôt classique ── */}
+              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Comment tu paies ton impôt ?</div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Ça change ce que je mets de côté pour toi. Réversible à tout moment.</div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[
+                    { v: true, label: "Versement libératoire", desc: "avec mes cotisations, un % fixe" },
+                    { v: false, label: "Impôt classique", desc: "à part, déclaration annuelle" },
+                  ].map(opt => {
+                    const actif = !!profile?.versement_liberatoire === opt.v;
+                    return (
+                      <button key={String(opt.v)} type="button" disabled={liberatoireSaving} onClick={() => handleChangeLiberatoire(opt.v)}
+                        style={{
+                          flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textAlign: "center",
+                          background: actif ? "#5DCAA5" : "white", color: actif ? "#04342C" : INK,
+                          border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`, borderRadius: 8, padding: "12px 10px",
+                          fontSize: 12.5, fontWeight: 600, cursor: liberatoireSaving ? "default" : "pointer", fontFamily: "inherit",
+                          opacity: liberatoireSaving ? 0.6 : 1,
+                        }}>
+                        {opt.label}
+                        <span style={{ fontSize: 10.5, fontWeight: 400, color: actif ? "#04342C" : "#8BA5C0", lineHeight: 1.4 }}>{opt.desc}</span>
                         {actif && <span style={{ fontSize: 10, fontWeight: 700 }}>✓ Actif</span>}
                       </button>
                     );
