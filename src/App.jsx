@@ -1731,22 +1731,26 @@ function AppInner() {
     }
   }
 
-  // Fin de la mini-étape intermittent : sauve la date anniversaire (si renseignée),
-  // termine l'onboarding, puis va au cockpit — ou directement à l'outil de scan AEM.
-  async function finishInterOnboarding({ goScan }) {
+  // Fin de la mini-étape intermittent : sauve la date anniversaire + le montant journalier
+  // (si lus sur l'ARE), termine l'onboarding, puis va au cockpit.
+  async function finishInterOnboarding() {
     setLoading(true);
     setError("");
     try {
+      const mjRaw = areExtrait ? areExtrait.montant_journalier : "";
+      const mj = mjRaw !== "" && mjRaw != null ? parseFloat(mjRaw) : null;
       await apiFetch("/profile/date-anniversaire", {
         method: "POST",
-        body: JSON.stringify({ date_anniversaire: anniversaireInput || null }),
+        body: JSON.stringify({
+          date_anniversaire: anniversaireInput || null,
+          montant_journalier: mj != null && !isNaN(mj) ? mj : null,
+        }),
       });
-      // S'il file scanner, on n'ouvre pas la visite guidée par-dessus l'outil.
-      if (goScan) safeStorage.setItem("hector_walkthrough_done", "1");
       await apiFetch("/profile/complete-onboarding", { method: "POST" });
       await loadEverything();
+      setAreExtrait(null);
       setOnbStep("done");
-      setInterNav(goScan ? "coffre" : "cockpit");
+      setInterNav("cockpit");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1784,6 +1788,14 @@ function AppInner() {
       setOnbStep("statut");
     }
   }, [token, profile, onbStep]);
+
+  // Pendant la mini-étape intermittent : quand Hector a lu l'ARE, on pré-remplit le champ
+  // date avec la date anniversaire détectée (reste éditable à la main).
+  useEffect(() => {
+    if (onbStep === "inter" && areExtrait && areExtrait.date_anniversaire) {
+      setAnniversaireInput(areExtrait.date_anniversaire);
+    }
+  }, [areExtrait, onbStep]);
 
   async function handleLookupSiret() {
     if (!profilSiret) return;
@@ -4558,18 +4570,34 @@ function AppInner() {
             <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti — ensuite, c'est moi qui compte pour toi.</p>
             {error && <div style={S.errorBanner}>{error}</div>}
 
+            {/* Import ARE — Hector lit la date anniversaire + le montant journalier */}
+            <div style={{ textAlign: "left", marginBottom: 14 }}>
+              <p style={S.sectionLabel}>📎 Ton attestation France Travail (ARE)</p>
+              <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>Glisse-la (ou prends-la en photo) et je lis ta date anniversaire + ton montant journalier tout seul.</p>
+              <label style={{ ...S.btnSecondary, display: "flex", alignItems: "center", justifyContent: "center", cursor: areUploading ? "default" : "pointer", opacity: areUploading ? 0.6 : 1 }}>
+                {areUploading ? "Lecture en cours…" : "📎 Importer mon ARE"}
+                <input type="file" accept="image/*,application/pdf" disabled={areUploading} style={{ display: "none" }}
+                  onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }} />
+              </label>
+              {areError && <p style={{ color: "#E8927C", fontSize: 12, margin: "6px 0 0" }}>{areError}</p>}
+              {areExtrait && (
+                <p style={{ color: "#5DCAA5", fontSize: 12.5, margin: "8px 0 0", lineHeight: 1.5 }}>
+                  🐶 J'ai lu ton attestation{areExtrait.montant_journalier ? ` · ${areExtrait.montant_journalier} €/jour` : ""}. Vérifie juste la date ci-dessous.
+                </p>
+              )}
+            </div>
+
+            {/* Date anniversaire (pré-remplie par l'ARE, éditable à la main) */}
             <div style={{ textAlign: "left", marginBottom: 22 }}>
               <p style={S.sectionLabel}>📅 Ta date anniversaire</p>
-              <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>Pour compter les jours avant le renouvellement de tes droits, dis-moi ta date anniversaire.</p>
+              <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>Pour compter les jours avant le renouvellement de tes droits.</p>
               <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)} style={{ ...S.input, colorScheme: "dark" }} />
             </div>
 
-            <button type="button" disabled={loading} onClick={() => finishInterOnboarding({ goScan: true })} style={{ ...S.btnPrimary, marginBottom: 10 }}>
-              {loading ? "…" : "📸 Scanner mes AEM"}
+            <button type="button" disabled={loading} onClick={finishInterOnboarding} style={{ ...S.btnPrimary, marginBottom: 12 }}>
+              {loading ? "…" : "C'est parti →"}
             </button>
-            <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 16px", lineHeight: 1.5 }}>Je lis tes attestations employeur et je remplis tes heures tout seul — pas de saisie à la main.</p>
-
-            <button type="button" disabled={loading} onClick={() => finishInterOnboarding({ goScan: false })} style={{ ...S.linkBtn, fontSize: 13, color: "#8BA5C0" }}>
+            <button type="button" disabled={loading} onClick={finishInterOnboarding} style={{ ...S.linkBtn, fontSize: 13, color: "#8BA5C0" }}>
               Je le ferai plus tard
             </button>
           </div>
@@ -5830,6 +5858,11 @@ function AppInner() {
                         <div style={{ fontSize: 11, color: "#9A8050", marginTop: 3, fontStyle: "italic" }}>
                           C'est la date à laquelle France Travail étudie ton renouvellement.
                         </div>
+                        {c.montant_journalier != null && (
+                          <div style={{ fontSize: 12.5, color: "#9FE1CB", marginTop: 6, fontWeight: 600 }}>
+                            💶 Allocation journalière : {c.montant_journalier} €
+                          </div>
+                        )}
                       </div>
                     </div>
                     <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireEdit(true); }}
