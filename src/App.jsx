@@ -457,6 +457,9 @@ function AppInner() {
   // Onboarding : choix du mode d'imposition. "inconnu" = défaut neutre (→ non-libératoire, le cas courant).
   const [onbLiberatoireChoix, setOnbLiberatoireChoix] = useState("inconnu");
   const [liberatoireSaving, setLiberatoireSaving] = useState(false);
+  // Modale « Choisis ton activité » — sert au filet (bannière), à la bascule de statut et au rattrapage.
+  const [activiteModal, setActiviteModal] = useState(false);
+  const [activiteSaving, setActiviteSaving] = useState(false);
   const [estimateData, setEstimateData] = useState(null);
   const [projectionData, setProjectionData] = useState(null); // projection trésorerie (carte "mois prochain")
   const [projDetailOpen, setProjDetailOpen] = useState(false); // détail de la projection replié par défaut
@@ -1379,6 +1382,33 @@ function AppInner() {
     </div>
   ) : null;
 
+  // Modale « Choisis ton activité » — l'ACTIVITÉ en avant (ce que tu fais), le taux en info discrète
+  // (jamais un argument : l'activité est un fait juridique, pas un choix de taux). Réutilisée par le
+  // filet (bannière cockpit), la bascule de statut, et le rattrapage auto des comptes sans activité.
+  const activiteModalUI = activiteModal ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.8)", backdropFilter: "blur(4px)", zIndex: 650, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+      <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 18, padding: "26px 24px", maxWidth: 420, width: "100%" }}>
+        <div style={{ fontSize: 40, textAlign: "center", marginBottom: 8 }}>🐾</div>
+        <div style={{ fontSize: 17, fontWeight: 700, color: "white", textAlign: "center", marginBottom: 6 }}>Tu fais quoi, exactement ?</div>
+        <div style={{ fontSize: 13, color: "#8BA5C0", textAlign: "center", lineHeight: 1.55, marginBottom: 18 }}>Pour calculer juste tes cotisations, dis-moi simplement ton activité.</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {[
+            { id: "vente", label: "Je vends des marchandises", info: "12,3 % de cotisations" },
+            { id: "services", label: "Je fais des prestations de services", info: "21,2 % de cotisations" },
+            { id: "bnc", label: "Profession libérale (BNC)", info: "25,6 % de cotisations" },
+          ].map(o => (
+            <button key={o.id} type="button" disabled={activiteSaving} onClick={() => handleChoisirActivite(o.id)}
+              style={{ textAlign: "left", background: "#11203a", border: "1px solid #2a3a55", borderRadius: 12, padding: "13px 15px", cursor: activiteSaving ? "default" : "pointer", fontFamily: "inherit", opacity: activiteSaving ? 0.6 : 1 }}>
+              <div style={{ color: "white", fontSize: 14.5, fontWeight: 600 }}>{o.label}</div>
+              <div style={{ color: "#6B8299", fontSize: 11, marginTop: 3 }}>{o.info}</div>
+            </button>
+          ))}
+        </div>
+        <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14, lineHeight: 1.5 }}>C'est juste ce que tu fais — tu pourras le changer dans tes Réglages.</div>
+      </div>
+    </div>
+  ) : null;
+
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
   const renderAbonnement = (onBack) => (
     <div>
@@ -1855,6 +1885,11 @@ function AppInner() {
       });
       setProfile({ ...profile, statut: nouveauStatut });
       setNav("dashboard");
+      // Si on passe en auto-entrepreneur SANS activité connue → on la DEMANDE (jamais de valeur en dur).
+      // Strict : uniquement AE + activite absente. Un intermittent ne déclenche jamais cette modale.
+      if (nouveauStatut === "auto_entrepreneur" && !profile.activite) {
+        setActiviteModal(true);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1873,6 +1908,20 @@ function AppInner() {
       setError(err.message);
     } finally {
       setLiberatoireSaving(false);
+    }
+  }
+
+  // ─── Choix de l'activité (réutilisable) : sauvegarde + recalcul de tout le fiscal ───
+  async function handleChoisirActivite(id) {
+    setActiviteSaving(true);
+    try {
+      await apiFetch("/profile/settings", { method: "POST", body: JSON.stringify({ activite: id }) });
+      await loadEverything();   // /estimate repasse à disponible:true → URSSAF, déclaration, etc. se remplissent
+      setActiviteModal(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setActiviteSaving(false);
     }
   }
 
@@ -5563,6 +5612,7 @@ function AppInner() {
         {billingSuccessOverlay}
         {updateOverlay}
         {gameOverlay}
+        {activiteModalUI}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
         {celebPalier && (
@@ -8524,6 +8574,22 @@ function AppInner() {
         {nav === "dashboard" && estimateData && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
+            {/* Filet : activité manquante → tout le fiscal est désactivé. On le rend visible + actionnable
+                (UNIQUEMENT ce reason : un intermittent ne verra jamais « choisis ton activité AE »). */}
+            {estimateData?.reason === "activite_manquante" && (
+              <div style={{ background: "rgba(240,180,41,0.08)", border: "1px solid rgba(240,180,41,0.3)", borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 26, flexShrink: 0 }}>🐾</div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "#FAE3B6", marginBottom: 3 }}>J'ai tes revenus, mais il me manque ton activité</div>
+                  <div style={{ fontSize: 12.5, color: "#C9A861", lineHeight: 1.5 }}>Dis-moi ce que tu fais et je calcule juste tes cotisations.</div>
+                </div>
+                <button type="button" onClick={() => setActiviteModal(true)}
+                  style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                  Choisir mon activité
+                </button>
+              </div>
+            )}
+
             {/* ── BRIEFING DU MATIN D'HECTOR ── */}
             {(() => {
               const b = briefingMatin;
@@ -9480,22 +9546,33 @@ function AppInner() {
 
         {/* État vide commun : ces 3 pages ont besoin de revenus déclarés pour s'afficher.
             Sans données, on affiche une invite au lieu d'une page blanche. */}
-        {["declaration", "simvie", "simulateur"].includes(nav) && (!estimateData || estimateData.disponible === false) && (
-          <div>
-            <div style={{ ...S.card, textAlign: "center", padding: "40px 28px", maxWidth: 480, margin: "40px auto 0" }}>
-              <div style={{ fontSize: 40, marginBottom: 12 }}>🐾</div>
-              <h2 style={{ fontSize: 19, color: "#E6EDF5", fontWeight: 700, marginBottom: 8 }}>Il me faut d'abord un revenu</h2>
-              <p style={{ fontSize: 14, color: "#8BA5C0", lineHeight: 1.55, marginBottom: 22 }}>
-                Pour préparer ça, j'ai besoin que tu enregistres au moins une rentrée d'argent. Dès que c'est fait, je calcule tout automatiquement et cette page se remplit toute seule.
-              </p>
-              <button style={{ ...S.btnPrimary, maxWidth: 260, margin: "0 auto" }} onClick={() => setNav("revenus")}>
-                Ajouter un revenu
-              </button>
+        {["declaration", "simvie", "simulateur"].includes(nav) && (() => {
+          // On ne déguise plus une cause en une autre. 3 cas distincts :
+          const reason = estimateData?.reason;
+          const dispoFalse = !estimateData || estimateData.disponible === false;
+          const carte = (titre, texte, btnLabel, onClick) => (
+            <div>
+              <div style={{ ...S.card, textAlign: "center", padding: "40px 28px", maxWidth: 480, margin: "40px auto 0" }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🐾</div>
+                <h2 style={{ fontSize: 19, color: "#E6EDF5", fontWeight: 700, marginBottom: 8 }}>{titre}</h2>
+                <p style={{ fontSize: 14, color: "#8BA5C0", lineHeight: 1.55, marginBottom: btnLabel ? 22 : 0 }}>{texte}</p>
+                {btnLabel && <button style={{ ...S.btnPrimary, maxWidth: 260, margin: "0 auto" }} onClick={onClick}>{btnLabel}</button>}
+              </div>
             </div>
-          </div>
-        )}
+          );
+          // 1) Activité manquante → on demande l'activité (JAMAIS "pas de revenu")
+          if (reason === "activite_manquante")
+            return carte("Il me manque ton activité", "J'ai bien tes revenus, mais pas encore ton type d'activité — dis-moi ce que tu fais et je calcule juste tes cotisations.", "Choisir mon activité", () => setActiviteModal(true));
+          // 2) Autre cause de disponible:false (statut intermittent / à venir / non configuré)
+          if (dispoFalse)
+            return carte("Pas encore disponible ici", estimateData?.message || "Complète ton profil pour activer cette page.", null, null);
+          // 3) Tout est configuré mais AUCUN revenu → là seulement, "pas de revenu" (déclaration uniquement)
+          if (nav === "declaration" && (!incomeList || incomeList.length === 0))
+            return carte("Il me faut d'abord un revenu", "Pour préparer ça, j'ai besoin que tu enregistres au moins une rentrée d'argent. Dès que c'est fait, cette page se remplit toute seule.", "Ajouter un revenu", () => setNav("revenus"));
+          return null; // tout est OK → le contenu réel s'affiche
+        })()}
 
-        {nav === "declaration" && estimateData && estimateData.disponible !== false && (() => {
+        {nav === "declaration" && estimateData && estimateData.disponible !== false && incomeList && incomeList.length > 0 && (() => {
           const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
           const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : estimateData.ca_periode_courante;
           const cotisationsAffichees = declarationCotisations !== ""
