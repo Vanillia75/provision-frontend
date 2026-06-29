@@ -5612,7 +5612,6 @@ function AppInner() {
         {billingSuccessOverlay}
         {updateOverlay}
         {gameOverlay}
-        {activiteModalUI}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
         {celebPalier && (
@@ -11567,6 +11566,7 @@ function AppInner() {
       {billingSuccessOverlay}
       {updateOverlay}
       {gameOverlay}
+      {activiteModalUI}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
         const estIntermittent = profile && profile.statut === "intermittent";
