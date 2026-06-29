@@ -1,6 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
+import { franchiseVatMention, appendEiMention } from "./legalMentions";
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
@@ -10565,7 +10566,7 @@ function AppInner() {
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
                   {(profile?.entreprise || profile?.prenom) && profile?.siret && profile?.adresse ? (
                     <div style={{ fontSize: 13, color: "#E6EDF5", lineHeight: 1.6 }}>
-                      <strong>{profilEntreprise || `${profilPrenom} ${profilNom}`.trim()}</strong><br />
+                      <strong>{appendEiMention(profilEntreprise || `${profilPrenom} ${profilNom}`.trim(), profile?.statut)}</strong><br />
                       {profilAdresse}<br />
                       SIRET : {profilSiret}{profile?.statut === "auto_entrepreneur" && <> · Auto-entrepreneur, dispensé d'immatriculation au RCS et au RM</>}
                       <button type="button" style={{ ...S.linkBtn, fontSize: 11, display: "block", marginTop: 6 }} onClick={() => setNav("profil")}>Modifier dans Profil →</button>
@@ -10617,7 +10618,7 @@ function AppInner() {
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addFactureLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
                   <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalFacture())}</span></div>
-                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
                   <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalFacture())}</span></div>
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
@@ -10746,7 +10747,7 @@ function AppInner() {
 
                     <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalHT)}</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }}><span>Total TTC</span><span>{formatEUR(inv.montant)}</span></div>
                     </div>
 
@@ -10848,7 +10849,7 @@ function AppInner() {
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addQuoteLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
                   <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalQuote())}</span></div>
-                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
                   <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalQuote())}</span></div>
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={quoteForm.notes} onChange={e => setQuoteForm({ ...quoteForm, notes: e.target.value })} />
@@ -10958,7 +10959,7 @@ function AppInner() {
 
                     <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalHT)}</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>TVA non applicable — article 293 B du CGI</span><span>0,00 €</span></div>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
                       <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }}><span>Total TTC</span><span>{formatEUR(q.montant)}</span></div>
                     </div>
 
