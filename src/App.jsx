@@ -581,7 +581,7 @@ function AppInner() {
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [showNewQuote, setShowNewQuote] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState(null);
-  const [quoteForm, setQuoteForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: "", date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  const [quoteForm, setQuoteForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: "", date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [viewingQuote, setViewingQuote] = useState(null);
   const [sendingQuote, setSendingQuote] = useState(false);
   const [sendQuoteStatus, setSendQuoteStatus] = useState("");
@@ -636,7 +636,7 @@ function AppInner() {
     }
   }, [viewingInvoice?.id]);
   const todayISO = new Date().toISOString().split("T")[0];
-  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -2661,7 +2661,7 @@ function AppInner() {
   }
 
   function resetFactureForm() {
-    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
     setEditingInvoiceId(null);
   }
 
@@ -2670,6 +2670,9 @@ function AppInner() {
       client_nom: inv.client_nom || "",
       client_email: inv.client_email || "",
       client_adresse: inv.client_adresse || "",
+      client_type: inv.client_type || "particulier",
+      client_siret: inv.client_siret || "",
+      client_tva: inv.client_tva || "",
       date_emission: inv.date_emission || todayISO,
       date_echeance: inv.date_echeance || "",
       lignes: (inv.lignes && inv.lignes.length > 0) ? inv.lignes : [{ description: "", quantite: 1, prix_unitaire: "" }],
@@ -2743,7 +2746,7 @@ function AppInner() {
   }
 
   function resetQuoteForm() {
-    setQuoteForm({ client_nom: "", client_email: "", client_adresse: "", date_emission: todayISO, date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setQuoteForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
     setEditingQuoteId(null);
   }
 
@@ -2752,6 +2755,9 @@ function AppInner() {
       client_nom: q.client_nom || "",
       client_email: q.client_email || "",
       client_adresse: q.client_adresse || "",
+      client_type: q.client_type || "particulier",
+      client_siret: q.client_siret || "",
+      client_tva: q.client_tva || "",
       date_emission: q.date_emission || todayISO,
       date_validite: q.date_validite || "",
       lignes: (q.lignes && q.lignes.length > 0) ? q.lignes : [{ description: "", quantite: 1, prix_unitaire: "" }],
@@ -2780,6 +2786,37 @@ function AppInner() {
   // Rendu du bloc de totaux (HT / TVA ou mention 293 B / TTC). Le calcul vient de
   // computeInvoiceTotals (jumeau backend) — pas de logique TVA dupliquée ici.
   // montantHt = total HT ; `flex` = variante de style des vues détail.
+  // Switch « Particulier / Professionnel » + champs SIRET/TVA client (pro uniquement).
+  // `patch` fusionne un objet partiel dans le form (facture ou devis).
+  function renderClientType(form, patch) {
+    const pro = form.client_type === "professionnel";
+    return (
+      <>
+        <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+          {[{ v: "particulier", label: "Particulier" }, { v: "professionnel", label: "Professionnel" }].map(opt => {
+            const actif = form.client_type === opt.v;
+            return (
+              <button key={opt.v} type="button" onClick={() => patch({ client_type: opt.v })}
+                style={{
+                  flex: 1, background: actif ? "#5DCAA5" : "white", color: actif ? "#04342C" : INK,
+                  border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`, borderRadius: 8, padding: "9px 10px",
+                  fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                }}>{opt.label}</button>
+            );
+          })}
+        </div>
+        {pro && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+            <input style={S.input} placeholder="SIRET client (optionnel)" value={form.client_siret}
+              onChange={e => patch({ client_siret: e.target.value })} />
+            <input style={S.input} placeholder="N° TVA client (optionnel)" value={form.client_tva}
+              onChange={e => patch({ client_tva: e.target.value })} />
+          </div>
+        )}
+      </>
+    );
+  }
+
   // fiscalSnap : régime FIGÉ d'une facture/devis existant (snapshot). Si absent (formulaire
   // de création), on prend le réglage courant (la pièce n'est pas encore émise).
   function renderTotaux(montantHt, flex = false, fiscalSnap = null) {
@@ -2818,6 +2855,9 @@ function AppInner() {
             client_nom: quoteForm.client_nom,
             client_email: quoteForm.client_email || null,
             client_adresse: quoteForm.client_adresse || null,
+            client_type: quoteForm.client_type,
+            client_siret: quoteForm.client_siret || null,
+            client_tva: quoteForm.client_tva || null,
             date_emission: quoteForm.date_emission,
             date_validite: quoteForm.date_validite || null,
             lignes,
@@ -2831,6 +2871,9 @@ function AppInner() {
             client_nom: quoteForm.client_nom,
             client_email: quoteForm.client_email || null,
             client_adresse: quoteForm.client_adresse || null,
+            client_type: quoteForm.client_type,
+            client_siret: quoteForm.client_siret || null,
+            client_tva: quoteForm.client_tva || null,
             date_emission: quoteForm.date_emission,
             date_validite: quoteForm.date_validite || null,
             lignes,
@@ -2927,6 +2970,9 @@ function AppInner() {
             client_nom: factureForm.client_nom,
             client_email: factureForm.client_email || null,
             client_adresse: factureForm.client_adresse || null,
+            client_type: factureForm.client_type,
+            client_siret: factureForm.client_siret || null,
+            client_tva: factureForm.client_tva || null,
             date_emission: factureForm.date_emission,
             date_echeance: factureForm.date_echeance || null,
             lignes,
@@ -2940,6 +2986,9 @@ function AppInner() {
             client_nom: factureForm.client_nom,
             client_email: factureForm.client_email || null,
             client_adresse: factureForm.client_adresse || null,
+            client_type: factureForm.client_type,
+            client_siret: factureForm.client_siret || null,
+            client_tva: factureForm.client_tva || null,
             date_emission: factureForm.date_emission,
             date_echeance: factureForm.date_echeance || null,
             lignes,
@@ -10644,6 +10693,7 @@ function AppInner() {
                   <input style={S.input} placeholder="Email du client" type="email" value={factureForm.client_email} onChange={e => setFactureForm({ ...factureForm, client_email: e.target.value })} />
                 </div>
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={factureForm.client_adresse} onChange={e => setFactureForm({ ...factureForm, client_adresse: e.target.value })} />
+                {renderClientType(factureForm, p => setFactureForm({ ...factureForm, ...p }))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
                   <label style={{ ...S.label, marginBottom: 0 }}>Date d'émission
                     <input style={S.input} type="date" value={factureForm.date_emission} onChange={e => setFactureForm({ ...factureForm, date_emission: e.target.value })} />
@@ -10768,6 +10818,8 @@ function AppInner() {
                           <strong>{inv.client_nom}</strong><br />
                           {inv.client_adresse || "—"}<br />
                           {inv.client_email || ""}
+                          {inv.client_type === "professionnel" && inv.client_siret && <><br />SIRET : {inv.client_siret}</>}
+                          {inv.client_type === "professionnel" && inv.client_tva && <><br />N° TVA : {inv.client_tva}</>}
                         </div>
                       </div>
                     </div>
@@ -10871,6 +10923,7 @@ function AppInner() {
                   <input style={S.input} placeholder="Email du client" type="email" value={quoteForm.client_email} onChange={e => setQuoteForm({ ...quoteForm, client_email: e.target.value })} />
                 </div>
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={quoteForm.client_adresse} onChange={e => setQuoteForm({ ...quoteForm, client_adresse: e.target.value })} />
+                {renderClientType(quoteForm, p => setQuoteForm({ ...quoteForm, ...p }))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
                   <label style={{ ...S.label, marginBottom: 0 }}>Date d'émission
                     <input style={S.input} type="date" value={quoteForm.date_emission} onChange={e => setQuoteForm({ ...quoteForm, date_emission: e.target.value })} />
@@ -10976,6 +11029,8 @@ function AppInner() {
                           <strong>{q.client_nom}</strong><br />
                           {q.client_adresse || "—"}<br />
                           {q.client_email || ""}
+                          {q.client_type === "professionnel" && q.client_siret && <><br />SIRET : {q.client_siret}</>}
+                          {q.client_type === "professionnel" && q.client_tva && <><br />N° TVA : {q.client_tva}</>}
                         </div>
                       </div>
                     </div>
