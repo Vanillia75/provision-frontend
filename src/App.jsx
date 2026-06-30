@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
-import { franchiseVatMention, appendEiMention } from "./legalMentions";
+import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate } from "./legalMentions";
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
@@ -656,6 +656,8 @@ function AppInner() {
   };
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
+  const [tvaSaving, setTvaSaving] = useState(false);
+  const [vatNumber, setVatNumber] = useState(""); // brouillon du n° TVA (sauvé au blur)
   const [simCaLanding, setSimCaLanding] = useState("3000");
   const [simActLanding, setSimActLanding] = useState("0.212");
   // Simulateur cachets→heures de la landing intermittent
@@ -791,6 +793,7 @@ function AppInner() {
       if (p.email_verified != null) setEmailVerified(p.email_verified);
       if (p.siret != null) setProfilSiret(p.siret);
       if (p.adresse != null) setProfilAdresse(p.adresse);
+      if (p.fiscal_settings) setVatNumber(p.fiscal_settings.vat_number || "");
       if (p.reserve_securite != null) setObjectifSecurite(String(p.reserve_securite));
       if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
@@ -1916,6 +1919,27 @@ function AppInner() {
     }
   }
 
+  // ─── TVA de facturation (table fiscal_settings, isolée) — AUCUN impact URSSAF/dashboard ───
+  // Pas de loadEverything : on ne recalcule pas le fiscal, on met juste à jour fiscal_settings local.
+  async function saveFiscal(next) {
+    const cur = profile?.fiscal_settings || { vat_mode: "franchise", vat_rate: 20, vat_number: null };
+    const body = {
+      vat_mode: next.vat_mode ?? cur.vat_mode,
+      vat_rate: next.vat_rate ?? cur.vat_rate,
+      vat_number: next.vat_number !== undefined ? next.vat_number : cur.vat_number,
+    };
+    setTvaSaving(true);
+    try {
+      const saved = await apiFetch("/profile/fiscal", { method: "POST", body: JSON.stringify(body) });
+      setProfile(p => p ? { ...p, fiscal_settings: saved } : p);
+      showSavedToast();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTvaSaving(false);
+    }
+  }
+
   // ─── Choix de l'activité (réutilisable) : sauvegarde + recalcul de tout le fiscal ───
   async function handleChoisirActivite(id) {
     setActiviteSaving(true);
@@ -2751,6 +2775,33 @@ function AppInner() {
 
   function totalQuote() {
     return quoteForm.lignes.reduce((sum, l) => sum + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
+  }
+
+  // Rendu du bloc de totaux (HT / TVA ou mention 293 B / TTC). Le calcul vient de
+  // computeInvoiceTotals (jumeau backend) — pas de logique TVA dupliquée ici.
+  // montantHt = total HT ; `flex` = variante de style des vues détail.
+  // fiscalSnap : régime FIGÉ d'une facture/devis existant (snapshot). Si absent (formulaire
+  // de création), on prend le réglage courant (la pièce n'est pas encore émise).
+  function renderTotaux(montantHt, flex = false, fiscalSnap = null) {
+    const t = computeInvoiceTotals(montantHt, fiscalSnap || profile?.fiscal_settings);
+    const base = flex ? { display: "flex", justifyContent: "space-between" } : { ...S.netRow };
+    const htStyle = flex ? { ...base, fontSize: 13, fontWeight: 600 } : { ...base, fontWeight: 600 };
+    const ttcStyle = flex
+      ? { ...base, fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }
+      : { ...base, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 };
+    const midStyle = {
+      ...base, fontSize: 11, marginTop: flex ? 4 : 0,
+      color: t.mode === "assujetti" ? "#0A2540" : (flex ? "#6B7A8D" : "#8BA5C0"),
+    };
+    return (
+      <>
+        <div style={htStyle}><span>Total HT</span><span>{formatEUR(t.ht)}</span></div>
+        {t.mode === "assujetti"
+          ? <div style={midStyle}><span>TVA ({formatVatRate(t.rate)} %)</span><span>{formatEUR(t.tva)}</span></div>
+          : <div style={midStyle}><span>{t.mention}</span><span>0,00 €</span></div>}
+        <div style={ttcStyle}><span>Total TTC</span><span>{formatEUR(t.ttc)}</span></div>
+      </>
+    );
   }
 
   async function saveQuote(statutVoulu) {
@@ -10617,9 +10668,7 @@ function AppInner() {
                 ))}
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addFactureLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
-                  <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalFacture())}</span></div>
-                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
-                  <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalFacture())}</span></div>
+                  {renderTotaux(totalFacture())}
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
@@ -10746,9 +10795,7 @@ function AppInner() {
                     </div>
 
                     <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalHT)}</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }}><span>Total TTC</span><span>{formatEUR(inv.montant)}</span></div>
+                      {renderTotaux(totalHT, true, inv)}
                     </div>
 
                     {inv.notes && (
@@ -10848,9 +10895,7 @@ function AppInner() {
                 ))}
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addQuoteLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
-                  <div style={{ ...S.netRow, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalQuote())}</span></div>
-                  <div style={{ ...S.netRow, fontSize: 11, color: "#8BA5C0" }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
-                  <div style={{ ...S.netRow, fontWeight: 600, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span>Total TTC</span><span>{formatEUR(totalQuote())}</span></div>
+                  {renderTotaux(totalQuote())}
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={quoteForm.notes} onChange={e => setQuoteForm({ ...quoteForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
@@ -10958,9 +11003,7 @@ function AppInner() {
                     </div>
 
                     <div style={{ background: "#F7F9F5", borderRadius: 10, padding: "12px 16px", marginBottom: 16 }}>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 600 }}><span>Total HT</span><span>{formatEUR(totalHT)}</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#6B7A8D", marginTop: 4 }}><span>{franchiseVatMention()}</span><span>0,00 €</span></div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 14, fontWeight: 700, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 8 }}><span>Total TTC</span><span>{formatEUR(q.montant)}</span></div>
+                      {renderTotaux(totalHT, true, q)}
                     </div>
 
                     {q.notes && (
@@ -11255,6 +11298,56 @@ function AppInner() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* ── TVA de facturation : franchise (défaut) ou assujetti ── */}
+              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Je facture la TVA</div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0" }}>Active-le seulement si tu es assujetti à la TVA. Par défaut : franchise en base (art. 293 B).</div>
+                  </div>
+                  <button type="button" disabled={tvaSaving} aria-label="Activer la TVA"
+                    onClick={() => saveFiscal({ vat_mode: profile?.fiscal_settings?.vat_mode === "assujetti" ? "franchise" : "assujetti" })}
+                    style={{
+                      position: "relative", width: 46, height: 26, borderRadius: 13, border: "none", padding: 0, flexShrink: 0,
+                      cursor: tvaSaving ? "default" : "pointer", opacity: tvaSaving ? 0.6 : 1,
+                      background: profile?.fiscal_settings?.vat_mode === "assujetti" ? "#5DCAA5" : "#CBD5E1", transition: "background 0.2s",
+                    }}>
+                    <span style={{ position: "absolute", top: 3, left: profile?.fiscal_settings?.vat_mode === "assujetti" ? 23 : 3, width: 20, height: 20, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
+                  </button>
+                </div>
+                {profile?.fiscal_settings?.vat_mode === "assujetti" && (
+                  <>
+                    <div style={{ fontSize: 11.5, color: "#854F0B", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 8, padding: "8px 10px", marginTop: 12, lineHeight: 1.5 }}>
+                      ℹ️ Tes prix sont désormais traités en <strong>HT</strong> — la TVA s'ajoute par-dessus sur tes factures (un prix de 100 devient 120 TTC à 20 %).
+                    </div>
+                    <div style={{ display: "flex", gap: 14, marginTop: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+                      <div>
+                        <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 5 }}>Taux de TVA</div>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {[20, 10, 5.5].map(r => {
+                            const actif = (profile?.fiscal_settings?.vat_rate ?? 20) === r;
+                            return (
+                              <button key={r} type="button" disabled={tvaSaving} onClick={() => saveFiscal({ vat_rate: r })}
+                                style={{
+                                  background: actif ? "#5DCAA5" : "white", color: actif ? "#04342C" : INK,
+                                  border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`, borderRadius: 8, padding: "8px 12px",
+                                  fontSize: 12.5, fontWeight: 600, cursor: tvaSaving ? "default" : "pointer", fontFamily: "inherit",
+                                }}>{formatVatRate(r)} %</button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <label style={{ ...S.label, flex: 1, minWidth: 200, marginBottom: 0 }}>N° de TVA intracommunautaire (recommandé)
+                        <input style={S.input} type="text" value={vatNumber}
+                          onChange={e => setVatNumber(e.target.value)}
+                          onBlur={() => saveFiscal({ vat_number: vatNumber.trim() || null })}
+                          placeholder="Ex : FR 12 345678901" />
+                      </label>
+                    </div>
+                  </>
+                )}
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
