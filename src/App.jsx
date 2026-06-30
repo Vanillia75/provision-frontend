@@ -2705,6 +2705,27 @@ function AppInner() {
     }
   }
 
+  async function handleViewQuotePdf(q) {
+    setLoadingPdf(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/quotes/${q.id}/pdf`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || "Impossible de générer le PDF");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, "_blank");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingPdf(false);
+    }
+  }
+
   async function handleSendInvoice(inv) {
     setSendingInvoice(true);
     setSendInvoiceStatus("");
@@ -10989,6 +11010,9 @@ function AppInner() {
                     <button aria-label="Voir" onClick={e => { e.stopPropagation(); setViewingQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
+                    <button aria-label="PDF" onClick={e => { e.stopPropagation(); handleViewQuotePdf(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
+                      <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 15 }} />
+                    </button>
                     <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditQuote(q); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
@@ -11066,6 +11090,12 @@ function AppInner() {
                         <strong>Notes :</strong> {q.notes}
                       </div>
                     )}
+
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+                      <button style={S.btnPrimary} onClick={() => handleViewQuotePdf(q)} disabled={loadingPdf}>
+                        <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />{loadingPdf ? "Génération…" : "Voir / Télécharger le PDF"}
+                      </button>
+                    </div>
 
                     {q.converted_invoice_id ? (
                       <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
