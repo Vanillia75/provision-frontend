@@ -458,7 +458,6 @@ function AppInner() {
   const [bankLoading, setBankLoading] = useState(false);
   const [bankSyncing, setBankSyncing] = useState(false);
   const [bankCardOpen, setBankCardOpen] = useState(false); // carte connexion bancaire repliée par défaut (accordéon)
-  const [serenityOpen, setSerenityOpen] = useState(false); // checklist de sérénité repliée par défaut sur mobile
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [authEmail, setAuthEmail] = useState("");
@@ -8836,14 +8835,49 @@ function AppInner() {
                     </div>
                   </div>
 
-                  {b.dispo !== null && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 2 }}>💰 Ce que tu peux dépenser aujourd'hui</div>
-                      <div style={{ fontSize: 30, fontWeight: 800, color: b.dispo >= 0 ? "#5DCAA5" : "#F09595", fontVariantNumeric: "tabular-nums" }}>
-                        {b.dispo < 0 ? "−" : ""}{formatEUR(Math.abs(b.dispo))}
+                  {argentDisponibleBrut !== null && (() => {
+                    // Salon V2 — HÉROS UNIQUE. Affichage seul : disponibleAujourdhui / argentDisponibleBrut /
+                    // urssafProvision / securiteNum restent calculés en 3409-3444. Aucun calcul ici.
+                    const deficitReel = argentDisponibleBrut < 0;                    // rouge : le compte ne couvre pas les charges
+                    const reserveEntamee = !deficitReel && disponibleAujourdhui < 0; // orange : argent dispo mais réserve pas complète
+                    const heroAffiche = deficitReel ? disponibleAujourdhui : Math.max(0, disponibleAujourdhui);
+                    return (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>Aujourd'hui, tu peux dépenser</div>
+                        <div style={{ fontSize: 38, fontWeight: 800, color: deficitReel ? "#F09595" : "#5DCAA5", lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums" }}>
+                          {heroAffiche < 0 ? "−" : ""}{formatEUR(Math.abs(heroAffiche))}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 8, lineHeight: 1.55 }}>
+                          {deficitReel
+                            ? "Tes charges à venir dépassent ce que tu as en ce moment. On regarde ça ensemble — tu n'es pas seul."
+                            : reserveEntamee
+                              ? (urssafProvision > 0
+                                  ? `J'ai déjà protégé ton URSSAF (${formatEUR(urssafProvision)} mis de côté). Il te reste juste à compléter ta réserve de sécurité avant de pouvoir dépenser sereinement.`
+                                  : "Il te reste juste à compléter ta réserve de sécurité avant de pouvoir dépenser sereinement.")
+                              : (urssafProvision > 0
+                                  ? `J'ai déjà protégé ton URSSAF (${formatEUR(urssafProvision)} mis de côté). Il reste juste ta réserve de sécurité à préserver.`
+                                  : "Tout est déjà mis de côté. Tu peux dépenser ce montant sans te mettre en danger.")}
+                        </div>
+                        <details style={{ marginTop: 10 }}>
+                          <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Comment j'arrive à ce montant ?</summary>
+                          <div style={{ marginTop: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#9FB8CE" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5 }}>
+                              <span>Disponible après charges et fiscalité</span>
+                              <span style={{ color: "#E6EDF5", fontWeight: 700, whiteSpace: "nowrap" }}>{formatEUR(argentDisponibleBrut)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                              <span>− Réserve de sécurité</span>
+                              <span style={{ color: "#FAC775", fontWeight: 700, whiteSpace: "nowrap" }}>−{formatEUR(securiteNum)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                              <span style={{ color: "#C2D4E6" }}>Tu peux dépenser aujourd'hui</span>
+                              <span style={{ color: "#5DCAA5", fontWeight: 800, whiteSpace: "nowrap" }}>{formatEUR(disponibleAujourdhui)}</span>
+                            </div>
+                          </div>
+                        </details>
                       </div>
-                    </div>
-                  )}
+                    );
+                  })()}
 
                   {b.gardeAuChaud.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
@@ -8957,59 +8991,33 @@ function AppInner() {
             {/* ── OBJECTIF : DISPONIBLE + JAUGE RÉSERVE (style cockpit) ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px" }}>
               {(argentDisponibleBrut !== null && profile?.solde_bancaire != null) ? (() => {
+                // Salon V2 — Changement 3 : le chiffre disponible est désormais le héros (briefing).
+                // Ce bloc ne garde QUE la jauge de réserve (info utile, plus de chiffre concurrent).
+                // Affichage seul — reserveAtteinte / securiteNum / manqueReserveDashboard inchangés (3439-3444).
                 const reserveConstituee = reserveAtteinte ? securiteNum : Math.max(0, securiteNum - manqueReserveDashboard);
                 const reservePct = securiteNum > 0 ? Math.min(100, Math.round((reserveConstituee / securiteNum) * 100)) : 0;
-                // 3 états du chiffre héros (présentation only — variables & niveauFinancier inchangés) :
-                // - vert   : tout couvert, réserve incluse → on montre le PRUDENT (dépensable sans entamer la réserve).
-                // - orange : réserve pas encore complète mais PAS de déficit → on montre ce qu'il a VRAIMENT (brut),
-                //            en neutre, et on guide pour compléter la réserve. JAMAIS de gros négatif anxiogène.
-                // - rouge  : déficit réel (le compte ne couvre pas les charges) → là le négatif rouge est légitime.
-                const chargesAVenir = totalChargesAVenir > 0;   // rien à payer ? alors on n'évoque pas l'URSSAF (nouvel utilisateur)
-                let heroVal, heroColor, heroSub, heroLigne;
-                if (niveauFinancier === "orange") {
-                  heroVal = argentDisponibleBrut;
-                  heroColor = "#E6EDF5";
-                  heroSub = chargesAVenir ? "sur ton compte une fois l'URSSAF payée" : "sur ton compte";
-                  heroLigne = `Il te reste ${formatEUR(manqueReserveDashboard)} à mettre de côté pour compléter ta réserve de ${formatEUR(securiteNum)}. On y va ensemble.`;
-                } else if (niveauFinancier === "rouge") {
-                  heroVal = argentDisponibleBrut;
-                  heroColor = "#F09595";
-                  heroSub = "tes charges à venir dépassent ce que tu as — on regarde ça ensemble";
-                  heroLigne = null;
-                } else {
-                  heroVal = disponibleAujourdhui;
-                  heroColor = "#5DCAA5";
-                  heroSub = chargesAVenir ? "une fois l'URSSAF et ta réserve mises de côté" : "une fois ta réserve mise de côté";
-                  heroLigne = securiteNum > 0
-                    ? `Tu as ${formatEUR(argentDisponibleBrut)} sur ton compte${chargesAVenir ? " une fois l'URSSAF payée" : ""}, dont ${formatEUR(securiteNum)} de réserve que je garde de côté.`
-                    : null;
-                }
+                if (securiteNum <= 0) return (
+                  <div style={{ fontSize: 12.5, color: "#6B8299", lineHeight: 1.55 }}>
+                    Définis une réserve de sécurité et je la garderai de côté pour toi, sans que tu aies à y penser.
+                  </div>
+                );
                 return (
                   <>
-                    <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 4 }}>Disponible aujourd'hui</div>
-                    <div style={{ fontSize: 42, fontWeight: 800, color: heroColor, lineHeight: 1, letterSpacing: -1 }}>
-                      {heroVal < 0 ? "−" : ""}{formatEUR(Math.abs(heroVal))}
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
+                      <span style={{ fontSize: 11, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Réserve de sécurité</span>
+                      <span style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 800 }}>{reservePct}%</span>
                     </div>
-                    <div style={{ fontSize: 12.5, color: "#5A7798", marginTop: 6, marginBottom: heroLigne ? 8 : 16 }}>{heroSub}</div>
-                    {heroLigne && (
-                      <div style={{ fontSize: 11.5, color: "#6B8299", marginBottom: 16, lineHeight: 1.5 }}>
-                        {heroLigne}
+                    <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
+                      <div style={{ height: "100%", width: `${reservePct}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#6B8299", marginTop: 6 }}>
+                      <span>{formatEUR(reserveConstituee)} constitués</span>
+                      <span>Objectif · {formatEUR(securiteNum)}</span>
+                    </div>
+                    {reserveAtteinte === false && (
+                      <div style={{ fontSize: 11.5, color: "#6B8299", marginTop: 10, lineHeight: 1.55 }}>
+                        Il te reste {formatEUR(manqueReserveDashboard)} à mettre de côté pour compléter ta réserve. On y va ensemble, à ton rythme.
                       </div>
-                    )}
-                    {securiteNum > 0 && (
-                      <>
-                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                          <span style={{ fontSize: 11, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Réserve de sécurité</span>
-                          <span style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 800 }}>{reservePct}%</span>
-                        </div>
-                        <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
-                          <div style={{ height: "100%", width: `${reservePct}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10.5, color: "#6B8299", marginTop: 6 }}>
-                          <span>{formatEUR(reserveConstituee)} constitués</span>
-                          <span>Objectif · {formatEUR(securiteNum)}</span>
-                        </div>
-                      </>
                     )}
                   </>
                 );
@@ -9040,36 +9048,30 @@ function AppInner() {
 
             {/* ── CHECKLIST DE SÉRÉNITÉ (style cockpit) ── */}
             {(() => {
-              const items = [
-                { label: "Solde bancaire renseigné", ok: panique.solde !== "" },
-                { label: "Revenus du mois enregistrés", ok: incomeList.length > 0 },
-                { label: "URSSAF provisionnée", ok: urssafProvision > 0 },
-                { label: "Réserve de sécurité constituée", ok: reserveAtteinte === true },
-              ];
-              const faits = items.filter(i => i.ok).length;
+              // Salon V2 — Changement 4 : la checklist de coches devient une phrase d'Hector.
+              // Affichage seul — panique.solde / incomeList / urssafProvision / reserveAtteinte inchangés.
+              const aSolde = panique.solde !== "";
+              const aRevenus = incomeList.length > 0;
+              const aUrssaf = urssafProvision > 0;
+              const aReserve = reserveAtteinte === true;
+              const toutBon = aSolde && aRevenus && aUrssaf && aReserve;
+              // Ce qui aiderait Hector à mieux veiller (formulé en douceur, jamais des coches scolaires).
+              // L'URSSAF n'y figure pas : elle se provisionne automatiquement, ce n'est pas une action de l'utilisateur.
+              const coupsDePouce = [];
+              if (!aSolde) coupsDePouce.push("ton solde bancaire");
+              if (!aRevenus) coupsDePouce.push("tes revenus du mois");
+              if (!aReserve) coupsDePouce.push("ta réserve de sécurité à compléter");
+              const liste = coupsDePouce.length <= 1
+                ? (coupsDePouce[0] || "encore un petit réglage")
+                : coupsDePouce.slice(0, -1).join(", ") + " et " + coupsDePouce[coupsDePouce.length - 1];
               return (
-                <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px" }}>
-                  <div onClick={isMobile ? () => setSerenityOpen(o => !o) : undefined} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: (isMobile && !serenityOpen) ? 0 : 14, cursor: isMobile ? "pointer" : "default" }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de sérénité</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                      <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{faits} / {items.length}</div>
-                      {isMobile && <i className={`ti ti-chevron-${serenityOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#6B8299" }} />}
-                    </div>
+                <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", display: "flex", alignItems: "center", gap: 13 }}>
+                  <span style={{ fontSize: 26, flexShrink: 0 }} aria-hidden="true">🐾</span>
+                  <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55 }}>
+                    {toutBon
+                      ? "J'ai tout ce qu'il me faut pour veiller sur toi."
+                      : `Pour veiller encore mieux sur toi, ${liste} m'aiderai${coupsDePouce.length > 1 ? "ent" : "t"}. Quand tu veux, à ton rythme — aucune pression.`}
                   </div>
-                  {isMobile && !serenityOpen && (
-                    <div style={{ height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 4, overflow: "hidden", marginTop: 12 }}><div style={{ width: `${Math.round((faits / items.length) * 100)}%`, height: "100%", background: "#5DCAA5", borderRadius: 4 }} /></div>
-                  )}
-                  {(!isMobile || serenityOpen) && (
-                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                    {items.map(it => (
-                      <div key={it.label} style={{ display: "flex", alignItems: "center", gap: 11, opacity: it.ok ? 1 : 0.55 }}>
-                        <i className={`ti ${it.ok ? "ti-circle-check-filled" : "ti-circle"}`} aria-hidden="true" style={{ fontSize: 18, color: it.ok ? "#5DCAA5" : "#FAC775", flexShrink: 0 }} />
-                        <div style={{ flex: 1, fontSize: 13.5, color: it.ok ? "#E8F4FF" : "#B5D4F4" }}>{it.label}</div>
-                        <span style={{ fontSize: 11, color: it.ok ? "#5DCAA5" : "#FAC775" }}>{it.ok ? "fait" : "à faire"}</span>
-                      </div>
-                    ))}
-                  </div>
-                  )}
                 </div>
               );
             })()}
