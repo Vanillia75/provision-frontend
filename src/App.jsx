@@ -1417,6 +1417,36 @@ function AppInner() {
     </div>
   ) : null;
 
+  // Proposition (confirmation explicite) d'ajouter/retirer le TTC encaissé au solde bancaire.
+  const soldeProposalUI = soldeProposal ? (() => {
+    const { inv, kind } = soldeProposal;
+    const isAdd = kind === "add";
+    const ttc = computeInvoiceTotals(inv.montant, inv).ttc; // TTC via le snapshot figé (PR2a)
+    return (
+      <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.8)", backdropFilter: "blur(4px)", zIndex: 650, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
+        <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 18, padding: "26px 24px", maxWidth: 420, width: "100%" }}>
+          <div style={{ fontSize: 40, textAlign: "center", marginBottom: 8 }}>{isAdd ? "💰" : "↩️"}</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "white", textAlign: "center", marginBottom: 6 }}>{isAdd ? "Facture encaissée" : "Facture déjà intégrée au solde"}</div>
+          <div style={{ fontSize: 13.5, color: "#C2D4E6", textAlign: "center", lineHeight: 1.55, marginBottom: 20 }}>
+            {isAdd
+              ? `Cette facture est encaissée. Veux-tu ajouter le montant encaissé (+${formatEUR(ttc)}) à ton solde bancaire ?`
+              : `Cette facture avait déjà été intégrée à ton solde. Veux-tu en retirer le montant (−${formatEUR(ttc)}) ?`}
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <button type="button" onClick={confirmSoldeProposal}
+              style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+              {isAdd ? "Ajouter au solde" : "Retirer du solde"}
+            </button>
+            <button type="button" onClick={() => setSoldeProposal(null)}
+              style={{ flex: 1, background: "transparent", color: "#8BA5C0", border: "1px solid #2a3a55", borderRadius: 10, padding: "12px 14px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+              {isAdd ? "Plus tard" : "Garder"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  })() : null;
+
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
   const renderAbonnement = (onBack) => (
     <div>
@@ -3027,17 +3057,45 @@ function AppInner() {
     }
   }
 
+  // Proposition (jamais auto) d'ajouter/retirer le TTC encaissé au solde bancaire.
+  const [soldeProposal, setSoldeProposal] = useState(null); // { inv, kind: "add" | "retire" }
+
   async function handleInvoiceStatus(id, statut) {
+    const before = invoicesList.find(i => i.id === id); // état AVANT le changement de statut
     try {
       await apiFetch(`/invoices/${id}/status`, { method: "PATCH", body: JSON.stringify({ statut }) });
-      if (statut === "payee") {
-        const inv = invoicesList.find(i => i.id === id);
-        if (inv) addHectorMessage(`Facture encaissée ✓ Je recalcule ton disponible avec ces ${formatEUR(inv.montant)}.`);
+      await loadInvoices();
+      await loadEverything();
+      // On PROPOSE (sans rien faire) selon le sens du changement.
+      if (before) {
+        if (statut === "payee" && !before.solde_integre) {
+          setSoldeProposal({ inv: before, kind: "add" });
+        } else if (statut !== "payee" && before.solde_integre) {
+          setSoldeProposal({ inv: before, kind: "retire" });
+        }
       }
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // Confirmation explicite : ajoute (ou retire) le TTC au solde via l'endpoint dédié.
+  async function confirmSoldeProposal() {
+    if (!soldeProposal) return;
+    const { inv, kind } = soldeProposal;
+    const endpoint = kind === "add" ? "integrate-solde" : "retire-solde";
+    try {
+      const r = await apiFetch(`/invoices/${inv.id}/${endpoint}`, { method: "POST" });
+      setSoldeProposal(null);
+      const ttc = kind === "add" ? r.montant_ajoute : r.montant_retire;
+      addHectorMessage(kind === "add"
+        ? `+${formatEUR(ttc)} ajoutés à ton solde ✓`
+        : `−${formatEUR(ttc)} retirés de ton solde ✓`, "#5DCAA5");
       await loadInvoices();
       await loadEverything();
     } catch (err) {
       setError(err.message);
+      setSoldeProposal(null);
     }
   }
 
@@ -11781,6 +11839,7 @@ function AppInner() {
       {updateOverlay}
       {gameOverlay}
       {activiteModalUI}
+      {soldeProposalUI}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
       {showWalkthrough && (() => {
         const estIntermittent = profile && profile.statut === "intermittent";
