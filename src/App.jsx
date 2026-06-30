@@ -8594,158 +8594,26 @@ function AppInner() {
 
 
   const userInitials = (profile?.email || "").slice(0, 2).toUpperCase();
-  // ── renderHeroHector (Salon V2 / PR1 refaite) : FONCTION de rendu, pas un const eager.
-  //    Définir la fonction n'évalue PAS son JSX ; elle n'est appelée que dans le garde
-  //    {nav === "dashboard" && estimateData && renderHeroHector()} → estimateData.periode_courante
-  //    (et tout le reste) n'est lu que si estimateData existe. Cf. crash PR1 eager-const (664adee).
+  // ── renderHeroHector (Salon V2 / PR2 — fusion, sur base lazy PR1) : FONCTION de rendu,
+  //    appelée seulement dans le garde {nav==='dashboard' && estimateData && renderHeroHector()}.
+  //    Ceinture : tout estimateData.X ici est en optional chaining (cf crash 664adee).
   const renderHeroHector = () => (
     <>
-            {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
+            {/* ── EN-TÊTE HECTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
-                /* MOBILE : layout horizontal Hector + montant */
                 <div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
-                    {/* Hector mini à droite */}
                     <div style={{ padding: "16px 16px 0", flex: 1 }}>
-                      {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "3px 10px" }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: hectorEtat.accueil ? "none" : "uppercase" }}>{hectorEtat.label}</span>
-                        </div>
-                      )}
-                      <div style={{ fontSize: 12, color: "#C2D4E6", lineHeight: 1.5, marginBottom: 14 }}>
-                        {argentDisponibleBrut !== null
-                          ? (hectorEtat?.mot || "Hector veille sur toi.")
-                          : (panique.solde === "" ? "Recopie ton solde ci-dessous pour que je me mette au travail." : "Ajoute un revenu pour voir ton disponible.")}
-                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
+                      <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 12 }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
                     </div>
                     <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
                       <HectorImage etat={hectorEtat} size={120} cover />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 40%)" }} />
                     </div>
                   </div>
-                  {/* Bande solde mobile */}
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <MontantInput
-                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        decimales
-                        placeholder="Solde bancaire"
-                        value={panique.solde}
-                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                      />
-                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                    </div>
-                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                    {dateTranquillite && joursTranquillite > 0 && (
-                      <span style={{ fontSize: 10, color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>{joursTranquillite}j</span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* DESKTOP : hero en grille comme la landing — Hector entier, jamais cropé */
-                <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", minHeight: 240, position: "relative", overflow: "hidden" }}>
-                    {/* Contenu à gauche */}
-                    <div style={{ position: "relative", zIndex: 2, padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
-                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: hectorEtat.accueil ? "none" : "uppercase" }}>{hectorEtat.label}</span>
-                          {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 14, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 6, maxWidth: 420 }}>
-                        {argentDisponibleBrut !== null
-                          ? (hectorEtat?.mot || "Hector veille sur toi.")
-                          : (panique.solde === "" ? "Recopie ton solde ci-dessous et je me mets au travail tout de suite." : "Ajoute un revenu pour voir ton disponible.")}
-                      </div>
-                    </div>
-                    {/* Hector dans sa colonne — entier, jamais cropé, fondu comme la landing */}
-                    <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <img
-                        src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Hector"
-                        style={{ width: "100%", height: "auto", maxHeight: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
-                      />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
-                    </div>
-                  </div>
-                  {/* Bande solde */}
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
-                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
-                      <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
-                        <MontantInput
-                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                          decimales
-                          placeholder="Ex : 3 500"
-                          value={panique.solde}
-                          onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                        />
-                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                      </div>
-                      {soldeFraicheur && <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>}
-                      {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                      {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                      {soldePerime && <span style={{ fontSize: 10, color: "#FAC775", background: "rgba(240,195,109,0.1)", border: "1px solid rgba(240,195,109,0.3)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠️ Solde périmé — remets-le à jour</span>}
-                    </div>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      {dateTranquillite && joursTranquillite > 0 && (
-                        <div style={{ fontSize: 11, color: "#8BA5C0" }}>
-                          <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
-                        </div>
-                      )}
-                      {estimateData.periode_courante?.jours_restants <= 30 && (
-                        <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
-                          ⏱ Déclaration dans {estimateData.periode_courante.jours_restants}j
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── BRIEFING DU MATIN D'HECTOR ── */}
-            {(() => {
-              const b = briefingMatin;
-              const couleurTon = b.ton === "alerte" ? "#E24B4A" : b.ton === "vigilant" ? "#EF9F27" : b.ton === "serein" ? "#5DCAA5" : "#8BA5C0";
-              const ouvert = briefingOuvert || (!briefingVuAujourdhui && !isMobile);
-              const marquerVu = () => {
-                safeStorage.setItem("briefingVu", new Date().toISOString().slice(0, 10));
-                setBriefingVuAujourdhui(true);
-                setBriefingOuvert(false);
-              };
-              if (!ouvert) {
-                return (
-                  <button
-                    onClick={() => setBriefingOuvert(true)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, background: "#0a1322", border: `1px solid ${couleurTon}33`, borderRadius: 12, padding: "10px 16px", cursor: "pointer", textAlign: "left", width: "100%" }}
-                  >
-                    <HectorTete size={28} />
-                    <span style={{ fontSize: 13, color: "#B5D4F4", flex: 1 }}>Revoir le briefing d'Hector du jour</span>
-                    <span style={{ fontSize: 12, color: couleurTon }}>Ouvrir →</span>
-                  </button>
-                );
-              }
-              return (
-                <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #0e1b30 100%)", border: `1px solid ${couleurTon}44`, borderRadius: 16, padding: "20px 22px", position: "relative", animation: "fadeInDown 0.4s ease" }}>
-                  <button onClick={marquerVu} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#8BA5C0", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
-                    <div style={{ width: 44, height: 44, borderRadius: "50%", overflow: "hidden", border: `2px solid ${couleurTon}55`, flexShrink: 0 }}>
-                      <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
-                    </div>
-                    <div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "white" }}>🐾 {b.salut}{b.prenom ? ` ${b.prenom}` : ""}</div>
-                      <div style={{ fontSize: 11, color: "#6B8299" }}>Ton briefing du {new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
-                    </div>
-                  </div>
-
+                  <div style={{ padding: "0 16px 4px" }}>
                   {argentDisponibleBrut !== null && (() => {
                     // Salon V2 — HÉROS UNIQUE. Affichage seul : disponibleAujourdhui / argentDisponibleBrut /
                     // urssafProvision / securiteNum restent calculés en 3409-3444. Aucun calcul ici.
@@ -8789,7 +8657,157 @@ function AppInner() {
                       </div>
                     );
                   })()}
+                    {argentDisponibleBrut === null && (
+                      <div style={{ fontSize: 13.5, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 4 }}>{briefingMatin.analyse}</div>
+                    )}
+                  </div>
+                  {/* Bande solde mobile */}
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <MontantInput
+                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                        decimales
+                        placeholder="Solde bancaire"
+                        value={panique.solde}
+                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                      />
+                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                    </div>
+                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
+                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
+                    {dateTranquillite && joursTranquillite > 0 && (
+                      <span style={{ fontSize: 10, color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>{joursTranquillite}j</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", minHeight: 180, position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "relative", zIndex: 2, padding: "20px 28px 8px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      <div style={{ fontSize: 20, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
+                      <div style={{ fontSize: 12, color: "#6B8299" }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
+                    </div>
+                    <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      <img
+                        src={hectorEtat?.img || "/hector-tete.png"}
+                        alt="Hector"
+                        style={{ width: "100%", height: "auto", maxHeight: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
+                      />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
+                    </div>
+                  </div>
+                  <div style={{ padding: "0 28px 4px" }}>
+                  {argentDisponibleBrut !== null && (() => {
+                    // Salon V2 — HÉROS UNIQUE. Affichage seul : disponibleAujourdhui / argentDisponibleBrut /
+                    // urssafProvision / securiteNum restent calculés en 3409-3444. Aucun calcul ici.
+                    const deficitReel = argentDisponibleBrut < 0;                    // rouge : le compte ne couvre pas les charges
+                    const reserveEntamee = !deficitReel && disponibleAujourdhui < 0; // orange : argent dispo mais réserve pas complète
+                    const heroAffiche = deficitReel ? disponibleAujourdhui : Math.max(0, disponibleAujourdhui);
+                    return (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>Aujourd'hui, tu peux dépenser</div>
+                        <div style={{ fontSize: 38, fontWeight: 800, color: deficitReel ? "#F09595" : "#5DCAA5", lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums" }}>
+                          {heroAffiche < 0 ? "−" : ""}{formatEUR(Math.abs(heroAffiche))}
+                        </div>
+                        <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 8, lineHeight: 1.55 }}>
+                          {deficitReel
+                            ? "Tes charges à venir dépassent ce que tu as en ce moment. On regarde ça ensemble — tu n'es pas seul."
+                            : reserveEntamee
+                              ? (urssafProvision > 0
+                                  ? `J'ai déjà protégé ton URSSAF (${formatEUR(urssafProvision)} mis de côté). Il te reste juste à compléter ta réserve de sécurité avant de pouvoir dépenser sereinement.`
+                                  : "Il te reste juste à compléter ta réserve de sécurité avant de pouvoir dépenser sereinement.")
+                              : (urssafProvision > 0
+                                  ? `J'ai déjà protégé ton URSSAF (${formatEUR(urssafProvision)} mis de côté). Il reste juste ta réserve de sécurité à préserver.`
+                                  : "Tout est déjà mis de côté. Tu peux dépenser ce montant sans te mettre en danger.")}
+                        </div>
+                        <details style={{ marginTop: 10 }}>
+                          <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Comment j'arrive à ce montant ?</summary>
+                          <div style={{ marginTop: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#9FB8CE" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 5 }}>
+                              <span>Disponible après charges et fiscalité</span>
+                              <span style={{ color: "#E6EDF5", fontWeight: 700, whiteSpace: "nowrap" }}>{formatEUR(argentDisponibleBrut)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+                              <span>− Réserve de sécurité</span>
+                              <span style={{ color: "#FAC775", fontWeight: 700, whiteSpace: "nowrap" }}>−{formatEUR(securiteNum)}</span>
+                            </div>
+                            <div style={{ display: "flex", justifyContent: "space-between", gap: 12, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                              <span style={{ color: "#C2D4E6" }}>Tu peux dépenser aujourd'hui</span>
+                              <span style={{ color: "#5DCAA5", fontWeight: 800, whiteSpace: "nowrap" }}>{formatEUR(disponibleAujourdhui)}</span>
+                            </div>
+                          </div>
+                        </details>
+                      </div>
+                    );
+                  })()}
+                    {argentDisponibleBrut === null && (
+                      <div style={{ fontSize: 14, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 4, maxWidth: 460 }}>{briefingMatin.analyse}</div>
+                    )}
+                  </div>
+                  {/* Bande solde */}
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
+                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
+                      <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
+                        <MontantInput
+                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                          decimales
+                          placeholder="Ex : 3 500"
+                          value={panique.solde}
+                          onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                        />
+                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                      </div>
+                      {soldeFraicheur && <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>}
+                      {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
+                      {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
+                      {soldePerime && <span style={{ fontSize: 10, color: "#FAC775", background: "rgba(240,195,109,0.1)", border: "1px solid rgba(240,195,109,0.3)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠️ Solde périmé — remets-le à jour</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      {dateTranquillite && joursTranquillite > 0 && (
+                        <div style={{ fontSize: 11, color: "#8BA5C0" }}>
+                          <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
+                        </div>
+                      )}
+                      {estimateData?.periode_courante?.jours_restants <= 30 && (
+                        <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
+                          ⏱ Déclaration dans {estimateData?.periode_courante?.jours_restants}j
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
 
+            {/* ── BRIEFING DÉTAIL (pliable) — sans salut ni héros (remontés dans l'en-tête) ; masqué en accueil pour ne pas dédoubler l'invitation ── */}
+            {argentDisponibleBrut !== null && (() => {
+              const b = briefingMatin;
+              const couleurTon = b.ton === "alerte" ? "#E24B4A" : b.ton === "vigilant" ? "#EF9F27" : b.ton === "serein" ? "#5DCAA5" : "#8BA5C0";
+              const ouvert = briefingOuvert || (!briefingVuAujourdhui && !isMobile);
+              const marquerVu = () => {
+                safeStorage.setItem("briefingVu", new Date().toISOString().slice(0, 10));
+                setBriefingVuAujourdhui(true);
+                setBriefingOuvert(false);
+              };
+              if (!ouvert) {
+                return (
+                  <button
+                    onClick={() => setBriefingOuvert(true)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, background: "#0a1322", border: `1px solid ${couleurTon}33`, borderRadius: 12, padding: "10px 16px", cursor: "pointer", textAlign: "left", width: "100%" }}
+                  >
+                    <HectorTete size={28} />
+                    <span style={{ fontSize: 13, color: "#B5D4F4", flex: 1 }}>Revoir le détail d'Hector du jour</span>
+                    <span style={{ fontSize: 12, color: couleurTon }}>Ouvrir →</span>
+                  </button>
+                );
+              }
+              return (
+                <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #0e1b30 100%)", border: `1px solid ${couleurTon}44`, borderRadius: 16, padding: "20px 22px", position: "relative", animation: "fadeInDown 0.4s ease" }}>
+                  <button onClick={marquerVu} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#8BA5C0", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
+                  <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Le détail d'Hector</div>
                   {b.gardeAuChaud.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 6 }}>🧾 Ce que je garde au chaud pour toi</div>
