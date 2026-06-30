@@ -645,7 +645,7 @@ function AppInner() {
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [panique, setPanique] = useState({ solde: "", urssaf: "", impots: "0", cfe: "0", dettes: "0" });
+  const [panique, setPanique] = useState({ solde: "", impots: "0", cfe: "0", dettes: "0" });
   // Toast global "✓ Sauvegardé" qui apparaît brièvement après une modification réussie
   const [savedToast, setSavedToast] = useState(false);
   const savedToastTimerRef = useRef(null);
@@ -9653,7 +9653,7 @@ function AppInner() {
             const jUrssaf = estimateData.periode_courante.jours_restants;
             echeances.push({
               id: "urssaf",
-              label: "Déclaration URSSAF",
+              label: "Prochaine déclaration URSSAF",
               montant: estimateData.montant_a_provisionner || 0,
               estime: false,
               dateLabel: formatDate(estimateData.periode_courante.date_limite_declaration),
