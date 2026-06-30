@@ -8594,10 +8594,212 @@ function AppInner() {
 
 
   const userInitials = (profile?.email || "").slice(0, 2).toUpperCase();
-  // ── HeroHector (Salon V2 / PR1) : encapsulation des deux blocs (carte image + briefing),
-  //    déplacés verbatim. Élément (pas composant) → ferme sur le scope, zéro remontage par render.
-  const heroHector = (
-    <>
+
+  return (
+    <div style={isMobile ? { ...S.appWrap, display: "block", background: "#07192E" } : { ...S.appWrap, background: "#07192E" }}>
+      <style>{CSS}</style>
+
+      {isMobile && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
+            aria-label="Ouvrir le menu"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+          <Logo size={28} dark />
+          <div style={{ width: 40 }} />
+        </div>
+      )}
+
+      {isMobile && mobileMenuOpen && (
+        <div style={S.sidebarBackdrop} onClick={() => setMobileMenuOpen(false)} />
+      )}
+
+      <aside
+        style={{
+          ...(isMobile
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }
+            : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
+          background: "#07192E",
+        }}
+      >
+        <div style={S.sidebarTop}>
+          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={36} dark />}
+          {isMobile && (
+            <button style={{ ...S.navItem, padding: "4px 8px", width: "auto", marginLeft: "auto" }} onClick={() => setMobileMenuOpen(false)}>
+              <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 20 }} />
+            </button>
+          )}
+        </div>
+
+        {(isMobile || sidebarOpen) && (profilPrenom || profilEntreprise) && (
+          <div style={S.sidebarGreeting}>
+            {profilPrenom && <div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profilPrenom} 👋</div>}
+            {profilEntreprise && <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>{profilEntreprise}{profile?.statut === "auto_entrepreneur" ? " · Auto-entrepreneur" : ""}</div>}
+          </div>
+        )}
+
+        {/* ─── NAVIGATION PRINCIPALE — 5 entrées cockpit ───
+            Les ids techniques (dashboard, factures, frais, declaration, echeances,
+            assistant) sont INCHANGÉS : tous les `nav === "..."` et `setNav("...")`
+            existants continuent de fonctionner. Seuls les labels et le regroupement
+            changent. "Préparer" est un groupe qui ouvre declaration + echeances. */}
+        {[
+          { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
+          { id: "assistant", icon: "ti-message-2", label: "Hector" },
+          { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
+          { id: "revenus", icon: "ti-chart-bar", label: "Mes revenus" },
+          { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+            {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
+          </button>
+        ))}
+
+        {/* Course avec Hector — ouvre le mini-jeu (action, pas une page de nav). */}
+        <button style={{ ...S.navItem }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
+          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
+        </button>
+
+        {/* Groupe "Facturer" : factures + devis (même flux commercial). */}
+        <button
+          style={{ ...S.navItem, ...((nav === "factures" || nav === "devis") ? S.navItemActive : {}) }}
+          onClick={() => setFacturerOpen(!facturerOpen)}
+        >
+          <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Facturer</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${facturerOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {facturerOpen && (isMobile || sidebarOpen) && [
+          { id: "factures", icon: "ti-file-invoice", label: "Mes factures" },
+          { id: "devis", icon: "ti-file-description", label: "Mes devis" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          </button>
+        ))}
+
+        {/* Groupe "Préparer" : déclaration + échéances. Actif si l'un des deux est ouvert. */}
+        <button
+          style={{ ...S.navItem, ...((nav === "declaration" || nav === "echeances") ? S.navItemActive : {}) }}
+          onClick={() => setPrepareOpen(!prepareOpen)}
+        >
+          <i className="ti ti-clipboard-check" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Préparer</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${prepareOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {prepareOpen && (isMobile || sidebarOpen) && [
+          { id: "declaration", icon: "ti-clipboard-check", label: "Ma déclaration" },
+          { id: "echeances", icon: "ti-calendar-due", label: "Mes échéances" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          </button>
+        ))}
+
+        {/* (Assistant remonté en 2e position dans le groupe principal ci-dessus) */}
+
+        {/* ─── OUTILS — tout le reste, accessible mais secondaire. Rien n'est supprimé. ─── */}
+        <button style={{ ...S.navItem, borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 14 }} onClick={() => setOutilsOpen(!outilsOpen)}>
+          <i className="ti ti-dots" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Outils</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${outilsOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {outilsOpen && (isMobile || sidebarOpen) && [
+          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
+          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
+          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
+          { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
+          { id: "contacts", icon: "ti-address-book", label: "Contacts" },
+          { id: "conseils", icon: "ti-star", label: "Conseils" },
+          { id: "modeles", icon: "ti-template", label: "Modèles" },
+          { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
+          { id: "profil", icon: "ti-user", label: "Profil" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          </button>
+        ))}
+        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
+          <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
+        </button>
+        <button style={{ ...S.navItem, marginTop: 4 }} disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")} title="Passer en mode intermittent">
+          <i className="ti ti-movie" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0, color: "#5DCAA5" }} />
+          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12, color: "#5DCAA5" }}>{statutSaving ? "…" : "Mode intermittent"}</span>}
+        </button>
+        <div style={S.sidebarBottom}>
+          <div style={S.userRow}>
+            <div style={S.avatar}>{userInitials}</div>
+            {(isMobile || sidebarOpen) && <button style={S.linkBtn} onClick={handleLogout}>Déconnexion</button>}
+          </div>
+        </div>
+      </aside>
+
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: "#07192E" }}>
+        <div style={{ maxWidth: 960, margin: "0 auto" }}>
+        {error && <div style={S.errorBanner}>{error}</div>}
+
+        {nav !== "dashboard" && (
+          <button
+            onClick={() => setNav("dashboard")}
+            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "white", cursor: "pointer", marginBottom: 16 }}
+          >
+            ← Retour au cockpit
+          </button>
+        )}
+
+        {!emailVerified && profile?.onboarding_complete && (
+          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, color: "#0C447C", display: "flex", alignItems: "center", gap: 8 }}>
+              <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16 }} />
+              Pensez à vérifier votre adresse email.
+            </span>
+            {resendVerifStatus === "sent" ? (
+              <span style={{ fontSize: 12, color: "#0F6E56", fontWeight: 600 }}>✓ Email envoyé</span>
+            ) : (
+              <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}>
+                {resendVerifStatus === "sending" ? "Envoi…" : "Renvoyer l'email de vérification"}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
+        {!pwaDismissed && (
+          <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
+        )}
+
+        {nav === "dashboard" && estimateData && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+
+            {/* Filet : activité manquante → tout le fiscal est désactivé. On le rend visible + actionnable
+                (UNIQUEMENT ce reason : un intermittent ne verra jamais « choisis ton activité AE »). */}
+            {estimateData?.reason === "activite_manquante" && (
+              <div style={{ background: "rgba(240,180,41,0.08)", border: "1px solid rgba(240,180,41,0.3)", borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+                <div style={{ fontSize: 26, flexShrink: 0 }}>🐾</div>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "#FAE3B6", marginBottom: 3 }}>J'ai tes revenus, mais il me manque ton activité</div>
+                  <div style={{ fontSize: 12.5, color: "#C9A861", lineHeight: 1.5 }}>Dis-moi ce que tu fais et je calcule juste tes cotisations.</div>
+                </div>
+                <button type="button" onClick={() => setActiviteModal(true)}
+                  style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                  Choisir mon activité
+                </button>
+              </div>
+            )}
+
             {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
@@ -8878,215 +9080,6 @@ function AppInner() {
                 </div>
               );
             })()}
-    </>
-  );
-
-  return (
-    <div style={isMobile ? { ...S.appWrap, display: "block", background: "#07192E" } : { ...S.appWrap, background: "#07192E" }}>
-      <style>{CSS}</style>
-
-      {isMobile && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-          <button
-            onClick={() => setMobileMenuOpen(true)}
-            style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
-            aria-label="Ouvrir le menu"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="3" y1="6" x2="21" y2="6"/>
-              <line x1="3" y1="12" x2="21" y2="12"/>
-              <line x1="3" y1="18" x2="21" y2="18"/>
-            </svg>
-          </button>
-          <Logo size={28} dark />
-          <div style={{ width: 40 }} />
-        </div>
-      )}
-
-      {isMobile && mobileMenuOpen && (
-        <div style={S.sidebarBackdrop} onClick={() => setMobileMenuOpen(false)} />
-      )}
-
-      <aside
-        style={{
-          ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }
-            : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
-          background: "#07192E",
-        }}
-      >
-        <div style={S.sidebarTop}>
-          {(!isMobile && !sidebarOpen) ? <LogoIcon size={32} /> : <Logo size={36} dark />}
-          {isMobile && (
-            <button style={{ ...S.navItem, padding: "4px 8px", width: "auto", marginLeft: "auto" }} onClick={() => setMobileMenuOpen(false)}>
-              <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 20 }} />
-            </button>
-          )}
-        </div>
-
-        {(isMobile || sidebarOpen) && (profilPrenom || profilEntreprise) && (
-          <div style={S.sidebarGreeting}>
-            {profilPrenom && <div style={{ fontSize: 14, fontWeight: 600, color: "white" }}>{profilPrenom} 👋</div>}
-            {profilEntreprise && <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>{profilEntreprise}{profile?.statut === "auto_entrepreneur" ? " · Auto-entrepreneur" : ""}</div>}
-          </div>
-        )}
-
-        {/* ─── NAVIGATION PRINCIPALE — 5 entrées cockpit ───
-            Les ids techniques (dashboard, factures, frais, declaration, echeances,
-            assistant) sont INCHANGÉS : tous les `nav === "..."` et `setNav("...")`
-            existants continuent de fonctionner. Seuls les labels et le regroupement
-            changent. "Préparer" est un groupe qui ouvre declaration + echeances. */}
-        {[
-          { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
-          { id: "assistant", icon: "ti-message-2", label: "Hector" },
-          { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
-          { id: "revenus", icon: "ti-chart-bar", label: "Mes revenus" },
-          { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
-        ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-            {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
-          </button>
-        ))}
-
-        {/* Course avec Hector — ouvre le mini-jeu (action, pas une page de nav). */}
-        <button style={{ ...S.navItem }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
-          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
-        </button>
-
-        {/* Groupe "Facturer" : factures + devis (même flux commercial). */}
-        <button
-          style={{ ...S.navItem, ...((nav === "factures" || nav === "devis") ? S.navItemActive : {}) }}
-          onClick={() => setFacturerOpen(!facturerOpen)}
-        >
-          <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Facturer</span>}
-          {(isMobile || sidebarOpen) && <i className={`ti ${facturerOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
-        </button>
-        {facturerOpen && (isMobile || sidebarOpen) && [
-          { id: "factures", icon: "ti-file-invoice", label: "Mes factures" },
-          { id: "devis", icon: "ti-file-description", label: "Mes devis" },
-        ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
-            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
-          </button>
-        ))}
-
-        {/* Groupe "Préparer" : déclaration + échéances. Actif si l'un des deux est ouvert. */}
-        <button
-          style={{ ...S.navItem, ...((nav === "declaration" || nav === "echeances") ? S.navItemActive : {}) }}
-          onClick={() => setPrepareOpen(!prepareOpen)}
-        >
-          <i className="ti ti-clipboard-check" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Préparer</span>}
-          {(isMobile || sidebarOpen) && <i className={`ti ${prepareOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
-        </button>
-        {prepareOpen && (isMobile || sidebarOpen) && [
-          { id: "declaration", icon: "ti-clipboard-check", label: "Ma déclaration" },
-          { id: "echeances", icon: "ti-calendar-due", label: "Mes échéances" },
-        ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
-            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
-          </button>
-        ))}
-
-        {/* (Assistant remonté en 2e position dans le groupe principal ci-dessus) */}
-
-        {/* ─── OUTILS — tout le reste, accessible mais secondaire. Rien n'est supprimé. ─── */}
-        <button style={{ ...S.navItem, borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 14 }} onClick={() => setOutilsOpen(!outilsOpen)}>
-          <i className="ti ti-dots" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Outils</span>}
-          {(isMobile || sidebarOpen) && <i className={`ti ${outilsOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
-        </button>
-        {outilsOpen && (isMobile || sidebarOpen) && [
-          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
-          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
-          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
-          { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
-          { id: "contacts", icon: "ti-address-book", label: "Contacts" },
-          { id: "conseils", icon: "ti-star", label: "Conseils" },
-          { id: "modeles", icon: "ti-template", label: "Modèles" },
-          { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
-          { id: "profil", icon: "ti-user", label: "Profil" },
-        ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
-            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
-          </button>
-        ))}
-        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
-          <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
-        </button>
-        <button style={{ ...S.navItem, marginTop: 4 }} disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")} title="Passer en mode intermittent">
-          <i className="ti ti-movie" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0, color: "#5DCAA5" }} />
-          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12, color: "#5DCAA5" }}>{statutSaving ? "…" : "Mode intermittent"}</span>}
-        </button>
-        <div style={S.sidebarBottom}>
-          <div style={S.userRow}>
-            <div style={S.avatar}>{userInitials}</div>
-            {(isMobile || sidebarOpen) && <button style={S.linkBtn} onClick={handleLogout}>Déconnexion</button>}
-          </div>
-        </div>
-      </aside>
-
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: "#07192E" }}>
-        <div style={{ maxWidth: 960, margin: "0 auto" }}>
-        {error && <div style={S.errorBanner}>{error}</div>}
-
-        {nav !== "dashboard" && (
-          <button
-            onClick={() => setNav("dashboard")}
-            style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, padding: "7px 14px", fontSize: 13, fontWeight: 600, color: "white", cursor: "pointer", marginBottom: 16 }}
-          >
-            ← Retour au cockpit
-          </button>
-        )}
-
-        {!emailVerified && profile?.onboarding_complete && (
-          <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, color: "#0C447C", display: "flex", alignItems: "center", gap: 8 }}>
-              <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16 }} />
-              Pensez à vérifier votre adresse email.
-            </span>
-            {resendVerifStatus === "sent" ? (
-              <span style={{ fontSize: 12, color: "#0F6E56", fontWeight: 600 }}>✓ Email envoyé</span>
-            ) : (
-              <button style={{ ...S.linkBtn, fontSize: 12 }} onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}>
-                {resendVerifStatus === "sending" ? "Envoi…" : "Renvoyer l'email de vérification"}
-              </button>
-            )}
-          </div>
-        )}
-
-        {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
-        {!pwaDismissed && (
-          <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
-        )}
-
-        {nav === "dashboard" && estimateData && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-
-            {/* Filet : activité manquante → tout le fiscal est désactivé. On le rend visible + actionnable
-                (UNIQUEMENT ce reason : un intermittent ne verra jamais « choisis ton activité AE »). */}
-            {estimateData?.reason === "activite_manquante" && (
-              <div style={{ background: "rgba(240,180,41,0.08)", border: "1px solid rgba(240,180,41,0.3)", borderRadius: 14, padding: "16px 18px", display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                <div style={{ fontSize: 26, flexShrink: 0 }}>🐾</div>
-                <div style={{ flex: 1, minWidth: 200 }}>
-                  <div style={{ fontSize: 14.5, fontWeight: 700, color: "#FAE3B6", marginBottom: 3 }}>J'ai tes revenus, mais il me manque ton activité</div>
-                  <div style={{ fontSize: 12.5, color: "#C9A861", lineHeight: 1.5 }}>Dis-moi ce que tu fais et je calcule juste tes cotisations.</div>
-                </div>
-                <button type="button" onClick={() => setActiviteModal(true)}
-                  style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 10, padding: "10px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                  Choisir mon activité
-                </button>
-              </div>
-            )}
-
-            {heroHector}
 
             {/* ── MINI-STATS 2 COLONNES (téléphone) ── */}
             {isMobile && (
