@@ -1417,6 +1417,9 @@ function AppInner() {
     </div>
   ) : null;
 
+  // Proposition (jamais auto) d'ajouter/retirer le TTC encaissé au solde bancaire.
+  const [soldeProposal, setSoldeProposal] = useState(null); // { inv, kind: "add" | "retire" }
+
   // Proposition (confirmation explicite) d'ajouter/retirer le TTC encaissé au solde bancaire.
   const soldeProposalUI = soldeProposal ? (() => {
     const { inv, kind } = soldeProposal;
@@ -3056,9 +3059,6 @@ function AppInner() {
       setError(err.message);
     }
   }
-
-  // Proposition (jamais auto) d'ajouter/retirer le TTC encaissé au solde bancaire.
-  const [soldeProposal, setSoldeProposal] = useState(null); // { inv, kind: "add" | "retire" }
 
   async function handleInvoiceStatus(id, statut) {
     const before = invoicesList.find(i => i.id === id); // état AVANT le changement de statut
