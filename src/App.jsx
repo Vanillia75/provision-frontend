@@ -8800,6 +8800,117 @@ function AppInner() {
               </div>
             )}
 
+            {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
+            <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
+              {isMobile ? (
+                /* MOBILE : layout horizontal Hector + montant */
+                <div>
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
+                    {/* Hector mini à droite */}
+                    <div style={{ padding: "16px 16px 0", flex: 1 }}>
+                      {hectorEtat && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "3px 10px" }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                        </div>
+                      )}
+                      <div style={{ fontSize: 12, color: "#C2D4E6", lineHeight: 1.5, marginBottom: 14 }}>
+                        {argentDisponibleBrut !== null
+                          ? (hectorEtat?.mot || "Hector veille sur toi.")
+                          : (panique.solde === "" ? "Recopie ton solde ci-dessous pour que je me mette au travail." : "Ajoute un revenu pour voir ton disponible.")}
+                      </div>
+                    </div>
+                    <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
+                      <HectorImage etat={hectorEtat} size={120} cover />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 40%)" }} />
+                    </div>
+                  </div>
+                  {/* Bande solde mobile */}
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
+                    <div style={{ position: "relative", flex: 1 }}>
+                      <MontantInput
+                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                        decimales
+                        placeholder="Solde bancaire"
+                        value={panique.solde}
+                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                      />
+                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                    </div>
+                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
+                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
+                    {dateTranquillite && joursTranquillite > 0 && (
+                      <span style={{ fontSize: 10, color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>{joursTranquillite}j</span>
+                    )}
+                  </div>
+                </div>
+              ) : (
+                /* DESKTOP : hero en grille comme la landing — Hector entier, jamais cropé */
+                <div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", minHeight: 240, position: "relative", overflow: "hidden" }}>
+                    {/* Contenu à gauche */}
+                    <div style={{ position: "relative", zIndex: 2, padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                      {hectorEtat && (
+                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                          {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
+                        </div>
+                      )}
+                      <div style={{ fontSize: 14, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 6, maxWidth: 420 }}>
+                        {argentDisponibleBrut !== null
+                          ? (hectorEtat?.mot || "Hector veille sur toi.")
+                          : (panique.solde === "" ? "Recopie ton solde ci-dessous et je me mets au travail tout de suite." : "Ajoute un revenu pour voir ton disponible.")}
+                      </div>
+                    </div>
+                    {/* Hector dans sa colonne — entier, jamais cropé, fondu comme la landing */}
+                    <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+                      <img
+                        src={hectorEtat?.img || "/hector-tete.png"}
+                        alt="Hector"
+                        style={{ width: "100%", height: "auto", maxHeight: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
+                      />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
+                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
+                    </div>
+                  </div>
+                  {/* Bande solde */}
+                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
+                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
+                      <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
+                        <MontantInput
+                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                          decimales
+                          placeholder="Ex : 3 500"
+                          value={panique.solde}
+                          onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
+                        />
+                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                      </div>
+                      {soldeFraicheur && <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>}
+                      {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
+                      {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
+                      {soldePerime && <span style={{ fontSize: 10, color: "#FAC775", background: "rgba(240,195,109,0.1)", border: "1px solid rgba(240,195,109,0.3)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠️ Solde périmé — remets-le à jour</span>}
+                    </div>
+                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
+                      {dateTranquillite && joursTranquillite > 0 && (
+                        <div style={{ fontSize: 11, color: "#8BA5C0" }}>
+                          <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
+                        </div>
+                      )}
+                      {estimateData.periode_courante?.jours_restants <= 30 && (
+                        <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
+                          ⏱ Déclaration dans {estimateData.periode_courante.jours_restants}j
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* ── BRIEFING DU MATIN D'HECTOR ── */}
             {(() => {
               const b = briefingMatin;
@@ -9204,191 +9315,6 @@ function AppInner() {
               );
             })()}
 
-            {/* ── HERO : HECTOR + MONTANT DISPONIBLE ── */}
-            <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
-              {isMobile ? (
-                /* MOBILE : layout horizontal Hector + montant */
-                <div>
-                  <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
-                    {/* Hector mini à droite */}
-                    <div style={{ padding: "16px 16px 0", flex: 1 }}>
-                      {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "3px 10px" }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
-                        </div>
-                      )}
-                      <div style={{ fontSize: 12, color: "#C2D4E6", lineHeight: 1.5, marginBottom: 14 }}>
-                        {argentDisponibleBrut !== null
-                          ? (hectorEtat?.mot || "Hector veille sur toi.")
-                          : (panique.solde === "" ? "Recopie ton solde ci-dessous pour que je me mette au travail." : "Ajoute un revenu pour voir ton disponible.")}
-                      </div>
-                    </div>
-                    <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
-                      <HectorImage etat={hectorEtat} size={120} cover />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #0a1322 0%, rgba(10,19,34,0) 40%)" }} />
-                    </div>
-                  </div>
-                  {/* Bande solde mobile */}
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: 11, color: "#6B8299", whiteSpace: "nowrap" }}>💳</span>
-                    <div style={{ position: "relative", flex: 1 }}>
-                      <MontantInput
-                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "7px 28px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        decimales
-                        placeholder="Solde bancaire"
-                        value={panique.solde}
-                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                      />
-                      <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                    </div>
-                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                    {dateTranquillite && joursTranquillite > 0 && (
-                      <span style={{ fontSize: 10, color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>{joursTranquillite}j</span>
-                    )}
-                  </div>
-                </div>
-              ) : (
-                /* DESKTOP : hero en grille comme la landing — Hector entier, jamais cropé */
-                <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", minHeight: 240, position: "relative", overflow: "hidden" }}>
-                    {/* Contenu à gauche */}
-                    <div style={{ position: "relative", zIndex: 2, padding: "24px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      {hectorEtat && (
-                        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
-                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
-                          {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 14, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 6, maxWidth: 420 }}>
-                        {argentDisponibleBrut !== null
-                          ? (hectorEtat?.mot || "Hector veille sur toi.")
-                          : (panique.solde === "" ? "Recopie ton solde ci-dessous et je me mets au travail tout de suite." : "Ajoute un revenu pour voir ton disponible.")}
-                      </div>
-                    </div>
-                    {/* Hector dans sa colonne — entier, jamais cropé, fondu comme la landing */}
-                    <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <img
-                        src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Hector"
-                        style={{ width: "100%", height: "auto", maxHeight: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
-                      />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
-                    </div>
-                  </div>
-                  {/* Bande solde */}
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
-                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
-                      <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
-                        <MontantInput
-                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: `1px solid ${soldePerime ? "#F0C36D" : "rgba(255,255,255,0.12)"}`, borderRadius: 7, padding: "6px 32px 6px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                          decimales
-                          placeholder="Ex : 3 500"
-                          value={panique.solde}
-                          onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                        />
-                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                      </div>
-                      {soldeFraicheur && <span style={{ fontSize: 10, color: soldePerime ? "#FAC775" : "#5DCAA5", whiteSpace: "nowrap" }}>· {soldeFraicheur}</span>}
-                      {soldeSaveStatus === "saving" && <span style={{ fontSize: 10, color: "#8BA5C0" }}>⏳</span>}
-                      {soldeSaveStatus === "saved" && <span style={{ fontSize: 10, color: "#5DCAA5" }}>✓</span>}
-                      {soldePerime && <span style={{ fontSize: 10, color: "#FAC775", background: "rgba(240,195,109,0.1)", border: "1px solid rgba(240,195,109,0.3)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>⚠️ Solde périmé — remets-le à jour</span>}
-                    </div>
-                    <div style={{ display: "flex", gap: 16, alignItems: "center" }}>
-                      {dateTranquillite && joursTranquillite > 0 && (
-                        <div style={{ fontSize: 11, color: "#8BA5C0" }}>
-                          <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
-                        </div>
-                      )}
-                      {estimateData.periode_courante?.jours_restants <= 30 && (
-                        <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
-                          ⏱ Déclaration dans {estimateData.periode_courante.jours_restants}j
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ── CONNEXION BANCAIRE (Powens, lecture seule) — accordéon pleine largeur ── */}
-            <div style={{ background: "#0a1322", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
-              <div onClick={() => setBankCardOpen(o => !o)} role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: bankCardOpen ? 10 : 0, flexWrap: "wrap", cursor: "pointer" }}>
-                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(55,138,221,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 19, color: "#5DA9F0" }} />
-                </div>
-                <div style={{ fontSize: 15, fontWeight: 800, color: "#FFFFFF" }}>Connexion bancaire</div>
-                {bankConnected
-                  ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#5DCAA5", background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 10px" }}>Connectée</span>
-                  : BANK_BIENTOT
-                    ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#FAC775", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.45)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
-                    : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
-                <i className={`ti ti-chevron-${bankCardOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 18, color: "#6B8299", marginLeft: "auto" }} />
-              </div>
-
-              {bankCardOpen && (<>
-              {bankSyncing ? (
-                <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: 0 }}>
-                  🔄 Synchronisation de ta banque en cours…
-                </p>
-              ) : bankConnected ? (
-                <>
-                  <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 6px" }}>
-                    Ta banque est reliée : ton solde se met à jour tout seul, en lecture seule.
-                    {bankSolde != null && <> Dernier solde lu : <strong style={{ color: "#FFFFFF" }}>{formatEUR(bankSolde)}</strong>.</>}
-                  </p>
-                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
-                    <button type="button" onClick={loadBankStatus} disabled={bankLoading}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.4)", color: "#9FD0FF", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
-                      <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 15 }} /> Rafraîchir le solde
-                    </button>
-                    <button type="button" onClick={handleBankDisconnect} disabled={bankLoading}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "9px 16px", fontSize: 13, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
-                      <i className="ti ti-unlink" aria-hidden="true" style={{ fontSize: 15 }} /> Débrancher
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 14px" }}>
-                    {BANK_BIENTOT
-                      ? <>Bientôt, tu pourras <strong style={{ color: "#FFFFFF" }}>relier ton compte</strong> pour que ton solde se mette à jour tout seul. On finalise la mise en service avec notre partenaire bancaire — en attendant, continue en <strong style={{ color: "#FFFFFF" }}>saisie manuelle</strong>.</>
-                      : <>Relie ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. C'est <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : tu peux aussi continuer en saisie manuelle.</>}
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                      <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> H€CTOR lit ton solde, jamais bouger ton argent (règle européenne DSP2).</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                      <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Powens, agréé par la Banque de France. Tes identifiants ne transitent jamais par H€CTOR.</span>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                      <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Débranchable quand tu veux.</strong></span>
-                    </div>
-                  </div>
-                  {BANK_BIENTOT ? (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.4)", color: "#FAC775", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700 }}>
-                      <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 16 }} /> Bientôt disponible
-                    </div>
-                  ) : (
-                    <button type="button" onClick={handleBankConnect} disabled={bankLoading}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1 }}>
-                      <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 16 }} />
-                      {bankLoading ? "Ouverture…" : "Connecter ma banque"}
-                    </button>
-                  )}
-                </>
-              )}
-              </>)}
-            </div>
-
             {/* ── MESSAGES HECTOR ── */}
             {hectorMessages.map(msg => (
               <div key={msg.id} style={{ background: "#0a1322", border: `1px solid ${msg.couleur}44`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12, position: "relative", animation: "fadeInDown 0.3s ease" }}>
@@ -9513,6 +9439,80 @@ function AppInner() {
               </div>
             </div>
 
+            {/* ── CONNEXION BANCAIRE (Powens, lecture seule) — accordéon pleine largeur ── */}
+            <div style={{ background: "#0a1322", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
+              <div onClick={() => setBankCardOpen(o => !o)} role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: bankCardOpen ? 10 : 0, flexWrap: "wrap", cursor: "pointer" }}>
+                <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(55,138,221,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 19, color: "#5DA9F0" }} />
+                </div>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "#FFFFFF" }}>Connexion bancaire</div>
+                {bankConnected
+                  ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#5DCAA5", background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 10px" }}>Connectée</span>
+                  : BANK_BIENTOT
+                    ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#FAC775", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.45)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
+                    : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
+                <i className={`ti ti-chevron-${bankCardOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 18, color: "#6B8299", marginLeft: "auto" }} />
+              </div>
+
+              {bankCardOpen && (<>
+              {bankSyncing ? (
+                <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: 0 }}>
+                  🔄 Synchronisation de ta banque en cours…
+                </p>
+              ) : bankConnected ? (
+                <>
+                  <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 6px" }}>
+                    Ta banque est reliée : ton solde se met à jour tout seul, en lecture seule.
+                    {bankSolde != null && <> Dernier solde lu : <strong style={{ color: "#FFFFFF" }}>{formatEUR(bankSolde)}</strong>.</>}
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
+                    <button type="button" onClick={loadBankStatus} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.4)", color: "#9FD0FF", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
+                      <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 15 }} /> Rafraîchir le solde
+                    </button>
+                    <button type="button" onClick={handleBankDisconnect} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "9px 16px", fontSize: 13, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
+                      <i className="ti ti-unlink" aria-hidden="true" style={{ fontSize: 15 }} /> Débrancher
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 14px" }}>
+                    {BANK_BIENTOT
+                      ? <>Bientôt, tu pourras <strong style={{ color: "#FFFFFF" }}>relier ton compte</strong> pour que ton solde se mette à jour tout seul. On finalise la mise en service avec notre partenaire bancaire — en attendant, continue en <strong style={{ color: "#FFFFFF" }}>saisie manuelle</strong>.</>
+                      : <>Relie ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. C'est <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : tu peux aussi continuer en saisie manuelle.</>}
+                  </p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                      <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> H€CTOR lit ton solde, jamais bouger ton argent (règle européenne DSP2).</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                      <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Powens, agréé par la Banque de France. Tes identifiants ne transitent jamais par H€CTOR.</span>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                      <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Débranchable quand tu veux.</strong></span>
+                    </div>
+                  </div>
+                  {BANK_BIENTOT ? (
+                    <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.4)", color: "#FAC775", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700 }}>
+                      <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 16 }} /> Bientôt disponible
+                    </div>
+                  ) : (
+                    <button type="button" onClick={handleBankConnect} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1 }}>
+                      <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 16 }} />
+                      {bankLoading ? "Ouverture…" : "Connecter ma banque"}
+                    </button>
+                  )}
+                </>
+              )}
+              </>)}
+            </div>
+
             {/* ── SÉRÉNITÉ D'HECTOR — visible pour tous ── */}
             {hectorEtat && (
               <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat.accueil ? "rgba(55,138,221,0.2)" : hectorEtat.couleur + "22"}`, borderRadius: 14, padding: "16px 20px" }}>
@@ -9563,24 +9563,6 @@ function AppInner() {
                     💡 Commence par renseigner ton <strong style={{ color: "#B5D4F4" }}>train de vie mensuel</strong> dans ton profil, puis ajoute tes revenus. Hector calculera combien de jours il peut veiller sur toi.
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* ── AVIS PREMIÈRE CONNEXION ── */}
-            {hectorEtat?.accueil && (
-              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 20px" }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 8 }}>
-                  {panique.solde !== "" ? "✓ Solde enregistré — plus qu'une étape !" : "Commençons par le commencement 🐾"}
-                </div>
-                <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
-                  {panique.solde !== ""
-                    ? "Ajoute maintenant ton premier revenu encaissé. H€CTOR calculera automatiquement l'URSSAF à mettre de côté et te dira ce que tu peux vraiment dépenser."
-                    : "1. Renseigne ton solde bancaire dans la carte en haut — ouvre ton appli de banque, lis le chiffre, recopie-le. 10 secondes.\n2. Ajoute tes revenus encaissés.\nH€CTOR s'occupe du reste."}
-                </div>
-                <button style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
-                  onClick={() => setNav("revenus")}>
-                  + Ajouter mon premier revenu
-                </button>
               </div>
             )}
 
@@ -9669,6 +9651,24 @@ function AppInner() {
                 </div>
               </div>
             )}
+            {/* ── AVIS PREMIÈRE CONNEXION ── */}
+            {hectorEtat?.accueil && (
+              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 20px" }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 8 }}>
+                  {panique.solde !== "" ? "✓ Solde enregistré — plus qu'une étape !" : "Commençons par le commencement 🐾"}
+                </div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
+                  {panique.solde !== ""
+                    ? "Ajoute maintenant ton premier revenu encaissé. H€CTOR calculera automatiquement l'URSSAF à mettre de côté et te dira ce que tu peux vraiment dépenser."
+                    : "1. Renseigne ton solde bancaire dans la carte en haut — ouvre ton appli de banque, lis le chiffre, recopie-le. 10 secondes.\n2. Ajoute tes revenus encaissés.\nH€CTOR s'occupe du reste."}
+                </div>
+                <button style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
+                  onClick={() => setNav("revenus")}>
+                  + Ajouter mon premier revenu
+                </button>
+              </div>
+            )}
+
 
           </div>
         )}
