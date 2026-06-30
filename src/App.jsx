@@ -11009,7 +11009,7 @@ function AppInner() {
                           />
                           <details style={{ marginBottom: 8 }}>
                             <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Aperçu de l'email envoyé</summary>
-                            <div style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalFacture}</div>
+                            <div style={{ whiteSpace: "pre-wrap", overflowWrap: "break-word", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalFacture}</div>
                           </details>
                           {sendInvoiceStatus === "error" && <p style={{ fontSize: 12, color: "#A32D2D", margin: "0 0 8px" }}>{sendInvoiceError}</p>}
                           <button style={S.btnSecondary} onClick={() => handleSendInvoice(inv)} disabled={sendingInvoice}>
@@ -11253,7 +11253,7 @@ function AppInner() {
                           />
                           <details style={{ marginBottom: 8 }}>
                             <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Aperçu de l'email envoyé</summary>
-                            <div style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalDevis}</div>
+                            <div style={{ whiteSpace: "pre-wrap", overflowWrap: "break-word", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalDevis}</div>
                           </details>
                           {sendQuoteStatus === "error" && <p style={{ fontSize: 12, color: "#A32D2D", margin: "0 0 8px" }}>{sendQuoteError}</p>}
                           <button style={S.btnSecondary} onClick={() => handleSendQuote(q)} disabled={sendingQuote}>
