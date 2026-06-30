@@ -733,6 +733,17 @@ function AppInner() {
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
   }, []);
+
+  // Bug 3.5 — verrou de scroll : quand un tiroir mobile (menu AE ou intermittent)
+  // est ouvert, on fige la page de fond pour qu'elle ne défile plus derrière.
+  // Conditionné à isMobile (les sidebars desktop ne sont pas des tiroirs → on ne
+  // bloque jamais le scroll desktop). Cleanup garantit que le body retrouve
+  // toujours son scroll normal (fermeture ou démontage).
+  useEffect(() => {
+    const menuMobileOuvert = isMobile && (mobileMenuOpen || interMenuOpen);
+    document.body.style.overflow = menuMobileOuvert ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [isMobile, mobileMenuOpen, interMenuOpen]);
   const googleButtonRef = useRef(null);
   const googleButtonRefInter = useRef(null); // bouton Google sur la landing intermittent
 
