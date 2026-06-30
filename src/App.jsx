@@ -323,6 +323,19 @@ function BadgeConfiance({ niveau }) {
   );
 }
 
+// Modèle d'email par défaut (facture/devis). PUR : reçoit l'émetteur en paramètre.
+// Gère proprement les trous : pas de « Bonjour , » ni de « Cordialement,\n » vide.
+function messageParDefautFacture(clientNom, numero, emetteur) {
+  const salut = clientNom ? `Bonjour ${clientNom},` : "Bonjour,";
+  const signature = emetteur ? `Cordialement,\n${emetteur}` : "Cordialement,";
+  return `${salut}\n\nVeuillez trouver ci-dessous le détail de la facture ${numero || ""}.\n\n${signature}`;
+}
+function messageParDefautDevis(clientNom, numero, emetteur) {
+  const salut = clientNom ? `Bonjour ${clientNom},` : "Bonjour,";
+  const signature = emetteur ? `Cordialement,\n${emetteur}` : "Cordialement,";
+  return `${salut}\n\nVeuillez trouver ci-dessous notre devis ${numero || ""}.\n\n${signature}`;
+}
+
 function AppInner() {
   const [token, setToken] = useState(() => safeStorage.getItem("token"));
   // ─── PWA : aide à l'installation sur l'écran d'accueil ───
@@ -628,13 +641,6 @@ function AppInner() {
     }
   }
 
-  useEffect(() => {
-    if (viewingInvoice && sendInvoiceStatus !== "sent") {
-      setSendInvoiceMessage(
-        `Bonjour ${viewingInvoice.client_nom || ""},\n\nVeuillez trouver ci-dessous le détail de la facture ${viewingInvoice.numero || ""}.\n\nCordialement,\n${profilPrenom || profilEntreprise || ""}`
-      );
-    }
-  }, [viewingInvoice?.id]);
   const todayISO = new Date().toISOString().split("T")[0];
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
@@ -2755,6 +2761,8 @@ function AppInner() {
     setSendingInvoice(true);
     setSendInvoiceStatus("");
     setSendInvoiceError("");
+    // On n'envoie JAMAIS de message vide : message perso si tapé, sinon le modèle poli.
+    const messageFinal = sendInvoiceMessage.trim() || messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || "");
     try {
       const updated = await apiFetch(`/invoices/${inv.id}/send`, {
         method: "POST",
@@ -2762,7 +2770,7 @@ function AppInner() {
           emitter_nom: profilEntreprise || `${profilPrenom} ${profilNom}`.trim() || null,
           emitter_adresse: profilAdresse || null,
           emitter_siret: profilSiret || null,
-          message: sendInvoiceMessage || null,
+          message: messageFinal,
         }),
       });
       setSendInvoiceStatus("sent");
@@ -2958,6 +2966,8 @@ function AppInner() {
     setSendingQuote(true);
     setSendQuoteStatus("");
     setSendQuoteError("");
+    // On n'envoie JAMAIS de message vide : message perso si tapé, sinon le modèle poli.
+    const messageFinal = sendQuoteMessage.trim() || messageParDefautDevis(q.client_nom, q.numero, profilPrenom || profilEntreprise || "");
     try {
       const updated = await apiFetch(`/quotes/${q.id}/send`, {
         method: "POST",
@@ -2965,7 +2975,7 @@ function AppInner() {
           emitter_nom: profilEntreprise || `${profilPrenom} ${profilNom}`.trim() || null,
           emitter_adresse: profilAdresse || null,
           emitter_siret: profilSiret || null,
-          message: sendQuoteMessage || null,
+          message: messageFinal,
         }),
       });
       setSendQuoteStatus("sent");
@@ -3126,13 +3136,6 @@ function AppInner() {
     if (nav === "devis" && token) loadQuotes();
   }, [nav, token]);
 
-  useEffect(() => {
-    if (viewingQuote && sendQuoteStatus !== "sent") {
-      setSendQuoteMessage(
-        `Bonjour ${viewingQuote.client_nom || ""},\n\nVeuillez trouver ci-dessous notre devis ${viewingQuote.numero || ""}.\n\nCordialement,\n${profilPrenom || profilEntreprise || ""}`
-      );
-    }
-  }, [viewingQuote?.id]);
 
   // ────────────────────────────────────────────────────────────
   // Frais d'entreprise
@@ -10887,6 +10890,8 @@ function AppInner() {
 
             {viewingInvoice && (() => {
               const inv = viewingInvoice;
+              // Message réellement envoyé : perso si tapé, sinon le modèle (aperçu = vérité).
+              const messageFinalFacture = sendInvoiceMessage.trim() || messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || "");
               const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
               const lignes = inv.lignes && inv.lignes.length > 0 ? inv.lignes : [];
               const totalHT = lignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
@@ -10967,12 +10972,17 @@ function AppInner() {
                       ) : (
                         <>
                           <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyée à <strong>{inv.client_email}</strong></p>
+                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
                           <textarea
                             style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
-                            placeholder="Message personnalisé (optionnel)"
+                            placeholder="Ajouter un message personnel (optionnel)"
                             value={sendInvoiceMessage}
                             onChange={e => setSendInvoiceMessage(e.target.value)}
                           />
+                          <details style={{ marginBottom: 8 }}>
+                            <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Aperçu de l'email envoyé</summary>
+                            <div style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalFacture}</div>
+                          </details>
                           {sendInvoiceStatus === "error" && <p style={{ fontSize: 12, color: "#A32D2D", margin: "0 0 8px" }}>{sendInvoiceError}</p>}
                           <button style={S.btnSecondary} onClick={() => handleSendInvoice(inv)} disabled={sendingInvoice}>
                             {sendingInvoice ? "Envoi…" : <><i className="ti ti-send" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Envoyer la facture</>}
@@ -11101,6 +11111,8 @@ function AppInner() {
 
             {viewingQuote && (() => {
               const q = viewingQuote;
+              // Message réellement envoyé : perso si tapé, sinon le modèle (aperçu = vérité).
+              const messageFinalDevis = sendQuoteMessage.trim() || messageParDefautDevis(q.client_nom, q.numero, profilPrenom || profilEntreprise || "");
               const info = QUOTE_STATUT_INFO[q.statut] || QUOTE_STATUT_INFO.brouillon;
               const lignes = q.lignes && q.lignes.length > 0 ? q.lignes : [];
               const totalHT = lignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
@@ -11204,12 +11216,17 @@ function AppInner() {
                       ) : (
                         <>
                           <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyé à <strong>{q.client_email}</strong></p>
+                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
                           <textarea
                             style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
-                            placeholder="Message personnalisé (optionnel)"
+                            placeholder="Ajouter un message personnel (optionnel)"
                             value={sendQuoteMessage}
                             onChange={e => setSendQuoteMessage(e.target.value)}
                           />
+                          <details style={{ marginBottom: 8 }}>
+                            <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Aperçu de l'email envoyé</summary>
+                            <div style={{ whiteSpace: "pre-wrap", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalDevis}</div>
+                          </details>
                           {sendQuoteStatus === "error" && <p style={{ fontSize: 12, color: "#A32D2D", margin: "0 0 8px" }}>{sendQuoteError}</p>}
                           <button style={S.btnSecondary} onClick={() => handleSendQuote(q)} disabled={sendingQuote}>
                             {sendingQuote ? "Envoi…" : <><i className="ti ti-send" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Envoyer le devis</>}
