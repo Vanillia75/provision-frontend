@@ -1978,7 +1978,7 @@ function AppInner() {
     try {
       const saved = await apiFetch("/profile/facture-numero", {
         method: "POST",
-        body: JSON.stringify({ numero_depart: factureNumeroDepart.trim() || null }),
+        body: JSON.stringify({ facture_numero_depart: factureNumeroDepart.trim() || null }),
       });
       setProfile(p => p ? { ...p, fiscal_settings: saved } : p);
       setFactureNumeroDepart(saved.facture_numero_depart || ""); // reflète la valeur normalisée
