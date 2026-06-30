@@ -1000,14 +1000,6 @@ function AppInner() {
   }, [tmi, token]);
 
   useEffect(() => {
-    if (estimateData && estimateData.disponible !== false) {
-      const urssafCourante = estimateData.montant_a_provisionner || 0;
-      const urssafPrecedente = estimateData.periode_precedente?.jours_restants > 0 ? Math.round(estimateData.ca_periode_precedente * (estimateData.taux_global_pct / 100) * 100) / 100 : 0;
-      setPanique(p => ({ ...p, urssaf: String(Math.round((urssafCourante + urssafPrecedente) * 100) / 100) }));
-    }
-  }, [estimateData]);
-
-  useEffect(() => {
     if (token) return;
     if (!googleButtonRef.current && !googleButtonRefInter.current) return;
     function renderButton() {
@@ -3388,12 +3380,17 @@ function AppInner() {
   // ⚠️ N'entrent JAMAIS dans le calcul URSSAF (qui ne porte que sur le CA auto-entrepreneur).
   const autresRevenusNum = parseFloat(autresRevenus) || 0;
   const bonusAutresRevenus = inclureAutresRevenus ? autresRevenusNum : 0;
+  // Bug 1.5 T2 : on consomme total_a_prevoir du moteur (= provision courante + Σ régularisations
+  // des périodes passées). L'ancien bricolage « + urssafPrecedente » est SUPPRIMÉ car la période
+  // précédente est déjà incluse dans total_a_prevoir → sinon double-comptage. Repli sur
+  // montant_a_provisionner si l'API ne renvoie pas encore total_a_prevoir.
   const urssafProvision = estimateData?.disponible !== false
-    ? (estimateData?.montant_a_provisionner || 0) +
-      (estimateData?.periode_precedente?.jours_restants > 0
-        ? Math.round((estimateData.ca_periode_precedente || 0) * ((estimateData?.taux_global_pct || 0) / 100) * 100) / 100
-        : 0)
+    ? (estimateData?.total_a_prevoir ?? estimateData?.montant_a_provisionner ?? 0)
     : 0;
+  // Régularisations de périodes passées (déjà incluses dans urssafProvision). Déclarées ICI,
+  // avant tout usage dans le render (anti-TDZ).
+  const regularisationsList = estimateData?.regularisations_periodes_passees || [];
+  const totalRegularisations = Math.round(regularisationsList.reduce((s, r) => s + (r.cotisations || 0), 0) * 100) / 100;
   const activiteInfo = ACTIVITES.find(a => a.id === profile?.activite);
   const revenuImposableAnnuel = activiteInfo ? (estimateData?.ca_annuel || 0) * (1 - activiteInfo.abattement) : 0;
   const impotsAnnuelEstime = Math.round(revenuImposableAnnuel * (parseFloat(tmi) / 100));
@@ -3622,7 +3619,7 @@ function AppInner() {
 
     // Ce qu'Hector "garde au chaud"
     const gardeAuChaud = [];
-    if (urssafProvision > 0) gardeAuChaud.push({ label: "URSSAF", montant: urssafProvision });
+    if (urssafProvision > 0) gardeAuChaud.push({ label: "URSSAF à mettre de côté", montant: urssafProvision });
     if (impotsNum > 0) gardeAuChaud.push({ label: "Impôts", montant: impotsNum });
     if (securiteNum > 0) gardeAuChaud.push({ label: "Réserve de sécurité", montant: securiteNum });
 
@@ -8831,6 +8828,27 @@ function AppInner() {
                     </div>
                   )}
 
+                  {totalRegularisations > 0 && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 12.5, color: "#FAC775", marginBottom: 8, lineHeight: 1.5 }}>
+                        dont <strong>{formatEUR(totalRegularisations)}</strong> de régularisations de périodes précédentes
+                      </div>
+                      <div style={{ background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.22)", borderRadius: 10, padding: "11px 13px", marginBottom: 10 }}>
+                        <div style={{ fontSize: 12.5, color: "#E8D3A8", lineHeight: 1.55 }}>
+                          🐾 J'ai détecté des revenus saisis après leur période d'encaissement. J'ai ajouté les cotisations correspondantes à ta réserve pour éviter une mauvaise surprise.
+                        </div>
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                        {regularisationsList.map(r => (
+                          <div key={r.periode} style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11.5, color: "#8BA5C0" }}>
+                            <span>{r.label} : {formatEUR(r.ca)} encaissés</span>
+                            <span style={{ color: "#FAC775", fontWeight: 600, whiteSpace: "nowrap" }}>{formatEUR(r.cotisations)} à régulariser</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {b.alerte && (
                     <div style={{ background: "rgba(226,75,74,0.1)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10, padding: "12px 14px", marginBottom: 14 }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#F09595", marginBottom: 4 }}>⚠️ Attention</div>
@@ -8891,8 +8909,9 @@ function AppInner() {
             {isMobile && (
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-pig-money" aria-hidden="true" style={{ fontSize: 14, color: "#FAC775" }} /> URSSAF de côté</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-pig-money" aria-hidden="true" style={{ fontSize: 14, color: "#FAC775" }} /> URSSAF à mettre de côté</div>
                   <div style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{formatEUR(urssafProvision)}</div>
+                  {totalRegularisations > 0 && <div style={{ fontSize: 10, color: "#FAC775", marginTop: 3, lineHeight: 1.35 }}>dont {formatEUR(totalRegularisations)} de régularisations</div>}
                   {urssafProvision > 0 && <div style={{ fontSize: 9.5, color: "#6B8299", marginTop: 4, lineHeight: 1.4 }}>{urssafDecompo}</div>}
                 </div>
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
