@@ -663,6 +663,7 @@ function AppInner() {
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const [tvaSaving, setTvaSaving] = useState(false);
+  const [factureNumeroDepart, setFactureNumeroDepart] = useState(""); // reprise de numérotation (sauvé au blur)
   const [vatNumber, setVatNumber] = useState(""); // brouillon du n° TVA (sauvé au blur)
   const [simCaLanding, setSimCaLanding] = useState("3000");
   const [simActLanding, setSimActLanding] = useState("0.212");
@@ -800,6 +801,7 @@ function AppInner() {
       if (p.siret != null) setProfilSiret(p.siret);
       if (p.adresse != null) setProfilAdresse(p.adresse);
       if (p.fiscal_settings) setVatNumber(p.fiscal_settings.vat_number || "");
+      if (p.fiscal_settings) setFactureNumeroDepart(p.fiscal_settings.facture_numero_depart || "");
       if (p.reserve_securite != null) setObjectifSecurite(String(p.reserve_securite));
       if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
@@ -1968,6 +1970,21 @@ function AppInner() {
       setError(err.message);
     } finally {
       setTvaSaving(false);
+    }
+  }
+
+  // Reprise de numérotation : définit le PLANCHER (n'édite aucune facture existante).
+  async function saveFactureNumero() {
+    try {
+      const saved = await apiFetch("/profile/facture-numero", {
+        method: "POST",
+        body: JSON.stringify({ numero_depart: factureNumeroDepart.trim() || null }),
+      });
+      setProfile(p => p ? { ...p, fiscal_settings: saved } : p);
+      setFactureNumeroDepart(saved.facture_numero_depart || ""); // reflète la valeur normalisée
+      showSavedToast();
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -11527,6 +11544,19 @@ function AppInner() {
                     </div>
                   </>
                 )}
+              </div>
+
+              {/* ── Reprise de numérotation des factures (plancher, jamais d'édition libre) ── */}
+              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Reprendre ma numérotation de factures</div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Tu factures déjà ailleurs ? Indique le numéro de ta prochaine facture : H€CTOR continuera ta série à partir de là, sans trou ni doublon.</div>
+                <label style={{ ...S.label, marginBottom: 0 }}>Prochain numéro de facture
+                  <input style={S.input} type="text" value={factureNumeroDepart}
+                    onChange={e => setFactureNumeroDepart(e.target.value)}
+                    onBlur={saveFactureNumero}
+                    placeholder={`Ex : 42 ou F-${new Date().getFullYear()}-042`} />
+                </label>
+                <div style={{ fontSize: 11, color: "#6B8299", marginTop: 6, lineHeight: 1.4 }}>Laisse vide pour la numérotation automatique. Ça ne modifie aucune facture déjà créée.</div>
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
