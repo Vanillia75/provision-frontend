@@ -3611,8 +3611,8 @@ function AppInner() {
     : -1;
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
-    if (j === null) return { id: "accueil", label: "En attente", couleur: "#FAC775", pastille: "#FAC775",
-      titre: "Réveille Hector 🐾", mot: "Pour veiller sur ta tranquillité, j'ai besoin de savoir combien tu dépenses par mois pour vivre. Dis-le moi, et je me mets au travail tout de suite !", img: "/hector-attentif.png", accueil: true };
+    if (j === null) return { id: "accueil", label: "🐾 Pour aller encore plus loin", couleur: "#378ADD", pastille: "#378ADD",
+      titre: "Réveille Hector 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/hector-attentif.png", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
@@ -8811,7 +8811,7 @@ function AppInner() {
                       {hectorEtat && (
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginBottom: 10, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "3px 10px" }}>
                           <span style={{ width: 6, height: 6, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                          <span style={{ fontSize: 9, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: hectorEtat.accueil ? "none" : "uppercase" }}>{hectorEtat.label}</span>
                         </div>
                       )}
                       <div style={{ fontSize: 12, color: "#C2D4E6", lineHeight: 1.5, marginBottom: 14 }}>
@@ -8854,7 +8854,7 @@ function AppInner() {
                       {hectorEtat && (
                         <div style={{ display: "inline-flex", alignItems: "center", gap: 7, marginBottom: 14, background: `${hectorEtat.couleur}1F`, border: `1px solid ${hectorEtat.couleur}44`, borderRadius: 999, padding: "4px 12px", width: "fit-content" }}>
                           <span style={{ width: 7, height: 7, borderRadius: "50%", background: hectorEtat.pastille, display: "inline-block" }} />
-                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: "uppercase" }}>{hectorEtat.label}</span>
+                          <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: hectorEtat.couleur, textTransform: hectorEtat.accueil ? "none" : "uppercase" }}>{hectorEtat.label}</span>
                           {joursTranquillite > 0 && <span style={{ fontSize: 10, color: hectorEtat.couleur, opacity: 0.7 }}>· {joursTranquillite} jours</span>}
                         </div>
                       )}
