@@ -10642,7 +10642,7 @@ function AppInner() {
               })()}
 
               <div style={S.card}>
-                {incomeListSafe.length === 0 ? <p style={S.empty}>Aucun revenu enregistré.</p> : incomeListSafe.map(entry => (
+                {incomeListSafe.length === 0 ? <p style={S.empty}>🐾 Ajoute ton premier revenu, je calcule ce que tu gardes vraiment.</p> : incomeListSafe.map(entry => (
                   <div key={entry.id} style={S.incomeRow}>
                     <div style={{ flex: 1 }}>
                       <span style={S.incomeAmt}>{formatEUR(entry.amount)}</span>
@@ -10755,7 +10755,7 @@ function AppInner() {
               {invoicesLoading ? (
                 <p style={S.empty}>Chargement…</p>
               ) : invoicesList.length === 0 ? (
-                <p style={S.empty}>Aucune facture créée. Commencez par en créer une !</p>
+                <p style={S.empty}>🐾 Crée ta première facture, je surveille les échéances et je te préviens si un paiement tarde.</p>
               ) : invoicesList.map(inv => {
                 const overdue = invoiceIsOverdue(inv);
                 const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
@@ -10989,7 +10989,7 @@ function AppInner() {
               {quotesLoading ? (
                 <p style={S.empty}>Chargement…</p>
               ) : quotesList.length === 0 ? (
-                <p style={S.empty}>Aucun devis créé. Commencez par en créer un !</p>
+                <p style={S.empty}>🐾 Crée ton premier devis, je le transforme en facture en un clic dès qu'il est accepté.</p>
               ) : quotesList.map(q => {
                 const info = QUOTE_STATUT_INFO[q.statut] || QUOTE_STATUT_INFO.brouillon;
                 return (
@@ -11238,8 +11238,8 @@ function AppInner() {
                 ) : expensesList.length === 0 ? (
                   <div style={{ textAlign: "center", padding: "32px 20px" }}>
                     <div style={{ fontSize: 32, marginBottom: 12 }}>🧾</div>
-                    <div style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>Aucun frais enregistré</div>
-                    <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 16 }}>Importe une facture ou ajoute un frais manuellement.</div>
+                    <div style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐾 Ajoute ton premier frais</div>
+                    <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 16 }}>je le retire de ton disponible et je vois où part ton argent.</div>
                   </div>
                 ) : expensesList.map(exp => (
                   <div key={exp.id}
@@ -11305,7 +11305,7 @@ function AppInner() {
               );
             })()}
             <div style={S.card}>
-              {contactsLoading ? <p style={S.empty}>Chargement…</p> : contacts.length === 0 ? <p style={S.empty}>Aucun contact. Ajoutez vos clients pour pré-remplir vos factures.</p> : contacts.map(c => (
+              {contactsLoading ? <p style={S.empty}>Chargement…</p> : contacts.length === 0 ? <p style={S.empty}>🐾 Ajoute ton premier client, je pré-remplis tes factures et devis à sa place.</p> : contacts.map(c => (
                 <div key={c.id} style={S.incomeRow}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#E6F1FB", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 13, fontWeight: 500, color: "#0C447C", flexShrink: 0 }}>{c.nom.slice(0, 2).toUpperCase()}</div>
                   <div style={{ flex: 1, marginLeft: 10 }}>
