@@ -5481,7 +5481,7 @@ function AppInner() {
           texte: sansAEM.length === 1
             ? `Je n'ai pas l'AEM de ton contrat${sansAEM[0].employeur ? ` chez ${sansAEM[0].employeur}` : ""} du ${fmt(sansAEM[0].date)}. Sans elle, ces heures n'existent pas pour France Travail — relance ton employeur.`
             : `Il me manque les AEM de ${sansAEM.length} de tes contrats. Sans elles, ces heures ne comptent pas. Scanne-les ou relance tes employeurs.`,
-          action: "coffre", actionLabel: "Scanner une AEM",
+          action: "mesaem", actionLabel: "Scanner une AEM",
         });
       }
 
@@ -5566,7 +5566,7 @@ function AppInner() {
       // S'il y a une anomalie AEM manquante, elle prime (sans elle, les heures n'existent pas pour FT).
       const aemAnomalie = (anomalies || []).find(a => a.id === "aem");
       if (aemAnomalie) {
-        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "coffre", suivant: phraseHeures };
+        return { icon: "ti-file-alert", txt: aemAnomalie.titre + " — à compléter.", nav: "mesaem", suivant: phraseHeures };
       }
       if (manque > 0) {
         return { icon: "ti-arrow-right", txt: phraseHeures, nav: "activites", suivant: null };
@@ -5791,7 +5791,6 @@ function AppInner() {
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
-      { id: "coffre", icon: "ti-camera", label: "Scanner une AEM", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
       { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
     ];
@@ -6565,7 +6564,7 @@ function AppInner() {
                         style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                         <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} /> Ajouter un contrat
                       </button>
-                      <button type="button" onClick={() => setInterNav("coffre")}
+                      <button type="button" onClick={() => setInterNav("mesaem")}
                         style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
                         <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} /> Scanner une AEM
                       </button>
@@ -7422,7 +7421,7 @@ function AppInner() {
               })()}
 
               {/* Lien discret vers le scan (le détail conversationnel a déjà tout dit) */}
-              <button type="button" onClick={() => setInterNav("coffre")}
+              <button type="button" onClick={() => setInterNav("mesaem")}
                 style={{ width: "100%", background: "rgba(93,202,165,0.08)", color: "#5DCAA5", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                 <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner mes AEM pour des calculs plus justes
               </button>
@@ -7623,7 +7622,7 @@ function AppInner() {
                 <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
                   Ajoute tes contrats avec leur salaire brut pour que je génère ton récap de revenus.<br />Le plus simple : scanne tes AEM, je remplis tout.
                   <div style={{ marginTop: 16 }}>
-                    <button type="button" onClick={() => setInterNav("coffre")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
+                    <button type="button" onClick={() => setInterNav("mesaem")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
                   </div>
                 </div>
               ) : (
@@ -7719,7 +7718,7 @@ function AppInner() {
                     <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
                       Tu n'as pas encore scanné d'AEM.<br />Photographie-les, je les range ici automatiquement.
                       <div style={{ marginTop: 16 }}>
-                        <button type="button" onClick={() => setInterNav("coffre")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
+                        <button type="button" onClick={() => setInterNav("mesaem")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
                       </div>
                     </div>
                   );
