@@ -9576,9 +9576,28 @@ function AppInner() {
                     );
                   })}
                 </div>
-                {hectorEtat.accueil && (
-                  <div style={{ marginTop: 14, padding: "10px 14px", background: "rgba(55,138,221,0.08)", borderRadius: 8, fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
-                    💡 Commence par renseigner ton <strong style={{ color: "#B5D4F4" }}>train de vie mensuel</strong> dans ton profil, puis ajoute tes revenus. Hector calculera combien de jours il peut veiller sur toi.
+                {/* Salon V2 — PR4 : « Pour aller plus loin » — le train de vie devient une invitation
+                    actionnable, UNIQUEMENT une fois le solde renseigné (une seule demande à la fois) et
+                    tant qu'il manque. Réutilise l'état depensesMensuelles + son save (debounce 600ms). */}
+                {argentDisponibleBrut !== null && trainDeVieNum === 0 && (
+                  <div style={{ marginTop: 14, padding: "14px 16px", background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 10 }}>
+                    <div style={{ fontSize: 12.5, fontWeight: 700, color: "#7FB8F0", marginBottom: 6 }}>🐾 Pour aller plus loin</div>
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
+                      Quand tu veux, dis-moi combien tu dépenses par mois pour vivre — je te dirai combien de temps tu peux tenir sans revenu.
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Train de vie mensuel</span>
+                      <div style={{ position: "relative", flex: 1, minWidth: 160, maxWidth: 220 }}>
+                        <MontantInput
+                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "10px 30px 10px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                          decimales
+                          placeholder="Ex : 1 500"
+                          value={depensesMensuelles}
+                          onChange={v => setDepensesMensuelles(v)}
+                        />
+                        <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>€</span>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
