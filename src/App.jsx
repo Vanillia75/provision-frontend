@@ -9165,20 +9165,11 @@ function AppInner() {
                     <i className="ti ti-wallet" aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0", flexShrink: 0 }} />
                     <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>Renseigne ton solde bancaire pour voir ton disponible et ta réserve de sécurité.</div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
-                    <div style={{ position: "relative", flex: 1, minWidth: 160, maxWidth: 220 }}>
-                      <MontantInput
-                        style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "10px 30px 10px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                        decimales
-                        placeholder="Ex : 3 500"
-                        value={panique.solde}
-                        onChange={v => { setPanique({ ...panique, solde: v }); safeStorage.setItem("soldeUpdatedAt", new Date().toISOString()); }}
-                      />
-                      <span style={{ position: "absolute", right: 10, top: "50%", transform: "translateY(-50%)", fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>€</span>
-                    </div>
-                    {soldeSaveStatus === "saving" && <span style={{ fontSize: 11, color: "#8BA5C0" }}>⏳</span>}
-                    {soldeSaveStatus === "saved" && <span style={{ fontSize: 11, color: "#5DCAA5" }}>✓</span>}
+                  {/* Salon V2 — PR3 : plus de 2ᵉ champ solde ici. La saisie se fait dans la bande
+                      d'en-tête d'Hector (champ canonique, toujours visible). Simple renvoi. */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#7FB8F0", fontWeight: 600 }}>
+                    <span style={{ fontSize: 15 }}>☝️</span>
+                    <span>Renseigne-le dans la carte d'Hector, tout en haut de l'écran.</span>
                   </div>
                 </div>
               )}
