@@ -388,6 +388,9 @@ function AppInner() {
   const [areError, setAreError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
+  // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
+  const [aemVictoire, setAemVictoire] = useState(null);
+  const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
   // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
   const [docTab, setDocTab] = useState("revenus");
   // ─── Vie d'Hector sur le cockpit (micro-interactions) ───
@@ -2157,6 +2160,63 @@ function AppInner() {
     } else {
       setAemExtrait(null);
       setAemTotal(0);
+    }
+  }
+
+  // ─── Salon V2 / PR3 — wrapper de confirmation pour « Mes AEM » (scan SUR PLACE) ───
+  // Réutilise (A) le POST /intermittent/activite de la V1, MAIS fait son PROPRE Promise.all (B') pour tenir
+  // la réponse FRAÎCHE en variable locale (`fresh`) → on ne relit jamais `calc`/state (immunisé au closure).
+  // Abandonne (C) le setInterNav("activites") de la V1 : on RESTE sur mesaem et on affiche la victoire.
+  // handleConfirmAEM V1 n'est jamais appelé/touché ici. loadIntermittentCockpit reste inchangée.
+  async function handleConfirmAEMMesaem() {
+    const nombre = parseFloat(aemExtrait.nombre);
+    if (!aemExtrait.date || !nombre || nombre <= 0) { setAemError("Vérifie la date et le nombre avant d'enregistrer."); return; }
+    setAemSaving(true); setAemError("");
+    // Capture du DÉBUT de batch (une seule fois, même sur multi-AEM) : total d'heures avant + accumulateur de cachets.
+    if (!aemBatchRef.current) aemBatchRef.current = { avant: (interCockpit?.total_heures ?? 0), cachets: 0 };
+    aemBatchRef.current.cachets += nombre;
+    try {
+      await apiFetch("/intermittent/activite", {                         // (A) — même appel que la V1
+        method: "POST",
+        body: JSON.stringify({
+          date: aemExtrait.date,
+          date_fin: aemExtrait.date_fin || null,
+          type_activite: aemExtrait.type_activite,
+          nombre,
+          employeur: aemExtrait.employeur || null,
+          salaire_brut: aemExtrait.salaire_brut !== "" ? parseFloat(aemExtrait.salaire_brut) : null,
+          aem_recue: true,
+          aem_filename: aemExtrait.filename || null,
+          aem_r2_key: aemExtrait.aem_r2_key || null,
+        }),
+      });
+      if (aemQueue.length > 0) {                                         // multi-AEM : on enchaîne la validation, pas de victoire
+        setAemExtrait(aemQueue[0]);
+        setAemQueue(aemQueue.slice(1));
+        setAemSaving(false);
+        return;
+      }
+      // Dernière AEM du batch : refresh FRAIS (B') — on tient la réponse en local, on ne lit pas calc.
+      setAemExtrait(null); setAemTotal(0);
+      const [fresh, activites] = await Promise.all([
+        apiFetch("/intermittent/cockpit"),
+        apiFetch("/intermittent/activites"),
+      ]);
+      setInterCockpit(fresh);            // met à jour c (→ calc au prochain render, pour la liste)
+      setInterActivites(activites);      // rafraîchit l'historique
+      const batch = aemBatchRef.current || { avant: (fresh.total_heures ?? 0), cachets: nombre };
+      setAemVictoire({                   // snapshot depuis FRESH — jamais de closure périmée
+        deltaH: Math.max(0, Math.round((fresh.total_heures ?? 0) - batch.avant)),
+        deltaCachets: batch.cachets,
+        total: fresh.total_heures ?? 0,
+        reste: fresh.manquant ?? 0,
+      });
+      aemBatchRef.current = null;        // batch terminé
+    } catch (err) {
+      setAemError(err.message);
+      aemBatchRef.current = null;        // reset en erreur : sinon le prochain batch partirait avec un avant/cachets pollué
+    } finally {
+      setAemSaving(false);
     }
   }
 
@@ -5908,58 +5968,188 @@ function AppInner() {
               </div>
               )}
 
-              {/* ═══ MES AEM (V2 / PR1 coquille) — parcours unifié, À CÔTÉ de la V1 (coffre/attestation/calcul
-                  restent intacts). AUCUNE logique de scan ici : le bouton renvoie vers le coffre V1 éprouvé
-                  (PR3 fera le scan + la victoire sur place). c-safe : dans le garde {c && …}, aucun accès c. ═══ */}
+              {/* ═══ MES AEM (V2 / PR3) — scan SUR PLACE + victoire, sans quitter l'écran. Formulaire de
+                  validation DUPLIQUÉ de coffre (V1 intacte) ; confirm → handleConfirmAEMMesaem (wrapper). ═══ */}
               {interNav === "mesaem" && (() => {
-                // Salon V2 / PR2 — historique : rendu de liste AEM DUPLIQUÉ depuis « Mes documents » (attestation
-                // V1 intacte). Lit interActivites + heuresDe + voirDocumentAEM (partagés, c-safe) ; AUCUN docTab.
-                // handleConfirmAEM et le scan NON touchés.
                 const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
                 const fmtDate = (iso) => { try { const d = new Date(iso); const M = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"]; return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`; } catch { return iso; } };
-                return (
-                <div>
-                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+
+                // ── 1) VICTOIRE (après le dernier scan validé du batch) ──
+                if (aemVictoire) {
+                  const v = aemVictoire;
+                  return (
                     <div>
-                      <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 4px" }}>🐾 Mes AEM</h1>
-                      <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une AEM, je m'occupe du reste.</p>
+                      <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.16), rgba(93,202,165,0.04))", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 18, padding: "28px 22px", textAlign: "center" }}>
+                        <div style={{ fontSize: 12.5, fontWeight: 700, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>✅ AEM ajoutée</div>
+                        <div style={{ fontSize: 30, fontWeight: 800, color: "white", lineHeight: 1.1, marginBottom: 12 }}>+{v.deltaH} h · +{v.deltaCachets} cachet{v.deltaCachets > 1 ? "s" : ""}</div>
+                        <div style={{ fontSize: 14.5, color: "#C2E6D8", lineHeight: 1.6 }}>Tu totalises maintenant <strong style={{ color: "white" }}>{v.total} h</strong>.</div>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginTop: 4 }}>Encore {v.reste} h avant ton renouvellement.</div>
+                      </div>
+                      <button type="button" onClick={() => setAemVictoire(null)}
+                        style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Scanner la suivante
+                      </button>
                     </div>
-                    <button type="button" onClick={() => setInterNav("coffre")}
-                      style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                      📸 Scanner une AEM
-                    </button>
+                  );
+                }
+
+                // ── 2) VALIDATION (Hector a lu une AEM, on vérifie avant d'enregistrer) — formulaire dupliqué de coffre ──
+                if (aemExtrait) {
+                  return (
+                    <div>
+                <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 20px 22px" }}>
+                  {/* Bannière mise en avant quand le document contient plusieurs attestations */}
+                  {aemTotal > 1 && (
+                    <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.18), rgba(93,202,165,0.06))", border: "1px solid rgba(93,202,165,0.45)", borderRadius: 14, padding: "16px 18px", marginBottom: 18 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12 }}>
+                        <span style={{ fontSize: 26, flexShrink: 0 }}>🎉</span>
+                        <div style={{ fontSize: 18, fontWeight: 800, color: "white", lineHeight: 1.25 }}>
+                          J'ai trouvé {aemTotal} attestations dans ce document !
+                        </div>
+                      </div>
+                      <div style={{ fontSize: 13, color: "#C2E6D8", lineHeight: 1.5, marginBottom: 12 }}>
+                        Je te les fais valider une par une — tu es sur la <strong style={{ color: "white" }}>n°{aemTotal - aemQueue.length}</strong> sur {aemTotal}.
+                      </div>
+                      {/* Petite frise de progression */}
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {Array.from({ length: aemTotal }).map((_, idx) => {
+                          const courante = aemTotal - aemQueue.length - 1;
+                          const fait = idx < courante;
+                          const active = idx === courante;
+                          return (
+                            <div key={idx} style={{ flex: 1, height: 6, borderRadius: 3, background: fait ? "#5DCAA5" : active ? "rgba(93,202,165,0.6)" : "rgba(255,255,255,0.12)", transition: "background 0.3s ease" }} />
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                    </div>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>
+                        {aemTotal > 1 ? "Attestation " + (aemTotal - aemQueue.length) + " sur " + aemTotal : "Voilà ce que j'ai lu 🐾"}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0" }}>
+                        {aemTotal > 1
+                          ? "Vérifie et enregistre, je passe à la suivante."
+                          : "Vérifie et corrige si besoin, puis enregistre."}
+                      </div>
+                    </div>
                   </div>
 
-                  {aems.length === 0 ? (
-                    <div style={{ textAlign: "center", padding: "40px 24px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
-                      <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
-                      <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}>On commence ici. Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Employeur
+                      <input type="text" value={aemExtrait.employeur} onChange={e => setAemExtrait({ ...aemExtrait, employeur: e.target.value })} placeholder="Nom de la structure"
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 110px" }}>Début
+                        <input type="date" value={aemExtrait.date} onChange={e => setAemExtrait({ ...aemExtrait, date: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 110px" }}>Fin <span style={{ color: "#5A7088", fontWeight: 400 }}>(si période)</span>
+                        <input type="date" value={aemExtrait.date_fin} onChange={e => setAemExtrait({ ...aemExtrait, date_fin: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Type
+                        <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                          <option value="cachet_isole">Cachets (artiste · 12h)</option>
+                          <option value="heures">Heures (technicien)</option>
+                        </select>
+                      </label>
                     </div>
-                  ) : (
-                    <>
-                      <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM te rapproche de ton renouvellement.</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {aems.map((a, i) => (
-                          <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
-                            <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                              <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
-                            </div>
-                            <div style={{ flex: 1, minWidth: 0 }}>
-                              <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</div>
-                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
-                            </div>
-                            {a.a_document && (
-                              <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
-                                style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                                <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
-                              </button>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>{aemExtrait.type_activite === "heures" ? "Nombre d'heures" : "Nombre de cachets"}
+                        <input type="number" min="0" value={aemExtrait.nombre} onChange={e => setAemExtrait({ ...aemExtrait, nombre: e.target.value })}
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                      <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Salaire brut (€)
+                        <MontantInput decimales value={aemExtrait.salaire_brut} onChange={v => setAemExtrait({ ...aemExtrait, salaire_brut: v })} placeholder="Optionnel"
+                          style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </label>
+                    </div>
+                  </div>
+
+                  {aemError && (
+                    <div style={{ marginTop: 14, fontSize: 12.5, color: "#F09595" }}>{aemError}</div>
                   )}
+
+                  <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
+                    <button type="button" disabled={aemSaving} onClick={handleConfirmAEMMesaem}
+                      style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: aemSaving ? "default" : "pointer", fontFamily: "inherit", opacity: aemSaving ? 0.6 : 1 }}>
+                      {aemSaving ? "…" : (aemQueue.length > 0 ? "Enregistre et suivante →" : "C'est juste, enregistre ✓")}
+                    </button>
+                    {aemQueue.length > 0 ? (
+                      <button type="button" disabled={aemSaving} onClick={handleSkipAEM}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "14px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                        Passer
+                      </button>
+                    ) : (
+                      <button type="button" onClick={() => { setAemExtrait(null); setAemQueue([]); setAemTotal(0); setAemError(""); aemBatchRef.current = null; }}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "14px 18px", fontSize: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                        Annuler
+                      </button>
+                    )}
+                  </div>
+                  <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", marginTop: 12, lineHeight: 1.5 }}>
+                    Je fais de mon mieux pour bien lire, mais vérifie toujours — une AEM mal scannée, ça arrive.
+                  </div>
                 </div>
+                    </div>
+                  );
+                }
+
+                // ── 3) ACCUEIL / HISTORIQUE (idle) ──
+                return (
+                  <div>
+                    <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+                      <div>
+                        <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 4px" }}>🐾 Mes AEM</h1>
+                        <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une AEM, je m'occupe du reste.</p>
+                      </div>
+                      <label style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: aemUploading ? "default" : "pointer", fontFamily: "inherit", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                        <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading} onChange={e => e.target.files[0] && handleScanAEM(e.target.files[0])} style={{ display: "none" }} />
+                        📸 {aemUploading ? "Hector lit…" : "Scanner une AEM"}
+                      </label>
+                    </div>
+
+                    {aemError && (
+                      <div style={{ marginBottom: 14, background: "rgba(226,75,74,0.08)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#F09595", lineHeight: 1.5 }}>{aemError}</div>
+                    )}
+
+                    {aems.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "40px 24px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
+                        <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
+                        <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}>On commence ici. Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
+                      </div>
+                    ) : (
+                      <>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM te rapproche de ton renouvellement.</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                          {aems.map((a, i) => (
+                            <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
+                              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</div>
+                                <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
+                              </div>
+                              {a.a_document && (
+                                <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
+                                  style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                  <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
+                                </button>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
                 );
               })()}
 
