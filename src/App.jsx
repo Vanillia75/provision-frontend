@@ -5206,11 +5206,11 @@ function AppInner() {
         (joursAnniv != null && joursAnniv <= 30 && manque > 24);
       if (urgent) {
         return {
-          ton: "red", emoji: "🔴", titre: "Là, ça se joue",
+          ton: "red", emoji: "🔴", titre: "Je garde un œil dessus",
           bg: "rgba(226,83,61,0.1)", bd: "rgba(226,83,61,0.3)", tc: "#F0997F", st: "#F0C4B8",
           phrase: joursAnniv != null
-            ? `Il te reste ${joursAnniv} jour${joursAnniv > 1 ? "s" : ""} et ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""} à décrocher. C'est jouable, mais ne laisse rien passer ce mois-ci.`
-            : `Il te manque ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""}. À ta place, je chercherais des contrats dès maintenant.`,
+            ? `Il te reste ${joursAnniv} jour${joursAnniv > 1 ? "s" : ""} et ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""} à décrocher. C'est encore jouable. Je te préviendrai si la situation demande qu'on réagisse.`
+            : `Il te manque ${calc.cachetsManquants} cachet${calc.cachetsManquants > 1 ? "s" : ""} à décrocher. C'est encore jouable. Chaque contrat te rapproche du renouvellement. Moi, je garde le compte avec toi.`,
         };
       }
 
