@@ -5722,6 +5722,7 @@ function AppInner() {
     const interMenuItems = [
       { id: "cockpit", icon: "ti-gauge", label: "Cockpit", dispo: true },
       { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
+      { id: "mesaem", icon: "ti-file-check", label: "Mes AEM", dispo: true },
       { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
       { id: "hector", icon: "ti-message-2", label: "Parle à Hector", dispo: true },
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
@@ -5905,6 +5906,39 @@ function AppInner() {
                   <div style={{ fontSize: 14, color: "#B5D4F4", marginTop: 2 }}>{c.hector_message}</div>
                 </div>
               </div>
+              )}
+
+              {/* ═══ MES AEM (V2 / PR1 coquille) — parcours unifié, À CÔTÉ de la V1 (coffre/attestation/calcul
+                  restent intacts). AUCUNE logique de scan ici : le bouton renvoie vers le coffre V1 éprouvé
+                  (PR3 fera le scan + la victoire sur place). c-safe : dans le garde {c && …}, aucun accès c. ═══ */}
+              {interNav === "mesaem" && (
+                <div>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
+                    <div>
+                      <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 4px" }}>🐾 Mes AEM</h1>
+                      <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une AEM, je m'occupe du reste.</p>
+                    </div>
+                    <button type="button" onClick={() => setInterNav("coffre")}
+                      style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                      📸 Scanner une AEM
+                    </button>
+                  </div>
+
+                  {interActivites.length === 0 ? (
+                    <div style={{ textAlign: "center", padding: "40px 24px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
+                      <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
+                      <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}>On commence ici. Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
+                    </div>
+                  ) : (
+                    <div style={{ padding: "12px 2px" }}>
+                      <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.6, marginBottom: 12 }}>🐾 Tu as déjà {interActivites.length} AEM enregistrée{interActivites.length > 1 ? "s" : ""}. Retrouve-les dans « Mes documents ».</div>
+                      <button type="button" onClick={() => setInterNav("attestation")}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 9, padding: "9px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                        📄 Ouvrir Mes documents
+                      </button>
+                    </div>
+                  )}
+                </div>
               )}
 
               {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
