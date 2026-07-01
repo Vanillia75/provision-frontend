@@ -2172,9 +2172,12 @@ function AppInner() {
     const nombre = parseFloat(aemExtrait.nombre);
     if (!aemExtrait.date || !nombre || nombre <= 0) { setAemError("Vérifie la date et le nombre avant d'enregistrer."); return; }
     setAemSaving(true); setAemError("");
-    // Capture du DÉBUT de batch (une seule fois, même sur multi-AEM) : total d'heures avant + accumulateur de cachets.
-    if (!aemBatchRef.current) aemBatchRef.current = { avant: (interCockpit?.total_heures ?? 0), cachets: 0 };
-    aemBatchRef.current.cachets += nombre;
+    // Capture du DÉBUT de batch (une seule fois, même sur multi-AEM) : total d'heures avant + accumulateurs SÉPARÉS.
+    if (!aemBatchRef.current) aemBatchRef.current = { avant: (interCockpit?.total_heures ?? 0), cachets: 0, heures: 0 };
+    // Loi II dans le bloc : on sépare les unités. Cachets = nb de contrats (info neuve) ; heures = déjà dans deltaH.
+    // (Calque le pattern du récap revenus ~5758 : aiguillage par type_activite === "cachet_isole".)
+    if (aemExtrait.type_activite === "cachet_isole") aemBatchRef.current.cachets += nombre;
+    else aemBatchRef.current.heures += nombre;
     try {
       await apiFetch("/intermittent/activite", {                         // (A) — même appel que la V1
         method: "POST",
@@ -2204,7 +2207,7 @@ function AppInner() {
       ]);
       setInterCockpit(fresh);            // met à jour c (→ calc au prochain render, pour la liste)
       setInterActivites(activites);      // rafraîchit l'historique
-      const batch = aemBatchRef.current || { avant: (fresh.total_heures ?? 0), cachets: nombre };
+      const batch = aemBatchRef.current || { avant: (fresh.total_heures ?? 0), cachets: 0, heures: 0 };
       setAemVictoire({                   // snapshot depuis FRESH — jamais de closure périmée
         deltaH: Math.max(0, Math.round((fresh.total_heures ?? 0) - batch.avant)),
         deltaCachets: batch.cachets,
@@ -5981,7 +5984,7 @@ function AppInner() {
                     <div>
                       <div style={{ background: "linear-gradient(135deg, rgba(93,202,165,0.16), rgba(93,202,165,0.04))", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 18, padding: "28px 22px", textAlign: "center" }}>
                         <div style={{ fontSize: 12.5, fontWeight: 700, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 1.2, marginBottom: 10 }}>✅ AEM ajoutée</div>
-                        <div style={{ fontSize: 30, fontWeight: 800, color: "white", lineHeight: 1.1, marginBottom: 12 }}>+{v.deltaH} h · +{v.deltaCachets} cachet{v.deltaCachets > 1 ? "s" : ""}</div>
+                        <div style={{ fontSize: 30, fontWeight: 800, color: "white", lineHeight: 1.1, marginBottom: 12 }}>+{v.deltaH} h{v.deltaCachets > 0 ? ` · +${v.deltaCachets} cachet${v.deltaCachets > 1 ? "s" : ""}` : ""}</div>
                         <div style={{ fontSize: 14.5, color: "#C2E6D8", lineHeight: 1.6 }}>Tu totalises maintenant <strong style={{ color: "white" }}>{v.total} h</strong>.</div>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginTop: 4 }}>Encore {v.reste} h avant ton renouvellement.</div>
                       </div>
@@ -6063,7 +6066,7 @@ function AppInner() {
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>{aemExtrait.type_activite === "heures" ? "Nombre d'heures" : "Nombre de cachets"}
-                        <input type="number" min="0" value={aemExtrait.nombre} onChange={e => setAemExtrait({ ...aemExtrait, nombre: e.target.value })}
+                        <input type="number" min="0" step={aemExtrait.type_activite === "cachet_isole" ? "1" : "0.5"} value={aemExtrait.nombre} onChange={e => setAemExtrait({ ...aemExtrait, nombre: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       </label>
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Salaire brut (€)
