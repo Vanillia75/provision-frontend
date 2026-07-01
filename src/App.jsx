@@ -5238,6 +5238,11 @@ function AppInner() {
       };
     })();
 
+    // Salon V2 — présence d'abord : salut temporel calqué À L'IDENTIQUE sur l'AE (briefingMatin L3590-3591).
+    // Mêmes seuils, mêmes libellés. profilPrenom = state de composant (c-safe, aucun accès c.).
+    const heureInter = new Date().getHours();
+    const salutInter = heureInter < 12 ? "Bonjour" : heureInter < 18 ? "Bon après-midi" : "Bonsoir";
+
     // ═══ CHECKLIST DE RENOUVELLEMENT (vraie checklist, pas déco) ═══
     // Ordre logique : période → AEM → heures → seuil → dossier.
     // Chaque ligne : badge + libellé + statut court à droite.
@@ -5908,6 +5913,11 @@ function AppInner() {
                     <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
+                    {/* Salon V2 — présence d'abord : salut léger AU-DESSUS de l'état, dans l'unique Hector du
+                        héros (image ci-dessus) — aucune 2e image. 🐾 + logique identiques à l'AE. */}
+                    <div style={{ fontSize: 13, color: "#8BA5C0", fontWeight: 600, marginBottom: 4 }}>
+                      🐾 {salutInter}{profilPrenom ? ` ${profilPrenom}` : ""}
+                    </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 20 }}>{etat.emoji}</span>
                       <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
