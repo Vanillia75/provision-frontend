@@ -128,13 +128,6 @@ const TMI_OPTIONS = [
   { id: "45", label: "45%" },
 ];
 
-const NEWS = [
-  { source: "URSSAF", title: "Taux BNC à 25,6% depuis janvier 2026", date: "1 jan. 2026", url: "https://www.urssaf.fr" },
-  { source: "Impôts", title: "Plafonds auto-entrepreneur revalorisés : 83 600€", date: "2 jan. 2026", url: "https://www.impots.gouv.fr" },
-  { source: "URSSAF", title: "Déclaration T2 2026 : date limite le 31 juillet", date: "1 avr. 2026", url: "https://www.autoentrepreneur.urssaf.fr" },
-  { source: "Impôts", title: "Ouverture déclaration revenus 2025 : avril 2026", date: "8 avr. 2026", url: "https://www.impots.gouv.fr" },
-];
-
 const CONSEILS = [
   { emoji: "⭐", titre: "ACRE — économisez 50% la 1ère année", texte: "Si vous avez créé votre activité après juillet 2025, vos cotisations sont divisées par 2 pendant 12 mois. Pensez à faire la demande dans les 60 jours." },
   { emoji: "📊", titre: "Versement libératoire", texte: "Payez votre impôt sur le revenu en même temps que vos cotisations, à 1,7% de votre CA. Simple et prévisible." },
@@ -3448,55 +3441,6 @@ function AppInner() {
     : argentDisponibleBrut < 0 ? "rouge"
     : disponibleAujourdhui < 0 ? "orange"
     : "vert";
-
-  // --- Score sante HECTOR /100 : 5 composantes ponderees ---
-  function calculScoreSante() {
-    if (panique.solde === "" || !estimateData || estimateData.disponible === false) return null;
-    const dettesNum = parseFloat(panique.dettes) || 0;
-
-    // A. Tresorerie vs charges a venir (30 pts)
-    let ptsTreso;
-    if (totalChargesAVenir <= 0) ptsTreso = soldeNum >= 0 ? 30 : 0;
-    else ptsTreso = Math.max(0, Math.min(30, Math.round((soldeNum / totalChargesAVenir) * 15)));
-
-    // B. Reserve de securite couverte (20 pts)
-    let ptsReserve;
-    if (securiteNum <= 0) ptsReserve = 20;
-    else ptsReserve = Math.max(0, Math.min(20, Math.round(((soldeNum - totalChargesAVenir) / securiteNum) * 20)));
-
-    // C. URSSAF specifiquement provisionnee (20 pts)
-    let ptsUrssaf;
-    if (urssafProvision <= 0) ptsUrssaf = 20;
-    else ptsUrssaf = Math.max(0, Math.min(20, Math.round((soldeNum / urssafProvision) * 20)));
-
-    // D. Regularite du CA mois par mois (15 pts)
-    const moisActifs = revenusParMois.filter(m => m.total > 0);
-    let ptsRegularite = 7;
-    if (moisActifs.length >= 2) {
-      const moyenne = moisActifs.reduce((s, m) => s + m.total, 0) / moisActifs.length;
-      const variance = moisActifs.reduce((s, m) => s + Math.pow(m.total - moyenne, 2), 0) / moisActifs.length;
-      const cv = moyenne > 0 ? Math.sqrt(variance) / moyenne : 1;
-      ptsRegularite = Math.max(0, Math.min(15, Math.round((1 - Math.min(cv, 1)) * 15)));
-    }
-
-    // E. Endettement vs CA annuel (15 pts)
-    let ptsDette;
-    if (dettesNum <= 0) ptsDette = 15;
-    else {
-      const ratioDette = dettesNum / Math.max(estimateData.ca_annuel || 1, 1);
-      ptsDette = Math.max(0, Math.min(15, Math.round((1 - Math.min(ratioDette, 1)) * 15)));
-    }
-
-    return { total: Math.max(0, Math.min(100, ptsTreso + ptsReserve + ptsUrssaf + ptsRegularite + ptsDette)), ptsTreso, ptsReserve, ptsUrssaf, ptsRegularite, ptsDette };
-  }
-  const scoreDetail = calculScoreSante();
-  const scoreSante = scoreDetail?.total ?? null;
-  function scoreInfo(s) {
-    if (s === null) return { label: "—", color: "#8BA5C0", desc: "Renseignez votre solde dans Scanner Financier pour calculer votre score." };
-    if (s >= 75) return { label: "Excellent", color: "#1D9E75", desc: "Trésorerie, réserve et provisions sont solides." };
-    if (s >= 45) return { label: "Correct", color: "#EF9F27", desc: "Quelques points de vigilance à surveiller." };
-    return { label: "Risque élevé", color: "#E24B4A", desc: "Plusieurs indicateurs sont dans le rouge — agissez rapidement." };
-  }
 
   // --- Coach prix : modele simplifie "combien facturez-vous", avec bornes realistes ---
   const tarifNum = parseFloat(tarifMontant) || 0;
