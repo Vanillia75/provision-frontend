@@ -5911,7 +5911,13 @@ function AppInner() {
               {/* ═══ MES AEM (V2 / PR1 coquille) — parcours unifié, À CÔTÉ de la V1 (coffre/attestation/calcul
                   restent intacts). AUCUNE logique de scan ici : le bouton renvoie vers le coffre V1 éprouvé
                   (PR3 fera le scan + la victoire sur place). c-safe : dans le garde {c && …}, aucun accès c. ═══ */}
-              {interNav === "mesaem" && (
+              {interNav === "mesaem" && (() => {
+                // Salon V2 / PR2 — historique : rendu de liste AEM DUPLIQUÉ depuis « Mes documents » (attestation
+                // V1 intacte). Lit interActivites + heuresDe + voirDocumentAEM (partagés, c-safe) ; AUCUN docTab.
+                // handleConfirmAEM et le scan NON touchés.
+                const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
+                const fmtDate = (iso) => { try { const d = new Date(iso); const M = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"]; return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`; } catch { return iso; } };
+                return (
                 <div>
                   <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
                     <div>
@@ -5924,22 +5930,38 @@ function AppInner() {
                     </button>
                   </div>
 
-                  {interActivites.length === 0 ? (
+                  {aems.length === 0 ? (
                     <div style={{ textAlign: "center", padding: "40px 24px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
                       <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
                       <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}>On commence ici. Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
                     </div>
                   ) : (
-                    <div style={{ padding: "12px 2px" }}>
-                      <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.6, marginBottom: 12 }}>🐾 Tu as déjà {interActivites.length} AEM enregistrée{interActivites.length > 1 ? "s" : ""}. Retrouve-les dans « Mes documents ».</div>
-                      <button type="button" onClick={() => setInterNav("attestation")}
-                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 9, padding: "9px 15px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-                        📄 Ouvrir Mes documents
-                      </button>
-                    </div>
+                    <>
+                      <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM te rapproche de ton renouvellement.</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {aems.map((a, i) => (
+                          <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
+                            <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                              <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
+                            </div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</div>
+                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
+                            </div>
+                            {a.a_document && (
+                              <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
+                                style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </>
                   )}
                 </div>
-              )}
+                );
+              })()}
 
               {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
