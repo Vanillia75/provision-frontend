@@ -6274,7 +6274,7 @@ function AppInner() {
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
                 {/* ───────── COLONNE GAUCHE : Hector (la star) ───────── */}
-                <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", animation: "paliersHalo 6s ease-in-out infinite" }}>
+                <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", boxShadow: "0 0 0 10px rgba(93,202,165,0.07), 0 10px 30px rgba(0,0,0,0.4)" }}>
                   {/* Header immersif Hector (agrandi : il est la star) */}
                   <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
                     {/* halo doux derrière Hector */}
@@ -11945,7 +11945,7 @@ function AppInner() {
                 <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white", margin: 0, lineHeight: 1.15 }}>Hector, ton copilote</h1>
                 <p style={{ fontSize: isMobile ? 13 : 14, color: "#B5D4F4", margin: "6px 0 0", lineHeight: 1.5 }}>Il connaît tes chiffres, prépare tes devis, et te dit ce que tu peux vraiment dépenser.</p>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 999, padding: "3px 10px" }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#5DCAA5", display: "inline-block", animation: "pulse 2s infinite" }} />
+                  <span className="hector-ping" style={{ width: 7, height: 7 }} />
                   <span style={{ fontSize: 11, fontWeight: 600, color: "#5DCAA5" }}>En ligne</span>
                 </div>
               </div>

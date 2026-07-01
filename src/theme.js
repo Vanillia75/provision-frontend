@@ -16,7 +16,6 @@ export const CSS = `
   /* ─── Vie d'Hector (cockpit intermittent) ─── */
   @keyframes hectorBreathe { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.012) translateY(-3px); } }
   @keyframes hectorHalo { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.06); } }
-  @keyframes paliersHalo { 0%,100% { box-shadow: 0 0 0 8px rgba(93,202,165,0.05), 0 10px 30px rgba(0,0,0,0.4); } 50% { box-shadow: 0 0 0 12px rgba(93,202,165,0.09), 0 10px 30px rgba(0,0,0,0.4); } }
   @keyframes hectorPop { 0% { transform: scale(1); } 30% { transform: scale(1.06) rotate(-1deg); } 60% { transform: scale(0.98) rotate(1deg); } 100% { transform: scale(1); } }
   @keyframes celebrIn { from { opacity: 0; } to { opacity: 1; } }
   @keyframes celebrCard { 0% { opacity: 0; transform: scale(0.8) translateY(20px); } 60% { transform: scale(1.04) translateY(0); } 100% { opacity: 1; transform: scale(1) translateY(0); } }
@@ -26,8 +25,13 @@ export const CSS = `
   .hector-pop { animation: hectorPop 0.6s ease; }
   .analyse-step { opacity: 0; animation: analyseStepIn 0.3s ease forwards; }
   @keyframes analyseStepIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+  /* Pastille "En ligne" : ping GPU (scale+opacity) à la place d'un box-shadow animé (repaint permanent). */
+  @keyframes hectorPing { 0%,100% { transform: scale(1); opacity: 0.5; } 50% { transform: scale(2.7); opacity: 0; } }
+  .hector-ping { position: relative; display: inline-block; }
+  .hector-ping::before { content: ""; position: absolute; inset: 0; border-radius: 50%; background: rgba(224,83,61,1); animation: hectorPing 2s ease-in-out infinite; pointer-events: none; }
+  .hector-ping::after { content: ""; position: absolute; inset: 0; border-radius: 50%; background: #5DCAA5; }
   @media (prefers-reduced-motion: reduce) {
-    .hector-breathe, .hector-pop { animation: none !important; }
+    .hector-breathe, .hector-pop, .hector-ping::before { animation: none !important; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
