@@ -9818,7 +9818,7 @@ function AppInner() {
 
         {/* État vide commun : ces 3 pages ont besoin de revenus déclarés pour s'afficher.
             Sans données, on affiche une invite au lieu d'une page blanche. */}
-        {["declaration", "simvie", "simulateur"].includes(nav) && (() => {
+        {["declaration", "simulateur"].includes(nav) && (() => {
           // On ne déguise plus une cause en une autre. 3 cas distincts :
           const reason = estimateData?.reason;
           const dispoFalse = !estimateData || estimateData.disponible === false;
@@ -10095,57 +10095,6 @@ function AppInner() {
           );
         })()}
 
-        {nav === "simvie" && estimateData && estimateData.disponible !== false && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>🎯 Combien dois-je gagner ?</h1><p style={S.pageSub}>Pour vivre comme tu veux, combien faut-il facturer ?</p></div>
-            </div>
-
-            <div style={S.card}>
-              <label style={S.label}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Je veux gagner net, par mois</span>
-                <MontantInput decimales style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} placeholder="Ex : 5000" value={revenuViseMensuel} onChange={e => setRevenuViseMensuel(e)} />
-              </label>
-            </div>
-
-            {caMensuelNecessaire !== null && (
-              <>
-                <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px", background: INK }}>
-                  <div style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, textTransform: "uppercase", letterSpacing: 0.5 }}>CA mensuel nécessaire</div>
-                  <div style={{ fontSize: 44, fontWeight: 700, color: "#5DCAA5", marginTop: 6 }}>{formatEUR(caMensuelNecessaire)}</div>
-                  <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 8 }}>soit {formatEUR(caAnnuelNecessaire)} de CA sur l'année</div>
-                </div>
-
-                <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>Le détail</div>
-                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>CA annuel nécessaire</span><span style={{ fontWeight: 600 }}>{formatEUR(caAnnuelNecessaire)}</span></div>
-                  <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>URSSAF (sur l'année)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssafAnnuelleVie)}</span></div>
-                  {impotsAnnuelsVie > 0 && <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impôts estimés (sur l'année)</span><span style={{ color: "#854F0B" }}>−{formatEUR(impotsAnnuelsVie)}</span></div>}
-                  <div style={S.paniqueResult}>
-                    <span style={S.paniqueResultLabel}>Revenu net mensuel obtenu</span>
-                    <span style={{ ...S.paniqueResultValue, fontSize: 28, color: "#1D9E75" }}>{formatEUR(revenuViseNum)}/mois</span>
-                  </div>
-                </div>
-
-                {depassePlafondVie && (
-                  <div style={{ ...S.card, marginTop: 14, background: "#FCEBEB", border: "1px solid #E24B4A" }}>
-                    <div style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
-                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 20, color: "#A32D2D", flexShrink: 0, marginTop: 2 }} />
-                      <div style={{ fontSize: 13, color: "#A32D2D" }}>
-                        Ce CA dépasserait le plafond auto-entrepreneur ({formatEUR(estimateData.plafond)}/an). Pour viser ce niveau de revenu durablement, il faudra envisager un passage en société.
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
-                  Calcul basé sur votre taux de cotisations actuel ({estimateData.taux_global_pct}%) et votre tranche d'imposition.
-                </p>
-              </>
-            )}
-          </div>
-        )}
-
         {nav === "salaire" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
@@ -10308,42 +10257,6 @@ function AppInner() {
           );
         })()}
 
-        {nav === "score" && (() => {
-          const info = scoreInfo(scoreSante);
-          return (
-            <div>
-              <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Score H€CTOR</h1><p style={S.pageSub}>Votre santé financière en un coup d'œil</p></div></div>
-              <div style={{ ...S.card, textAlign: "center", padding: "40px 24px" }}>
-                <div style={{ fontSize: 56, fontWeight: 700, color: info.color, lineHeight: 1 }}>{scoreSante !== null ? `${scoreSante}` : "—"}<span style={{ fontSize: 24, color: "#8BA5C0" }}>/100</span></div>
-                <div style={{ fontSize: 16, fontWeight: 600, color: info.color, marginTop: 10 }}>{info.label}</div>
-                <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: 8, maxWidth: 380, marginLeft: "auto", marginRight: "auto" }}>{info.desc}</div>
-              </div>
-              {scoreSante !== null && (
-                <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>Détail du calcul</div>
-                  {[
-                    { label: "Trésorerie vs charges à venir", icon: "ti-coin", pts: scoreDetail.ptsTreso, max: 30 },
-                    { label: "Réserve de sécurité couverte", icon: "ti-shield", pts: scoreDetail.ptsReserve, max: 20 },
-                    { label: "URSSAF provisionnée", icon: "ti-receipt", pts: scoreDetail.ptsUrssaf, max: 20 },
-                    { label: "Régularité du CA mensuel", icon: "ti-chart-line", pts: scoreDetail.ptsRegularite, max: 15 },
-                    { label: "Endettement", icon: "ti-credit-card", pts: scoreDetail.ptsDette, max: 15 },
-                  ].map((f, i) => (
-                    <div key={i} style={S.scoreDetailRow}>
-                      <span style={S.paniqueLineLabel}><i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 15, marginRight: 8, color: "#8BA5C0" }} />{f.label}</span>
-                      <div style={S.scoreBarTrack}><div style={{ ...S.scoreBarFill, width: `${(f.pts / f.max) * 100}%`, background: f.pts / f.max > 0.6 ? "#1D9E75" : f.pts / f.max > 0.3 ? "#EF9F27" : "#E24B4A" }} /></div>
-                      <span style={{ fontSize: 12, color: "#8BA5C0", width: 50, textAlign: "right" }}>{f.pts}/{f.max}</span>
-                    </div>
-                  ))}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, paddingTop: 12, borderTop: "0.5px solid #EEF2F7" }}>
-                    <span style={{ fontSize: 12, color: "#8BA5C0" }}><i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 14, marginRight: 6 }} />Dettes / emprunts en cours</span>
-                    <MontantInput decimales style={S.inlineEditValue} value={panique.dettes} onChange={e => setPanique({ ...panique, dettes: e })} />
-                  </div>
-                </div>
-              )}
-            </div>
-          );
-        })()}
-
         {nav === "coach" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Est-ce que je facture assez ?</h1><p style={S.pageSub}>Ton vrai taux horaire, et si tu te sous-vends</p></div></div>
@@ -10438,37 +10351,6 @@ function AppInner() {
             <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
               Comparaison indicative (moyenne basse ~25€/h, moyenne ~45€/h pour des indépendants en France).
             </p>
-          </div>
-        )}
-
-        {nav === "societe" && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Passage en société ?</h1><p style={S.pageSub}>Auto-entrepreneur, SASU ou EURL — où en êtes-vous</p></div></div>
-            {estimateData && estimateData.disponible !== false && (() => {
-              const pct = estimateData.pourcentage_plafond;
-              let niveau = "vert", titre = "Pas encore nécessaire", texte = "Votre activité reste confortablement dans le cadre du régime micro-entrepreneur.";
-              if (pct > 80) { niveau = "rouge"; titre = "À étudier sérieusement"; texte = "Vous approchez du plafond. Une société vous permettrait de continuer à grandir sans limite de CA, avec une vraie déduction des charges."; }
-              else if (pct > 50) { niveau = "orange"; titre = "À garder en tête"; texte = "Pas urgent, mais commencez à vous renseigner — le passage en société prend du temps à préparer."; }
-              const colors = { vert: "#1D9E75", orange: "#EF9F27", rouge: "#E24B4A" };
-              return (
-                <div style={{ ...S.card, display: "flex", alignItems: "center", gap: 16 }}>
-                  <div style={{ width: 16, height: 16, borderRadius: "50%", background: colors[niveau], flexShrink: 0 }} />
-                  <div>
-                    <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{titre}</div>
-                    <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: 4 }}>{texte}</div>
-                  </div>
-                </div>
-              );
-            })()}
-            <div style={{ ...S.card, marginTop: 14 }}>
-              <div style={S.cardTitle}>Les grandes différences</div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12, fontSize: 12 }}>
-                <div><strong>Auto-entrepreneur</strong><p style={{ color: "#8BA5C0" }}>Simple, % fixe sur le CA, plafonné</p></div>
-                <div><strong>EURL</strong><p style={{ color: "#8BA5C0" }}>Charges déductibles, IS ou IR, comptabilité complète</p></div>
-                <div><strong>SASU</strong><p style={{ color: "#8BA5C0" }}>Statut assimilé salarié, charges plus lourdes mais protection sociale renforcée</p></div>
-              </div>
-              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14 }}>Cette analyse est indicative. Un expert-comptable reste indispensable avant de changer de statut.</p>
-            </div>
           </div>
         )}
 
@@ -11770,21 +11652,6 @@ function AppInner() {
               <span>·</span>
               <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
             </p>
-          </div>
-        )}
-
-        {nav === "actualites" && (
-          <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Actualités fiscales</h1><p style={S.pageSub}>Les dernières nouvelles URSSAF et impôts</p></div></div>
-            <div style={S.card}>
-              {NEWS.map((n, i) => (
-                <div key={i} style={{ ...S.newsItem, padding: "14px 0" }}>
-                  <span style={S.newsSource}>{n.source}</span>
-                  <a href={n.url} target="_blank" rel="noopener noreferrer" style={{ ...S.newsTitle, fontSize: 14, fontWeight: 500 }}>{n.title}</a>
-                  <span style={S.newsDate}>{n.date}</span>
-                </div>
-              ))}
-            </div>
           </div>
         )}
 
