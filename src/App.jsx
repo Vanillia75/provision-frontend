@@ -8930,7 +8930,7 @@ function AppInner() {
           { id: "assistant", icon: "ti-message-2", label: "Hector" },
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "revenus", icon: "ti-chart-bar", label: "Mes revenus" },
-          { id: "frais", icon: "ti-receipt-2", label: "Encaisser / Frais" },
+          { id: "frais", icon: "ti-receipt-2", label: "Mes dépenses" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
@@ -11172,7 +11172,7 @@ function AppInner() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>Frais d'entreprise</h1><p style={S.pageSub}>Vos dépenses professionnelles</p></div>
+                <div><h1 style={S.pageTitle}>Mes dépenses</h1><p style={S.pageSub}>Ce qui sort. Je le compte dans ton disponible.</p></div>
                 <div style={{ display: "flex", gap: 8 }}>
                   <label style={{ ...S.btnSecondary, cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
                     <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadExpenseInvoice(e.target.files[0])} style={{ display: "none" }} />
@@ -11184,7 +11184,7 @@ function AppInner() {
 
               <div style={{ maxWidth: 460 }}>{renderQuotaJauge("doc_scan", "scan")}</div>
 
-              {expensesSummary && (
+              {expensesSummary && expensesList.length > 0 && (
                 <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr 1fr 1fr" }}>
                   <div style={S.kpiCard}><span style={S.kpiLabel}>Frais du mois</span><span style={S.kpiValue}>{formatEUR(expensesSummary.frais_mois)}</span></div>
                   <div style={S.kpiCard}><span style={S.kpiLabel}>Frais de l'année</span><span style={S.kpiValue}>{formatEUR(totalAnnee)}</span></div>
