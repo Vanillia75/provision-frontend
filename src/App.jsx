@@ -5269,37 +5269,43 @@ function AppInner() {
           fait: true, // étape "traitée" (fiable), compte dans la barre
         },
         {
+          // Loi VIII : compte neuf (0 contrat) = point de départ, PAS une erreur → ⬜ neutre.
+          // Le 🔴 ne survit que pour l'anomalie RÉELLE : des contrats saisis mais AEM manquante.
           id: "aem", label: "AEM présentes",
-          badge: aemOK ? "🟢" : "🔴",
-          statut: nbActs === 0 ? "aucun contrat" : (aemOK ? `${nbActs} / ${nbActs}` : `${sansAEM.length} manquante${sansAEM.length > 1 ? "s" : ""}`),
-          coul: aemOK ? "#5DCAA5" : "#F0997F",
+          badge: nbActs === 0 ? "⬜" : (aemOK ? "🟢" : "🔴"),
+          statut: nbActs === 0 ? "à venir" : (aemOK ? `${nbActs} / ${nbActs}` : `${sansAEM.length} manquante${sansAEM.length > 1 ? "s" : ""}`),
+          coul: nbActs === 0 ? "#5A7798" : (aemOK ? "#5DCAA5" : "#F0997F"),
           fait: aemOK,
         },
         {
           id: "heures", label: "Heures comptabilisées",
           badge: nbActs > 0 ? "🟢" : "⬜",
-          statut: nbActs > 0 ? `${heures} h` : "à saisir",
+          statut: nbActs > 0 ? `${heures} h` : "à venir",
           coul: nbActs > 0 ? "#5DCAA5" : "#5A7798",
           fait: nbActs > 0,
         },
         {
+          // Loi VIII : on ne double PAS l'urgence. Le héros porte déjà 🔴 « Là, ça se joue » ;
+          // ici le seuil non atteint est un CAP à construire, pas une alarme → ⬜ neutre.
           id: "seuil", label: `Seuil ${calc.seuil} h atteint`,
-          badge: seuilOK ? "🟢" : "🔴",
-          statut: seuilOK ? "atteint" : `il manque ${calc.manque} h`,
-          coul: seuilOK ? "#5DCAA5" : "#F0997F",
+          badge: seuilOK ? "🟢" : "⬜",
+          statut: seuilOK ? "atteint" : `objectif : ${calc.seuil} h`,
+          coul: seuilOK ? "#5DCAA5" : "#5A7798",
           fait: seuilOK,
         },
         {
           id: "dossier", label: "Dossier prêt à préparer",
           badge: seuilOK ? "🟢" : "⬜",
-          statut: seuilOK ? "prêt" : "en attente",
+          statut: seuilOK ? "prêt" : "l'étape d'après",
           coul: seuilOK ? "#5DCAA5" : "#5A7798",
           fait: seuilOK,
           attente: !seuilOK, // grisé tant que le seuil n'est pas atteint
         },
       ];
       const faits = lignes.filter(l => l.fait).length;
-      return { lignes, faits, total: lignes.length };
+      // Loi VIII : flag « compte neuf » exposé pour le display (réutilise le nbActs existant,
+      // pas de calcul parallèle qui pourrait diverger). c-safe : nbActs = interActivites.length.
+      return { lignes, faits, total: lignes.length, vide: nbActs === 0 };
     })();
 
     // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
@@ -5979,9 +5985,18 @@ function AppInner() {
               {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ta checklist de renouvellement</div>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Mon plan avec toi</div>
+                  {/* Loi VIII : sur compte neuf (checklist.vide = nbActs===0, réutilisé), pas de score/bulletin.
+                      Le « X / 5 » n'apparaît qu'une fois le parcours commencé (progression méritée). */}
+                  {!checklist.vide && (
+                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
+                  )}
                 </div>
+                {checklist.vide && (
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
+                    🐾 On commence ensemble. Ajoute ton premier contrat, je m'occupe de suivre tes heures.
+                  </div>
+                )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {checklist.lignes.map(l => (
                     <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
