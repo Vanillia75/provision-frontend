@@ -2238,12 +2238,10 @@ function AppInner() {
       if (data && data.url) {
         setDocViewer({ url: data.url, filename: filename || "Document", loading: false });
       } else {
-        setDocViewer(null);
-        alert("Document introuvable.");
+        setDocViewer({ url: null, filename: filename || "Document", loading: false, error: "Je ne retrouve pas ce document. Il a peut-être été supprimé — réessaie de scanner l'AEM si tu l'as encore." });
       }
     } catch (err) {
-      setDocViewer(null);
-      alert("Impossible d'ouvrir le document pour l'instant.");
+      setDocViewer({ url: null, filename: filename || "Document", loading: false, error: "Je n'arrive pas à ouvrir ce document pour l'instant. Réessaie dans un moment." });
     }
   }
 
@@ -2460,10 +2458,22 @@ function AppInner() {
       </div>
       </body></html>`;
     const w = window.open("", "_blank");
-    if (!w) { alert("Autorise les fenetres pop-up pour generer le PDF."); return; }
-    w.document.write(html);
-    w.document.close();
-    setTimeout(() => { w.focus(); w.print(); }, 350);
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+      setTimeout(() => { w.focus(); w.print(); }, 350);
+      return;
+    }
+    // Popup bloquée (app Android / TWA) : impression via une iframe invisible, sans quitter la page.
+    const fr = document.createElement("iframe");
+    fr.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
+    document.body.appendChild(fr);
+    fr.contentDocument.write(html);
+    fr.contentDocument.close();
+    setTimeout(() => {
+      try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { /* rien à faire de plus */ }
+      setTimeout(() => fr.remove(), 60000);
+    }, 350);
   }
 
   // ─── Reporter les heures déjà faites (saisie de départ) ───
@@ -2818,7 +2828,13 @@ function AppInner() {
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      // Dans l'app Android (TWA), window.open peut être bloqué → repli : téléchargement direct.
+      const w = window.open(url, "_blank");
+      if (!w) {
+        const a = document.createElement("a");
+        a.href = url; a.download = `facture-${inv.numero || "hector"}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -2839,7 +2855,12 @@ function AppInner() {
       }
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      window.open(url, "_blank");
+      const w = window.open(url, "_blank");
+      if (!w) {
+        const a = document.createElement("a");
+        a.href = url; a.download = `devis-${q.numero || "hector"}.pdf`;
+        document.body.appendChild(a); a.click(); a.remove();
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -5892,7 +5913,11 @@ function AppInner() {
               </div>
               {/* Contenu */}
               <div style={{ flex: 1, background: "#1a1a1a", display: "flex", alignItems: "center", justifyContent: "center", overflow: "auto" }}>
-                {docViewer.loading ? (
+                {docViewer.error ? (
+                  <div style={{ color: "#B5D4F4", fontSize: 14, lineHeight: 1.6, textAlign: "center", maxWidth: 340, padding: 20 }}>
+                    🐾 {docViewer.error}
+                  </div>
+                ) : docViewer.loading ? (
                   <div style={{ color: "#8BA5C0", fontSize: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px solid rgba(93,202,165,0.4)", overflow: "hidden" }} className="hector-breathe">
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
@@ -9325,6 +9350,13 @@ function AppInner() {
           <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
         )}
 
+        {/* État de chargement : jamais d'écran vide entre le login et l'arrivée des données (3G mobile). */}
+        {nav === "dashboard" && !estimateData && !error && (
+          <div style={{ textAlign: "center", padding: "90px 24px", color: "#8BA5C0", fontSize: 14, lineHeight: 1.6 }}>
+            🐾 Hector prépare ton cockpit…
+          </div>
+        )}
+
         {nav === "dashboard" && estimateData && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
 
@@ -9396,7 +9428,7 @@ function AppInner() {
                       </div>
                     )}
                     {/* Lien hérité de l'ancienne carte « Réserve de sécurité » (doublon retiré — la jauge est LA source). */}
-                    <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 8, textAlign: "left" }}>Modifier l'objectif →</button>
+                    <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", marginTop: 4, textAlign: "left" }}>Modifier l'objectif →</button>
                   </>
                 );
               })() : (
@@ -9873,8 +9905,8 @@ function AppInner() {
                           le vrai calcul (3 niveaux de prudence) vit sur l'écran « Combien puis-je me verser ? ». */}
                       <div style={{ fontSize: 12, color: "#C2E6D8", lineHeight: 1.55, marginBottom: 10 }}>Tu es en bonne posture 🐾 Ton disponible est à jour tout en haut.</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>💸 Combien puis-je me verser ? →</button>
-                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>🛒 Simuler un achat →</button>
+                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>💸 Combien puis-je me verser ? →</button>
+                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>🛒 Simuler un achat →</button>
                       </div>
                     </>
                   ) : niveauFinancier === "orange" ? (
@@ -9883,8 +9915,8 @@ function AppInner() {
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#FAC775", marginBottom: 2 }}>{formatEUR(manqueReserveDashboard)}</div>
                       <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>manquants pour atteindre ta réserve</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Analyser la situation →</button>
-                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Demander à Hector →</button>
+                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>Analyser la situation →</button>
+                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>Demander à Hector →</button>
                       </div>
                     </>
                   ) : (
@@ -9893,7 +9925,7 @@ function AppInner() {
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#F09595", marginBottom: 2 }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
                       <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>de déficit actuellement</div>
                       <button onClick={() => { setAiInput("Ma trésorerie est dans le rouge. Qu'est-ce que je peux faire concrètement ?"); setNav("assistant"); }}
-                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>En parler à Hector →</button>
+                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>En parler à Hector →</button>
                     </>
                   )}
                 </div>
@@ -9909,7 +9941,7 @@ function AppInner() {
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(Math.max(0, (estimateData.plafond || 77700) - (estimateData.ca_annuel || 0)))}</div>
                   <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>encore encaissables avant le plafond</div>
-                  <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Voir le simulateur fiscal →</button>
+                  <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>Voir le simulateur fiscal →</button>
                 </div>
 
                 {/* (Carte « Réserve de sécurité » retirée : doublon de la jauge de réserve plus haut,
