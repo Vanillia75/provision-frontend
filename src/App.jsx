@@ -129,10 +129,10 @@ const TMI_OPTIONS = [
 ];
 
 const CONSEILS = [
-  { emoji: "⭐", titre: "ACRE — économisez 50% la 1ère année", texte: "Si vous avez créé votre activité après juillet 2025, vos cotisations sont divisées par 2 pendant 12 mois. Pensez à faire la demande dans les 60 jours." },
-  { emoji: "📊", titre: "Versement libératoire", texte: "Payez votre impôt sur le revenu en même temps que vos cotisations, à 1,7% de votre CA. Simple et prévisible." },
-  { emoji: "🗓️", titre: "Mensuel vs trimestriel", texte: "En mensuel, vous payez de petites sommes régulières. En trimestriel, vous avez plus de trésorerie mais attention aux gros versements." },
-  { emoji: "⚠️", titre: "Surveillez le plafond", texte: "Au-delà de 83 600€ deux années consécutives, vous basculez en régime réel. Anticipez ce changement avec votre comptable." },
+  { emoji: "⭐", titre: "ACRE — économise 50% la 1ère année", texte: "Si tu as créé ton activité après juillet 2025, tes cotisations sont divisées par 2 pendant 12 mois. Pense à faire la demande dans les 60 jours." },
+  { emoji: "📊", titre: "Versement libératoire", texte: "Paie ton impôt sur le revenu en même temps que tes cotisations, à 1,7% de ton CA. Simple et prévisible." },
+  { emoji: "🗓️", titre: "Mensuel vs trimestriel", texte: "En mensuel, tu paies de petites sommes régulières. En trimestriel, tu as plus de trésorerie mais attention aux gros versements." },
+  { emoji: "⚠️", titre: "Surveille le plafond", texte: "Au-delà de 83 600€ deux années consécutives, tu bascules en régime réel. Anticipe ce changement avec ton comptable." },
 ];
 
 const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "Oct", "Nov", "Déc"];
@@ -629,7 +629,7 @@ function AppInner() {
         body: JSON.stringify({ siret: data.siret, raison_sociale: data.raison_sociale, adresse: adresseComplete || null }),
       });
       setOnboardingSiretStatus("success");
-      setOnboardingSiretMessage(data.raison_sociale ? `${data.raison_sociale} — synchronisé avec votre profil` : "Établissement trouvé et synchronisé");
+      setOnboardingSiretMessage(data.raison_sociale ? `${data.raison_sociale} — synchronisé avec ton profil` : "Établissement trouvé et synchronisé");
     } catch (err) {
       setOnboardingSiretStatus("error");
       setOnboardingSiretMessage(err.message);
@@ -9987,11 +9987,11 @@ function AppInner() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>📅 Échéances</h1><p style={S.pageSub}>Ce que vous devez, et avant quand</p></div>
+                <div><h1 style={S.pageTitle}>📅 Échéances</h1><p style={S.pageSub}>Ce que tu dois, et avant quand</p></div>
               </div>
 
               {echeances.length === 0 ? (
-                <div style={S.card}><p style={S.empty}>Renseignez votre profil pour voir vos échéances.</p></div>
+                <div style={S.card}><p style={S.empty}>Renseigne ton profil pour voir tes échéances.</p></div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {echeances.map(e => {
@@ -10027,7 +10027,7 @@ function AppInner() {
               )}
 
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
-                Les dates CFE et impôts sont des estimations basées sur les échéances habituelles — vérifiez toujours sur le site officiel.
+                Les dates CFE et impôts sont des estimations basées sur les échéances habituelles — vérifie toujours sur le site officiel.
               </p>
             </div>
           );
@@ -10072,7 +10072,7 @@ function AppInner() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout est pré-rempli, modifiez si besoin</p></div>
+                <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout est pré-rempli, modifie si besoin</p></div>
                 <button style={S.btnSecondary} onClick={() => setNav("revenus")}>Voir mes revenus</button>
               </div>
 
@@ -10177,7 +10177,7 @@ function AppInner() {
               </div>
 
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 14, textAlign: "center" }}>
-                H€CTOR prépare les montants, mais ne déclare pas à votre place — vérifiez toujours avant de valider sur le site officiel.
+                Je prépare les montants, mais je ne déclare pas à ta place — vérifie toujours avant de valider sur le site officiel.
               </p>
 
               <div style={{ ...S.card, marginTop: 14 }}>
@@ -10224,18 +10224,18 @@ function AppInner() {
               </div>
 
               {panique.solde === "" ? (
-                <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde sur le <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour utiliser ce simulateur.</p></div>
+                <div style={S.card}><p style={S.empty}>Renseigne d'abord ton solde sur le <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour utiliser ce simulateur.</p></div>
               ) : (
                 <>
                   <div style={S.explainBanner}>
-                    Vous avez <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de votre réserve de sécurité, votre marge prudente est de <strong>{formatEUR(Math.max(0, apresReserve))}</strong>.
+                    Tu as <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de ta réserve de sécurité, ta marge prudente est de <strong>{formatEUR(Math.max(0, apresReserve))}</strong>.
                     <span style={{ display: "block", fontSize: 11, color: "#5B82A8", marginTop: 4 }}>C'est cette marge prudente que H€CTOR utilise pour ses recommandations d'achat ci-dessous.</span>
                   </div>
 
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
                     <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tapez 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
+                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tape 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
                     </div>
                     {achatMontant && parseFloat(achatMontant) > 0 && (() => {
                       const montant = parseFloat(achatMontant);
@@ -10275,11 +10275,11 @@ function AppInner() {
                               <span style={{ fontWeight: 600, color: moisSurvieApres >= 3 ? "#1D9E75" : moisSurvieApres >= 1 ? "#854F0B" : "#A32D2D" }}>{moisSurvieApres} mois ({joursSurvieApres}j)</span>
                             </div>
                           )}
-                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur vos provisions (URSSAF/CFE)</span><span>{chargesFutures <= 0 ? "— aucune provision en cours" : tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
+                          <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Impact sur tes provisions (URSSAF/CFE)</span><span>{chargesFutures <= 0 ? "— aucune provision en cours" : tresorerieApres < chargesFutures ? "⚠️ menacées" : "✅ préservées"}</span></div>
                           <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 8 }}>
-                            {verdict === "ok" && "Cet achat ne compromet ni vos charges futures ni votre réserve de sécurité."}
-                            {verdict === "prudence" && "L'achat passe, mais il ne vous restera presque plus de marge ensuite."}
-                            {verdict === "non" && <>Il vous manquerait <strong>{formatEUR(Math.abs(resteApres))}</strong> pour garder votre réserve de sécurité intacte.</>}
+                            {verdict === "ok" && "Cet achat ne compromet ni tes charges futures ni ta réserve de sécurité."}
+                            {verdict === "prudence" && "L'achat passe, mais il ne te restera presque plus de marge ensuite."}
+                            {verdict === "non" && <>Il te manquerait <strong>{formatEUR(Math.abs(resteApres))}</strong> pour garder ta réserve de sécurité intacte.</>}
                           </div>
                         </div>
                       );
@@ -10293,7 +10293,7 @@ function AppInner() {
                     ) : (
                       <div style={{ ...S.achatResult, background: "#FCEBEB", color: "#A32D2D", flexDirection: "column", alignItems: "flex-start" }}>
                         <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
-                          Dans {estimateData?.periode_courante?.jours_restants ?? "?"} jours, vos charges arrivent quand même :
+                          Dans {estimateData?.periode_courante?.jours_restants ?? "?"} jours, tes charges arrivent quand même :
                         </div>
                         <div style={S.netRow}><span>URSSAF</span><span>{formatEUR(urssaf)}</span></div>
                         <div style={S.netRow}><span>CFE</span><span>{formatEUR(cfe)}</span></div>
@@ -10314,9 +10314,9 @@ function AppInner() {
 
         {nav === "salaire" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon votre tolérance au risque</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon ta tolérance au risque</p></div></div>
             {panique.solde === "" ? (
-              <div style={S.card}><p style={S.empty}>Renseignez d'abord votre solde dans <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour voir ce calcul.</p></div>
+              <div style={S.card}><p style={S.empty}>Renseigne d'abord ton solde dans <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour voir ce calcul.</p></div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {[
@@ -10342,7 +10342,7 @@ function AppInner() {
                   );
                 })}
                 <p style={{ fontSize: 11, color: "#8BA5C0", textAlign: "center" }}>
-                  Basé sur votre disponible après charges et réserve de sécurité ({formatEUR(disponibleAujourdhui || 0)}).
+                  Basé sur ton disponible après charges et réserve de sécurité ({formatEUR(disponibleAujourdhui || 0)}).
                 </p>
               </div>
             )}
@@ -10373,7 +10373,7 @@ function AppInner() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>📊 Simulateur fiscal</h1><p style={S.pageSub}>Modifiez votre CA et voyez l'impact en direct</p></div>
+                <div><h1 style={S.pageTitle}>📊 Simulateur fiscal</h1><p style={S.pageSub}>Modifie ton CA et vois l'impact en direct</p></div>
               </div>
 
               <div style={S.card}>
@@ -10413,7 +10413,7 @@ function AppInner() {
               )}
 
               <div style={{ ...S.card, marginTop: 14 }}>
-                <div style={S.cardTitle}>Répartition de votre CA</div>
+                <div style={S.cardTitle}>Répartition de ton CA</div>
                 <div style={S.simBarTrack}>
                   {pctDispo > 0 && <div style={{ ...S.simBarSeg, width: `${pctDispo}%`, background: "#1D9E75" }} />}
                   {pctCotis > 0 && <div style={{ ...S.simBarSeg, width: `${pctCotis}%`, background: "#EF9F27" }} />}
@@ -10441,7 +10441,7 @@ function AppInner() {
                   {simCa && <button style={S.linkBtn} onClick={() => setSimCa("")}>↺ Réinitialiser</button>}
                 </span>
               </div>
-              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 12px" }}>Testez un montant sans l'ajouter à vos revenus.</p>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 12px" }}>Teste un montant sans l'ajouter à tes revenus.</p>
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
                 <MontantInput decimales style={{ ...S.input, flex: "1 1 160px" }} placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
@@ -10480,7 +10480,7 @@ function AppInner() {
 
             <div style={S.card}>
               <label style={S.label}>
-                <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Combien facturez-vous actuellement ?</span>
+                <span style={{ fontSize: 14, fontWeight: 600, color: "#E6EDF5" }}>Combien factures-tu actuellement ?</span>
                 <MontantInput decimales style={{ ...S.input, fontSize: 22, fontWeight: 600, padding: "14px 16px", marginTop: 8 }} placeholder="Ex : 500" value={tarifMontant} onChange={e => setTarifMontant(e)} />
               </label>
               <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
@@ -10498,7 +10498,7 @@ function AppInner() {
                   <input style={S.input} type="number" min="0.25" max="200" value={heuresParPrestation} onChange={e => setHeuresParPrestation(e.target.value)} />
                 </label>
               )}
-              <label style={{ ...S.label, marginTop: 12 }}>Jours travaillés par semaine <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour estimer vos revenus mensuels)</span>
+              <label style={{ ...S.label, marginTop: 12 }}>Jours travaillés par semaine <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour estimer tes revenus mensuels)</span>
                 <input style={S.input} type="number" min="0.5" max="7" value={joursParSemaineCoach} onChange={e => setJoursParSemaineCoach(e.target.value)} />
               </label>
             </div>
@@ -10506,17 +10506,17 @@ function AppInner() {
             {tauxHoraireReel !== null && (
               <>
                 <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px" }}>
-                  <div style={S.paniqueResultLabel}>Votre vrai revenu horaire</div>
+                  <div style={S.paniqueResultLabel}>Ton vrai revenu horaire</div>
                   <div style={{ ...S.paniqueResultValue, fontSize: 48, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 20 }}>/h</span></div>
                   <div style={{ fontSize: 14, fontWeight: 700, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75", marginTop: 8 }}>
-                    {niveauTarif === "rouge" && "🔴 Vous êtes sous-facturé"}
+                    {niveauTarif === "rouge" && "🔴 Tu es sous-facturé"}
                     {niveauTarif === "jaune" && "🟡 Tarif dans la moyenne"}
                     {niveauTarif === "vert" && "🟢 Bien facturé, au-dessus de la moyenne"}
                   </div>
                 </div>
 
                 <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>Vos revenus, à tous les horizons</div>
+                  <div style={S.cardTitle}>Tes revenus, à tous les horizons</div>
                   <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par heure</span><span style={{ fontWeight: 600 }}>{formatEUR(tauxHoraireReel)}</span></div>
                   <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par jour</span><span style={{ fontWeight: 600 }}>{formatEUR(revenuJournalierCoach)}</span></div>
                   <div style={S.paniqueLine}><span style={S.paniqueLineLabel}>Par mois</span><span style={{ fontWeight: 600 }}>{formatEUR(revenuMensuelCoach)}</span></div>
@@ -10545,7 +10545,7 @@ function AppInner() {
                 </div>
 
                 <div style={{ ...S.card, marginTop: 14 }}>
-                  <div style={S.cardTitle}>🎯 Pour atteindre votre objectif</div>
+                  <div style={S.cardTitle}>🎯 Pour atteindre ton objectif</div>
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                     <MontantInput decimales style={{ ...S.input, width: 100 }} value={objectifHoraire} onChange={e => setObjectifHoraire(e)} />
                     <span style={{ fontSize: 14, color: "#E6EDF5" }}>€/h</span>
@@ -10553,11 +10553,11 @@ function AppInner() {
                   {ecartPctVersObjectif !== null && (
                     ecartPctVersObjectif > 0 ? (
                       <div style={{ fontSize: 14, color: "#8BA5C0" }}>
-                        Pour atteindre {formatEUR(objHoraireNum)}/h, augmentez vos tarifs de <strong style={{ color: "#1D9E75", fontSize: 18 }}>+{ecartPctVersObjectif}%</strong>.
+                        Pour atteindre {formatEUR(objHoraireNum)}/h, augmente tes tarifs de <strong style={{ color: "#1D9E75", fontSize: 18 }}>+{ecartPctVersObjectif}%</strong>.
                       </div>
                     ) : (
                       <div style={{ fontSize: 14, color: "#1D9E75" }}>
-                        🎉 Vous dépassez déjà cet objectif !
+                        🎉 Tu dépasses déjà cet objectif !
                       </div>
                     )
                   )}
@@ -11737,7 +11737,7 @@ function AppInner() {
                 <label style={S.label}>Statut juridique
                   <input style={{ ...S.input, background: "#FAFBFC", color: "#8BA5C0" }} type="text" value={profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut || "—"} readOnly />
                 </label>
-                <label style={{ ...S.label, gridColumn: isMobile ? "auto" : "1 / -1" }}>Adresse professionnelle <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(obligatoire sur vos factures)</span>
+                <label style={{ ...S.label, gridColumn: isMobile ? "auto" : "1 / -1" }}>Adresse professionnelle <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(obligatoire sur tes factures)</span>
                   <input style={S.input} type="text" value={profilAdresse} onChange={e => setProfilAdresse(e.target.value)} placeholder="Ex : 12 rue de la Paix, 75002 Paris" />
                 </label>
               </div>
@@ -11748,7 +11748,7 @@ function AppInner() {
                 {profileDetailsSaved && <span style={{ fontSize: 12, color: "#1D9E75", fontWeight: 600 }}>✓ Enregistré</span>}
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
-                Activité : {ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · pour changer de statut ou d'activité, contactez le support.
+                Activité : {ACTIVITES.find(a => a.id === profile?.activite)?.label || "—"} · pour changer de statut ou d'activité, contacte le support.
               </p>
             </div>
 
@@ -11785,7 +11785,7 @@ function AppInner() {
                   )}
                 </label>
               </div>
-              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous vos appareils.</p>
+              <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 2 }}>Sauvegardé automatiquement, synchronisé sur tous tes appareils.</p>
               <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid #EEF2F7" }}>
                 <div style={{ fontSize: 12, fontWeight: 600, color: "#E6EDF5", marginBottom: 6 }}>Fixer ma réserve en mois de sécurité</div>
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
