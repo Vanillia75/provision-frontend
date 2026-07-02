@@ -9388,6 +9388,8 @@ function AppInner() {
                         Il te reste {formatEUR(manqueReserveDashboard)} à mettre de côté pour compléter ta réserve. On y va ensemble, à ton rythme.
                       </div>
                     )}
+                    {/* Lien hérité de l'ancienne carte « Réserve de sécurité » (doublon retiré — la jauge est LA source). */}
+                    <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 8, textAlign: "left" }}>Modifier l'objectif →</button>
                   </>
                 );
               })() : (
@@ -9854,17 +9856,17 @@ function AppInner() {
 
             {/* ── 3 CARTES SECONDAIRES ── */}
             {argentDisponibleBrut !== null && (
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 12 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
                 {/* Que faire maintenant */}
                 <div style={{ background: "#0d2440", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: "#5DCAA5", marginBottom: 6 }}>⚡ Que faire maintenant ?</div>
                   {niveauFinancier === "vert" ? (
                     <>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>Tu peux te verser en toute sécurité</div>
-                      <div style={{ fontSize: 22, fontWeight: 800, color: "#5DCAA5", marginBottom: 2 }}>{formatEUR(Math.max(0, argentDisponibleBrut * 0.7))}</div>
-                      <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>estimation prudentielle (70% du disponible)</div>
+                      {/* Loi I/II : plus de montant maison (70% du brut) qui concurrence le héros —
+                          le vrai calcul (3 niveaux de prudence) vit sur l'écran « Combien puis-je me verser ? ». */}
+                      <div style={{ fontSize: 12, color: "#C2E6D8", lineHeight: 1.55, marginBottom: 10 }}>Tu es en bonne posture 🐾 Ton disponible est à jour tout en haut.</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>💸 Calculer mon salaire →</button>
+                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>💸 Combien puis-je me verser ? →</button>
                         <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>🛒 Simuler un achat →</button>
                       </div>
                     </>
@@ -9903,20 +9905,8 @@ function AppInner() {
                   <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Voir le simulateur fiscal →</button>
                 </div>
 
-                {/* Réserve de sécurité */}
-                <div style={{ background: "#0d2440", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: "#FAC775", marginBottom: 6 }}>🛡️ Réserve de sécurité</div>
-                  <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>
-                    {reserveAtteinte
-                      ? "Objectif atteint — tu es bien protégé"
-                      : "Objectif pas encore atteint"}
-                  </div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: reserveAtteinte ? "#5DCAA5" : "#FAC775", marginBottom: 2 }}>{formatEUR(securiteNum)}</div>
-                  <div style={{ fontSize: 10, color: reserveAtteinte ? "#5DCAA5" : "#FAC775", marginBottom: 8 }}>
-                    {reserveAtteinte ? "✓ Réserve constituée" : `Il manque ${formatEUR(manqueReserveDashboard)} pour l'atteindre`}
-                  </div>
-                  <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textAlign: "left" }}>Modifier l'objectif →</button>
-                </div>
+                {/* (Carte « Réserve de sécurité » retirée : doublon de la jauge de réserve plus haut,
+                    qui porte désormais le lien « Modifier l'objectif » — Loi II, une histoire une fois.) */}
               </div>
             )}
             {/* ── AVIS PREMIÈRE CONNEXION ── (seulement si AUCUN revenu dans l'historique : quelqu'un
