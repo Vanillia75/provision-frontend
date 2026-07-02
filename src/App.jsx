@@ -10067,7 +10067,7 @@ function AppInner() {
           echeances.sort((a, b) => a.jours - b.jours);
 
           function statutEcheance(j) {
-            if (j < 0) return { color: "#A32D2D", bg: "#FCEBEB", border: "#E24B4A", label: `En retard de ${Math.abs(j)} jour${Math.abs(j) > 1 ? "s" : ""}` };
+            if (j < 0) return { color: "#F09595", bg: "rgba(226,75,74,0.10)", border: "#E24B4A", label: `En retard de ${Math.abs(j)} jour${Math.abs(j) > 1 ? "s" : ""}` };
             if (j <= 30) return { color: "#854F0B", bg: "#FAEEDA", border: "#EF9F27", label: `Dans ${j} jour${j > 1 ? "s" : ""}` };
             return { color: "#0F6E56", bg: "#E1F5EE", border: "#1D9E75", label: `Dans ${j} jours` };
           }
@@ -11103,11 +11103,11 @@ function AppInner() {
                 const overdue = invoiceIsOverdue(inv);
                 const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
                 return (
-                  <div key={inv.id} onClick={() => setViewingInvoice(inv)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", background: overdue ? "#FCEBEB" : "transparent", margin: overdue ? "0 -20px" : 0, paddingLeft: overdue ? 20 : 0, paddingRight: overdue ? 20 : 0, cursor: "pointer" }}>
+                  <div key={inv.id} onClick={() => setViewingInvoice(inv)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 0", borderBottom: "0.5px solid #EEF2F7", background: overdue ? "rgba(226,75,74,0.10)" : "transparent", margin: overdue ? "0 -20px" : 0, paddingLeft: overdue ? 20 : 0, paddingRight: overdue ? 20 : 0, cursor: "pointer" }}>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{inv.client_nom}</div>
                       {overdue ? (
-                        <div style={{ fontSize: 12, color: "#A32D2D", marginTop: 2 }}>
+                        <div style={{ fontSize: 12, color: "#F09595", marginTop: 2 }}>
                           <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, verticalAlign: -2 }} /> {inv.numero} · en retard de {joursDeRetard(inv)}j (échéance {formatDate(inv.date_echeance)})
                         </div>
                       ) : (
