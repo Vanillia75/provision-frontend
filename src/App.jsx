@@ -10301,7 +10301,7 @@ function AppInner() {
                           <span>Manque estimé</span><span>{formatEUR(chargesFutures)}</span>
                         </div>
                         <div style={{ fontSize: 13, fontWeight: 700, marginTop: 10 }}>
-                          {chargesFutures > 0 ? "🔴 Très mauvaise idée" : "🟢 Vous n'avez rien à provisionner pour l'instant"}
+                          {chargesFutures > 0 ? "🔴 Très mauvaise idée" : "🟢 Rien à provisionner pour l'instant"}
                         </div>
                       </div>
                     )}
@@ -10601,7 +10601,7 @@ function AppInner() {
             return (
               <div>
                 <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                  <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que vous émettez à vos clients — pas vos dépenses</p></div>
+                  <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que tu émets à tes clients — pas tes dépenses</p></div>
                 </div>
                 <div style={{ ...S.card, textAlign: "center", padding: "40px 20px", color: "#8BA5C0" }}>Chargement de tes revenus…</div>
               </div>
@@ -10637,7 +10637,7 @@ function AppInner() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que vous émettez à vos clients — pas vos dépenses</p></div>
+                <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que tu émets à tes clients — pas tes dépenses</p></div>
                 <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
               </div>
 
@@ -10667,11 +10667,11 @@ function AppInner() {
                       {objectifMensuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctM >= 100 ? "#1D9E75" : ACCENT }}>{pctM}%</span>}
                     </div>
                     <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
-                      Le montant de chiffre d'affaires que vous visez à encaisser ce mois-ci. Sert juste à suivre votre progression — aucune incidence sur vos calculs financiers.
+                      Le montant de chiffre d'affaires que tu vises à encaisser ce mois-ci. Sert juste à suivre ta progression — aucune incidence sur tes calculs financiers.
                     </p>
                     {objectifMensuel === "" && !editingObjectifMensuel ? (
                       <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
-                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
+                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Fixe-toi un cap pour ce mois-ci 🐾</p>
                         <button style={S.btnSecondary} onClick={() => setEditingObjectifMensuel(true)}>Définir mon objectif</button>
                       </div>
                     ) : objectifMensuel === "" && editingObjectifMensuel ? (
@@ -10688,7 +10688,7 @@ function AppInner() {
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
+                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur tes revenus encaissés enregistrés, pas sur ton solde bancaire</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
                           <span style={{ fontSize: 24, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(caCeMoisCi)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
@@ -10698,7 +10698,7 @@ function AppInner() {
                         </div>
                         <div style={{ ...S.progressTrack, height: 10 }}><div style={{ ...S.progressFill, background: pctM >= 100 ? "#1D9E75" : ACCENT, width: `${pctM}%`, transition: "width 0.3s ease" }} /></div>
                         {caCeMoisCi === 0 ? (
-                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Pas encore de revenu ce mois-ci — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button> pour lancer le suivi.</div>
                         ) : pctM >= 100 ? (
                           <div style={{ fontSize: 12, color: "#1D9E75", marginTop: 6, fontWeight: 600 }}>🎉 Objectif du mois atteint !</div>
                         ) : (
@@ -10714,11 +10714,11 @@ function AppInner() {
                       {objectifAnnuel !== "" && <span style={{ fontSize: 13, fontWeight: 700, color: pctA >= 100 ? "#1D9E75" : "#5DCAA5" }}>{pctA}%</span>}
                     </div>
                     <p style={{ fontSize: 11, color: "#8BA5C0", margin: "2px 0 0", lineHeight: 1.5 }}>
-                      Le chiffre d'affaires que vous visez sur l'année complète. Une simple jauge de motivation — ne modifie aucun calcul de cotisations ou de disponible.
+                      Le chiffre d'affaires que tu vises sur l'année complète. Une simple jauge de motivation — ne modifie aucun calcul de cotisations ou de disponible.
                     </p>
                     {objectifAnnuel === "" && !editingObjectifAnnuel ? (
                       <div style={{ textAlign: "center", padding: "14px 0 4px" }}>
-                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Aucun objectif défini</p>
+                        <p style={{ fontSize: 13, color: "#8BA5C0", margin: "0 0 10px" }}>Fixe-toi un cap pour l'année 🐾</p>
                         <button style={S.btnSecondary} onClick={() => setEditingObjectifAnnuel(true)}>Définir mon objectif</button>
                       </div>
                     ) : objectifAnnuel === "" && editingObjectifAnnuel ? (
@@ -10735,7 +10735,7 @@ function AppInner() {
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur vos revenus encaissés enregistrés, pas sur votre solde bancaire</div>
+                        <div style={{ fontSize: 10, color: "#8BA5C0", marginBottom: 6 }}>basé sur tes revenus encaissés enregistrés, pas sur ton solde bancaire</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 6, margin: "8px 0 10px" }}>
                           <span style={{ fontSize: 24, fontWeight: 700, color: "#E6EDF5" }}>{formatEUR(estimateData?.ca_annuel || 0)}</span>
                           <span style={{ fontSize: 13, color: "#8BA5C0" }}>sur</span>
@@ -10745,7 +10745,7 @@ function AppInner() {
                         </div>
                         <div style={S.progressTrack}><div style={{ ...S.progressFill, background: "#5DCAA5", width: `${pctA}%`, transition: "width 0.3s ease" }} /></div>
                         {(estimateData?.ca_annuel || 0) === 0 && (
-                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Aucun revenu enregistré cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button></div>
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6 }}>Pas encore de revenu cette année — <button style={S.linkBtn} onClick={() => setNav("revenus")}>en ajouter un</button> pour lancer le suivi.</div>
                         )}
                       </>
                     )}
@@ -10758,7 +10758,7 @@ function AppInner() {
               {showAddIncome && !factureExtraite && (
                 <div style={{ ...S.card, marginBottom: 16 }}>
                   <p style={{ fontSize: 12, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 8, padding: "8px 12px", margin: "0 0 12px" }}>
-                    ⚠️ Importez ici uniquement les factures que <strong>vous</strong> émettez à vos clients (revenu encaissé). Pas vos factures fournisseurs ou dépenses (téléphone, matériel, abonnements...).
+                    ⚠️ Importe ici uniquement les factures que <strong>tu</strong> émets à tes clients (revenu encaissé). Pas tes factures fournisseurs ou dépenses (téléphone, matériel, abonnements...).
                   </p>
                   <label style={S.dropZoneSmall}>
                     <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadInvoice(e.target.files[0])} style={{ display: "none" }} />
@@ -10776,7 +10776,7 @@ function AppInner() {
                       return (
                         <div style={S.netPreview}>
                           <div style={S.netRow}><span style={{ color: "#854F0B" }}>URSSAF à mettre de côté ({estimateData?.taux_global_pct ?? 21.4}%)</span><span style={{ color: "#854F0B" }}>−{formatEUR(urssaf)}</span></div>
-                          <div style={{ ...S.netRow, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span style={{ fontWeight: 500 }}>Dans votre poche</span><span style={{ fontWeight: 600, color: ACCENT }}>{formatEUR(net)}</span></div>
+                          <div style={{ ...S.netRow, borderTop: "1px solid #DDE5EE", paddingTop: 8, marginTop: 4 }}><span style={{ fontWeight: 500 }}>Dans ta poche</span><span style={{ fontWeight: 600, color: ACCENT }}>{formatEUR(net)}</span></div>
                         </div>
                       );
                     })()}
@@ -10803,7 +10803,7 @@ function AppInner() {
                 return (
                   <div style={{ ...S.card, marginBottom: 16, border: `2px solid ${ACCENT}`, padding: 0, overflow: "hidden" }}>
                     <div style={{ padding: "18px 20px 14px" }}>
-                      <div style={S.cardTitle}>📄 Facture détectée — vérifiez avant de valider</div>
+                      <div style={S.cardTitle}>📄 Facture détectée — vérifie avant de valider</div>
                       <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-8px 0 14px" }}>Détection automatique, tous les champs sont modifiables.</p>
 
                       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 6 }}>
@@ -10814,13 +10814,13 @@ function AppInner() {
                           <input style={S.input} type="date" value={factureExtraite.date} onChange={e => setFactureExtraite({ ...factureExtraite, date: e.target.value })} />
                         </label>
                         <label style={S.label}>Client {!factureExtraite.client && <span style={S.aVerifierTag}>à vérifier</span>}
-                          <input style={S.input} type="text" placeholder="Non détecté — renseignez-le" value={factureExtraite.client} onChange={e => setFactureExtraite({ ...factureExtraite, client: e.target.value })} />
+                          <input style={S.input} type="text" placeholder="Non détecté — renseigne-le" value={factureExtraite.client} onChange={e => setFactureExtraite({ ...factureExtraite, client: e.target.value })} />
                         </label>
                         <label style={S.label}>Description {!factureExtraite.description && <span style={S.aVerifierTag}>à vérifier</span>}
-                          <input style={S.input} type="text" placeholder="Non détectée — renseignez-la" value={factureExtraite.description} onChange={e => setFactureExtraite({ ...factureExtraite, description: e.target.value })} />
+                          <input style={S.input} type="text" placeholder="Non détectée — renseigne-la" value={factureExtraite.description} onChange={e => setFactureExtraite({ ...factureExtraite, description: e.target.value })} />
                         </label>
                         <label style={S.label}>N° de facture {!factureExtraite.numero_facture && <span style={S.aVerifierTag}>à vérifier</span>}
-                          <input style={S.input} type="text" placeholder="Non détecté — renseignez-le" value={factureExtraite.numero_facture} onChange={e => setFactureExtraite({ ...factureExtraite, numero_facture: e.target.value })} />
+                          <input style={S.input} type="text" placeholder="Non détecté — renseigne-le" value={factureExtraite.numero_facture} onChange={e => setFactureExtraite({ ...factureExtraite, numero_facture: e.target.value })} />
                         </label>
                       </div>
                       {factureExtraite.tva_pct != null && (
@@ -10852,11 +10852,11 @@ function AppInner() {
                       </div>
 
                       <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
-                        <div style={S.impactRowDark}>✓ Ajoute <strong style={{ color: "white" }}>{formatEUR(montant)}</strong> à votre chiffre d'affaires</div>
-                        <div style={S.impactRowDark}>✓ Augmente votre URSSAF estimée de <strong style={{ color: "#FAC775" }}>{formatEUR(urssafSurFacture)}</strong></div>
-                        <div style={S.impactRowDark}>✓ Met à jour vos projections (fin de mois, fin d'année)</div>
-                        <div style={S.impactRowDark}>✓ Fait avancer votre objectif mensuel ({formatEUR(nouveauCaAnnuel)} de CA annuel après ajout)</div>
-                        <div style={S.impactRowDark}>✓ Apparaît dans votre historique de revenus</div>
+                        <div style={S.impactRowDark}>✓ Ajoute <strong style={{ color: "white" }}>{formatEUR(montant)}</strong> à ton chiffre d'affaires</div>
+                        <div style={S.impactRowDark}>✓ Augmente ton URSSAF estimée de <strong style={{ color: "#FAC775" }}>{formatEUR(urssafSurFacture)}</strong></div>
+                        <div style={S.impactRowDark}>✓ Met à jour tes projections (fin de mois, fin d'année)</div>
+                        <div style={S.impactRowDark}>✓ Fait avancer ton objectif mensuel ({formatEUR(nouveauCaAnnuel)} de CA annuel après ajout)</div>
+                        <div style={S.impactRowDark}>✓ Apparaît dans ton historique de revenus</div>
                       </div>
                       <p style={{ fontSize: 10, color: "#7A93AD", marginTop: 12 }}>
                         Le "Disponible réel" ci-dessus suppose que ce montant arrive sur ton compte. Pense à mettre à jour ton solde sur le Cockpit une fois le virement reçu — c'est ce qui garde ton chiffre fiable.
@@ -10940,10 +10940,10 @@ function AppInner() {
                     </div>
                   ) : (
                     <div>
-                      <p style={{ fontSize: 12, color: "#854F0B", margin: "0 0 10px" }}>⚠️ Complétez ces informations une fois — elles seront ensuite préremplies sur toutes vos factures.</p>
+                      <p style={{ fontSize: 12, color: "#854F0B", margin: "0 0 10px" }}>⚠️ Complète ces informations une fois — elles seront ensuite préremplies sur toutes tes factures.</p>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                         {!(profile?.entreprise || profile?.raison_sociale || profile?.prenom) && (
-                          <input style={S.input} placeholder="Votre nom ou nom d'entreprise" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} />
+                          <input style={S.input} placeholder="Ton nom ou nom d'entreprise" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} />
                         )}
                         {!profile?.adresse && (
                           <input style={S.input} placeholder="Adresse professionnelle (ex : 12 rue de la Paix, 75002 Paris)" value={profilAdresse} onChange={e => setProfilAdresse(e.target.value)} />
@@ -10994,7 +10994,7 @@ function AppInner() {
                   <button style={S.btnSecondary} onClick={() => { setShowNewFacture(false); resetFactureForm(); }}>Annuler</button>
                 </div>
                 <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10 }}>
-                  Cette facture ne compte dans votre CA encaissé que lorsqu'elle est marquée « Payée ».
+                  Cette facture ne compte dans ton CA encaissé que lorsqu'elle est marquée « Payée ».
                 </p>
               </div>
             )}
@@ -11050,7 +11050,7 @@ function AppInner() {
             </div>
             {invoicesList.length > 0 && (
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, textAlign: "center" }}>
-                Seules les factures « Payée » comptent dans votre CA encaissé.
+                Seules les factures « Payée » comptent dans ton CA encaissé.
               </p>
             )}
 
@@ -11176,7 +11176,7 @@ function AppInner() {
         {nav === "devis" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>Devis</h1><p style={S.pageSub}>Préparez vos propositions commerciales</p></div>
+              <div><h1 style={S.pageTitle}>Devis</h1><p style={S.pageSub}>Prépare tes propositions commerciales</p></div>
               <button style={S.btnPrimarySmall} onClick={() => { resetQuoteForm(); setShowNewQuote(!showNewQuote); }}>+ Nouveau devis</button>
             </div>
 
@@ -11518,7 +11518,7 @@ function AppInner() {
         {nav === "contacts" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>Contacts</h1><p style={S.pageSub}>Vos clients</p></div>
+              <div><h1 style={S.pageTitle}>Contacts</h1><p style={S.pageSub}>Tes clients</p></div>
               <button style={S.btnPrimarySmall} onClick={() => setShowAddContact(!showAddContact)}>+ Ajouter</button>
             </div>
             {showAddContact && (
@@ -11546,7 +11546,7 @@ function AppInner() {
                   {concentration >= 50 && (
                     <div style={{ ...S.achatResult, background: "#FAEEDA", color: "#854F0B", marginTop: 10 }}>
                       <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 18 }} />
-                      <div style={{ fontSize: 12 }}><strong>{concentration}%</strong> de votre CA facturé vient d'un seul client. Risque de dépendance élevé.</div>
+                      <div style={{ fontSize: 12 }}><strong>{concentration}%</strong> de ton CA facturé vient d'un seul client. Risque de dépendance élevé.</div>
                     </div>
                   )}
                 </div>
@@ -11577,7 +11577,7 @@ function AppInner() {
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 18 }}>
                 <div style={S.profilAvatar}>{(profilPrenom?.[0] || profile?.email?.[0] || "?").toUpperCase()}{profilNom?.[0]?.toUpperCase() || ""}</div>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{profilPrenom || profilNom ? `${profilPrenom} ${profilNom}`.trim() : "Complétez votre profil"}</div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{profilPrenom || profilNom ? `${profilPrenom} ${profilNom}`.trim() : "Complète ton profil"}</div>
                   <div style={{ fontSize: 12, color: "#8BA5C0" }}>{profile?.email}</div>
                 </div>
               </div>
