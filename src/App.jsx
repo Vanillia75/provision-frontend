@@ -9905,8 +9905,9 @@ function AppInner() {
                 </div>
               </div>
             )}
-            {/* ── AVIS PREMIÈRE CONNEXION ── */}
-            {hectorEtat?.accueil && (
+            {/* ── AVIS PREMIÈRE CONNEXION ── (seulement si AUCUN revenu dans l'historique : quelqu'un
+                qui a déjà des revenus ne doit jamais lire « ajoute ton premier revenu » — Loi VIII) */}
+            {hectorEtat?.accueil && incomeList.length === 0 && (
               <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 20px" }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 8 }}>
                   {panique.solde !== "" ? "✓ Solde enregistré — plus qu'une étape !" : "Commençons par le commencement 🐾"}
@@ -10489,16 +10490,16 @@ function AppInner() {
                 ))}
               </div>
               {tarifUnite === "jour" && (
-                <label style={{ ...S.label, marginTop: 12 }}>Heures travaillées par jour
+                <label style={{ ...S.labelDark, marginTop: 12 }}>Heures travaillées par jour
                   <input style={S.input} type="number" min="0.5" max="24" value={heuresParJour} onChange={e => setHeuresParJourCoach(e.target.value)} />
                 </label>
               )}
               {tarifUnite === "prestation" && (
-                <label style={{ ...S.label, marginTop: 12 }}>Heures passées en moyenne par prestation
+                <label style={{ ...S.labelDark, marginTop: 12 }}>Heures passées en moyenne par prestation
                   <input style={S.input} type="number" min="0.25" max="200" value={heuresParPrestation} onChange={e => setHeuresParPrestation(e.target.value)} />
                 </label>
               )}
-              <label style={{ ...S.label, marginTop: 12 }}>Jours travaillés par semaine <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour estimer tes revenus mensuels)</span>
+              <label style={{ ...S.labelDark, marginTop: 12 }}>Jours travaillés par semaine <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(pour estimer tes revenus mensuels)</span>
                 <input style={S.input} type="number" min="0.5" max="7" value={joursParSemaineCoach} onChange={e => setJoursParSemaineCoach(e.target.value)} />
               </label>
             </div>
@@ -10807,19 +10808,19 @@ function AppInner() {
                       <p style={{ fontSize: 11, color: "#8BA5C0", margin: "-8px 0 14px" }}>Détection automatique, tous les champs sont modifiables.</p>
 
                       <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12, marginBottom: 6 }}>
-                        <label style={S.label}>Montant détecté
+                        <label style={S.labelDark}>Montant détecté
                           <MontantInput decimales style={S.input} value={factureExtraite.amount} onChange={e => setFactureExtraite({ ...factureExtraite, amount: e })} />
                         </label>
-                        <label style={S.label}>Date
+                        <label style={S.labelDark}>Date
                           <input style={S.input} type="date" value={factureExtraite.date} onChange={e => setFactureExtraite({ ...factureExtraite, date: e.target.value })} />
                         </label>
-                        <label style={S.label}>Client {!factureExtraite.client && <span style={S.aVerifierTag}>à vérifier</span>}
+                        <label style={S.labelDark}>Client {!factureExtraite.client && <span style={S.aVerifierTag}>à vérifier</span>}
                           <input style={S.input} type="text" placeholder="Non détecté — renseigne-le" value={factureExtraite.client} onChange={e => setFactureExtraite({ ...factureExtraite, client: e.target.value })} />
                         </label>
-                        <label style={S.label}>Description {!factureExtraite.description && <span style={S.aVerifierTag}>à vérifier</span>}
+                        <label style={S.labelDark}>Description {!factureExtraite.description && <span style={S.aVerifierTag}>à vérifier</span>}
                           <input style={S.input} type="text" placeholder="Non détectée — renseigne-la" value={factureExtraite.description} onChange={e => setFactureExtraite({ ...factureExtraite, description: e.target.value })} />
                         </label>
-                        <label style={S.label}>N° de facture {!factureExtraite.numero_facture && <span style={S.aVerifierTag}>à vérifier</span>}
+                        <label style={S.labelDark}>N° de facture {!factureExtraite.numero_facture && <span style={S.aVerifierTag}>à vérifier</span>}
                           <input style={S.input} type="text" placeholder="Non détecté — renseigne-le" value={factureExtraite.numero_facture} onChange={e => setFactureExtraite({ ...factureExtraite, numero_facture: e.target.value })} />
                         </label>
                       </div>
@@ -10927,7 +10928,7 @@ function AppInner() {
 
             {showNewFacture && (
               <div style={{ ...S.card, marginBottom: 16 }}>
-                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
+                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500, color: "#E6EDF5" }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
 
                 <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid #DDE5EE", borderRadius: 10, padding: "14px 16px", marginBottom: 16 }}>
                   <div style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.4, marginBottom: 6 }}>Émetteur (mentions obligatoires)</div>
@@ -10962,10 +10963,10 @@ function AppInner() {
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={factureForm.client_adresse} onChange={e => setFactureForm({ ...factureForm, client_adresse: e.target.value })} />
                 {renderClientType(factureForm, p => setFactureForm({ ...factureForm, ...p }))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                  <label style={{ ...S.label, marginBottom: 0 }}>Date d'émission
+                  <label style={{ ...S.labelDark, marginBottom: 0 }}>Date d'émission
                     <input style={S.input} type="date" value={factureForm.date_emission} onChange={e => setFactureForm({ ...factureForm, date_emission: e.target.value })} />
                   </label>
-                  <label style={{ ...S.label, marginBottom: 0 }}>Échéance (optionnel)
+                  <label style={{ ...S.labelDark, marginBottom: 0 }}>Échéance (optionnel)
                     <input style={S.input} type="date" value={factureForm.date_echeance} onChange={e => setFactureForm({ ...factureForm, date_echeance: e.target.value })} />
                   </label>
                 </div>
@@ -11191,7 +11192,7 @@ function AppInner() {
 
             {showNewQuote && (
               <div style={{ ...S.card, marginBottom: 16 }}>
-                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500 }}>{editingQuoteId ? "Modifier le devis" : "Nouveau devis"}</h3>
+                <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500, color: "#E6EDF5" }}>{editingQuoteId ? "Modifier le devis" : "Nouveau devis"}</h3>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
                   <input style={S.input} placeholder="Nom du client" value={quoteForm.client_nom} onChange={e => setQuoteForm({ ...quoteForm, client_nom: e.target.value })} />
                   <input style={S.input} placeholder="Email du client" type="email" value={quoteForm.client_email} onChange={e => setQuoteForm({ ...quoteForm, client_email: e.target.value })} />
@@ -11199,10 +11200,10 @@ function AppInner() {
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={quoteForm.client_adresse} onChange={e => setQuoteForm({ ...quoteForm, client_adresse: e.target.value })} />
                 {renderClientType(quoteForm, p => setQuoteForm({ ...quoteForm, ...p }))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
-                  <label style={{ ...S.label, marginBottom: 0 }}>Date d'émission
+                  <label style={{ ...S.labelDark, marginBottom: 0 }}>Date d'émission
                     <input style={S.input} type="date" value={quoteForm.date_emission} onChange={e => setQuoteForm({ ...quoteForm, date_emission: e.target.value })} />
                   </label>
-                  <label style={{ ...S.label, marginBottom: 0 }}>Valable jusqu'au (optionnel)
+                  <label style={{ ...S.labelDark, marginBottom: 0 }}>Valable jusqu'au (optionnel)
                     <input style={S.input} type="date" value={quoteForm.date_validite} onChange={e => setQuoteForm({ ...quoteForm, date_validite: e.target.value })} />
                   </label>
                 </div>
@@ -11709,19 +11710,19 @@ function AppInner() {
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <label style={S.label}>Prénom
+                <label style={S.labelDark}>Prénom
                   <input style={S.input} type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Ex : Jean" />
                 </label>
-                <label style={S.label}>Nom
+                <label style={S.labelDark}>Nom
                   <input style={S.input} type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Ex : Dupont" />
                 </label>
-                <label style={S.label}>Téléphone
+                <label style={S.labelDark}>Téléphone
                   <input style={S.input} type="tel" value={profilTelephone} onChange={e => setProfilTelephone(e.target.value)} placeholder="Ex : 06 12 34 56 78" />
                 </label>
-                <label style={S.label}>Entreprise
+                <label style={S.labelDark}>Entreprise
                   <input style={S.input} type="text" value={profilEntreprise} onChange={e => setProfilEntreprise(e.target.value)} placeholder="Ex : Mon Entreprise" />
                 </label>
-                <label style={S.label}>SIRET
+                <label style={S.labelDark}>SIRET
                   <div style={{ display: "flex", gap: 8 }}>
                     <input style={{ ...S.input, flex: 1 }} type="text" value={profilSiret} onChange={e => { setProfilSiret(e.target.value); setSiretLookupStatus(""); }} placeholder="123 456 789 00012" />
                     <button type="button" style={{ ...S.btnPrimary, width: "auto", padding: "0 16px", whiteSpace: "nowrap" }} onClick={handleLookupSiret} disabled={!profilSiret || siretLookupStatus === "loading"}>
@@ -11734,10 +11735,10 @@ function AppInner() {
                     </p>
                   )}
                 </label>
-                <label style={S.label}>Statut juridique
+                <label style={S.labelDark}>Statut juridique
                   <input style={{ ...S.input, background: "#FAFBFC", color: "#8BA5C0" }} type="text" value={profile?.statut === "auto_entrepreneur" ? "Auto-entrepreneur" : profile?.statut || "—"} readOnly />
                 </label>
-                <label style={{ ...S.label, gridColumn: isMobile ? "auto" : "1 / -1" }}>Adresse professionnelle <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(obligatoire sur tes factures)</span>
+                <label style={{ ...S.labelDark, gridColumn: isMobile ? "auto" : "1 / -1" }}>Adresse professionnelle <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(obligatoire sur tes factures)</span>
                   <input style={S.input} type="text" value={profilAdresse} onChange={e => setProfilAdresse(e.target.value)} placeholder="Ex : 12 rue de la Paix, 75002 Paris" />
                 </label>
               </div>
@@ -11758,23 +11759,23 @@ function AppInner() {
                 Modifiable ici à tout moment — y compris en cas de déficit, où ce réglage n'apparaît pas ailleurs.
               </p>
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 12 }}>
-                <label style={S.label}>Réserve de sécurité
+                <label style={S.labelDark}>Réserve de sécurité
                   <MontantInput decimales style={S.input} value={objectifSecurite} onChange={e => setObjectifSecurite(e)} placeholder="Ex : 3000" />
                 </label>
-                <label style={S.label}>Tranche marginale d'imposition (TMI)
+                <label style={S.labelDark}>Tranche marginale d'imposition (TMI)
                   <select style={S.input} value={tmi} onChange={e => setTmi(e.target.value)}>
                     {TMI_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
                   </select>
                 </label>
-                <label style={S.label}>Cotisation Foncière des Entreprises (CFE)
+                <label style={S.labelDark}>Cotisation Foncière des Entreprises (CFE)
                   <MontantInput decimales style={S.input} value={panique.cfe} onChange={e => setPanique({ ...panique, cfe: e })} placeholder="Souvent ~200 €/an" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Impôt local annuel dû par la plupart des entreprises, même sans local. Variable selon la commune.</span>
                 </label>
-                <label style={S.label}>Mon train de vie mensuel
+                <label style={S.labelDark}>Mon train de vie mensuel
                   <MontantInput decimales style={S.input} value={depensesMensuelles} onChange={e => setDepensesMensuelles(e)} placeholder="Ex : 1800 €/mois" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Ce que tu dépenses environ chaque mois pour vivre. Sert à Hector pour calculer tes jours de tranquillité.</span>
                 </label>
-                <label style={S.label}>Mes autres revenus mensuels (optionnel)
+                <label style={S.labelDark}>Mes autres revenus mensuels (optionnel)
                   <MontantInput decimales style={S.input} value={autresRevenus} onChange={e => setAutresRevenus(e)} placeholder="Ex : salaire 1 800 €/mois" />
                   <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Salaire ou autre revenu en dehors de ton auto-entreprise. Hector ne calcule jamais d'URSSAF dessus — c'est juste pour avoir une vue complète de ce que tu peux te permettre.</span>
                   {autresRevenusNum > 0 && (

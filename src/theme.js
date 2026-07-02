@@ -103,7 +103,7 @@ export const S = {
   aiMsgBot: { background: "#F0F4F8", color: INK, borderRadius: "4px 12px 12px 12px" },
   aiMsgUser: { background: ACCENT, color: "white", borderRadius: "12px 4px 12px 12px" },
   incomeRow: { display: "flex", alignItems: "center", gap: 10, padding: "10px 0", borderBottom: "0.5px solid #EEF2F7" },
-  incomeAmt: { display: "block", fontSize: 14, fontWeight: 500, color: INK, fontVariantNumeric: "tabular-nums" },
+  incomeAmt: { display: "block", fontSize: 14, fontWeight: 500, color: "#E6EDF5", fontVariantNumeric: "tabular-nums" },
   incomeMeta: { display: "block", fontSize: 12, color: "#6B7A8D", marginTop: 2 },
   badge: { fontSize: 10, fontWeight: 600, padding: "3px 8px", borderRadius: 6, whiteSpace: "nowrap" },
   badgeGreen: { background: "#E1F5EE", color: "#0F6E56" },
@@ -175,6 +175,8 @@ export const S = {
   heroDetailRow: { display: "flex", justifyContent: "space-between", fontSize: 12, color: "#B5D4F4", padding: "4px 0" },
   projRow: { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13, color: "#5B6573", padding: "10px 0", borderBottom: "0.5px solid #EEF2F7" },
   label: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#3D4452", marginBottom: 14 },
+  // Variante pour les cartes SOMBRES (le label #3D4452 y est illisible) — même géométrie, texte clair.
+  labelDark: { display: "flex", flexDirection: "column", gap: 6, fontSize: 13, fontWeight: 500, color: "#C5D4E3", marginBottom: 14 },
   checkboxLabel: { display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#3D4452", marginBottom: 12, lineHeight: 1.4 },
   input: { fontFamily: "inherit", fontSize: 14, padding: "10px 12px", borderRadius: 8, border: "1px solid #DDE5EE", outline: "none", width: "100%" },
   btnPrimary: { width: "100%", background: ACCENT, color: "white", border: "none", borderRadius: 8, padding: "12px 16px", fontSize: 14, fontWeight: 600, cursor: "pointer" },
