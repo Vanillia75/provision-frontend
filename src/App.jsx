@@ -9175,7 +9175,7 @@ function AppInner() {
             changent. "Préparer" est un groupe qui ouvre declaration + echeances. */}
         {[
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
-          { id: "assistant", icon: "ti-message-2", label: "Hector" },
+          { id: "assistant", icon: "ti-message-2", label: "Parle à Hector" },
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "revenus", icon: "ti-chart-bar", label: "Mes revenus" },
           { id: "frais", icon: "ti-receipt-2", label: "Mes dépenses" },
@@ -9185,12 +9185,6 @@ function AppInner() {
             {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
           </button>
         ))}
-
-        {/* Course avec Hector — ouvre le mini-jeu (action, pas une page de nav). */}
-        <button style={{ ...S.navItem }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
-          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
-        </button>
 
         {/* Groupe "Facturer" : factures + devis (même flux commercial). */}
         <button
@@ -9254,6 +9248,12 @@ function AppInner() {
             <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
           </button>
         ))}
+        {/* Course avec Hector — ouvre le mini-jeu (action, pas une page de nav). En CLÔTURE de la
+            navigation, après le métier : le jeu vient après le travail, pas dedans (modèle intermittent). */}
+        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
+          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
+        </button>
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
           <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
           {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Aide — Visite guidée</span>}
