@@ -6,6 +6,7 @@ import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./reg
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { LegalPageView } from "./LegalPage";
+import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 
@@ -3916,6 +3917,9 @@ function AppInner() {
   const projectionFinMois = jourDuMois > 0 ? Math.round((caCeMoisCi / jourDuMois) * joursDansLeMois) : caCeMoisCi;
   const projectionFinAnnee = estimateData ? Math.round(moyenneMensuelleCA * 12) : null;
 
+  if (legalPage === "pourquoi") {
+    return <PourquoiHector onBack={() => setLegalPage(null)} />;
+  }
   if (legalPage) {
     return <LegalPageView page={legalPage} onBack={() => setLegalPage(null)} />;
   }
@@ -8555,6 +8559,9 @@ function AppInner() {
                 <span>·</span>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
               </p>
+              <p style={{ textAlign: "center", marginTop: 10 }}>
+                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage("pourquoi")}>Pourquoi H€CTOR ? 🐾</button>
+              </p>
               </>)}
             </>
           )}
@@ -11983,6 +11990,10 @@ function AppInner() {
                 </div>
               ))}
             </div>
+
+            <p style={{ textAlign: "center", marginTop: 24 }}>
+              <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage("pourquoi")}>Pourquoi H€CTOR ? 🐾</button>
+            </p>
           </div>
         )}
 
