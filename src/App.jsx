@@ -8823,7 +8823,14 @@ function AppInner() {
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 0 }}>
                     <div style={{ padding: "16px 16px 0", flex: 1 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
-                      <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 12 }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
+                      <div style={{ fontSize: 11, color: "#6B8299", marginBottom: briefingMatin.prenom ? 12 : 4 }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
+                      {/* Sans prénom, Hector invite à se présenter (Loi VIII : un vide est un point de départ). */}
+                      {!briefingMatin.prenom && (
+                        <button type="button" onClick={() => setNav("profil")}
+                          style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 12, textAlign: "left" }}>
+                          Dis-moi ton prénom →
+                        </button>
+                      )}
                     </div>
                     <div style={{ width: 100, flexShrink: 0, position: "relative", overflow: "hidden" }}>
                       <HectorImage etat={hectorEtat} size={120} cover />
@@ -8904,6 +8911,13 @@ function AppInner() {
                     <div style={{ position: "relative", zIndex: 2, padding: "20px 28px 8px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                       <div style={{ fontSize: 20, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
                       <div style={{ fontSize: 12, color: "#6B8299" }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
+                      {/* Sans prénom, Hector invite à se présenter (Loi VIII : un vide est un point de départ). */}
+                      {!briefingMatin.prenom && (
+                        <button type="button" onClick={() => setNav("profil")}
+                          style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 6, textAlign: "left" }}>
+                          Dis-moi ton prénom →
+                        </button>
+                      )}
                     </div>
                     <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
                       <img
