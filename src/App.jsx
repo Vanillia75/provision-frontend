@@ -12392,7 +12392,7 @@ function AppInner() {
 function tenterAutoRecuperation(error) {
   try {
     const msg = String((error && error.message) || "");
-    const versionPerimee = /before initialization|is not defined|Rendered (fewer|more) hooks|Loading chunk|dynamically imported module|Importing a module script failed|Unexpected token/i.test(msg);
+    const versionPerimee = /before initialization|is not defined|Rendered (fewer|more) hooks|Loading chunk|dynamically imported module|Importing a module script failed|Unexpected token|null is not an object|undefined is not an object|Cannot read properties of null/i.test(msg);
     if (!versionPerimee) return; // vraie erreur applicative -> on laisse l'écran "petit souci"
     const KEY = "hector_auto_reload";
     if (sessionStorage.getItem(KEY)) return; // déjà tenté cette session -> on évite toute boucle
