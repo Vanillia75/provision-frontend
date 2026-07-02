@@ -735,10 +735,13 @@ function AppInner() {
   // bloque jamais le scroll desktop). Cleanup garantit que le body retrouve
   // toujours son scroll normal (fermeture ou démontage).
   useEffect(() => {
-    const menuMobileOuvert = isMobile && (mobileMenuOpen || interMenuOpen);
+    // Seul le tiroir de la coquille RÉELLEMENT affichée peut verrouiller le scroll :
+    // le flag de l'autre mode (resté true après un changement de statut) ne compte jamais.
+    const tiroirActif = profile?.statut === "intermittent" ? interMenuOpen : mobileMenuOpen;
+    const menuMobileOuvert = isMobile && tiroirActif;
     document.body.style.overflow = menuMobileOuvert ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
-  }, [isMobile, mobileMenuOpen, interMenuOpen]);
+  }, [isMobile, mobileMenuOpen, interMenuOpen, profile?.statut]);
   const googleButtonRef = useRef(null);
   const googleButtonRefInter = useRef(null); // bouton Google sur la landing intermittent
 
@@ -1932,6 +1935,10 @@ function AppInner() {
       });
       setProfile({ ...profile, statut: nouveauStatut });
       setNav("dashboard");
+      // Les tiroirs mobiles ne survivent pas au changement de coquille : sans ça, le menu
+      // « fantôme » de l'autre mode garde body.overflow=hidden → scroll mort (bug Android).
+      setMobileMenuOpen(false);
+      setInterMenuOpen(false);
       // Si on passe en auto-entrepreneur SANS activité connue → on la DEMANDE (jamais de valeur en dur).
       // Strict : uniquement AE + activite absente. Un intermittent ne déclenche jamais cette modale.
       if (nouveauStatut === "auto_entrepreneur" && !profile.activite) {
