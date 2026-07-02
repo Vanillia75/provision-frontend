@@ -2875,7 +2875,7 @@ function AppInner() {
     setSendInvoiceStatus("");
     setSendInvoiceError("");
     // On n'envoie JAMAIS de message vide : message perso si tapé, sinon le modèle poli.
-    const messageFinal = sendInvoiceMessage.trim() || messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || "");
+    const messageFinal = sendInvoiceMessage.trim() || (invoiceIsOverdue(inv) ? messageRelanceFacture(inv, profilPrenom || profilEntreprise || "") : messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || ""));
     try {
       const updated = await apiFetch(`/invoices/${inv.id}/send`, {
         method: "POST",
@@ -3234,6 +3234,15 @@ function AppInner() {
     return Math.max(0, Math.round((new Date(todayISO) - new Date(inv.date_echeance)) / 86400000));
   }
 
+  // Relance d'impayé pré-rédigée avec les vraies données de la facture.
+  // Destinée au CLIENT du testeur → vouvoiement (Loi IX, client-facing).
+  function messageRelanceFacture(inv, emetteur) {
+    const salut = inv.client_nom ? `Bonjour ${inv.client_nom},` : "Bonjour,";
+    const retard = joursDeRetard(inv);
+    const signature = emetteur ? `Bien à vous,\n${emetteur}` : "Bien à vous,";
+    return `${salut}\n\nJe me permets de revenir vers vous concernant la facture ${inv.numero || ""} d'un montant de ${formatEUR(inv.montant)}, arrivée à échéance le ${formatDate(inv.date_echeance)}${retard > 0 ? ` (${retard} jour${retard > 1 ? "s" : ""} de retard à ce jour)` : ""}.\n\nPourriez-vous me confirmer la date de règlement prévue ? Si le paiement a déjà été effectué, merci d'ignorer ce message.\n\n${signature}`;
+  }
+
   const INVOICE_STATUT_INFO = {
     brouillon: { label: "Brouillon", bg: "#F1F2EE", color: "#5B6573" },
     envoyee: { label: "Envoyée", bg: "#E6F1FB", color: "#0C447C" },
@@ -3242,7 +3251,8 @@ function AppInner() {
   };
 
   useEffect(() => {
-    if ((nav === "factures" || nav === "contacts") && token) loadInvoices();
+    // "dashboard" inclus : la carte relance du cockpit a besoin de connaître les factures en retard.
+    if ((nav === "factures" || nav === "contacts" || nav === "dashboard") && token) loadInvoices();
   }, [nav, token]);
 
   useEffect(() => {
@@ -9494,6 +9504,26 @@ function AppInner() {
             })()}
             </div>
 
+            {/* ── RELANCE D'IMPAYÉ — Hector voit la facture en retard et propose la relance rédigée.
+                Né d'un retour testeur (RETOURS_BETA 2026-07-03). Il propose, il n'envoie jamais seul (Loi IV). ── */}
+            {(() => {
+              const enRetard = invoicesList.filter(invoiceIsOverdue);
+              if (enRetard.length === 0) return null;
+              const inv = [...enRetard].sort((a, b) => joursDeRetard(b) - joursDeRetard(a))[0];
+              const nb = enRetard.length - 1;
+              return (
+                <div style={{ background: "#0a1322", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 14, padding: "14px 18px", display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ flex: 1, minWidth: 220, fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>
+                    🐾 La facture <strong>{inv.numero}</strong> de <strong>{inv.client_nom}</strong> ({formatEUR(inv.montant)}) a <strong>{joursDeRetard(inv)} jour{joursDeRetard(inv) > 1 ? "s" : ""} de retard</strong>{nb > 0 ? ` — et ${nb} autre${nb > 1 ? "s" : ""} attend${nb > 1 ? "ent" : ""} aussi` : ""}. Je t'ai préparé la relance.
+                  </div>
+                  <button type="button" onClick={() => { setNav("factures"); setSendInvoiceMessage(""); setViewingInvoice(inv); }}
+                    style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                    Lire la relance →
+                  </button>
+                </div>
+              );
+            })()}
+
             {/* ── TA PROCHAINE ACTION (pleine largeur, masquée pendant l'onboarding) ── */}
             {(() => {
               if (panique.solde === "" || incomeList.length === 0) return null;
@@ -11122,7 +11152,7 @@ function AppInner() {
             {viewingInvoice && (() => {
               const inv = viewingInvoice;
               // Message réellement envoyé : perso si tapé, sinon le modèle (aperçu = vérité).
-              const messageFinalFacture = sendInvoiceMessage.trim() || messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || "");
+              const messageFinalFacture = sendInvoiceMessage.trim() || (invoiceIsOverdue(inv) ? messageRelanceFacture(inv, profilPrenom || profilEntreprise || "") : messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || ""));
               const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
               const lignes = inv.lignes && inv.lignes.length > 0 ? inv.lignes : [];
               const totalHT = lignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
@@ -11203,14 +11233,18 @@ function AppInner() {
                       ) : (
                         <>
                           <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyée à <strong>{inv.client_email}</strong></p>
-                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
+                          {invoiceIsOverdue(inv) ? (
+                            <p style={{ fontSize: 12, color: "#FAC775", margin: "0 0 8px", lineHeight: 1.5 }}>🐾 Cette facture a {joursDeRetard(inv)} jour{joursDeRetard(inv) > 1 ? "s" : ""} de retard — je t'ai préparé la relance (aperçu ci-dessous). Tu peux la personnaliser, et rien ne part sans toi.</p>
+                          ) : (
+                            <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
+                          )}
                           <textarea
                             style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
                             placeholder="Ajouter un message personnel (optionnel)"
                             value={sendInvoiceMessage}
                             onChange={e => setSendInvoiceMessage(e.target.value)}
                           />
-                          <details style={{ marginBottom: 8 }}>
+                          <details open={invoiceIsOverdue(inv)} style={{ marginBottom: 8 }}>
                             <summary style={{ fontSize: 11.5, color: "#378ADD", cursor: "pointer" }}>Aperçu de l'email envoyé</summary>
                             <div style={{ whiteSpace: "pre-wrap", overflowWrap: "break-word", fontSize: 12, color: "#5B6573", background: "rgba(0,0,0,0.04)", borderRadius: 8, padding: "8px 10px", marginTop: 6 }}>{messageFinalFacture}</div>
                           </details>
