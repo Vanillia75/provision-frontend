@@ -34,8 +34,9 @@
     <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css" rel="stylesheet" />
     <script src="https://accounts.google.com/gsi/client" async defer></script>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background:#07192E">
+    <!-- Écran d'attente avant React : évite le flash blanc au lancement (PWA/TWA). Remplacé au montage. -->
+    <div id="root"><div style="min-height:100vh;background:#07192E;display:flex;align-items:center;justify-content:center;color:#8BA5C0;font-family:system-ui,sans-serif;font-size:15px">🐾 Hector arrive…</div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

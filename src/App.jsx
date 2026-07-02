@@ -814,7 +814,8 @@ function AppInner() {
       if (p.reserve_securite != null) setObjectifSecurite(String(p.reserve_securite));
       if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
-        const [est, inc, expSummary, proj] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary"), apiFetch("/projection").catch(() => null)]);
+        const [est, inc, expSummary, proj] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary"), apiFetch("/projection").catch(() => null)])
+          .catch(e => { console.error("chargement des données:", e); throw new Error("Je n'arrive pas à charger tes chiffres pour l'instant. Vérifie ta connexion et recharge la page — je garde tout au chaud. 🐾"); });
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
@@ -8796,7 +8797,7 @@ function AppInner() {
                 <div style={{ textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "rgba(181,212,244,0.45)", marginBottom: 18 }}>{s.timerLabel}</div>
                 {/* Avatar image niveau */}
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  <img src={s.img} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2px solid rgba(55,138,221,0.5)", background: "#0d2d4a" }} />
+                  <img src={s.img} alt="" style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2.5px solid rgba(93,202,165,0.55)", boxShadow: "0 0 0 6px rgba(93,202,165,0.08)", background: "#0d2d4a" }} />
                 </div>
                 {/* Titre */}
                 <p style={{ color: "white", fontSize: 18, fontWeight: 500, textAlign: "center", margin: "0 0 10px", lineHeight: 1.35 }}>{s.title}</p>
@@ -12328,7 +12329,7 @@ function AppInner() {
                 <div style={{ textAlign: "center", fontSize: 10, fontWeight: 600, letterSpacing: 1, color: "rgba(181,212,244,0.45)", marginBottom: 18 }}>{s.timerLabel}</div>
                 {/* Avatar image niveau */}
                 <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-                  <img src={s.img} alt="" style={{ width: 64, height: 64, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2px solid rgba(55,138,221,0.5)", background: "#0d2d4a" }} />
+                  <img src={s.img} alt="" style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", objectPosition: "center 40%", border: "2.5px solid rgba(93,202,165,0.55)", boxShadow: "0 0 0 6px rgba(93,202,165,0.08)", background: "#0d2d4a" }} />
                 </div>
                 {/* Titre */}
                 <p style={{ color: "white", fontSize: 18, fontWeight: 500, textAlign: "center", margin: "0 0 10px", lineHeight: 1.35 }}>{s.title}</p>
