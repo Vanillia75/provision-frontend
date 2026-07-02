@@ -5849,6 +5849,12 @@ function AppInner() {
             <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
             <span>Course avec Hector</span>
           </button>
+          {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
+          <button type="button" onClick={() => { setLegalPage("pourquoi"); setInterMenuOpen(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+            <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
+            <span>Pourquoi H€CTOR ?</span>
+          </button>
         </div>
         <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 2 }}>
           <button type="button" onClick={() => { setInterNav("reglages"); setInterMenuOpen(false); }}
@@ -8559,9 +8565,6 @@ function AppInner() {
                 <span>·</span>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
               </p>
-              <p style={{ textAlign: "center", marginTop: 10 }}>
-                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage("pourquoi")}>Pourquoi H€CTOR ? 🐾</button>
-              </p>
               </>)}
             </>
           )}
@@ -9307,6 +9310,11 @@ function AppInner() {
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
           <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
           {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
+        </button>
+        {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
+        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setLegalPage("pourquoi"); setMobileMenuOpen(false); }}>
+          <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Pourquoi H€CTOR ?</span>}
         </button>
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
           <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -11991,9 +11999,6 @@ function AppInner() {
               ))}
             </div>
 
-            <p style={{ textAlign: "center", marginTop: 24 }}>
-              <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage("pourquoi")}>Pourquoi H€CTOR ? 🐾</button>
-            </p>
           </div>
         )}
 
