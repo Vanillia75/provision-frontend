@@ -5945,7 +5945,7 @@ function AppInner() {
         {/* Sidebar mobile (drawer) */}
         {isMobile && interMenuOpen && (
           <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.5)" }} onClick={() => setInterMenuOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, height: "100vh", zIndex: 201 }}>{interSidebar}</div>
+            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, height: "100vh", zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>{interSidebar}</div>
           </div>
         )}
 
@@ -9201,7 +9201,7 @@ function AppInner() {
       <aside
         style={{
           ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease" }
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
           background: "#07192E",
         }}
