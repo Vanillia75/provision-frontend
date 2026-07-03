@@ -375,6 +375,13 @@ function AppInner() {
   const [anniversaireInput, setAnniversaireInput] = useState("");
   const [anniversaireSaving, setAnniversaireSaving] = useState(false);
   const [anniversaireEdit, setAnniversaireEdit] = useState(false);
+  // Allocation journalière recalculée (carte cockpit, encadrée par la Loi X).
+  const [allocEdit, setAllocEdit] = useState(false);
+  const [allocAnnexe, setAllocAnnexe] = useState("annexe10");
+  const [allocSR, setAllocSR] = useState("");
+  const [allocNHT, setAllocNHT] = useState("");
+  const [allocSaving, setAllocSaving] = useState(false);
+  const [allocPourquoiOuvert, setAllocPourquoiOuvert] = useState(false);
   // ─── Scan d'AEM (Coffre à AEM) — OCR Claude Vision ───
   const [aemUploading, setAemUploading] = useState(false);
   const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
@@ -2619,6 +2626,36 @@ function AppInner() {
       setError(err.message);
     } finally {
       setAnniversaireSaving(false);
+    }
+  }
+
+  function ouvrirAllocEdit(alloc) {
+    // Pré-remplit avec les valeurs déjà saisies, si elles existent.
+    setAllocAnnexe(alloc?.annexe || "annexe10");
+    setAllocSR(alloc?.salaire_reference != null ? String(alloc.salaire_reference) : "");
+    setAllocNHT(alloc?.heures_reference != null ? String(alloc.heures_reference) : "");
+    setAllocEdit(true);
+  }
+
+  async function handleSaveAllocation() {
+    const sr = parseFloat(String(allocSR).replace(",", "."));
+    const nht = parseFloat(String(allocNHT).replace(",", "."));
+    if (isNaN(sr) || isNaN(nht) || sr < 0 || nht < 0) {
+      setError("Renseigne un salaire de référence et un nombre d'heures valides.");
+      return;
+    }
+    setAllocSaving(true);
+    try {
+      await apiFetch("/intermittent/allocation", {
+        method: "POST",
+        body: JSON.stringify({ annexe: allocAnnexe, salaire_reference: sr, heures_reference: nht }),
+      });
+      setAllocEdit(false);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAllocSaving(false);
     }
   }
 
@@ -6574,6 +6611,127 @@ function AppInner() {
                       </div>
                     )}
                     {areError && !areExtrait && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
+                  </div>
+                )}
+              </div>
+
+              {/* ══ ALLOCATION JOURNALIÈRE — recalculée, encadrée par la Loi X ══
+                   Un chiffre affiché = un chiffre validé sur un vrai courrier. Sinon,
+                   Hector dit honnêtement « pas encore » plutôt que d'approximer. */}
+              <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+                  <span style={{ fontSize: 18 }}>🎭</span>
+                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton allocation journalière</div>
+                </div>
+
+                {/* État 1 : rien de saisi → invitation */}
+                {!allocEdit && !c.allocation && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
+                      Donne-moi ton <strong style={{ color: "#C8E0F5" }}>salaire de référence</strong> et tes <strong style={{ color: "#C8E0F5" }}>heures retenues</strong> (ils sont écrits sur ta notification France Travail) : je recalcule ton allocation, règle par règle.
+                    </div>
+                    <button type="button" onClick={() => ouvrirAllocEdit(null)}
+                      style={{ background: "#5DCAA5", color: "#052b20", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      Renseigner
+                    </button>
+                  </div>
+                )}
+
+                {/* État 2 : formulaire de saisie */}
+                {allocEdit && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 11 }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {[["annexe10", "Artiste"], ["annexe8", "Technicien"]].map(([val, lbl]) => (
+                        <button key={val} type="button" onClick={() => setAllocAnnexe(val)}
+                          style={{ flex: 1, background: allocAnnexe === val ? "#378ADD" : "#0d2440", color: allocAnnexe === val ? "white" : "#B5D4F4", border: `1px solid ${allocAnnexe === val ? "#378ADD" : "#1e3a5f"}`, borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                    <label style={{ fontSize: 11.5, color: "#8BA5C0", fontWeight: 600 }}>Salaire de référence (sur ta notification)
+                      <MontantInput decimales value={allocSR} onChange={v => setAllocSR(v)} placeholder="ex. 8 537"
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <label style={{ fontSize: 11.5, color: "#8BA5C0", fontWeight: 600 }}>Nombre d'heures retenues
+                      <input type="number" min="0" step="1" value={allocNHT} onChange={e => setAllocNHT(e.target.value)} placeholder="ex. 636"
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                      <button type="button" disabled={allocSaving} onClick={handleSaveAllocation}
+                        style={{ flex: 1, background: "#5DCAA5", color: "#052b20", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 700, cursor: allocSaving ? "default" : "pointer", fontFamily: "inherit", opacity: allocSaving ? 0.6 : 1 }}>
+                        {allocSaving ? "…" : "Calculer mon allocation"}
+                      </button>
+                      <button type="button" onClick={() => setAllocEdit(false)}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* État 3a : allocation AFFICHABLE (branche validée) */}
+                {!allocEdit && c.allocation && c.allocation.affichable && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                      {formatEUR(c.allocation.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#5DCAA5", marginTop: 6, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.45 }}>
+                      <i className="ti ti-circle-check" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }} />
+                      <span>Vérifié à partir de ton salaire de référence et de tes heures France Travail.</span>
+                    </div>
+                    {c.allocation.montant_officiel != null && (
+                      <div style={{ fontSize: 11.5, color: c.allocation.coherent_officiel ? "#9FE1CB" : "#F0C078", marginTop: 8, background: c.allocation.coherent_officiel ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)", border: `1px solid ${c.allocation.coherent_officiel ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`, borderRadius: 8, padding: "8px 11px", lineHeight: 1.45 }}>
+                        {c.allocation.coherent_officiel
+                          ? `✓ Cohérent avec ta notification (${formatEUR(c.allocation.montant_officiel)}) — on tombe pareil.`
+                          : `⚠️ J'obtiens ${formatEUR(c.allocation.aj_nette)}, ta notification indique ${formatEUR(c.allocation.montant_officiel)}. Un écart à vérifier avec France Travail.`}
+                      </div>
+                    )}
+
+                    {/* Pourquoi ce montant ? (le raisonnement dépliable — Loi X) */}
+                    <button type="button" onClick={() => setAllocPourquoiOuvert(o => !o)}
+                      style={{ background: "transparent", border: "none", color: "#7FB8F0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "10px 0 0", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <i className={`ti ti-chevron-${allocPourquoiOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 14 }} />
+                      Pourquoi ce montant ?
+                    </button>
+                    {allocPourquoiOuvert && (
+                      <div style={{ fontSize: 11.5, color: "#9FB6CE", marginTop: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "11px 13px", lineHeight: 1.6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part salaires (A)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_a)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part heures (B)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_b)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part fixe (C)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_c)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 5, paddingTop: 5 }}><span>Allocation brute</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_brute)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>− retraite complémentaire</span><strong style={{ color: "#E8F4FF" }}>−{formatEUR(c.allocation.retenue_retraite)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}><span style={{ color: "#9FE1CB" }}>Allocation nette</span><strong style={{ color: "#9FE1CB" }}>{formatEUR(c.allocation.aj_nette)}</strong></div>
+                        <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 9, fontStyle: "italic" }}>
+                          Calcul selon les règles France Travail (annexes 8 et 10). Seule ta notification officielle fait foi.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Le « pas encore » assumé : l'allocation mensuelle */}
+                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(93,202,165,0.15)", lineHeight: 1.55 }}>
+                      <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Pourquoi je n'affiche pas encore ton allocation mensuelle ?</strong><br />
+                      Je préfère attendre d'avoir vérifié ce calcul sur de vrais relevés de paiement avant de te donner un montant. Je préfère être exact que rapide. 🐾
+                    </div>
+
+                    <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 12 }}>
+                      Modifier mes chiffres
+                    </button>
+                  </div>
+                )}
+
+                {/* État 3b : NON affichable (branche pas encore validée) — l'honnêteté assumée */}
+                {!allocEdit && c.allocation && !c.allocation.affichable && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                      {c.allocation.raison_non_affichable === "au_dela_60"
+                        ? <>Ton allocation dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur une vraie notification. Je préfère ne pas t'avancer de chiffre tant que je n'en suis pas certain — <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
+                        : <>Je sais recalculer l'allocation des <strong style={{ color: "#C8E0F5" }}>artistes</strong> avec certitude (validé sur de vraies notifications). Pour un profil <strong style={{ color: "#C8E0F5" }}>technicien</strong>, je préfère attendre d'avoir vérifié mon calcul sur un vrai courrier avant de t'afficher un montant. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>}
+                    </div>
+                    <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 }}>
+                      Modifier mes chiffres
+                    </button>
                   </div>
                 )}
               </div>
