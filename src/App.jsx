@@ -344,12 +344,6 @@ function AppInner() {
   const [landingStatut, setLandingStatut] = useState(() => safeStorage.getItem("landingStatut") || null);
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
-  // Fake door intermittent : on collecte les emails intéressés pour mesurer la demande.
-  const [intermittentEmail, setIntermittentEmail] = useState("");
-  const [intermittentSent, setIntermittentSent] = useState(false);
-  const [intermittentSending, setIntermittentSending] = useState(false);
-  // Modale "à venir" déclenchée par les boutons de la landing intermittent
-  const [showIntermittentAvenir, setShowIntermittentAvenir] = useState(false);
   // Cockpit intermittent (Brique 5) : état calculé renvoyé par /intermittent/cockpit
   const [interCockpit, setInterCockpit] = useState(null);
   const [interCockpitLoading, setInterCockpitLoading] = useState(false);
@@ -4107,30 +4101,12 @@ function AppInner() {
   }
 
   // LANDING INTERMITTENT — jumelle visuelle de la landing AE, cerveau "heures".
-  // Toutes les features sont des aperçus (le module n'est pas codé) : chaque bouton
-  // ouvre la modale "à venir + email" (fake door pour mesurer la demande réelle).
+  // Le produit intermittent est LIVRÉ : les CTA mènent au formulaire d'inscription
+  // réel (#inter-auth-section), plus de fake door « à venir ».
   if (!token && landingStatut === "intermittent") {
-    const submitIntermittent = async () => {
-      const email = intermittentEmail.trim();
-      if (!email || !email.includes("@")) return;
-      setIntermittentSending(true);
-      try {
-        // ⚠️ REMPLACE cette URL par TON endpoint Formspree (formspree.io, gratuit).
-        await fetch("https://formspree.io/f/TON_ID_FORMSPREE", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Accept: "application/json" },
-          body: JSON.stringify({ email, statut: "intermittent", source: "landing_hector" }),
-        });
-        setIntermittentSent(true);
-      } catch {
-        setIntermittentSent(true);
-      } finally {
-        setIntermittentSending(false);
-      }
-    };
-    // L'intermittent est désormais OUVERT : les boutons mènent au formulaire
-    // d'inscription présent sur cette même landing (section plus bas).
-    const ouvrirAvenir = () => {
+    // Le produit intermittent est livré : les CTA mènent au formulaire d'inscription
+    // réel présent plus bas sur cette même landing (#inter-auth-section).
+    const scrollToInterAuth = () => {
       setAuthMode("register");
       setTimeout(() => {
         document.getElementById("inter-auth-section")?.scrollIntoView({ behavior: "smooth" });
@@ -4171,7 +4147,7 @@ function AppInner() {
             <p style={{ fontSize: 16, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 460 }}>
               H€CTOR additionne tes cachets et tes heures automatiquement, et te dit si tu es dans les temps pour ton renouvellement. Pour que tu dormes tranquille.
             </p>
-            <button onClick={ouvrirAvenir} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <button onClick={scrollToInterAuth} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
@@ -4412,36 +4388,6 @@ function AppInner() {
           <div style={{ fontSize: 11, color: "#4A6280" }}>Fait avec 🐾 pour les intermittents</div>
         </footer>
 
-        {/* ===== MODALE "À VENIR" + EMAIL (fake door) ===== */}
-        {showIntermittentAvenir && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(4,12,24,0.8)", backdropFilter: "blur(4px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => setShowIntermittentAvenir(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 18, padding: isMobile ? "28px 22px" : "36px 40px", maxWidth: 440, width: "100%", textAlign: "center", position: "relative" }}>
-              <button onClick={() => setShowIntermittentAvenir(false)} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#4A6280", fontSize: 20, cursor: "pointer", fontFamily: "inherit" }} aria-label="Fermer"><i className="ti ti-x" aria-hidden="true" /></button>
-              <div style={{ width: 96, height: 96, margin: "0 auto 18px", borderRadius: 16, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-                <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
-              </div>
-              {!intermittentSent ? (
-                <>
-                  <div style={{ color: "white", fontSize: 21, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>Hector arrive très bientôt.</div>
-                  <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6, marginBottom: 22 }}>On prépare le cockpit intermittent avec soin. Laisse ton email, tu seras le premier prévenu — et tu auras le tarif fondateur.</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                    <input type="email" value={intermittentEmail} onChange={e => setIntermittentEmail(e.target.value)} placeholder="ton@email.fr" onKeyDown={e => { if (e.key === "Enter") submitIntermittent(); }}
-                      style={{ background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "12px 14px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", textAlign: "center" }} />
-                    <button type="button" onClick={submitIntermittent} disabled={intermittentSending}
-                      style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "12px", fontSize: 14, fontWeight: 700, cursor: intermittentSending ? "default" : "pointer", fontFamily: "inherit", opacity: intermittentSending ? 0.6 : 1 }}>
-                      {intermittentSending ? "…" : "Préviens-moi 🐾"}
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div style={{ color: "white", fontSize: 21, fontWeight: 700, lineHeight: 1.3, marginBottom: 8 }}>C'est noté, merci !</div>
-                  <div style={{ color: "#8BA5C0", fontSize: 14, lineHeight: 1.6 }}>Je te préviens dès qu'Hector est prêt à compter tes heures. À très vite. 🐾</div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     );
   }
