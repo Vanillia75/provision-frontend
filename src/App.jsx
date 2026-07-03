@@ -9216,7 +9216,10 @@ function AppInner() {
             </svg>
           </button>
           <Logo size={28} dark />
-          <div style={{ width: 40 }} />
+          <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")} aria-label="Passer en mode intermittent"
+            style={{ background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 8, height: 40, padding: "0 10px", display: "flex", alignItems: "center", gap: 6, color: "#5DCAA5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0, opacity: statutSaving ? 0.6 : 1 }}>
+            <i className="ti ti-movie" aria-hidden="true" style={{ fontSize: 16 }} /> Intermittent
+          </button>
         </div>
       )}
 
@@ -9356,6 +9359,16 @@ function AppInner() {
       </aside>
 
       <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: "#07192E" }}>
+        {/* Barre du haut (desktop) — miroir de celle du mode intermittent : badge + bascule. */}
+        {!isMobile && (
+          <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "-28px -32px 24px" }}>
+            <span style={{ fontSize: 12, color: "#7FB8F0", fontWeight: 600, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode auto-entrepreneur</span>
+            <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")}
+              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
+              {statutSaving ? "…" : "Mode intermittent →"}
+            </button>
+          </nav>
+        )}
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
         {error && <div style={S.errorBanner}>{error}</div>}
 
