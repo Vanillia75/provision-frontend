@@ -6713,6 +6713,55 @@ function AppInner() {
                 )}
               </div>
 
+              {/* ══ HECTOR VÉRIFIE TA DÉCISION (contrôle de conformité — la feature volée au concurrent, en humain) ══
+                   Reconstitution d'Hector vs le chiffre officiel de France Travail, écart expliqué,
+                   drapeau estimation. Ne s'affiche que si l'utilisateur a saisi sa notif (heures_reference). */}
+              {c.allocation && c.allocation.heures_reference != null && (() => {
+                const ftH = c.allocation.heures_reference;
+                const hectorH = c.total_heures;
+                const ecart = Math.round(hectorH - ftH);
+                const coherentH = Math.abs(ecart) <= 5;
+                return (
+                  <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                      <span style={{ fontSize: 18 }}>🔍</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Hector vérifie ta décision</div>
+                    </div>
+
+                    {/* Les heures */}
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong>. À partir de ce que tu as saisi, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, borderRadius: 8, padding: "9px 11px",
+                      background: coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
+                      border: `1px solid ${coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
+                      color: coherentH ? "#9FE1CB" : "#F0C078" }}>
+                      {coherentH
+                        ? "✓ On tombe pareil — ta décision est cohérente avec ce que tu as déclaré."
+                        : ecart < 0
+                          ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi. Le plus probable : il te manque des AEM à scanner — je ne vois que ce que tu me déclares. Ajoute-les et on revérifie ensemble.</>
+                          : <>Écart de <strong>{ecart} h en plus</strong> chez moi. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
+                    </div>
+                    {c.jours_allonges > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: "#8FB4D8", fontStyle: "italic" }}>
+                        (dont {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""} de fractionnement pris en compte)
+                      </div>
+                    )}
+
+                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel) */}
+                    {c.allocation.affichable && c.allocation.montant_officiel != null && (
+                      <div style={{ marginTop: 10, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Allocation : je recalcule <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_nette)}</strong>, ta notification indique <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.montant_officiel)}</strong> — {c.allocation.coherent_officiel ? <span style={{ color: "#9FE1CB", fontWeight: 700 }}>cohérent ✓</span> : <span style={{ color: "#F0C078", fontWeight: 700 }}>écart à vérifier</span>}.
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 11, color: "#7E97B3", lineHeight: 1.5 }}>
+                      Ces contrôles sont des <strong style={{ color: "#9FB6CE" }}>estimations</strong> à partir de tes saisies. <strong style={{ color: "#9FB6CE" }}>France Travail reste seul juge</strong> — c'est un outil pour t'aider à repérer un point à vérifier, pas une contestation officielle.
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ── Brique 5.3 : la frise des paliers (Progression) ── */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px" }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>Progression</div>
