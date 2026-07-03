@@ -29,6 +29,10 @@ export function heuresDe(activite) {
   const t = activite.type_activite;
   if (t === "heures") return n;
   if (t === "cachet_isole" || t === "cachet_groupe" || t === "cachet") return n * valeurDe("cachetHeures");
+  // Formation suivie : heure pour heure ICI (conversion brute d'une ligne).
+  // Le plafond des 338h est GLOBAL par fenêtre : il s'applique dans heuresFenetre,
+  // jamais ligne par ligne (jumeau de heures_de() backend).
+  if (t === "formation") return n;
   return 0; // type inconnu : on ne devine pas (comme le backend)
 }
 
@@ -94,9 +98,19 @@ export function heuresFenetre(activites, aujourdhui = new Date()) {
   const fenetreJours = valeurDe("periodeReferenceJours") || 365;
   const borneBasse = new Date(aujourdhui);
   borneBasse.setDate(borneBasse.getDate() - fenetreJours);
+  // Plafond formation : les heures de formation suivie sont assimilées dans la
+  // limite de 338h par fenêtre (plafond GLOBAL, jumeau de _compter_sur_fenetre backend).
+  const plafondFormation = valeurDe("formationPlafondNouvelleAdmission") || 338;
+  let formationRetenue = 0;
   return (activites || []).reduce((s, a) => {
     const d = new Date(a.date);
     if (isNaN(d) || d < borneBasse || d > aujourdhui) return s;
-    return s + heuresDe(a);
+    let h = heuresDe(a);
+    if (a.type_activite === "formation") {
+      const reste = Math.max(0, plafondFormation - formationRetenue);
+      h = Math.min(h, reste);
+      formationRetenue += h;
+    }
+    return s + h;
   }, 0);
 }

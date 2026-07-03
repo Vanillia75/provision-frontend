@@ -5795,9 +5795,11 @@ function AppInner() {
     const moisDecl = new Date(maintenant.getFullYear(), maintenant.getMonth() + decalageMois, 1);
     const moisDeclLabel = `${MOIS_FR[moisDecl.getMonth()]} ${moisDecl.getFullYear()}`;
     const moisDeclNom = MOIS_FR[moisDecl.getMonth()];
-    // Activités tombant dans le mois à déclarer
+    // Activités tombant dans le mois à déclarer. Les formations suivies sont EXCLUES :
+    // elles comptent pour les 507h mais ne sont pas des heures travaillées chez un
+    // employeur — France Travail les déclare via la case « en formation », pas ici.
     const actusDuMois = (interActivites || []).filter(a => {
-      if (!a || !a.date) return false;
+      if (!a || !a.date || a.type_activite === "formation") return false;
       const d = new Date(a.date);
       return !isNaN(d) && d.getMonth() === moisDecl.getMonth() && d.getFullYear() === moisDecl.getFullYear();
     });
@@ -6839,6 +6841,10 @@ function AppInner() {
                               {aEmp ? (
                                 <div style={{ fontSize: 13, color: "#E8F4FF", display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
                                   <i className="ti ti-building" aria-hidden="true" style={{ fontSize: 15, color: "#7FB8F0" }} />{a.employeur}
+                                </div>
+                              ) : a.type_activite === "formation" ? (
+                                <div style={{ fontSize: 13, color: "#9FCBF5", display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
+                                  <i className="ti ti-school" aria-hidden="true" style={{ fontSize: 15 }} /> Formation suivie
                                 </div>
                               ) : (
                                 <div onClick={() => { setInterEditId(a.id); setInterEditForm({ date: a.date, type_activite: a.type_activite, nombre: a.nombre, employeur: "", estime: a.estime === true }); setInterNav("activites"); }}
@@ -8110,6 +8116,7 @@ function AppInner() {
                     style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                     <option value="cachet_isole">cachets (12h)</option>
                     <option value="heures">heures</option>
+                    <option value="formation">heures de formation</option>
                   </select>
                 </div>
                 <button type="button" disabled={simLoading} onClick={handleSimuler}
@@ -8273,11 +8280,12 @@ function AppInner() {
                         style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                         <option value="cachet_isole">Cachet (artiste · 12h)</option>
                         <option value="heures">Heures (technicien)</option>
+                        <option value="formation">Formation suivie (plafond 338h)</option>
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
-                        placeholder={interForm.type_activite === "heures" ? "Nb d'heures" : "Nb de cachets"}
+                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       <input type="text" value={interForm.employeur} onChange={e => setInterForm({ ...interForm, employeur: e.target.value })}
                         placeholder="Employeur (optionnel)"
@@ -8350,6 +8358,7 @@ function AppInner() {
                     </div>
                     {interActivites.map(a => {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
+                        a.type_activite === "formation" ? `${a.nombre}h formation` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
                       // Mode édition de cette ligne
                       if (interEditId === a.id) {
@@ -8362,6 +8371,7 @@ function AppInner() {
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                                 <option value="heures">heures réelles</option>
                                 <option value="cachet_isole">cachets (artiste · 12h)</option>
+                                <option value="formation">formation suivie</option>
                               </select>
                             </div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
@@ -8388,7 +8398,8 @@ function AppInner() {
                           </div>
                         );
                       }
-                      const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" : "Cachets";
+                      const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
+                        a.type_activite === "formation" ? "Formation suivie" : "Cachets";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
                       return (
