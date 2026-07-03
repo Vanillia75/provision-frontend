@@ -5863,7 +5863,7 @@ function AppInner() {
       { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
     ];
     const interSidebar = (
-      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: "100vh" }}>
+      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
         <div style={{ padding: "4px 8px 16px" }}><Logo size={30} dark /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {interMenuItems.map(item => {
@@ -5986,7 +5986,7 @@ function AppInner() {
         {/* Sidebar mobile (drawer) */}
         {isMobile && interMenuOpen && (
           <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.5)" }} onClick={() => setInterMenuOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, height: "100vh", zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>{interSidebar}</div>
+            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>{interSidebar}</div>
           </div>
         )}
 
@@ -9495,7 +9495,7 @@ function AppInner() {
       <aside
         style={{
           ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, height: "100vh", width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch" }
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
           background: "#07192E",
         }}
