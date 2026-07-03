@@ -6414,6 +6414,16 @@ function AppInner() {
                       <span>Objectif · {c.seuil}h</span>
                     </div>
 
+                    {/* Compteur incluant un arrêt assimilé → estimation assumée (Loi X) */}
+                    {c.arret_estimation && (
+                      <div style={{ marginTop: 12, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 10, padding: "11px 13px" }}>
+                        <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
+                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé à 5h/jour</strong>. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong> — vérifie avec eux.
+                        </div>
+                      </div>
+                    )}
+
                     {/* Invitation à renseigner la date anniversaire si absente */}
                     {!c.date_anniversaire && (
                       <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 10, padding: "11px 13px" }}>
@@ -8415,22 +8425,37 @@ function AppInner() {
                         <option value="cachet_isole">Cachet (artiste · 12h)</option>
                         <option value="heures">Heures (technicien)</option>
                         <option value="formation">Formation suivie (plafond 338h)</option>
+                        <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
+                          <option value="arret_maternite">Congé maternité / adoption</option>
+                          <option value="arret_accident">Accident du travail (AT/MP)</option>
+                          <option value="arret_ald">Maladie longue durée (ALD)</option>
+                          <option value="arret_suspension">Arrêt pendant un contrat</option>
+                        </optgroup>
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
-                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : "Nb d'heures"}
+                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       <input type="text" value={interForm.employeur} onChange={e => setInterForm({ ...interForm, employeur: e.target.value })}
                         placeholder="Employeur (optionnel)"
                         style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                     </div>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 8, padding: "9px 11px" }}>
-                      <i className="ti ti-info-circle" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
-                      <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.45 }}>
-                        Ajoute ici uniquement tes contrats <strong style={{ color: "#C8E0F5" }}>déjà réalisés ou déjà signés</strong>. Pour tester un contrat possible, utilise le simulateur <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
+                    {(interForm.type_activite || "").startsWith("arret_") ? (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 8, padding: "9px 11px" }}>
+                        <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
+                          Un arrêt <strong style={{ color: "#FCE0A8" }}>indemnisé</strong> compte <strong style={{ color: "#FCE0A8" }}>5h par jour</strong> (week-ends inclus) vers tes 507h. C'est une <strong style={{ color: "#FCE0A8" }}>estimation</strong> : ça vaut si l'arrêt était bien indemnisé et si tu as retravaillé après. Une maladie ordinaire entre deux contrats, elle, n'ajoute pas d'heures — vérifie toujours avec France Travail.
+                        </div>
                       </div>
-                    </div>
+                    ) : (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 8, padding: "9px 11px" }}>
+                        <i className="ti ti-info-circle" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.45 }}>
+                          Ajoute ici uniquement tes contrats <strong style={{ color: "#C8E0F5" }}>déjà réalisés ou déjà signés</strong>. Pour tester un contrat possible, utilise le simulateur <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
+                        </div>
+                      </div>
+                    )}
                     <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer", background: interForm.estime ? "rgba(55,138,221,0.10)" : "rgba(255,255,255,0.02)", border: "1px solid " + (interForm.estime ? "rgba(55,138,221,0.4)" : "rgba(255,255,255,0.1)"), borderRadius: 8, padding: "10px 12px" }}>
                       <input type="checkbox" checked={!!interForm.estime} onChange={e => setInterForm({ ...interForm, estime: e.target.checked })}
                         style={{ marginTop: 2, width: 16, height: 16, accentColor: "#378ADD", flexShrink: 0, cursor: "pointer" }} />
@@ -8493,6 +8518,7 @@ function AppInner() {
                     {interActivites.map(a => {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "formation" ? `${a.nombre}h formation` :
+                        (a.type_activite || "").startsWith("arret_") ? `${a.nombre} j arrêt → ${Math.round((a.nombre || 0) * 5)}h` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
                       // Mode édition de cette ligne
                       if (interEditId === a.id) {
@@ -8506,6 +8532,12 @@ function AppInner() {
                                 <option value="heures">heures réelles</option>
                                 <option value="cachet_isole">cachets (artiste · 12h)</option>
                                 <option value="formation">formation suivie</option>
+                                <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
+                                  <option value="arret_maternite">congé maternité / adoption</option>
+                                  <option value="arret_accident">accident du travail (AT/MP)</option>
+                                  <option value="arret_ald">maladie longue durée (ALD)</option>
+                                  <option value="arret_suspension">arrêt pendant un contrat</option>
+                                </optgroup>
                               </select>
                             </div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
@@ -8532,8 +8564,10 @@ function AppInner() {
                           </div>
                         );
                       }
+                      const ARRET_LABELS = { arret_maternite: "Congé maternité / adoption", arret_accident: "Accident du travail", arret_ald: "Maladie longue durée (ALD)", arret_suspension: "Arrêt pendant un contrat" };
                       const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
-                        a.type_activite === "formation" ? "Formation suivie" : "Cachets";
+                        a.type_activite === "formation" ? "Formation suivie" :
+                        ARRET_LABELS[a.type_activite] || "Cachets";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
                       return (

@@ -110,6 +110,15 @@ export const REGLES = {
     commentaire: "Les heures de formation SUIVIE comptent comme des heures de travail dans la limite des 2/3 du seuil requis : 2/3 × 507 = 338h. Plafond GLOBAL sur la fenêtre de 12 mois (pas par formation). Conséquence : la formation seule ne peut jamais ouvrir des droits (338 < 507). NB : l'enseignement DISPENSÉ (70h, 120h si ≥50 ans) est une règle distincte, volontairement NON codée pour l'instant.",
   },
 
+  assimilationArretParJour: {
+    valeur: 5,
+    libelle: "Heures assimilées par jour d'arrêt (maternité, adoption, AT/MP, ALD, suspension de contrat)",
+    source: "Guide France Travail Intermittents p.8 et p.9 ; matermittentes.com. Sourcé le 2026-07-03 — cf. MOTEUR_ARRETS_SOURCES.md.",
+    version: "2026.07",
+    dateAppli: "en vigueur",
+    verifie: true,
+    commentaire: "5h par jour calendaire (week-ends inclus), SANS plafond, pour les arrêts INDEMNISÉS assimilés. Maladie ordinaire hors contrat et paternité : hors périmètre V1 (neutralisation). Conditions non vérifiables par le moteur → apport marqué ESTIMATION.",
+  },
   ajMinimale: {
     valeur: 31.96,
     libelle: "Allocation journalière minimale (paramètre de calcul)",

@@ -33,6 +33,10 @@ export function heuresDe(activite) {
   // Le plafond des 338h est GLOBAL par fenêtre : il s'applique dans heuresFenetre,
   // jamais ligne par ligne (jumeau de heures_de() backend).
   if (t === "formation") return n;
+  // Arrêt assimilé (maternité, AT/MP, ALD, suspension) : 5h par jour, sans plafond.
+  if (t === "arret_maternite" || t === "arret_accident" || t === "arret_ald" || t === "arret_suspension") {
+    return n * (valeurDe("assimilationArretParJour") || 5);
+  }
   return 0; // type inconnu : on ne devine pas (comme le backend)
 }
 
