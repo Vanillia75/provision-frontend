@@ -6305,7 +6305,7 @@ function AppInner() {
                       🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong> — je te l'ai préparée.
                     </div>
                     <button type="button" onClick={() => setInterNav("actu")}
-                      style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                      style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
                       Voir mon récap →
                     </button>
                   </div>
@@ -9563,7 +9563,7 @@ function AppInner() {
           <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "-28px -32px 24px" }}>
             <span style={{ fontSize: 12, color: "#7FB8F0", fontWeight: 600, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode auto-entrepreneur</span>
             <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")}
-              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
+              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "8px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
               {statutSaving ? "…" : "Mode intermittent →"}
             </button>
           </nav>
@@ -9679,7 +9679,7 @@ function AppInner() {
                       </div>
                     )}
                     {/* Lien hérité de l'ancienne carte « Réserve de sécurité » (doublon retiré — la jauge est LA source). */}
-                    <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", marginTop: 4, textAlign: "left" }}>Modifier l'objectif →</button>
+                    <button onClick={() => setNav("profil")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", marginTop: 4, textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Modifier l'objectif →</button>
                   </>
                 );
               })() : (
