@@ -2888,7 +2888,7 @@ function AppInner() {
     setSendInvoiceStatus("");
     setSendInvoiceError("");
     // On n'envoie JAMAIS de message vide : message perso si tapé, sinon le modèle poli.
-    const messageFinal = sendInvoiceMessage.trim() || (invoiceIsOverdue(inv) ? messageRelanceFacture(inv, profilPrenom || profilEntreprise || "") : messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || ""));
+    const messageFinal = sendInvoiceMessage.trim() || (invoiceIsOverdue(inv) ? messageRelanceFacture(inv, signatureEmetteur()) : messageParDefautFacture(inv.client_nom, inv.numero, signatureEmetteur()));
     try {
       const updated = await apiFetch(`/invoices/${inv.id}/send`, {
         method: "POST",
@@ -3249,6 +3249,15 @@ function AppInner() {
 
   // Relance d'impayé pré-rédigée avec les vraies données de la facture.
   // Destinée au CLIENT du testeur → vouvoiement (Loi IX, client-facing).
+  // Signature des mails envoyés aux clients : « Prénom Nom — ENTREPRISE »
+  // (jumeau de _signature_relance côté backend — même format dans les deux circuits).
+  function signatureEmetteur() {
+    const nomPersonne = `${profilPrenom || ""} ${profilNom || ""}`.trim();
+    const entreprise = (profilEntreprise || "").trim();
+    if (nomPersonne && entreprise) return `${nomPersonne} — ${entreprise}`;
+    return nomPersonne || entreprise || "";
+  }
+
   function messageRelanceFacture(inv, emetteur) {
     const salut = inv.client_nom ? `Bonjour ${inv.client_nom},` : "Bonjour,";
     const retard = joursDeRetard(inv);
@@ -11209,7 +11218,7 @@ function AppInner() {
             {viewingInvoice && (() => {
               const inv = viewingInvoice;
               // Message réellement envoyé : perso si tapé, sinon le modèle (aperçu = vérité).
-              const messageFinalFacture = sendInvoiceMessage.trim() || (invoiceIsOverdue(inv) ? messageRelanceFacture(inv, profilPrenom || profilEntreprise || "") : messageParDefautFacture(inv.client_nom, inv.numero, profilPrenom || profilEntreprise || ""));
+              const messageFinalFacture = sendInvoiceMessage.trim() || (invoiceIsOverdue(inv) ? messageRelanceFacture(inv, signatureEmetteur()) : messageParDefautFacture(inv.client_nom, inv.numero, signatureEmetteur()));
               const info = INVOICE_STATUT_INFO[inv.statut] || INVOICE_STATUT_INFO.brouillon;
               const lignes = inv.lignes && inv.lignes.length > 0 ? inv.lignes : [];
               const totalHT = lignes.reduce((s, l) => s + (parseFloat(l.quantite) || 0) * (parseFloat(l.prix_unitaire) || 0), 0);
