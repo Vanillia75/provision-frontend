@@ -1903,6 +1903,19 @@ function AppInner() {
 
   const [profileDetailsSaving, setProfileDetailsSaving] = useState(false);
   const [profileDetailsSaved, setProfileDetailsSaved] = useState(false);
+  const [relanceAutoSaved, setRelanceAutoSaved] = useState(false);
+
+  // Relances automatiques : l'utilisateur choisit la règle (ou la coupe), Hector l'applique.
+  async function saveRelanceAuto(jours) {
+    try {
+      await apiFetch("/profile/relance-auto", { method: "POST", body: JSON.stringify({ jours }) });
+      setProfile(p => (p ? { ...p, relance_auto_jours: jours } : p));
+      setRelanceAutoSaved(true);
+      setTimeout(() => setRelanceAutoSaved(false), 2000);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
 
   async function handleSaveProfileDetails() {
     setProfileDetailsSaving(true);
@@ -11108,7 +11121,7 @@ function AppInner() {
                       <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5" }}>{inv.client_nom}</div>
                       {overdue ? (
                         <div style={{ fontSize: 12, color: "#F09595", marginTop: 2 }}>
-                          <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, verticalAlign: -2 }} /> {inv.numero} · en retard de {joursDeRetard(inv)}j (échéance {formatDate(inv.date_echeance)})
+                          <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, verticalAlign: -2 }} /> {inv.numero} · en retard de {joursDeRetard(inv)}j (échéance {formatDate(inv.date_echeance)}){inv.relance_envoyee_le ? ` · relancée le ${formatDate(inv.relance_envoyee_le)} 🐾` : ""}
                         </div>
                       ) : (
                         <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>
@@ -11233,7 +11246,9 @@ function AppInner() {
                       ) : (
                         <>
                           <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyée à <strong>{inv.client_email}</strong></p>
-                          {invoiceIsOverdue(inv) ? (
+                          {invoiceIsOverdue(inv) && inv.relance_envoyee_le ? (
+                            <p style={{ fontSize: 12, color: "#5DCAA5", margin: "0 0 8px", lineHeight: 1.5 }}>🐾 J'ai déjà relancé ce client le {formatDate(inv.relance_envoyee_le)}. Si tu veux insister, personnalise le message ci-dessous — rien ne part sans toi.</p>
+                          ) : invoiceIsOverdue(inv) ? (
                             <p style={{ fontSize: 12, color: "#FAC775", margin: "0 0 8px", lineHeight: 1.5 }}>🐾 Cette facture a {joursDeRetard(inv)} jour{joursDeRetard(inv) > 1 ? "s" : ""} de retard — je t'ai préparé la relance (aperçu ci-dessous). Tu peux la personnaliser, et rien ne part sans toi.</p>
                           ) : (
                             <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
@@ -11896,6 +11911,21 @@ function AppInner() {
                     </button>
                   ))}
                 </div>
+              </div>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>✉️ Relances automatiques <span style={{ fontSize: 12, color: relanceAutoSaved ? "#1D9E75" : "transparent", fontWeight: 600 }}>✓ enregistré</span></div>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "-8px 0 12px", lineHeight: 1.55 }}>
+                Si tu l'actives, je relance moi-même tes clients quand une facture dépasse le délai choisi — une seule relance par facture, jamais plus, et chaque envoi est visible sur la facture. Désactivé, je continue simplement de te préparer les relances : c'est toi qui envoies.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[{ v: null, l: "Désactivées" }, { v: 7, l: "Après 7 jours" }, { v: 15, l: "Après 15 jours" }, { v: 30, l: "Après 30 jours" }].map(o => (
+                  <button key={String(o.v)} type="button" onClick={() => saveRelanceAuto(o.v)}
+                    style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "8px 14px", ...((profile?.relance_auto_jours ?? null) === o.v ? S.toggleBtnActive : {}) }}>
+                    {o.l}
+                  </button>
+                ))}
               </div>
             </div>
 
