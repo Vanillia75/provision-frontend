@@ -8474,6 +8474,7 @@ function AppInner() {
                         <option value="cachet_isole">Cachet (artiste · 12h)</option>
                         <option value="heures">Heures (technicien)</option>
                         <option value="formation">Formation suivie (plafond 338h)</option>
+                        <option value="enseignement">Enseignement dispensé (plafond 70h)</option>
                         <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
                           <option value="arret_maternite">Congé maternité / adoption</option>
                           <option value="arret_accident">Accident du travail (AT/MP)</option>
@@ -8579,6 +8580,7 @@ function AppInner() {
                       const estArretNeutralise = a.type_activite === "arret_maladie_ordinaire" || a.type_activite === "arret_paternite";
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "formation" ? `${a.nombre}h formation` :
+                        a.type_activite === "enseignement" ? `${a.nombre}h enseignement` :
                         estArretNeutralise ? `${a.nombre} j → 0h (allonge)` :
                         (a.type_activite || "").startsWith("arret_") ? `${a.nombre} j arrêt → ${Math.round((a.nombre || 0) * 5)}h` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
@@ -8594,6 +8596,7 @@ function AppInner() {
                                 <option value="heures">heures réelles</option>
                                 <option value="cachet_isole">cachets (artiste · 12h)</option>
                                 <option value="formation">formation suivie</option>
+                                <option value="enseignement">enseignement dispensé</option>
                                 <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
                                   <option value="arret_maternite">congé maternité / adoption</option>
                                   <option value="arret_accident">accident du travail (AT/MP)</option>
@@ -8633,6 +8636,7 @@ function AppInner() {
                       const ARRET_LABELS = { arret_maternite: "Congé maternité / adoption", arret_accident: "Accident du travail", arret_ald: "Maladie longue durée (ALD)", arret_suspension: "Arrêt pendant un contrat", arret_maladie_ordinaire: "Maladie ordinaire (allonge la période)", arret_paternite: "Congé paternité (allonge la période)" };
                       const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
                         a.type_activite === "formation" ? "Formation suivie" :
+                        a.type_activite === "enseignement" ? "Enseignement dispensé" :
                         ARRET_LABELS[a.type_activite] || "Cachets";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;

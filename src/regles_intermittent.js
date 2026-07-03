@@ -110,6 +110,15 @@ export const REGLES = {
     commentaire: "Les heures de formation SUIVIE comptent comme des heures de travail dans la limite des 2/3 du seuil requis : 2/3 × 507 = 338h. Plafond GLOBAL sur la fenêtre de 12 mois (pas par formation). Conséquence : la formation seule ne peut jamais ouvrir des droits (338 < 507). NB : l'enseignement DISPENSÉ (70h, 120h si ≥50 ans) est une règle distincte, volontairement NON codée pour l'instant.",
   },
 
+  enseignementPlafond: {
+    valeur: 70,
+    libelle: "Plafond d'heures d'enseignement dispensé assimilées",
+    source: "Guide France Travail Intermittents p.8-9 (enseignement limité à 70h, 120h si ≥50 ans ; total formation + enseignement ≤ 338h). Sourcé le 2026-07-03.",
+    version: "2026.07",
+    dateAppli: "en vigueur",
+    verifie: true,
+    commentaire: "Heures d'enseignement dispensé comptées heure pour heure, plafonnées à 70h, ET plafond partagé de 338h avec la formation. Cas 120h (≥50 ans) HORS V1 (pas de date de naissance). Estimation (conditions FT non vérifiables).",
+  },
   assimilationArretParJour: {
     valeur: 5,
     libelle: "Heures assimilées par jour d'arrêt (maternité, adoption, AT/MP, ALD, suspension de contrat)",

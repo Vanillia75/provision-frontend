@@ -33,6 +33,8 @@ export function heuresDe(activite) {
   // Le plafond des 338h est GLOBAL par fenêtre : il s'applique dans heuresFenetre,
   // jamais ligne par ligne (jumeau de heures_de() backend).
   if (t === "formation") return n;
+  // Enseignement dispensé : heure pour heure ; plafonds (70h + partage 338h) dans heuresFenetre.
+  if (t === "enseignement") return n;
   // Arrêt assimilé (maternité, AT/MP, ALD, suspension) : 5h par jour, sans plafond.
   if (t === "arret_maternite" || t === "arret_accident" || t === "arret_ald" || t === "arret_suspension") {
     return n * (valeurDe("assimilationArretParJour") || 5);
@@ -105,18 +107,21 @@ export function heuresFenetre(activites, aujourdhui = new Date()) {
   const fenetreJours = valeurDe("periodeReferenceJours") || 365;
   const borneBasse = new Date(aujourdhui);
   borneBasse.setDate(borneBasse.getDate() - fenetreJours);
-  // Plafond formation : les heures de formation suivie sont assimilées dans la
-  // limite de 338h par fenêtre (plafond GLOBAL, jumeau de _compter_sur_fenetre backend).
-  const plafondFormation = valeurDe("formationPlafondNouvelleAdmission") || 338;
-  let formationRetenue = 0;
+  // Plafond de 338h PARTAGÉ formation + enseignement (jumeau de _compter_sur_fenetre) ;
+  // l'enseignement a en plus son sous-plafond propre de 70h.
+  const plafondPartage = valeurDe("formationPlafondNouvelleAdmission") || 338;
+  const plafondEnseignement = valeurDe("enseignementPlafond") || 70;
+  let formationRetenue = 0, enseignementRetenue = 0;
   return (activites || []).reduce((s, a) => {
     const d = new Date(a.date);
     if (isNaN(d) || d < borneBasse || d > aujourdhui) return s;
     let h = heuresDe(a);
     if (a.type_activite === "formation") {
-      const reste = Math.max(0, plafondFormation - formationRetenue);
-      h = Math.min(h, reste);
+      h = Math.min(h, Math.max(0, plafondPartage - (formationRetenue + enseignementRetenue)));
       formationRetenue += h;
+    } else if (a.type_activite === "enseignement") {
+      h = Math.min(h, Math.max(0, plafondPartage - (formationRetenue + enseignementRetenue)), Math.max(0, plafondEnseignement - enseignementRetenue));
+      enseignementRetenue += h;
     }
     return s + h;
   }, 0);
