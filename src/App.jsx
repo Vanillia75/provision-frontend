@@ -649,14 +649,18 @@ function AppInner() {
   const recognitionRef = useRef(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [panique, setPanique] = useState({ solde: "", impots: "0", cfe: "0", dettes: "0" });
-  // Toast global "✓ Sauvegardé" qui apparaît brièvement après une modification réussie
+  // Toast global qui apparaît brièvement (confirmation d'action). Message + icône
+  // personnalisables ; showSavedToast() garde le comportement historique "enregistré".
   const [savedToast, setSavedToast] = useState(false);
+  const [toastContent, setToastContent] = useState({ msg: "Modification enregistrée", icon: "ti-check" });
   const savedToastTimerRef = useRef(null);
-  const showSavedToast = () => {
+  const showToast = (msg = "Modification enregistrée", icon = "ti-check") => {
+    setToastContent({ msg, icon });
     setSavedToast(true);
     if (savedToastTimerRef.current) clearTimeout(savedToastTimerRef.current);
     savedToastTimerRef.current = setTimeout(() => setSavedToast(false), 2800);
   };
+  const showSavedToast = () => showToast();
   const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const [tvaSaving, setTvaSaving] = useState(false);
@@ -2861,6 +2865,31 @@ function AppInner() {
 
   const [loadingPdf, setLoadingPdf] = useState(false);
 
+  // Ouverture d'un PDF, fiable y compris en app Android (TWA).
+  // En TWA, window.open(blob:) renvoie une fenêtre non-nulle mais BLANCHE (le blob
+  // appartient au contexte WebView) : on ne peut donc pas se fier à `!w`. On détecte
+  // le contexte Android-app et on télécharge directement (le lecteur PDF du téléphone
+  // prend le relais), avec un toast dans la voix d'Hector — car un téléchargement
+  // Android silencieux ressemble à un bug. Ailleurs : nouvel onglet, repli download.
+  function ouvrirOuTelechargerPdf(blob, filename, toastLabel) {
+    const url = URL.createObjectURL(blob);
+    const isAndroidApp = /Android/.test(navigator.userAgent) &&
+      (window.matchMedia("(display-mode: standalone)").matches || document.referrer.startsWith("android-app://"));
+    const telecharger = () => {
+      const a = document.createElement("a");
+      a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+    };
+    if (isAndroidApp) {
+      telecharger();
+      showToast(toastLabel, "ti-download");
+    } else {
+      const w = window.open(url, "_blank");
+      if (!w) telecharger();
+    }
+    setTimeout(() => URL.revokeObjectURL(url), 60000);  // libère la mémoire
+  }
+
   async function handleViewInvoicePdf(inv) {
     setLoadingPdf(true);
     setError("");
@@ -2873,14 +2902,8 @@ function AppInner() {
         throw new Error(body.detail || "Impossible de générer le PDF");
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      // Dans l'app Android (TWA), window.open peut être bloqué → repli : téléchargement direct.
-      const w = window.open(url, "_blank");
-      if (!w) {
-        const a = document.createElement("a");
-        a.href = url; a.download = `facture-${inv.numero || "hector"}.pdf`;
-        document.body.appendChild(a); a.click(); a.remove();
-      }
+      ouvrirOuTelechargerPdf(blob, `facture-${inv.numero || "hector"}.pdf`,
+        "Ta facture est téléchargée — regarde tes notifications 🐾");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -2900,13 +2923,8 @@ function AppInner() {
         throw new Error(body.detail || "Impossible de générer le PDF");
       }
       const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      const w = window.open(url, "_blank");
-      if (!w) {
-        const a = document.createElement("a");
-        a.href = url; a.download = `devis-${q.numero || "hector"}.pdf`;
-        document.body.appendChild(a); a.click(); a.remove();
-      }
+      ouvrirOuTelechargerPdf(blob, `devis-${q.numero || "hector"}.pdf`,
+        "Ton devis est téléchargé — regarde tes notifications 🐾");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -12649,14 +12667,14 @@ function AppInner() {
         </div>
       )}
 
-      {/* Toast global "✓ Sauvegardé" */}
+      {/* Toast global (confirmation d'action, message + icône dynamiques) */}
       {savedToast && (
         <div style={{ position: "fixed", top: 24, left: "50%", transform: "translateX(-50%)", zIndex: 9999,
           background: "#1D9E75", color: "white", padding: "12px 22px", borderRadius: 99,
           fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", gap: 10,
-          boxShadow: "0 8px 28px rgba(29,158,117,0.4)", animation: "fadeInUp 0.3s ease-out" }}>
-          <i className="ti ti-check" aria-hidden="true" style={{ fontSize: 18 }} />
-          Modification enregistrée
+          boxShadow: "0 8px 28px rgba(29,158,117,0.4)", animation: "fadeInUp 0.3s ease-out", maxWidth: "90vw" }}>
+          <i className={`ti ${toastContent.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {toastContent.msg}
         </div>
       )}
     </div>
