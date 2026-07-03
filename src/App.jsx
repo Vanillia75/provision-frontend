@@ -2630,14 +2630,11 @@ function AppInner() {
   }
 
   function ouvrirAllocEdit(alloc) {
-    // [DIAG TEMPORAIRE] à retirer après diagnostic du bouton « Modifier mes chiffres ».
-    console.log("[alloc][diag] ouvrirAllocEdit reçu", { annexe: alloc?.annexe, sr: alloc?.salaire_reference, nht: alloc?.heures_reference });
     // Pré-remplit avec les valeurs déjà saisies, si elles existent.
     setAllocAnnexe(alloc?.annexe || "annexe10");
     setAllocSR(alloc?.salaire_reference != null ? String(alloc.salaire_reference) : "");
     setAllocNHT(alloc?.heures_reference != null ? String(alloc.heures_reference) : "");
     setAllocEdit(true);
-    console.log("[alloc][diag] setAllocEdit(true) demandé → le formulaire devrait apparaître");
   }
 
   async function handleSaveAllocation() {
