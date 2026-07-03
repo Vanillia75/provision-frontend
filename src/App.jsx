@@ -6681,7 +6681,7 @@ function AppInner() {
                     </div>
 
                     <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 12 }}>
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 12 }}>
                       Modifier mes chiffres
                     </button>
                   </div>
@@ -6696,7 +6696,7 @@ function AppInner() {
                         : <>Je sais recalculer l'allocation des <strong style={{ color: "#C8E0F5" }}>artistes</strong> avec certitude (validé sur de vraies notifications). Pour un profil <strong style={{ color: "#C8E0F5" }}>technicien</strong>, je préfère attendre d'avoir vérifié mon calcul sur un vrai courrier avant de t'afficher un montant. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>}
                     </div>
                     <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 }}>
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 }}>
                       Modifier mes chiffres
                     </button>
                   </div>
@@ -7076,7 +7076,7 @@ function AppInner() {
                         <div style={{ fontSize: 13.5, fontWeight: 600, color: "#FAE3B6", lineHeight: 1.4 }}>Il me manque {aemManquantes.length} AEM</div>
                         <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2, lineHeight: 1.45 }}>{aemManquantes.map(e => e.nom).join(", ")} — sans elle{aemManquantes.length > 1 ? "s" : ""}, ces heures ne comptent pas.</div>
                         <div style={{ display: "flex", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
-                          <button type="button" onClick={() => setInterNav("activites")} style={{ fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, cursor: "pointer", borderRadius: 7, padding: "6px 11px", border: "1px solid #FAC775", background: "#FAC775", color: "#412402" }}>Voir mes activités</button>
+                          <button type="button" onClick={() => setInterNav("activites")} style={{ fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, cursor: "pointer", borderRadius: 7, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", border: "1px solid #FAC775", background: "#FAC775", color: "#412402" }}>Voir mes activités</button>
                         </div>
                       </div>
                     </div>
@@ -10142,8 +10142,8 @@ function AppInner() {
                           le vrai calcul (3 niveaux de prudence) vit sur l'écran « Combien puis-je me verser ? ». */}
                       <div style={{ fontSize: 12, color: "#C2E6D8", lineHeight: 1.55, marginBottom: 10 }}>Tu es en bonne posture 🐾 Ton disponible est à jour tout en haut.</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>💸 Combien puis-je me verser ? →</button>
-                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>🛒 Simuler un achat →</button>
+                        <button onClick={() => setNav("salaire")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>💸 Combien puis-je me verser ? →</button>
+                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>🛒 Simuler un achat →</button>
                       </div>
                     </>
                   ) : niveauFinancier === "orange" ? (
@@ -10152,8 +10152,8 @@ function AppInner() {
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#FAC775", marginBottom: 2 }}>{formatEUR(manqueReserveDashboard)}</div>
                       <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>manquants pour atteindre ta réserve</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>Analyser la situation →</button>
-                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>Demander à Hector →</button>
+                        <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Analyser la situation →</button>
+                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Demander à Hector →</button>
                       </div>
                     </>
                   ) : (
@@ -10162,7 +10162,7 @@ function AppInner() {
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#F09595", marginBottom: 2 }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
                       <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>de déficit actuellement</div>
                       <button onClick={() => { setAiInput("Ma trésorerie est dans le rouge. Qu'est-ce que je peux faire concrètement ?"); setNav("assistant"); }}
-                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>En parler à Hector →</button>
+                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>En parler à Hector →</button>
                     </>
                   )}
                 </div>
@@ -10178,7 +10178,7 @@ function AppInner() {
                   </div>
                   <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(Math.max(0, (estimateData.plafond || 77700) - (estimateData.ca_annuel || 0)))}</div>
                   <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>encore encaissables avant le plafond</div>
-                  <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", textAlign: "left" }}>Voir le simulateur fiscal →</button>
+                  <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Voir le simulateur fiscal →</button>
                 </div>
 
                 {/* (Carte « Réserve de sécurité » retirée : doublon de la jauge de réserve plus haut,
