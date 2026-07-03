@@ -6280,6 +6280,26 @@ function AppInner() {
                 )}
               </div>
 
+              {/* ═══ RAPPEL D'ACTUALISATION DATÉ — présence au bon moment (fenêtre 28 → ~15).
+                  Date volontairement approximative (« ~15 ») : le calendrier exact varie selon
+                  France Travail — approximation assumée, jamais une promesse (Loi I). ═══ */}
+              {actuOuverte && !dejaActualise && (() => {
+                const moisSuivant = new Date(moisDecl.getFullYear(), moisDecl.getMonth() + 1, 1);
+                const nomMoisDecl = moisDecl.toLocaleDateString("fr-FR", { month: "long" });
+                const nomMoisLimite = moisSuivant.toLocaleDateString("fr-FR", { month: "long" });
+                return (
+                  <div style={{ background: "#0a1322", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 14, padding: "13px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 220, fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>
+                      🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong> — je te l'ai préparée.
+                    </div>
+                    <button type="button" onClick={() => setInterNav("actu")}
+                      style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                      Voir mon récap →
+                    </button>
+                  </div>
+                );
+              })()}
+
               {/* ═══ NEXT ACTION UNIQUE ═══ */}
               <button type="button" onClick={() => setInterNav(nextAction.nav)}
                 style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
