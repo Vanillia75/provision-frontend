@@ -37,6 +37,9 @@ export function heuresDe(activite) {
   if (t === "arret_maternite" || t === "arret_accident" || t === "arret_ald" || t === "arret_suspension") {
     return n * (valeurDe("assimilationArretParJour") || 5);
   }
+  // Arrêt neutralisé (maladie ordinaire, paternité) : 0h — il allonge la fenêtre
+  // (géré côté backend), il n'ajoute pas d'heures. Jumeau de heures_de().
+  if (t === "arret_maladie_ordinaire" || t === "arret_paternite") return 0;
   return 0; // type inconnu : on ne devine pas (comme le backend)
 }
 

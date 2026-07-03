@@ -6419,7 +6419,7 @@ function AppInner() {
                       <div style={{ marginTop: 12, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 10, padding: "11px 13px" }}>
                         <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
                         <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
-                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé à 5h/jour</strong>. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong> — vérifie avec eux.
+                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé</strong>{c.jours_allonges > 0 ? <> et ta période de recherche est <strong style={{ color: "#FCE0A8" }}>allongée de {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""}</strong> (fractionnement)</> : null}. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong> — vérifie avec eux.
                         </div>
                       </div>
                     )}
@@ -8431,6 +8431,10 @@ function AppInner() {
                           <option value="arret_ald">Maladie longue durée (ALD)</option>
                           <option value="arret_suspension">Arrêt pendant un contrat</option>
                         </optgroup>
+                        <optgroup label="Arrêt qui allonge la période (0h · estimation)">
+                          <option value="arret_maladie_ordinaire">Maladie ordinaire (entre 2 contrats)</option>
+                          <option value="arret_paternite">Congé paternité</option>
+                        </optgroup>
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -8441,7 +8445,14 @@ function AppInner() {
                         placeholder="Employeur (optionnel)"
                         style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                     </div>
-                    {(interForm.type_activite || "").startsWith("arret_") ? (
+                    {(interForm.type_activite === "arret_maladie_ordinaire" || interForm.type_activite === "arret_paternite") ? (
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 8, padding: "9px 11px" }}>
+                        <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
+                          Ce type d'arrêt <strong style={{ color: "#FCE0A8" }}>n'ajoute pas d'heures</strong>, mais il <strong style={{ color: "#FCE0A8" }}>allonge ta période de recherche</strong> du nombre de jours d'arrêt (le « fractionnement ») — des contrats plus anciens peuvent alors compter. C'est une <strong style={{ color: "#FCE0A8" }}>estimation</strong>, valable si l'arrêt était indemnisé. Vérifie avec France Travail.
+                        </div>
+                      </div>
+                    ) : (interForm.type_activite || "").startsWith("arret_") ? (
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 8, padding: "9px 11px" }}>
                         <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
                         <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
@@ -8516,8 +8527,10 @@ function AppInner() {
                       <div style={{ width: 96, flexShrink: 0 }} />
                     </div>
                     {interActivites.map(a => {
+                      const estArretNeutralise = a.type_activite === "arret_maladie_ordinaire" || a.type_activite === "arret_paternite";
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "formation" ? `${a.nombre}h formation` :
+                        estArretNeutralise ? `${a.nombre} j → 0h (allonge)` :
                         (a.type_activite || "").startsWith("arret_") ? `${a.nombre} j arrêt → ${Math.round((a.nombre || 0) * 5)}h` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
                       // Mode édition de cette ligne
@@ -8537,6 +8550,10 @@ function AppInner() {
                                   <option value="arret_accident">accident du travail (AT/MP)</option>
                                   <option value="arret_ald">maladie longue durée (ALD)</option>
                                   <option value="arret_suspension">arrêt pendant un contrat</option>
+                                </optgroup>
+                                <optgroup label="Arrêt qui allonge la période (0h · estimation)">
+                                  <option value="arret_maladie_ordinaire">maladie ordinaire (entre 2 contrats)</option>
+                                  <option value="arret_paternite">congé paternité</option>
                                 </optgroup>
                               </select>
                             </div>
@@ -8564,7 +8581,7 @@ function AppInner() {
                           </div>
                         );
                       }
-                      const ARRET_LABELS = { arret_maternite: "Congé maternité / adoption", arret_accident: "Accident du travail", arret_ald: "Maladie longue durée (ALD)", arret_suspension: "Arrêt pendant un contrat" };
+                      const ARRET_LABELS = { arret_maternite: "Congé maternité / adoption", arret_accident: "Accident du travail", arret_ald: "Maladie longue durée (ALD)", arret_suspension: "Arrêt pendant un contrat", arret_maladie_ordinaire: "Maladie ordinaire (allonge la période)", arret_paternite: "Congé paternité (allonge la période)" };
                       const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
                         a.type_activite === "formation" ? "Formation suivie" :
                         ARRET_LABELS[a.type_activite] || "Cachets";
