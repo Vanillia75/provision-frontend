@@ -6672,18 +6672,21 @@ function AppInner() {
                 {/* État 3a : allocation AFFICHABLE (branche validée) */}
                 {!allocEdit && c.allocation && c.allocation.affichable && (
                   <div style={{ marginTop: 6 }}>
-                    <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
-                      {formatEUR(c.allocation.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(c.allocation.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                      </div>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
                     </div>
-                    <div style={{ fontSize: 12, color: "#5DCAA5", marginTop: 6, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.45 }}>
-                      <i className="ti ti-circle-check" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }} />
-                      <span>Vérifié à partir de ton salaire de référence et de tes heures France Travail.</span>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.45 }}>
+                      <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 14, flexShrink: 0, marginTop: 1, color: "#7FB8F0" }} />
+                      <span>Estimé à partir de ton salaire de référence et de tes heures France Travail.</span>
                     </div>
                     {c.allocation.montant_officiel != null && (
                       <div style={{ fontSize: 11.5, color: c.allocation.coherent_officiel ? "#9FE1CB" : "#F0C078", marginTop: 8, background: c.allocation.coherent_officiel ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)", border: `1px solid ${c.allocation.coherent_officiel ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`, borderRadius: 8, padding: "8px 11px", lineHeight: 1.45 }}>
                         {c.allocation.coherent_officiel
                           ? `✓ Cohérent avec ta notification (${formatEUR(c.allocation.montant_officiel)}) — on tombe pareil.`
-                          : `⚠️ J'obtiens ${formatEUR(c.allocation.aj_nette)}, ta notification indique ${formatEUR(c.allocation.montant_officiel)}. Un écart à vérifier avec France Travail.`}
+                          : `⚠️ Je trouve ${formatEUR(c.allocation.aj_nette)}, ta notification dit ${formatEUR(c.allocation.montant_officiel)}. Ta notification fait foi — vérifions ensemble tes chiffres saisis.`}
                       </div>
                     )}
 
