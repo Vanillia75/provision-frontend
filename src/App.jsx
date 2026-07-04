@@ -441,6 +441,7 @@ function AppInner() {
   const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
   const [aemQueue, setAemQueue] = useState([]); // AEM restantes à valider (si le doc en contenait plusieurs)
   const [aemTotal, setAemTotal] = useState(0); // nb total d'AEM détectées dans le document (pour l'indicateur "1/3")
+  const [aemScanProgress, setAemScanProgress] = useState(null); // { courant, total } — progression quand on scanne PLUSIEURS fichiers d'un coup
   const [aemSaving, setAemSaving] = useState(false);
   const [aemError, setAemError] = useState("");
   // Import attestation ARE (date anniversaire + montant journalier lus, jamais calculés).
@@ -2179,41 +2180,65 @@ function AppInner() {
   // ─── Scan d'AEM : envoie la photo/PDF au backend (Claude Vision), récupère les champs lus ───
   // Le document peut contenir PLUSIEURS attestations (un employeur regroupe souvent tous les
   // contrats du mois dans un seul fichier). On les met en file : on valide la 1ère, puis la suivante.
-  async function handleScanAEM(file) {
+  async function handleScanAEM(input) {
+    // Accepte UN fichier (rétro-compat) OU un tableau de fichiers (sélection multiple).
+    const fichiers = Array.isArray(input) ? input.filter(Boolean) : (input ? [input] : []);
+    if (fichiers.length === 0) return;
     setAemUploading(true);
     setAemError("");
     setAemExtrait(null);
     setAemQueue([]);
     setAemTotal(0);
+    setAemScanProgress(null);
+    aemBatchRef.current = null; // nouveau lot de scan → nouveau batch (delta de la victoire recalculé proprement)
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
-      // Le backend renvoie { aems: [...] }. Compatibilité : si un seul objet arrive, on l'emballe.
-      const liste = Array.isArray(data?.aems) ? data.aems : (data ? [data] : []);
-      if (liste.length === 0) {
-        setAemError("Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette.");
-        return;
-      }
-      // Transforme chaque AEM lue en formulaire éditable.
-      const toForm = (d) => ({
+      // Transforme une AEM lue en formulaire éditable.
+      const toForm = (d, fallbackName) => ({
         employeur: d.employeur || "",
         date: d.date || "",
         date_fin: d.date_fin || "",
         type_activite: d.type_activite || "cachet_isole",
         nombre: d.nombre != null ? String(d.nombre) : "",
         salaire_brut: d.salaire_brut != null ? String(d.salaire_brut) : "",
-        filename: d.filename || file.name,
+        filename: d.filename || fallbackName,
         aem_r2_key: d.aem_r2_key || null,
       });
-      const forms = liste.map(toForm);
-      setAemTotal(forms.length);
-      setAemExtrait(forms[0]);        // la 1ère à valider
-      setAemQueue(forms.slice(1));    // les suivantes en attente
+      // On lit chaque fichier l'un après l'autre et on empile TOUTES les AEM trouvées dans une seule file.
+      const tousLesForms = [];
+      const echecs = [];
+      for (let i = 0; i < fichiers.length; i++) {
+        const file = fichiers[i];
+        if (fichiers.length > 1) setAemScanProgress({ courant: i + 1, total: fichiers.length });
+        try {
+          const form = new FormData();
+          form.append("file", file);
+          const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
+          // Le backend renvoie { aems: [...] }. Compatibilité : si un seul objet arrive, on l'emballe.
+          const liste = Array.isArray(data?.aems) ? data.aems : (data ? [data] : []);
+          if (liste.length === 0) { echecs.push(file.name); continue; }
+          for (const d of liste) tousLesForms.push(toForm(d, file.name));
+        } catch (e) {
+          echecs.push(file.name); // un fichier illisible ne doit pas faire perdre les autres
+        }
+      }
+      if (tousLesForms.length === 0) {
+        setAemError(fichiers.length > 1
+          ? "Je n'ai rien trouvé d'exploitable dans ces documents. Réessaie avec des scans plus nets."
+          : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette.");
+        return;
+      }
+      if (echecs.length > 0) {
+        // Lecture partielle : on garde ce qu'on a lu, mais on prévient honnêtement pour les fichiers ratés.
+        setAemError(`Je n'ai pas réussi à lire ${echecs.length} fichier${echecs.length > 1 ? "s" : ""} (${echecs.join(", ")}). J'ai gardé les autres — valide-les ci-dessous, puis rescanne ceux-là.`);
+      }
+      setAemTotal(tousLesForms.length);
+      setAemExtrait(tousLesForms[0]);        // la 1ère à valider
+      setAemQueue(tousLesForms.slice(1));    // les suivantes en attente
     } catch (err) {
       setAemError(err.message || "Lecture impossible. Réessaie avec une photo plus nette.");
     } finally {
       setAemUploading(false);
+      setAemScanProgress(null);
     }
   }
 
@@ -6242,11 +6267,11 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
                       <div>
                         <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 4px" }}>🐾 Mes AEM</h1>
-                        <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une AEM, je m'occupe du reste.</p>
+                        <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une ou plusieurs AEM d'un coup, je m'occupe du reste.</p>
                       </div>
                       <label style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: aemUploading ? "default" : "pointer", fontFamily: "inherit", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                        <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading} onChange={e => e.target.files[0] && handleScanAEM(e.target.files[0])} style={{ display: "none" }} />
-                        📸 {aemUploading ? "Hector lit…" : "Scanner une AEM"}
+                        <input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading} onChange={e => { const fs = Array.from(e.target.files || []); if (fs.length) handleScanAEM(fs); e.target.value = ""; }} style={{ display: "none" }} />
+                        📸 {aemUploading ? (aemScanProgress ? `Hector lit ${aemScanProgress.courant}/${aemScanProgress.total}…` : "Hector lit…") : "Scanner mes AEM"}
                       </label>
                     </div>
 
@@ -8195,7 +8220,7 @@ function AppInner() {
                   <NiveauImage src="/hector-tete.png" fallbackIcon="ti-camera" fallbackColor="#5DCAA5" />
                 </div>
                 <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Photographie ton AEM, je lis tout 🐾</h1>
-                <p style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>Employeur, cachets, heures, salaire brut — je remplis tout pour toi. Tu n'as qu'à vérifier. <strong style={{ color: "#9FCBF5", fontWeight: 700 }}>Plusieurs attestations dans un même fichier ? Je les lis toutes.</strong></p>
+                <p style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 420, margin: "0 auto" }}>Employeur, cachets, heures, salaire brut — je remplis tout pour toi. Tu n'as qu'à vérifier. <strong style={{ color: "#9FCBF5", fontWeight: 700 }}>Plusieurs fichiers, ou plusieurs attestations dans un même PDF ? Je les lis tous, d'un coup.</strong></p>
               </div>
 
               <div style={{ maxWidth: 420, margin: "0 auto" }}>{renderQuotaJauge("aem_scan", "scan")}</div>
@@ -8204,19 +8229,19 @@ function AppInner() {
               {!aemExtrait && (
                 <>
                   <label style={{ display: "block", border: "1.5px dashed rgba(93,202,165,0.4)", borderRadius: 16, padding: "32px 20px", textAlign: "center", cursor: aemUploading ? "default" : "pointer", background: "rgba(93,202,165,0.04)" }}>
-                    <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading}
-                      onChange={e => e.target.files[0] && handleScanAEM(e.target.files[0])} style={{ display: "none" }} />
+                    <input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading}
+                      onChange={e => { const fs = Array.from(e.target.files || []); if (fs.length) handleScanAEM(fs); e.target.value = ""; }} style={{ display: "none" }} />
                     {aemUploading ? (
                       <div>
                         <div style={{ fontSize: 30, marginBottom: 10 }}>🐾</div>
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "#5DCAA5" }}>Hector lit ton AEM…</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "#5DCAA5" }}>{aemScanProgress ? `Hector lit tes AEM… (${aemScanProgress.courant}/${aemScanProgress.total})` : "Hector lit ton AEM…"}</div>
                         <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 4 }}>Quelques secondes</div>
                       </div>
                     ) : (
                       <div>
                         <i className="ti ti-camera-plus" aria-hidden="true" style={{ fontSize: 34, color: "#5DCAA5" }} />
-                        <div style={{ fontSize: 15, fontWeight: 700, color: "white", marginTop: 10 }}>Photo ou PDF de ton AEM</div>
-                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 4 }}>Touche ici pour choisir un fichier</div>
+                        <div style={{ fontSize: 15, fontWeight: 700, color: "white", marginTop: 10 }}>Photos ou PDF de tes AEM</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 4 }}>Touche ici — tu peux en choisir plusieurs</div>
                       </div>
                     )}
                   </label>
