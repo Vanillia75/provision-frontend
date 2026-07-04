@@ -344,6 +344,8 @@ function AppInner() {
   const [landingStatut, setLandingStatut] = useState(() => safeStorage.getItem("landingStatut") || null);
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
+  // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
+  const [interShowAuth, setInterShowAuth] = useState(false);
   // Cockpit intermittent (Brique 5) : état calculé renvoyé par /intermittent/cockpit
   const [interCockpit, setInterCockpit] = useState(null);
   const [interCockpitLoading, setInterCockpitLoading] = useState(false);
@@ -669,7 +671,7 @@ function AppInner() {
   const [simCaLanding, setSimCaLanding] = useState("3000");
   const [simActLanding, setSimActLanding] = useState("0.212");
   // Simulateur cachets→heures de la landing intermittent
-  const [simCachetsLanding, setSimCachetsLanding] = useState("8");
+  const [simCachetsLanding, setSimCachetsLanding] = useState("5");
   const [simModeLanding, setSimModeLanding] = useState("cachets"); // "heures" ou "cachets" (1 cachet = 12h)
   const soldeMounted = useRef(false);
   const reserveMounted = useRef(false);
@@ -1041,7 +1043,7 @@ function AppInner() {
       }
     }
     renderButton();
-  }, [token, authMode, landingStatut]);
+  }, [token, authMode, landingStatut, interShowAuth]);
 
   async function handleAuth(e) {
     e.preventDefault();
@@ -4119,277 +4121,326 @@ function AppInner() {
     );
   }
 
-  // LANDING INTERMITTENT — jumelle visuelle de la landing AE, cerveau "heures".
-  // Le produit intermittent est LIVRÉ : les CTA mènent au formulaire d'inscription
-  // réel (#inter-auth-section), plus de fake door « à venir ».
+  // LANDING INTERMITTENT — récit vertical (une idée par écran), mobile-first.
+  // Les CTA ouvrent l'écran d'inscription/connexion plein écran (interShowAuth),
+  // hors du récit. Le produit intermittent est LIVRÉ, plus de fake door.
   if (!token && landingStatut === "intermittent") {
-    // Le produit intermittent est livré : les CTA mènent au formulaire d'inscription
-    // réel présent plus bas sur cette même landing (#inter-auth-section).
-    const scrollToInterAuth = () => {
-      setAuthMode("register");
-      setTimeout(() => {
-        document.getElementById("inter-auth-section")?.scrollIntoView({ behavior: "smooth" });
-      }, 50);
-    };
+    // L'inscription/connexion est un écran plein écran (hors du récit) : le bouton y mène.
+    const ouvrirAuth = (mode) => { setAuthMode(mode); setInterShowAuth(true); window.scrollTo({ top: 0 }); };
 
-    // Simulateur heures OU cachets (1 cachet = 12h). Pas de mélange : soit l'un, soit l'autre.
-    const saisieNum = Math.max(0, parseInt(simCachetsLanding) || 0);
-    const heuresCalc = simModeLanding === "cachets" ? saisieNum * 12 : saisieNum;
-    const totalDemo = Math.min(507, heuresCalc);
-    const manqueDemo = Math.max(0, 507 - totalDemo);
+    // ── ÉCRAN D'AUTH (plein écran, hors récit) — réutilise le formulaire existant ──
+    if (interShowAuth) {
+      return (
+        <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", padding: isMobile ? "20px 16px" : "40px 20px" }}>
+          <style>{CSS}</style>
+          <div style={{ width: "100%", maxWidth: 440 }}>
+            <button type="button" onClick={() => setInterShowAuth(false)} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 14, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44 }}>
+              <i className="ti ti-arrow-left" aria-hidden="true" /> Retour
+            </button>
+            <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 20px" }}><Logo size={34} dark /></div>
+            <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box" }}>
+              {forgotMode ? (
+                <div>
+                  <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
+                  {forgotStatus === "sent" ? (
+                    <div style={{ textAlign: "center" }}>
+                      <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
+                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.</p>
+                      <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
+                    </div>
+                  ) : (
+                    <form onSubmit={handleForgotPassword}>
+                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                      <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
+                      <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
+                      <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
+                    </form>
+                  )}
+                </div>
+              ) : (
+                <form onSubmit={handleAuth}>
+                  <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte"}</h2>
+                  {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
+                  {error && <div style={S.errorBanner}>{error}</div>}
+                  <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                  <p style={S.orDivider}>ou avec un email</p>
+                  <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
+                  <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+                  {authMode === "login" && (<p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}><button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button></p>)}
+                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
+                  <p style={S.switchAuth}>{authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}<button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button></p>
+                </form>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    // ── Composition éditoriale V3 : reproduction fidèle de la maquette, identité 100 % H€CTOR ──
+    // Titres serif (Playfair), gros numéros serif gris, widgets sombres fondus, texte à gauche / démo à droite.
+    const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
+    const secShell = { maxWidth: 1140, margin: "0 auto", padding: isMobile ? "48px 22px" : "88px 48px", borderTop: "1px solid rgba(255,255,255,0.05)" };
+    const secGrid = { display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.8fr 1.2fr", gap: isMobile ? 22 : 64, alignItems: "center" };
+    const numFantome = { fontFamily: SERIF, fontSize: isMobile ? 58 : 92, fontWeight: 700, lineHeight: 0.9, color: "rgba(130,155,185,0.16)", margin: "0 0 6px" };
+    const titreSec = { fontFamily: SERIF, fontSize: isMobile ? 29 : 42, fontWeight: 700, color: "white", lineHeight: 1.1, margin: "0 0 16px" };
+    const texteSec = { fontSize: isMobile ? 14.5 : 15, color: "#8BA5C0", lineHeight: 1.6, margin: 0, maxWidth: 340 };
+    // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
+    const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
+    const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
+    const badgeEstim = { display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.32)", color: "#F0C070", borderRadius: 20, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" };
+    const lienDiscret = { display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#5DCAA5", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 14 };
+
+    // Compteur circulaire 444h/507h (hero + scroll 01) — même chiffre partout (Loi X).
+    const compteurCirculaire = (ring) => {
+      const r = ring / 2 - 5;
+      const C = 2 * Math.PI * r;
+      const pct = 444 / 507;
+      return (
+        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ position: "relative", width: ring, height: ring, flexShrink: 0 }}>
+            <svg width={ring} height={ring} viewBox={`0 0 ${ring} ${ring}`} aria-hidden="true">
+              <circle cx={ring / 2} cy={ring / 2} r={r} fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="5" />
+              <circle cx={ring / 2} cy={ring / 2} r={r} fill="none" stroke="#5DCAA5" strokeWidth="5" strokeLinecap="round"
+                strokeDasharray={`${C * pct} ${C}`} transform={`rotate(-90 ${ring / 2} ${ring / 2})`} />
+            </svg>
+            <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", lineHeight: 1 }}>
+              <span style={{ fontSize: Math.round(ring * 0.2), fontWeight: 800, color: "white" }}>444h</span>
+              <span style={{ fontSize: Math.round(ring * 0.13), color: "#8BA5C0", marginTop: 2 }}>/507h</span>
+            </div>
+          </div>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Il te manque 63h</div>
+            <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 3 }}>Objectif 507 heures</div>
+          </div>
+        </div>
+      );
+    };
 
     return (
       <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit" }}>
         <style>{CSS}</style>
 
         {/* ===== NAVBAR ===== */}
-        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Logo size={32} dark />
-            <button onClick={() => chooseLandingStatut("auto_entrepreneur")} title="Passer en mode auto-entrepreneur" style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 11px", color: "#5DCAA5", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
-              <i className="ti ti-dog" aria-hidden="true" /> Passer en mode auto-entrepreneur <i className="ti ti-arrow-right" aria-hidden="true" style={{ opacity: 0.7, fontSize: 13 }} />
+            <button onClick={() => chooseLandingStatut("auto_entrepreneur")} title="Passer en mode auto-entrepreneur" style={{ display: isMobile ? "none" : "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 12px", color: "#8BA5C0", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
+              Je suis auto-entrepreneur <i className="ti ti-arrow-right" aria-hidden="true" style={{ opacity: 0.7, fontSize: 13 }} />
             </button>
           </div>
-          <button onClick={() => { setAuthMode("login"); setTimeout(() => document.getElementById("inter-auth-section")?.scrollIntoView({ behavior: "smooth" }), 50); }} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "7px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+          <button onClick={() => ouvrirAuth("login")} style={{ background: "#5DCAA5", border: "none", color: "#07192E", borderRadius: 8, padding: "8px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 40 }}>
             Se connecter
           </button>
         </nav>
 
-        {/* ===== HERO ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px 32px" : "72px 40px 48px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 40, alignItems: "center" }}>
+        {/* ===== HERO V3 — Hector émerge du noir + compteur à gauche · titre serif à droite ===== */}
+        <section style={{ maxWidth: 1180, margin: "0 auto", padding: isMobile ? "8px 22px 8px" : "44px 48px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.82fr 1.18fr", gap: isMobile ? 6 : 52, alignItems: "center" }}>
+          {/* Colonne gauche — Hector (émerge du noir) + compteur circulaire en bas */}
           <div>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", marginBottom: 20, textTransform: "uppercase" }}>Ton cockpit d'intermittent</div>
-            <h1 style={{ fontSize: isMobile ? 26 : 48, fontWeight: 800, lineHeight: 1.15, margin: "0 0 20px", color: "white" }}>
-              Ne te demande plus<br />où tu en es.<br />
-              <span style={{ color: "#5DCAA5" }}>H€CTOR compte tes<br />heures pour toi.</span>
+            <img src="/hector-land-hero.webp" alt="H€CTOR, ton compagnon d'intermittence"
+              style={{ width: "100%", maxWidth: isMobile ? 290 : 420, display: "block", margin: isMobile ? "0 auto" : 0 }} />
+            <div style={{ marginTop: isMobile ? -6 : -34, display: "flex", justifyContent: isMobile ? "center" : "flex-start" }}>
+              {compteurCirculaire(isMobile ? 90 : 106)}
+            </div>
+          </div>
+          {/* Colonne droite — titre serif énorme + sous-titre vert + texte + CTA */}
+          <div>
+            <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 39 : 60, fontWeight: 700, lineHeight: 1.04, margin: "0 0 22px", color: "white" }}>
+              Tu te demandes<br />si tu vas renouveler&nbsp;?
             </h1>
-            <p style={{ fontSize: 16, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 32px", maxWidth: 460 }}>
-              H€CTOR additionne tes cachets et tes heures automatiquement, et te dit si tu es dans les temps pour ton renouvellement. Pour que tu dormes tranquille.
+            <p style={{ fontSize: isMobile ? 18 : 22, color: "#5DCAA5", fontWeight: 600, lineHeight: 1.4, margin: "0 0 18px", maxWidth: 470 }}>
+              Pendant que tu fais ton métier,<br />H€CTOR veille sur ton intermittence.
             </p>
-            <button onClick={scrollToInterAuth} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 10, padding: "15px 28px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, marginBottom: 20 }}>
+            <p style={{ fontSize: isMobile ? 14.5 : 16, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 440 }}>
+              Il compte automatiquement tes heures, estime ce que tu vas toucher et t'explique chaque chiffre, sources à l'appui.
+            </p>
+            <button onClick={() => ouvrirAuth("register")} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 12, padding: "16px 30px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, minHeight: 54 }}>
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
-            <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-              {["Aucune carte bancaire", "Sans engagement", "507h sous contrôle"].map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: "#8BA5C0" }}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2" strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>
-                  {t}
-                </div>
-              ))}
-            </div>
+            <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
           </div>
-          <div style={{ display: "flex", justifyContent: "center", alignItems: "flex-end", position: "relative", marginLeft: isMobile ? 0 : -40 }}>
-            <div style={{ position: "relative", width: "100%", maxWidth: 620 }}>
-              <img src="/hector-clap.png" alt="Hector sur un plateau de tournage" style={{ width: "100%", display: "block", objectFit: "contain", filter: "brightness(1.15) contrast(1.05)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(7,25,46,0) 60%, #07192E 98%)" }} />
-              <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(7,25,46,0) 55%, #07192E 100%)" }} />
+        </section>
+
+        {/* ===== 01 — H€CTOR veille sur tes 507 heures ===== */}
+        <section style={secShell}>
+          <div style={secGrid}>
+            <div>
+              <div style={numFantome}>01</div>
+              <h2 style={titreSec}>H€CTOR veille<br />sur tes <span style={{ color: "#5DCAA5" }}>507 heures</span>.</h2>
+              <p style={texteSec}>Il compte automatiquement toutes tes heures et te montre où tu en es.</p>
+              <div style={{ ...lienDiscret, marginTop: 18 }}><i className="ti ti-plus" aria-hidden="true" /> Simulateur de cachets</div>
+            </div>
+            <div style={demoFondu}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "auto 1fr", gap: isMobile ? 20 : 30, alignItems: "center" }}>
+                {/* Compteur circulaire (même chiffre que le hero) */}
+                <div style={{ display: "flex", justifyContent: "center" }}>{compteurCirculaire(isMobile ? 100 : 120)}</div>
+                {/* Simulateur de cachets (1 cachet = 12 h — nos règles, pas la maquette) */}
+                <div style={sousPanel}>
+                  <div style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 1, color: "#6B8299", textTransform: "uppercase", marginBottom: 16 }}>Simulateur de cachets</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                    <span style={{ fontSize: 13, color: "#B5D4F4" }}>Nombre de cachets</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <button type="button" aria-label="moins un cachet" onClick={() => setSimCachetsLanding(String(Math.max(0, (parseInt(simCachetsLanding) || 0) - 1)))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "white", fontSize: 18, cursor: "pointer", lineHeight: 1, fontFamily: "inherit" }}>−</button>
+                      <span style={{ fontSize: 17, fontWeight: 800, color: "white", minWidth: 22, textAlign: "center" }}>{Math.max(0, parseInt(simCachetsLanding) || 0)}</span>
+                      <button type="button" aria-label="un cachet de plus" onClick={() => setSimCachetsLanding(String((parseInt(simCachetsLanding) || 0) + 1))} style={{ width: 32, height: 32, borderRadius: 8, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", color: "white", fontSize: 18, cursor: "pointer", lineHeight: 1, fontFamily: "inherit" }}>+</button>
+                    </div>
+                  </div>
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 14, display: "flex", alignItems: "baseline", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 11.5, color: "#8BA5C0" }}>1 cachet = 12 h</span>
+                    <span style={{ fontSize: 22, fontWeight: 800, color: "#5DCAA5" }}>+{Math.max(0, parseInt(simCachetsLanding) || 0) * 12}h estimées</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </section>
 
-        {/* ===== BLOC PROBLÈME + SIMULATEUR CACHETS→HEURES ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto 0", padding: isMobile ? "0 20px 32px" : "0 40px 40px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 16, alignItems: "stretch" }}>
-            <div style={{ background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.25)", borderRadius: 14, padding: isMobile ? "18px 20px" : "22px 32px", display: "flex", alignItems: "flex-start", gap: 18 }}>
-              <div style={{ width: 36, height: 36, borderRadius: "50%", background: "rgba(226,75,74,0.15)", border: "1px solid rgba(226,75,74,0.3)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginTop: 2 }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F09595" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-              </div>
-              <div>
-                <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#F09595", marginBottom: 10, textTransform: "uppercase" }}>Le problème</div>
-                <div style={{ fontSize: isMobile ? 15 : 17, color: "#EAF2FB", lineHeight: 1.6 }}>
-                  Tu fais plein de cachets.<br />
-                  Tu te crois <strong style={{ color: "white" }}>large</strong>.<br />
-                  Puis la date anniversaire arrive.
+        {/* ===== 02 — H€CTOR veille sur ce que tu vas toucher ===== */}
+        <section style={secShell}>
+          <div style={secGrid}>
+            <div>
+              <div style={numFantome}>02</div>
+              <h2 style={titreSec}>H€CTOR veille sur<br />ce que tu vas <span style={{ color: "#5DCAA5" }}>toucher</span>.</h2>
+              <p style={texteSec}>Il estime ton allocation et tes Congés Spectacles.</p>
+              <p style={{ ...texteSec, color: "#5DCAA5", fontWeight: 700, marginTop: 12 }}>Toujours des estimations, jamais de promesses.</p>
+            </div>
+            <div style={demoFondu}>
+              {/* Allocation journalière */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 18, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton allocation journalière</div>
+                  <div style={{ fontSize: isMobile ? 25 : 30, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>Environ 51,18 €<span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}> / jour</span></div>
                 </div>
+                <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
+              </div>
+              {/* Congés Spectacles */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingTop: 18 }}>
+                <div>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Congés Spectacles</div>
+                  <div style={{ fontSize: isMobile ? 25 : 30, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>~10 %<span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}> de tes bruts</span></div>
+                </div>
+                <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
               </div>
             </div>
-            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "22px 28px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-              <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", marginBottom: 12 }}>Calcule tes heures</div>
-              {/* Toggle heures / cachets */}
-              <div style={{ display: "flex", gap: 6, marginBottom: 12, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: 3 }}>
+          </div>
+        </section>
+
+        {/* ===== 03 — H€CTOR veille sur les calculs de France Travail ===== */}
+        <section style={secShell}>
+          <div style={secGrid}>
+            <div>
+              <div style={numFantome}>03</div>
+              <h2 style={titreSec}>H€CTOR veille sur<br />les <span style={{ color: "#5DCAA5" }}>calculs</span> de France Travail.</h2>
+              <p style={texteSec}>Il reconstitue et vérifie, pour que tu comprennes et avances sereinement.</p>
+            </div>
+            <div style={demoFondu}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 4px 16px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <span style={{ fontSize: 13.5, color: "#B5D4F4" }}>France Travail indique</span>
+                <span style={{ fontSize: isMobile ? 20 : 23, fontWeight: 800, color: "white" }}>51,18 €</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 4px 18px" }}>
+                <span style={{ fontSize: 13.5, color: "#B5D4F4" }}>H€CTOR reconstitue</span>
+                <span style={{ fontSize: isMobile ? 20 : 23, fontWeight: 800, color: "#5DCAA5" }}>51,18 €</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.09)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "13px 14px" }}>
+                <span style={{ color: "#5DCAA5", fontSize: 16 }}>✓</span>
+                <span style={{ fontSize: 13.5, color: "#EAF2FB", fontWeight: 600 }}>Cohérent — on tombe pareil</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 04 — H€CTOR répond quand tu as une question ===== */}
+        <section style={secShell}>
+          <div style={secGrid}>
+            <div>
+              <div style={numFantome}>04</div>
+              <h2 style={titreSec}>H€CTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
+              <p style={texteSec}>Pose ta question en langage naturel. Il te répond clairement, avec les sources.</p>
+            </div>
+            <div style={demoFondu}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "flex-end", gap: 6 }}>
+                  <div style={{ background: ACCENT, color: "white", borderRadius: "14px 14px 4px 14px", padding: "11px 15px", fontSize: 14, maxWidth: "82%", fontWeight: 500, lineHeight: 1.45 }}>
+                    Comment sont calculés mes 507 heures ?
+                  </div>
+                  <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:24 <span style={{ color: "#5DCAA5" }}>✓✓</span></div>
+                </div>
+                <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
+                  <img src="/hector-tete.png" alt="" style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  <div style={{ background: "rgba(255,255,255,0.06)", color: "#EAF2FB", borderRadius: "14px 14px 14px 4px", padding: "11px 15px", fontSize: 14, lineHeight: 1.5 }}>
+                    Tes 507 heures correspondent aux heures effectivement travaillées, déclarées par tes employeurs et retenues par France Travail. Je t'explique le détail et les règles appliquées.
+                  </div>
+                  <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap", alignSelf: "flex-end" }}>10:24</div>
+                </div>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 18, background: "rgba(0,0,0,0.25)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "6px 6px 6px 14px" }}>
+                <span style={{ flex: 1, fontSize: 13, color: "#6B8299" }}>Pose ta question…</span>
+                <button type="button" onClick={() => ouvrirAuth("register")} aria-label="Envoyer" style={{ width: 36, height: 36, borderRadius: 9, background: "#5DCAA5", border: "none", color: "#07192E", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}><i className="ti ti-send" aria-hidden="true" style={{ fontSize: 17 }} /></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 05 — Je veille sur toi (moment de confiance, centré, sans visuel : un seul Hector, au hero) ===== */}
+        <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "58px 22px" : "104px 48px" }}>
+          <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
+            <div style={{ ...numFantome, margin: "0 0 6px" }}>05</div>
+            <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+              {[
+                "Quand je ne suis pas sûr, je te le dis.",
+                "Je n'invente jamais un chiffre.",
+                "Je suis là pour t'éclairer, pas pour te vendre du rêve.",
+              ].map(t => (
+                <span key={t} style={{ fontSize: isMobile ? 16 : 19, color: "#EAF2FB", lineHeight: 1.5, maxWidth: 560 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== 06 — Et j'aide aussi ta micro-entreprise ===== */}
+        <section style={secShell}>
+          <div style={secGrid}>
+            <div>
+              <div style={numFantome}>06</div>
+              <h2 style={titreSec}>Et j'aide aussi<br />ta <span style={{ color: "#5DCAA5" }}>micro-entreprise</span>. <i className="ti ti-gift" aria-hidden="true" style={{ fontSize: 25, color: "#5DCAA5", verticalAlign: "middle" }} /></h2>
+              <p style={texteSec}>Devis, factures, trésorerie, prévisions : tout est connecté pour te faire gagner du temps.</p>
+            </div>
+            <div style={demoFondu}>
+              <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: 14 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 5, background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", color: "#5DCAA5", borderRadius: 20, padding: "4px 11px", fontSize: 11, fontWeight: 700 }}><i className="ti ti-gift" aria-hidden="true" style={{ fontSize: 13 }} /> Bonus</span>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 10 }}>
                 {[
-                  { v: "heures", label: "En heures" },
-                  { v: "cachets", label: "En cachets" },
-                ].map(opt => (
-                  <button key={opt.v} type="button" onClick={() => setSimModeLanding(opt.v)}
-                    style={{ flex: 1, background: simModeLanding === opt.v ? "#5DCAA5" : "transparent", color: simModeLanding === opt.v ? "#04342C" : "#8BA5C0", border: "none", borderRadius: 6, padding: "7px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                    {opt.label}
-                  </button>
+                  { icon: "ti-file-text", l: "Devis" },
+                  { icon: "ti-file-invoice", l: "Factures" },
+                  { icon: "ti-wallet", l: "Trésorerie" },
+                  { icon: "ti-chart-line", l: "Prévisions" },
+                ].map(x => (
+                  <div key={x.l} style={{ ...sousPanel, textAlign: "center", padding: "18px 8px" }}>
+                    <i className={`ti ${x.icon}`} aria-hidden="true" style={{ fontSize: 24, color: "#5DCAA5" }} />
+                    <div style={{ fontSize: 12, color: "#B5D4F4", fontWeight: 600, marginTop: 10 }}>{x.l}</div>
+                  </div>
                 ))}
               </div>
-              <div style={{ position: "relative", marginBottom: 12 }}>
-                <input type="number" value={simCachetsLanding} min="0" onChange={e => setSimCachetsLanding(e.target.value)}
-                  style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 6, padding: "8px 70px 8px 12px", fontSize: 15, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box" }} />
-                <span style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", color: "#5DCAA5", fontSize: 12, fontWeight: 700 }}>{simModeLanding === "cachets" ? "cachets" : "heures"}</span>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <div style={{ flex: 1, background: "#0d2440", borderRadius: 8, padding: "10px 14px", border: "1px solid #1e3a5f" }}>
-                  <div style={{ fontSize: 9, color: "#8BA5C0", marginBottom: 3 }}>{simModeLanding === "cachets" ? "1 cachet = 12h, soit" : "ça fait"}</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "#5DCAA5" }}>{heuresCalc} h</div>
-                </div>
-                <div style={{ flex: 1, background: "rgba(93,202,165,0.07)", borderRadius: 8, padding: "10px 14px", border: "1px solid rgba(93,202,165,0.25)" }}>
-                  <div style={{ fontSize: 9, color: "#5DCAA5", marginBottom: 3 }}>Sur tes 507h</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: "white" }}>{totalDemo} / 507 h</div>
-                </div>
-              </div>
+              <button type="button" onClick={() => chooseLandingStatut("auto_entrepreneur")} style={lienDiscret}>En savoir plus <i className="ti ti-arrow-right" aria-hidden="true" /></button>
             </div>
           </div>
         </section>
 
-        {/* ===== DÉMO COMPTEUR + PARLE À HECTOR ===== */}
-        <section style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "0 20px 48px" : "0 40px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 20 }}>
-          <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "24px 28px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#5DCAA5", marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: "#5DCAA5", fontSize: 14 }}>✓</span> H€CTOR calcule pour toi
-            </div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 20, textAlign: "center" }}>444 h faites</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-              {[
-                { label: "Tes cachets cette année", val: "37 cachets" },
-                { label: "Convertis en heures (× 12h)", val: "+ 444 h" },
-              ].map(r => (
-                <div key={r.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 14, color: "#B5D4F4" }}>
-                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}><span style={{ color: "#5DCAA5", fontSize: 15 }}>✓</span> {r.label}</span>
-                  <span style={{ color: "#5DCAA5", fontWeight: 600 }}>{r.val}</span>
-                </div>
-              ))}
-            </div>
-            <div style={{ borderTop: "1px solid rgba(93,202,165,0.2)", paddingTop: 16, textAlign: "center" }}>
-              <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 4 }}>il te manque</div>
-              <div style={{ fontSize: 42, fontWeight: 800, color: "#5DCAA5" }}>63 h</div>
-              <div style={{ fontSize: 13, color: "#B5D4F4", marginTop: 6 }}>Au rythme actuel, tu renouvelleras sans problème.</div>
-            </div>
-          </div>
-
-          <div style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "24px 28px" }}>
-            <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: ACCENT, marginBottom: 18, textTransform: "uppercase", display: "flex", alignItems: "center", gap: 8 }}>
-              <span style={{ color: ACCENT, fontSize: 14 }}>💬</span> Parle à H€CTOR
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500, lineHeight: 1.45 }}>
-                  Si j'accepte ce contrat de 15 jours,<br />ça me fait combien d'heures ?
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:42</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, lineHeight: 1.45 }}>
-                  <span style={{ color: "#5DCAA5" }}>✓</span> +85 h → tu passes à 529 h. Tu sécurises ton renouvellement.
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:42</div>
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                <div style={{ background: ACCENT, color: "white", borderRadius: "12px 12px 3px 12px", padding: "10px 14px", fontSize: 13.5, maxWidth: "85%", fontWeight: 500 }}>
-                  Et il me reste combien avant ma date anniversaire ?
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", alignSelf: "flex-end", marginLeft: 6, whiteSpace: "nowrap" }}>10:45</div>
-              </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                <img src="/hector-tete.png" alt="" style={{ width: 28, height: 28, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
-                <div style={{ background: "rgba(255,255,255,0.07)", color: "#EAF2FB", borderRadius: "12px 12px 12px 3px", padding: "10px 14px", fontSize: 13.5, lineHeight: 1.45 }}>
-                  <span style={{ color: "#5DCAA5" }}>✓</span> 47 jours. Je garde un œil dessus avec toi.
-                </div>
-                <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:45</div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ===== GRILLE FEATURES ===== */}
-        <section style={{ background: "rgba(255,255,255,0.025)", borderTop: "1px solid rgba(255,255,255,0.06)", borderBottom: "1px solid rgba(255,255,255,0.06)", padding: isMobile ? "40px 20px" : "52px 40px" }}>
-          <div style={{ maxWidth: 1160, margin: "0 auto" }}>
-            <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: "#5DCAA5", textAlign: "center", marginBottom: 36, textTransform: "uppercase" }}>Tout ce qu'H€CTOR fera pour toi</div>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 16 : 24 }}>
-              {[
-                { icon: "ti-gauge", t: "Compteur 507h", d: "Où tu en es, en direct. Tes cachets convertis et additionnés tout seuls." },
-                { icon: "ti-calendar-clock", t: "Alerte renouvellement", d: "Hector te prévient des mois avant ta date anniversaire, jamais pris de court." },
-                { icon: "ti-folder", t: "Coffre à AEM", d: "Prends tes attestations en photo, Hector lit les heures et range tout." },
-                { icon: "ti-message", t: "Simulateur de contrat", d: "« Si j'accepte ce contrat, ça me fait combien d'heures ? » Hector te répond." },
-                { icon: "ti-eye", t: "Calcul transparent", d: "Hector ne devine jamais. Il montre toujours le détail de ses calculs." },
-                { icon: "ti-file-text", t: "Attestation revenus", d: "Un récap propre de tes revenus à présenter à un proprio ou une banque." },
-              ].map(f => (
-                <div key={f.t} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "20px 22px" }}>
-                  <i className={`ti ${f.icon}`} aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5" }} />
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "white", margin: "10px 0 6px" }}>{f.t}</div>
-                  <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>{f.d}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== CTA FINAL + FORMULAIRE D'INSCRIPTION ===== */}
-        <section id="inter-auth-section" style={{ maxWidth: 1160, margin: "0 auto", padding: isMobile ? "48px 20px" : "64px 40px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 48, alignItems: "center" }}>
-          {/* Gauche — promesse */}
-          <div>
-            <h2 style={{ fontSize: isMobile ? 28 : 36, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 16px" }}>
-              Dors enfin tranquille<br />sur tes 507 heures.
+        {/* ===== SIGNATURE FINALE — serif très grand, seule (Hector n'apparaît qu'au 05) ===== */}
+        <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", background: "linear-gradient(180deg, rgba(93,202,165,0.05), rgba(7,25,46,0))", padding: isMobile ? "72px 22px 84px" : "120px 40px 128px", textAlign: "center" }}>
+          <div style={{ position: "relative", maxWidth: 900, margin: "0 auto" }}>
+            <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 30 : 52, fontWeight: 700, color: "white", lineHeight: 1.16, margin: "0 0 34px" }}>
+              Tu continues à faire ton métier.<br />
+              <span style={{ color: "#5DCAA5" }}>H€CTOR veille sur ton intermittence.</span>
             </h2>
-            <p style={{ fontSize: 15, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 24px" }}>
-              Hector veille pendant que tu fais ton métier.
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {[
-                "Ton compteur 507h toujours à jour",
-                "Cachets et heures comptés automatiquement",
-                "Alerté avant ta date anniversaire",
-              ].map(t => (
-                <div key={t} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: isMobile ? 13 : 14, color: "#B5D4F4", wordBreak: "break-word" }}>
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" style={{ marginTop: 1, flexShrink: 0 }}><polyline points="20 6 9 17 4 12"/></svg>
-                  {t}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Droite — formulaire (identique à la landing AE) */}
-          <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box", width: "100%" }}>
-            {forgotMode ? (
-              <div>
-                <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
-                {forgotStatus === "sent" ? (
-                  <div style={{ textAlign: "center" }}>
-                    <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
-                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>
-                      Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.
-                    </p>
-                    <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
-                  </div>
-                ) : (
-                  <form onSubmit={handleForgotPassword}>
-                    <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
-                    <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
-                    <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
-                    <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
-                  </form>
-                )}
-              </div>
-            ) : (
-              <form onSubmit={handleAuth}>
-                <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte intermittent"}</h2>
-                {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
-                {error && <div style={S.errorBanner}>{error}</div>}
-                <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
-                <p style={S.orDivider}>ou avec un email</p>
-                <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-                <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
-                {authMode === "login" && (
-                  <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
-                    <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
-                  </p>
-                )}
-                <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>
-                  {loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}
-                </button>
-                <p style={S.switchAuth}>
-                  {authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}
-                  <button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>
-                    {authMode === "login" ? "Créer un compte" : "Se connecter"}
-                  </button>
-                </p>
-              </form>
-            )}
+            <button onClick={() => ouvrirAuth("register")} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 12, padding: "16px 32px", fontSize: 16.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, minHeight: 54 }}>
+              Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
+            </button>
+            <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
           </div>
         </section>
 
@@ -4404,7 +4455,7 @@ function AppInner() {
               <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: "#4A6280" }}>Fait avec 🐾 pour les intermittents</div>
+          <div style={{ fontSize: 11, color: "#4A6280" }}>Fait pour les intermittents du spectacle.</div>
         </footer>
 
       </div>
