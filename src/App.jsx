@@ -7095,10 +7095,14 @@ function AppInner() {
                             const dO = new Date(a.date);
                             const dc = String(dO.getDate()).padStart(2, "0") + "/" + String(dO.getMonth() + 1).padStart(2, "0");
                             const estAem = a.aem_recue === true || a.source === "ocr";
+                            const estFutur = a.date && a.date > todayISO;
                             return (
                               <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
                                 <span style={{ width: 44, fontSize: 12, color: "#9FCBF5", flexShrink: 0 }}>{dc}</span>
-                                <span style={{ flex: 1, minWidth: 0, fontSize: 13, color: a.employeur ? "#E8F4FF" : "#FAC775", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.employeur || "À compléter"}</span>
+                                <span style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 6 }}>
+                                  {estFutur && <span style={{ fontSize: 8.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.14)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 5, padding: "0 5px", flexShrink: 0, textTransform: "uppercase", letterSpacing: 0.3 }}>à venir</span>}
+                                  <span style={{ minWidth: 0, fontSize: 13, color: a.employeur ? "#E8F4FF" : "#FAC775", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{a.employeur || "À compléter"}</span>
+                                </span>
                                 <span style={{ width: 56, textAlign: "right", fontSize: 13, fontWeight: 700, color: "white", flexShrink: 0 }}>{h} h</span>
                                 <span style={{ width: 54, textAlign: "right", fontSize: 10.5, fontWeight: 600, color: estAem ? "#5DCAA5" : "#8BA5C0", flexShrink: 0 }}>{estAem ? "AEM" : "Manuel"}</span>
                               </div>
@@ -7118,13 +7122,17 @@ function AppInner() {
                           const dO = new Date(a.date);
                           const dateLong = dO.getDate() + " " + MOIS_FR[dO.getMonth()];
                           const estAem = a.aem_recue === true || a.source === "ocr";
+                          const estFutur = a.date && a.date > todayISO;
                           return (
                             <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "15px 17px" }}>
                               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 11 }}>
                                 <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>{dateLong}</span>
-                                <span style={{ fontSize: 10.5, fontWeight: 700, color: estAem ? "#5DCAA5" : "#8BA5C0", display: "inline-flex", alignItems: "center", gap: 4, background: estAem ? "rgba(93,202,165,0.12)" : "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>
-                                  <i className={`ti ${estAem ? "ti-file-check" : "ti-pencil"}`} aria-hidden="true" style={{ fontSize: 12 }} /> {estAem ? "AEM" : "Manuel"}
-                                </span>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                                  {estFutur && <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 6, padding: "3px 8px" }}><i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 12 }} /> À venir</span>}
+                                  <span style={{ fontSize: 10.5, fontWeight: 700, color: estAem ? "#5DCAA5" : "#8BA5C0", display: "inline-flex", alignItems: "center", gap: 4, background: estAem ? "rgba(93,202,165,0.12)" : "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>
+                                    <i className={`ti ${estAem ? "ti-file-check" : "ti-pencil"}`} aria-hidden="true" style={{ fontSize: 12 }} /> {estAem ? "AEM" : "Manuel"}
+                                  </span>
+                                </div>
                               </div>
                               {aEmp ? (
                                 <div style={{ fontSize: 13, color: "#E8F4FF", display: "flex", alignItems: "center", gap: 7, marginBottom: 10 }}>
