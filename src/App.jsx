@@ -8621,7 +8621,7 @@ function AppInner() {
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 8, padding: "9px 11px" }}>
                         <i className="ti ti-info-circle" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
                         <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.45 }}>
-                          Ajoute ici uniquement tes contrats <strong style={{ color: "#C8E0F5" }}>déjà réalisés ou déjà signés</strong>. Pour tester un contrat possible, utilise le simulateur <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
+                          Ajoute tes contrats <strong style={{ color: "#C8E0F5" }}>déjà faits ou déjà signés</strong> — même ceux <strong style={{ color: "#C8E0F5" }}>à venir</strong> : mets leur vraie date, je les compterai le moment venu. Pour un contrat <strong style={{ color: "#C8E0F5" }}>pas encore signé</strong>, teste-le plutôt avec <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
                         </div>
                       </div>
                     )}
