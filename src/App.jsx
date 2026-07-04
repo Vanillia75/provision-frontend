@@ -330,6 +330,38 @@ function messageParDefautDevis(clientNom, numero, emetteur) {
   return `${salut}\n\nVeuillez trouver ci-dessous notre devis ${numero || ""}.\n\n${signature}`;
 }
 
+// Message de non-correspondance des mots de passe (voix d'Hector, ton doux).
+const styleMismatch = { fontSize: 12.5, color: "#B26A2B", margin: "-4px 0 12px", display: "flex", alignItems: "center", gap: 6, lineHeight: 1.4 };
+
+// Champ mot de passe avec œil afficher/masquer (zone de tap ≥ 44px, mobile-first).
+// Défini au niveau module : garde son état `show` sans perdre le focus à chaque frappe.
+function PasswordField({ label, value, onChange, autoComplete, minLength = 8 }) {
+  const [show, setShow] = useState(false);
+  return (
+    <label style={S.label}>{label}
+      <span style={{ position: "relative", display: "block" }}>
+        <input
+          style={{ ...S.input, width: "100%", display: "block", boxSizing: "border-box", paddingRight: 46, minHeight: 44 }}
+          type={show ? "text" : "password"}
+          value={value}
+          onChange={onChange}
+          autoComplete={autoComplete}
+          minLength={minLength}
+          required
+        />
+        <button
+          type="button"
+          onClick={() => setShow(s => !s)}
+          aria-label={show ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+          style={{ position: "absolute", top: 0, right: 0, height: "100%", width: 44, minWidth: 44, display: "flex", alignItems: "center", justifyContent: "center", background: "none", border: "none", padding: 0, cursor: "pointer", color: "#8A97A8" }}
+        >
+          <i className={show ? "ti ti-eye-off" : "ti ti-eye"} aria-hidden="true" style={{ fontSize: 18 }} />
+        </button>
+      </span>
+    </label>
+  );
+}
+
 function AppInner() {
   const [token, setToken] = useState(() => safeStorage.getItem("token"));
   // ─── PWA : aide à l'installation sur l'écran d'accueil ───
@@ -462,6 +494,7 @@ function AppInner() {
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
+  const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [nav, setNav] = useState(() => safeStorage.getItem("nav") || "dashboard");
@@ -1048,6 +1081,10 @@ function AppInner() {
   async function handleAuth(e) {
     e.preventDefault();
     setError("");
+    if (authMode === "register" && authPassword !== authPasswordConfirm) {
+      setError("Les deux mots de passe ne correspondent pas.");
+      return;
+    }
     setLoading(true);
     try {
       const data = await apiFetch(`/auth/${authMode === "login" ? "login" : "register"}`, {
@@ -4030,13 +4067,12 @@ function AppInner() {
               <form onSubmit={handleResetPassword}>
                 <h2 style={S.authTitle}>Nouveau mot de passe</h2>
                 {resetStatus === "error" && <div style={S.errorBanner}>{resetMessage}</div>}
-                <label style={S.label}>Nouveau mot de passe
-                  <input style={S.input} type="password" value={resetPassword1} onChange={e => setResetPassword1(e.target.value)} minLength={8} required />
-                </label>
-                <label style={S.label}>Confirmer le mot de passe
-                  <input style={S.input} type="password" value={resetPassword2} onChange={e => setResetPassword2(e.target.value)} minLength={8} required />
-                </label>
-                <button style={S.btnPrimary} type="submit" disabled={resetStatus === "loading"}>{resetStatus === "loading" ? "…" : "Valider le nouveau mot de passe"}</button>
+                <PasswordField label="Nouveau mot de passe" value={resetPassword1} onChange={e => setResetPassword1(e.target.value)} autoComplete="new-password" />
+                <PasswordField label="Confirmer le mot de passe" value={resetPassword2} onChange={e => setResetPassword2(e.target.value)} autoComplete="new-password" />
+                {resetPassword2.length > 0 && resetPassword1 !== resetPassword2 && (
+                  <p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas — revérifie</p>
+                )}
+                <button style={{ ...S.btnPrimary, opacity: (resetStatus === "loading" || resetPassword1.length < 8 || resetPassword1 !== resetPassword2) ? 0.55 : 1 }} type="submit" disabled={resetStatus === "loading" || resetPassword1.length < 8 || resetPassword1 !== resetPassword2}>{resetStatus === "loading" ? "…" : "Valider le nouveau mot de passe"}</button>
               </form>
             )}
           </div>
@@ -4165,9 +4201,13 @@ function AppInner() {
                   <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                   <p style={S.orDivider}>ou avec un email</p>
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-                  <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+                  <PasswordField label="Mot de passe" value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
+                  {authMode === "register" && (<>
+                    <PasswordField label="Confirme ton mot de passe" value={authPasswordConfirm} onChange={e => setAuthPasswordConfirm(e.target.value)} autoComplete="new-password" />
+                    {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas — revérifie</p>)}
+                  </>)}
                   {authMode === "login" && (<p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}><button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button></p>)}
-                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
+                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
                   <p style={S.switchAuth}>{authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}<button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button></p>
                 </form>
               )}
@@ -4734,13 +4774,17 @@ function AppInner() {
                 <div ref={googleButtonRef} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                 <p style={S.orDivider}>ou avec un email</p>
                 <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-                <label style={S.label}>Mot de passe<input style={S.input} type="password" value={authPassword} onChange={e => setAuthPassword(e.target.value)} minLength={8} required /></label>
+                <PasswordField label="Mot de passe" value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
+                {authMode === "register" && (<>
+                  <PasswordField label="Confirme ton mot de passe" value={authPasswordConfirm} onChange={e => setAuthPasswordConfirm(e.target.value)} autoComplete="new-password" />
+                  {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas — revérifie</p>)}
+                </>)}
                 {authMode === "login" && (
                   <p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}>
                     <button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button>
                   </p>
                 )}
-                <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E" }} type="submit" disabled={loading}>
+                <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>
                   {loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}
                 </button>
                 {authMode === "register" && (
