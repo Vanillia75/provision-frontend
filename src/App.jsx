@@ -2140,10 +2140,13 @@ function AppInner() {
     const dates = [];
     const debut = interForm.date;
     const fin = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : debut;
+    // IMPORTANT : formatage LOCAL (getFullYear/Month/Date), jamais toISOString() qui
+    // repasse par UTC et décalerait la date de -1 jour en France (UTC+1/+2).
+    const toLocalISO = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
     const cur = new Date(debut + "T00:00:00");
     const end = new Date(fin + "T00:00:00");
     while (cur <= end) {
-      dates.push(cur.toISOString().slice(0, 10));
+      dates.push(toLocalISO(cur));
       cur.setDate(cur.getDate() + 1);
       if (dates.length > 92) { setError("Plage trop longue (max ~3 mois). Découpe-la en plusieurs saisies."); return; }
     }
