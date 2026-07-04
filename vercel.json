@@ -1,4 +1,7 @@
 {
+  "redirects": [
+    { "source": "/ae", "destination": "/auto-entrepreneur", "statusCode": 301 }
+  ],
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
