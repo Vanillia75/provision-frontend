@@ -352,7 +352,7 @@ function AppInner() {
   const [interActivites, setInterActivites] = useState([]);
   const [interShowAdd, setInterShowAdd] = useState(true);
   const [interSaving, setInterSaving] = useState(false);
-  const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", estime: false });
+  const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
   // Report des heures déjà faites (saisie de départ)
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
@@ -2079,10 +2079,11 @@ function AppInner() {
           type_activite: interForm.type_activite,
           nombre,
           employeur: interForm.employeur || null,
+          salaire_brut: interForm.salaire_brut !== "" ? parseFloat(String(interForm.salaire_brut).replace(",", ".")) : null,
           estime: !!interForm.estime,
         }),
       });
-      setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", estime: false });
+      setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
       setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
@@ -6762,6 +6763,61 @@ function AppInner() {
                 );
               })()}
 
+              {/* ══ CONGÉS SPECTACLES (Audiens) — L1 rappel daté + L2 estimation (backtestée 10 %) ══ */}
+              {c.conges_spectacles && (() => {
+                const cs = c.conges_spectacles;
+                const anDeb = cs.exercice_debut ? cs.exercice_debut.slice(0, 4) : "";
+                const anFin = cs.exercice_fin ? cs.exercice_fin.slice(0, 4) : "";
+                const m = new Date().getMonth() + 1, jour = new Date().getDate();
+                const enSaisonDemande = (m === 4 && jour >= 15) || m === 5 || m === 6; // demandes ouvertes mi-avril → juin
+                const aDesBruts = cs.assiette > 0;
+                return (
+                  <div style={{ background: "linear-gradient(160deg, rgba(216,180,254,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(190,150,240,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+                      <span style={{ fontSize: 18 }}>🎭</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Tes Congés Spectacles</div>
+                    </div>
+
+                    {/* L1 — rappel daté (saison de demande) */}
+                    {enSaisonDemande && (
+                      <div style={{ marginTop: 8, marginBottom: 10, fontSize: 12, color: "#E3D4F5", lineHeight: 1.5, background: "rgba(190,150,240,0.12)", border: "1px solid rgba(190,150,240,0.3)", borderRadius: 10, padding: "10px 12px" }}>
+                        🐾 C'est le moment : ta saison écoulée est <strong style={{ color: "#F0E4FF" }}>demandable maintenant</strong> chez Audiens. Beaucoup d'intermittents oublient — ne laisse pas dormir ce qui t'attend. <a href="https://conges-spectacles.audiens.org" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A6F5", fontWeight: 700 }}>Faire ma demande →</a>
+                      </div>
+                    )}
+
+                    {/* L2 — estimation du montant (backtestée) */}
+                    {aDesBruts ? (
+                      <>
+                        <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5, marginTop: 4 }}>
+                          Cette saison (avril {anDeb} → mars {anFin}), tu accumules :
+                        </div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap", marginTop: 6 }}>
+                          <div style={{ fontSize: 26, fontWeight: 800, color: "#D8B4FE", lineHeight: 1.1 }}>
+                            <span style={{ fontSize: 15, color: "#A98FD0", fontWeight: 600 }}>environ </span>{formatEUR(cs.icp_brut)}<span style={{ fontSize: 14, color: "#A98FD0", fontWeight: 600 }}> brut</span>
+                          </div>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 4 }}>
+                          soit <strong style={{ color: "#C8E0F5" }}>~{formatEUR(cs.icp_net)} net</strong> (avant impôts).
+                        </div>
+                        {cs.assiette_incomplete && (
+                          <div style={{ fontSize: 11, color: "#E7C98A", marginTop: 8, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 8, padding: "8px 10px", lineHeight: 1.45 }}>
+                            {cs.activites_sans_brut} activité{cs.activites_sans_brut > 1 ? "s" : ""} sans salaire renseigné → l'estimation est <strong>sous-évaluée</strong>. Ajoute les montants bruts (ou scanne tes AEM) pour l'affiner.
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: "#7E97B3", marginTop: 10, paddingTop: 9, borderTop: "1px solid rgba(190,150,240,0.15)", lineHeight: 1.5 }}>
+                          Estimation à <strong style={{ color: "#9FB6CE" }}>10 % de tes bruts saisis</strong> (validé sur de vrais bordereaux). <strong style={{ color: "#9FB6CE" }}>Audiens reste seul juge</strong> ; le net dépend des cotisations de l'année.
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginTop: 6 }}>
+                        Ajoute le <strong style={{ color: "#E3D4F5" }}>salaire brut</strong> de tes contrats (ou scanne tes AEM) et je t'estime tes Congés Spectacles — <strong style={{ color: "#E3D4F5" }}>~10 % de tes bruts</strong> qui t'attendent chaque année chez Audiens.
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               {/* ── Brique 5.3 : la frise des paliers (Progression) ── */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px" }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>Progression</div>
@@ -8495,6 +8551,11 @@ function AppInner() {
                         placeholder="Employeur (optionnel)"
                         style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                     </div>
+                    {/* Salaire brut : seulement pour le travail (sert aux Congés Spectacles + revenus) */}
+                    {(interForm.type_activite === "cachet_isole" || interForm.type_activite === "cachet_groupe" || interForm.type_activite === "heures") && (
+                      <MontantInput decimales value={interForm.salaire_brut} onChange={v => setInterForm({ ...interForm, salaire_brut: v })} placeholder="Salaire brut € (optionnel — pour tes Congés Spectacles)"
+                        style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    )}
                     {(interForm.type_activite === "arret_maladie_ordinaire" || interForm.type_activite === "arret_paternite") ? (
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 8, padding: "9px 11px" }}>
                         <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
