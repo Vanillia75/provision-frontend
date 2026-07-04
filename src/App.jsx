@@ -5691,6 +5691,20 @@ function AppInner() {
           }
         : null;
 
+      // Scénario "Avec tes contrats prévus" (PR1) — les contrats futurs DÉJÀ SAISIS.
+      // Le moteur calcule déjà projection_avec_prevus_* (API) ; ici on ne fait que L'AFFICHER,
+      // sous le plancher qui reste la référence (F1 : le futur ne pollue pas le "où j'en suis").
+      const nbPrevus = (interActivites || []).filter(a => a && a.date && a.date > todayISO).length;
+      const avecPrevus = (c && c.projection_disponible && nbPrevus > 0 && c.projection_avec_prevus_heures != null)
+        ? {
+            label: `Avec tes ${nbPrevus} contrat${nbPrevus > 1 ? "s" : ""} prévu${nbPrevus > 1 ? "s" : ""}`,
+            valeur: `~${c.projection_avec_prevus_heures}h à ta date anniversaire`,
+            ok: !!c.projection_avec_prevus_securise,
+            note: c.projection_avec_prevus_securise ? "ça passe" : `il manquerait ${c.projection_avec_prevus_manquant}h`,
+            estimation: true,
+          }
+        : null;
+
       // Scénario 3 — Avec 2 cachets de plus par mois (12h/cachet), EN PLUS du rythme actuel.
       const cachetsSup = 2;
       const hSup = cachetsSup * 12; // heures ajoutées par mois
@@ -5718,7 +5732,7 @@ function AppInner() {
         }
       }
 
-      const scenarios = [rythme, sansContrat, avecCachets].filter(Boolean);
+      const scenarios = [rythme, sansContrat, avecPrevus, avecCachets].filter(Boolean);
       return { dispo: scenarios.length > 0, scenarios };
     })();
 
@@ -6890,7 +6904,10 @@ function AppInner() {
                     <div key={i} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 11, padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
                       <span style={{ fontSize: 14, flexShrink: 0 }}>🔵</span>
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: "#8FB4D8" }}>{s.label}</div>
+                        <div style={{ fontSize: 12, color: "#8FB4D8", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          {s.label}
+                          {s.estimation && <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: "#F0C070", background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.3)", borderRadius: 10, padding: "1px 6px", textTransform: "uppercase" }}>estimation</span>}
+                        </div>
                         <div style={{ fontSize: 14.5, fontWeight: 800, color: s.ok ? "white" : "#F0997F", lineHeight: 1.2, marginTop: 1 }}>
                           {s.ok ? "tu pourrais y être " : ""}{s.valeur}
                         </div>
