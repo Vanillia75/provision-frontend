@@ -2198,6 +2198,16 @@ function AppInner() {
     }) || null;
   }
 
+  // Signature d'une AEM : sert à repérer, dans la liste, les lignes en double (même employeur + date + montant, ou nombre à défaut).
+  function signatureAEM(a) {
+    if (!a || !a.date) return null;
+    const norm = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const brut = (a.salaire_brut != null && a.salaire_brut !== "") ? parseFloat(a.salaire_brut) : null;
+    const nb = (a.nombre != null && a.nombre !== "") ? parseFloat(a.nombre) : null;
+    const montant = brut != null ? `b${brut.toFixed(2)}` : (nb != null ? `n${nb}` : "x");
+    return `${norm(a.employeur)}|${a.date}|${montant}`;
+  }
+
   async function handleScanAEM(input) {
     // Accepte UN fichier (rétro-compat) OU un tableau de fichiers (sélection multiple).
     const bruts = Array.isArray(input) ? input.filter(Boolean) : (input ? [input] : []);
@@ -6157,6 +6167,8 @@ function AppInner() {
                   validation DUPLIQUÉ de coffre (V1 intacte) ; confirm → handleConfirmAEMMesaem (wrapper). ═══ */}
               {interNav === "mesaem" && (() => {
                 const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
+                const dupSig = {};
+                aems.forEach((a) => { const s = signatureAEM(a); if (s) dupSig[s] = (dupSig[s] || 0) + 1; });
                 const fmtDate = (iso) => { try { const d = new Date(iso); const M = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"]; return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`; } catch { return iso; } };
 
                 // ── 1) VICTOIRE (après le dernier scan validé du batch) ──
@@ -6330,7 +6342,14 @@ function AppInner() {
                                 <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                                  <span style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</span>
+                                  {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && (
+                                    <span style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible
+                                    </span>
+                                  )}
+                                </div>
                                 <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
                               </div>
                               {a.a_document && (
@@ -8184,6 +8203,8 @@ function AppInner() {
               {/* ─── SECTION MES AEM ─── */}
               {docTab === "aem" && (() => {
                 const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
+                const dupSig = {};
+                aems.forEach((a) => { const s = signatureAEM(a); if (s) dupSig[s] = (dupSig[s] || 0) + 1; });
                 if (aems.length === 0) {
                   return (
                     <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
@@ -8207,7 +8228,14 @@ function AppInner() {
                             <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
                           </div>
                           <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</span>
+                              {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && (
+                                <span style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible
+                                </span>
+                              )}
+                            </div>
                             <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}</div>
                           </div>
                           {a.a_document && (
