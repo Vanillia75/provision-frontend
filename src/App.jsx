@@ -412,7 +412,7 @@ function AppInner() {
   const [interActivites, setInterActivites] = useState([]);
   const [interShowAdd, setInterShowAdd] = useState(true);
   const [interSaving, setInterSaving] = useState(false);
-  const [interForm, setInterForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+  const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
   // Report des heures déjà faites (saisie de départ)
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
@@ -2135,20 +2135,34 @@ function AppInner() {
       setError("Renseigne une date et un nombre valide.");
       return;
     }
+    // Plage optionnelle : si une date de fin est saisie, on crée UNE activité par jour
+    // de [date → date_fin] (cas tournée : un cachet/jour). Plafond de sécurité 92 jours.
+    const dates = [];
+    const debut = interForm.date;
+    const fin = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : debut;
+    const cur = new Date(debut + "T00:00:00");
+    const end = new Date(fin + "T00:00:00");
+    while (cur <= end) {
+      dates.push(cur.toISOString().slice(0, 10));
+      cur.setDate(cur.getDate() + 1);
+      if (dates.length > 92) { setError("Plage trop longue (max ~3 mois). Découpe-la en plusieurs saisies."); return; }
+    }
     setInterSaving(true);
     try {
-      await apiFetch("/intermittent/activite", {
-        method: "POST",
-        body: JSON.stringify({
-          date: interForm.date,
-          type_activite: interForm.type_activite,
-          nombre,
-          employeur: interForm.employeur || null,
-          salaire_brut: interForm.salaire_brut !== "" ? parseFloat(String(interForm.salaire_brut).replace(",", ".")) : null,
-          estime: !!interForm.estime,
-        }),
-      });
-      setInterForm({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+      for (const dt of dates) {
+        await apiFetch("/intermittent/activite", {
+          method: "POST",
+          body: JSON.stringify({
+            date: dt,
+            type_activite: interForm.type_activite,
+            nombre,
+            employeur: interForm.employeur || null,
+            salaire_brut: interForm.salaire_brut !== "" ? parseFloat(String(interForm.salaire_brut).replace(",", ".")) : null,
+            estime: !!interForm.estime,
+          }),
+        });
+      }
+      setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
       setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
@@ -6174,7 +6188,7 @@ function AppInner() {
                         <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                           <option value="cachet_isole">Cachets (artiste · 12h)</option>
-                          <option value="heures">Heures (technicien)</option>
+                          <option value="heures">Heures (hors cachet)</option>
                         </select>
                       </label>
                     </div>
@@ -8274,7 +8288,7 @@ function AppInner() {
                         <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                           <option value="cachet_isole">Cachets (artiste · 12h)</option>
-                          <option value="heures">Heures (technicien)</option>
+                          <option value="heures">Heures (hors cachet)</option>
                         </select>
                       </label>
                     </div>
@@ -8575,7 +8589,7 @@ function AppInner() {
                       <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
                         style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                         <option value="cachet_isole">Cachet (artiste · 12h)</option>
-                        <option value="heures">Heures (technicien)</option>
+                        <option value="heures">Heures (hors cachet)</option>
                         <option value="formation">Formation suivie (plafond 338h)</option>
                         <option value="enseignement">Enseignement dispensé (plafond 70h)</option>
                         <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
@@ -8589,6 +8603,17 @@ function AppInner() {
                           <option value="arret_paternite">Congé paternité</option>
                         </optgroup>
                       </select>
+                    </div>
+                    {/* Plage de dates optionnelle : une activité par jour (cas tournée) */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12, color: "#8FB4D8" }}>
+                      <span style={{ whiteSpace: "nowrap" }}>Plusieurs jours&nbsp;? Jusqu'au</span>
+                      <input type="date" value={interForm.date_fin} min={interForm.date || undefined} onChange={e => setInterForm({ ...interForm, date_fin: e.target.value })}
+                        style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      {(() => {
+                        if (!interForm.date || !interForm.date_fin || interForm.date_fin < interForm.date) return null;
+                        const n = Math.round((new Date(interForm.date_fin + "T00:00:00") - new Date(interForm.date + "T00:00:00")) / 86400000) + 1;
+                        return <span style={{ color: "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>= {n} jour{n > 1 ? "s" : ""}</span>;
+                      })()}
                     </div>
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
