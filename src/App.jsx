@@ -2180,9 +2180,35 @@ function AppInner() {
   // ─── Scan d'AEM : envoie la photo/PDF au backend (Claude Vision), récupère les champs lus ───
   // Le document peut contenir PLUSIEURS attestations (un employeur regroupe souvent tous les
   // contrats du mois dans un seul fichier). On les met en file : on valide la 1ère, puis la suivante.
+  // ─── Détecte un doublon : une activité DÉJÀ enregistrée avec le même employeur, la même date de début
+  //     et le même montant (ou, à défaut, le même nombre). Sert à alerter avant d'enregistrer deux fois la même AEM.
+  function trouveDoublonAEM(extrait, activites) {
+    if (!extrait || !extrait.date) return null;
+    const norm = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const emp = norm(extrait.employeur);
+    const brut = (extrait.salaire_brut !== "" && extrait.salaire_brut != null) ? parseFloat(extrait.salaire_brut) : null;
+    const nb = (extrait.nombre !== "" && extrait.nombre != null) ? parseFloat(extrait.nombre) : null;
+    return (activites || []).find((a) => {
+      if (!a || a.date !== extrait.date) return false;          // même jour de début obligatoire
+      if (norm(a.employeur) !== emp) return false;              // même employeur
+      const aBrut = a.salaire_brut != null ? parseFloat(a.salaire_brut) : null;
+      if (brut != null && aBrut != null) return Math.abs(aBrut - brut) < 0.01; // brut connu des 2 côtés → doit coïncider
+      const aNb = a.nombre != null ? parseFloat(a.nombre) : null;
+      return nb != null && aNb != null && Math.abs(aNb - nb) < 0.001;          // sinon on compare le nombre
+    }) || null;
+  }
+
   async function handleScanAEM(input) {
     // Accepte UN fichier (rétro-compat) OU un tableau de fichiers (sélection multiple).
-    const fichiers = Array.isArray(input) ? input.filter(Boolean) : (input ? [input] : []);
+    const bruts = Array.isArray(input) ? input.filter(Boolean) : (input ? [input] : []);
+    // Dédoublonne les fichiers strictement identiques (même nom + taille + date) choisis deux fois par erreur.
+    const vus = new Set();
+    const fichiers = bruts.filter((f) => {
+      const cle = `${f.name}|${f.size}|${f.lastModified}`;
+      if (vus.has(cle)) return false;
+      vus.add(cle);
+      return true;
+    });
     if (fichiers.length === 0) return;
     setAemUploading(true);
     setAemError("");
@@ -6236,6 +6262,16 @@ function AppInner() {
                     <div style={{ marginTop: 14, fontSize: 12.5, color: "#F09595" }}>{aemError}</div>
                   )}
 
+                  {(() => {
+                    const dup = trouveDoublonAEM(aemExtrait, interActivites);
+                    if (!dup) return null;
+                    return (
+                      <div style={{ marginTop: 14, background: "rgba(240,180,70,0.10)", border: "1px solid rgba(240,180,70,0.45)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#F2C879", lineHeight: 1.55 }}>
+                        <strong style={{ color: "#FFD98A" }}>⚠️ Doublon possible.</strong> Tu as déjà {dup.employeur ? `« ${dup.employeur} »` : "une AEM"} au {fmtDate(dup.date)}{dup.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(dup.salaire_brut)} € brut` : ""} dans ta liste. Si c'est la même, clique sur « {aemQueue.length > 0 ? "Passer" : "Annuler"} » pour ne pas la compter deux fois.
+                      </div>
+                    );
+                  })()}
+
                   <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
                     <button type="button" disabled={aemSaving} onClick={handleConfirmAEMMesaem}
                       style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: aemSaving ? "default" : "pointer", fontFamily: "inherit", opacity: aemSaving ? 0.6 : 1 }}>
@@ -8335,6 +8371,16 @@ function AppInner() {
                   {aemError && (
                     <div style={{ marginTop: 14, fontSize: 12.5, color: "#F09595" }}>{aemError}</div>
                   )}
+
+                  {(() => {
+                    const dup = trouveDoublonAEM(aemExtrait, interActivites);
+                    if (!dup) return null;
+                    return (
+                      <div style={{ marginTop: 14, background: "rgba(240,180,70,0.10)", border: "1px solid rgba(240,180,70,0.45)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#F2C879", lineHeight: 1.55 }}>
+                        <strong style={{ color: "#FFD98A" }}>⚠️ Doublon possible.</strong> Tu as déjà {dup.employeur ? `« ${dup.employeur} »` : "une AEM"} au {fmtDate(dup.date)}{dup.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(dup.salaire_brut)} € brut` : ""} dans ta liste. Si c'est la même, clique sur « {aemQueue.length > 0 ? "Passer" : "Annuler"} » pour ne pas la compter deux fois.
+                      </div>
+                    );
+                  })()}
 
                   <div style={{ display: "flex", gap: 10, marginTop: 18 }}>
                     <button type="button" disabled={aemSaving} onClick={handleConfirmAEM}
