@@ -5811,7 +5811,8 @@ function AppInner() {
       }
 
       const scenarios = [rythme, sansContrat, avecPrevus, avecCachets].filter(Boolean);
-      return { dispo: scenarios.length > 0, scenarios };
+      // nbPrevus exposé pour l'invitation « tu peux saisir tes contrats déjà signés » (visible tant qu'elle n'en a aucun).
+      return { dispo: scenarios.length > 0, scenarios, nbPrevus };
     })();
 
     // ═══ TIMELINE : heures faites par mois + heures qui sortent de la fenêtre ═══
@@ -7018,6 +7019,18 @@ function AppInner() {
                     </div>
                   ))}
                 </div>
+
+                {projection.nbPrevus === 0 && (
+                  <div style={{ marginTop: 12, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "13px 15px" }}>
+                    <div style={{ fontSize: 12.5, color: "#C2E6D8", lineHeight: 1.5, marginBottom: 10 }}>
+                      🗓️ <strong style={{ color: "white" }}>Tu as déjà des cachets signés pour les mois à venir&nbsp;?</strong> Ajoute-les avec leur vraie date — je te montre tout de suite où tu en seras à ta date anniversaire.
+                    </div>
+                    <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); }}
+                      style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "11px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un contrat déjà signé
+                    </button>
+                  </div>
+                )}
 
                 {!calc.aDateAnniv && (
                   <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 12, lineHeight: 1.5, textAlign: "center" }}>
