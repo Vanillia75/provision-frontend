@@ -6339,6 +6339,11 @@ function AppInner() {
                                   <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
                                 </button>
                               )}
+                              <button type="button" aria-label="Supprimer cette AEM"
+                                onClick={() => { if (window.confirm(`Supprimer cette AEM ?\n\n${a.employeur || "Employeur à compléter"} · ${fmtDate(a.date)}${a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : ""}\n\nElle sera retirée de ton compteur d'heures. Ton document original reste conservé.`)) handleDeleteActivite(a.id); }}
+                                style={{ background: "transparent", border: "1px solid rgba(226,75,74,0.3)", color: "#E24B4A", borderRadius: 8, padding: "7px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", flexShrink: 0 }}>
+                                <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
+                              </button>
                             </div>
                           ))}
                         </div>
@@ -8211,6 +8216,11 @@ function AppInner() {
                               <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
                             </button>
                           )}
+                          <button type="button" aria-label="Supprimer cette AEM"
+                            onClick={() => { if (window.confirm(`Supprimer cette AEM ?\n\n${a.employeur || "Employeur à compléter"} · ${fmtDate(a.date)}${a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : ""}\n\nElle sera retirée de ton compteur d'heures. Ton document original reste conservé.`)) handleDeleteActivite(a.id); }}
+                            style={{ background: "transparent", border: "1px solid rgba(226,75,74,0.3)", color: "#E24B4A", borderRadius: 8, padding: "7px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", flexShrink: 0 }}>
+                            <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
+                          </button>
                         </div>
                       ))}
                     </div>
