@@ -8793,6 +8793,11 @@ function AppInner() {
                                   <i className="ti ti-bulb" aria-hidden="true" style={{ fontSize: 11 }} /> Estimé
                                 </span>
                               )}
+                              {a.date && a.date > todayISO && (
+                                <span style={{ fontSize: 9.5, color: "#7FB8F0", background: "rgba(55,138,221,0.10)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 11 }} /> À venir
+                                </span>
+                              )}
                             </div>
                             {/* Volume (heures/cachets) */}
                             <div style={{ width: 90, flexShrink: 0, textAlign: "right", fontSize: 13, color: "white", fontWeight: 700 }}>{typeLabel}</div>
