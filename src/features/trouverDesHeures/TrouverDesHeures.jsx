@@ -54,6 +54,8 @@ export default function TrouverDesHeures() {
   const [lieuApplique, setLieuApplique] = useState(() => {
     try { return localStorage.getItem("th_lieu") || ""; } catch { return ""; }
   });
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSug, setShowSug] = useState(false);
 
   const [offres, setOffres] = useState([]);
   const [statut, setStatut] = useState("chargement"); // "chargement" | "ok" | "erreur"
@@ -86,6 +88,34 @@ export default function TrouverDesHeures() {
 
   const appliquerLieu = () => setLieuApplique(lieu.trim());
 
+  // Autocomplétion ville / code postal via geo.api.gouv.fr (public, sans credential).
+  useEffect(() => {
+    const q = lieu.trim();
+    if (q.length < 2) { setSuggestions([]); return; }
+    let annule = false;
+    const id = setTimeout(async () => {
+      try {
+        const champs = "nom,code,codeDepartement,codesPostaux";
+        const numerique = /^\d{4,5}$/.test(q); // 4-5 chiffres = code postal
+        const url = numerique
+          ? `https://geo.api.gouv.fr/communes?codePostal=${encodeURIComponent(q)}&fields=${champs}&limit=6`
+          : `https://geo.api.gouv.fr/communes?nom=${encodeURIComponent(q)}&fields=${champs}&boost=population&limit=6`;
+        const arr = await fetch(url).then((r) => r.json());
+        if (!annule) setSuggestions(Array.isArray(arr) ? arr : []);
+      } catch {
+        if (!annule) setSuggestions([]);
+      }
+    }, 250);
+    return () => { annule = true; clearTimeout(id); };
+  }, [lieu]);
+
+  const choisirVille = (s) => {
+    setLieu(s.nom);
+    setLieuApplique(s.code);   // code INSEE → précis (le backend gère Paris/Lyon/Marseille)
+    setSuggestions([]);
+    setShowSug(false);
+  };
+
   const ouvrirOffre = (url) => {
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
@@ -113,10 +143,25 @@ export default function TrouverDesHeures() {
 
       {/* Où cherches-tu ? */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-        <input type="text" value={lieu} onChange={(e) => setLieu(e.target.value)}
-          onKeyDown={(e) => { if (e.key === "Enter") appliquerLieu(); }}
-          placeholder="Où cherches-tu ? (ville ou département)"
-          style={{ ...champStyle, flex: "1 1 220px" }} aria-label="Où cherches-tu ?" />
+        <div style={{ position: "relative", flex: "1 1 220px" }}>
+          <input type="text" value={lieu} autoComplete="off"
+            onChange={(e) => { setLieu(e.target.value); setShowSug(true); }}
+            onFocus={() => setShowSug(true)}
+            onBlur={() => setTimeout(() => setShowSug(false), 150)}
+            onKeyDown={(e) => { if (e.key === "Enter") { appliquerLieu(); setShowSug(false); } }}
+            placeholder="Où cherches-tu ? (ville ou code postal)"
+            style={{ ...champStyle, width: "100%" }} aria-label="Où cherches-tu ?" />
+          {showSug && suggestions.length > 0 && (
+            <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 30, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, overflow: "hidden", boxShadow: "0 10px 28px rgba(0,0,0,0.45)" }}>
+              {suggestions.map((s) => (
+                <button type="button" key={s.code} onMouseDown={(e) => e.preventDefault()} onClick={() => choisirVille(s)}
+                  style={{ display: "block", width: "100%", textAlign: "left", background: "transparent", border: "none", borderTop: "1px solid rgba(255,255,255,0.05)", color: "white", fontSize: 13, padding: "9px 12px", cursor: "pointer", fontFamily: "inherit" }}>
+                  {s.nom} <span style={{ color: "#6B8299" }}>· {s.codeDepartement || (s.codesPostaux && s.codesPostaux[0]) || ""}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
         <select value={rayon} onChange={(e) => setRayon(Number(e.target.value))} style={{ ...champStyle, flex: "0 1 110px" }} aria-label="Rayon">
           <option value={10}>10 km</option>
           <option value={20}>20 km</option>
