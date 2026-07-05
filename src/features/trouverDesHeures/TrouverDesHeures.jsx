@@ -183,8 +183,8 @@ export default function TrouverDesHeures() {
         </select>
         <select value={contractType} onChange={(e) => setContractType(e.target.value)} style={{ ...champStyle, flex: "1 1 150px" }} aria-label="Filtrer par type de contrat">
           <option value="">Tous les contrats</option>
-          <option value="cachet">Cachet</option>
           <option value="CDDU">CDDU</option>
+          <option value="mission">Mission</option>
         </select>
       </div>
 
