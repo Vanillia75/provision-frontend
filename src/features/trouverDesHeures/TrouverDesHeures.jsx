@@ -59,16 +59,36 @@ export default function TrouverDesHeures() {
 
   const [offres, setOffres] = useState([]);
   const [statut, setStatut] = useState("chargement"); // "chargement" | "ok" | "erreur"
+  // Rayon RÉELLEMENT utilisé (le rayon choisi peut être auto-élargi une fois s'il ne donne rien).
+  const [rayonEffectif, setRayonEffectif] = useState(() => {
+    try { return Number(localStorage.getItem("th_rayon")) || 20; } catch { return 20; }
+  });
+  // Auto-élargissement pour le message discret : { de, vers } ou null.
+  const [autoElargi, setAutoElargi] = useState(null);
 
   const charger = useCallback(async () => {
     setStatut("chargement");
+    setAutoElargi(null);
+    const fetchR = (r) => fetchOffresFranceTravail({
+      roleType: roleType || undefined,
+      contractType: contractType || undefined,
+      lieu: lieuApplique || undefined,
+      rayon: r,
+    });
     try {
-      const data = await fetchOffresFranceTravail({
-        roleType: roleType || undefined,
-        contractType: contractType || undefined,
-        lieu: lieuApplique || undefined,
-        rayon,
-      });
+      let r = rayon;
+      let data = await fetchR(r);
+      // Hector essaie tout seul : si vide (ville renseignée), il élargit UNE fois avant de demander.
+      if (data.length === 0 && lieuApplique) {
+        const rPlus = [10, 20, 50, 100].find((x) => x > r);
+        if (rPlus) {
+          const data2 = await fetchR(rPlus);
+          if (data2.length > 0) setAutoElargi({ de: r, vers: rPlus });
+          data = data2;
+          r = rPlus;
+        }
+      }
+      setRayonEffectif(r);
       setOffres(data);
       setStatut("ok");
     } catch (e) {
@@ -206,17 +226,49 @@ export default function TrouverDesHeures() {
         </div>
       )}
 
-      {statut === "ok" && offres.length === 0 && (
-        <div style={{ textAlign: "center", padding: "40px 24px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14 }}>
-          <div style={{ fontSize: 30, marginBottom: 10 }}>🐾</div>
-          <div style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 360, margin: "0 auto" }}>
-            H€CTOR cherche les offres utiles pour toi. Reviens bientôt.
+      {statut === "ok" && offres.length === 0 && (() => {
+        // Hector a déjà essayé d'élargir tout seul une fois (voir charger). Ici, il ne reste qu'à proposer.
+        const nom = lieu.trim();
+        const rayonPlus = [10, 20, 50, 100].find((r) => r > rayonEffectif);
+        const aElargiSeul = nom && rayonEffectif > rayon;
+        const actions = [];
+        if (nom && rayonPlus) actions.push({ k: "rayon", label: `Élargir à ${rayonPlus} km`, on: () => setRayon(rayonPlus) });
+        if (roleType) actions.push({ k: "role", label: "Retirer le filtre métier", on: () => setRoleType("") });
+        if (contractType) actions.push({ k: "contrat", label: "Retirer le filtre contrat", on: () => setContractType("") });
+        return (
+          <div style={{ textAlign: "center", padding: "40px 24px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 14 }}>
+            <div style={{ fontSize: 30, marginBottom: 10 }}>🐾</div>
+            <div style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 400, margin: actions.length > 0 ? "0 auto 16px" : "0 auto 2px" }}>
+              {!nom
+                ? "Rien pour l'instant."
+                : aElargiSeul
+                  ? `Rien autour de « ${nom} », même en élargissant à ${rayonEffectif} km.`
+                  : `Rien autour de « ${nom} » pour l'instant.`}
+            </div>
+            {actions.length > 0 ? (
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                {actions.map((a) => (
+                  <button key={a.k} type="button" onClick={a.on}
+                    style={{ background: "rgba(93,202,165,0.12)", border: `1px solid rgba(93,202,165,0.4)`, color: VERT, borderRadius: 9, padding: "9px 15px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    {a.label}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <div style={{ fontSize: 12.5, color: TEXTE_DOUX, marginTop: 2 }}>Je continue de chercher — reviens un peu plus tard. 🐾</div>
+            )}
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {statut === "ok" && offres.length > 0 && (
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {autoElargi && (
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(93,202,165,0.07)", border: `1px solid rgba(93,202,165,0.25)`, borderRadius: 10, padding: "10px 13px", fontSize: 12.5, color: "#C2E6D8", lineHeight: 1.5 }}>
+              <span aria-hidden="true" style={{ flexShrink: 0 }}>🐾</span>
+              Je n'ai rien trouvé à moins de {autoElargi.de} km. J'ai regardé jusqu'à {autoElargi.vers} km pour toi.
+            </div>
+          )}
           {offres.map((o) => (
             <div key={o.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "15px 17px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
