@@ -9,7 +9,7 @@
 //  (INK #0A2540, ACCENT #378ADD, vert #5DCAA5, bleu nuit #07192E).
 // ─────────────────────────────────────────────────────────────────────────────
 import { useState, useEffect, useCallback } from "react";
-import { fetchIntermittentJobOffers, regionsDisponibles } from "./jobOffers.mock";
+import { fetchOffresFranceTravail } from "./francetravail.adapter";
 
 const ACCENT = "#378ADD";
 const VERT = "#5DCAA5";
@@ -43,8 +43,17 @@ function formatDateFr(iso) {
 
 export default function TrouverDesHeures() {
   const [roleType, setRoleType] = useState("");
-  const [region, setRegion] = useState("");
   const [contractType, setContractType] = useState("");
+  const [lieu, setLieu] = useState(() => {
+    try { return localStorage.getItem("th_lieu") || ""; } catch { return ""; }
+  });
+  const [rayon, setRayon] = useState(() => {
+    try { return Number(localStorage.getItem("th_rayon")) || 20; } catch { return 20; }
+  });
+  // Lieu réellement appliqué à la recherche (on ne relance pas à chaque frappe).
+  const [lieuApplique, setLieuApplique] = useState(() => {
+    try { return localStorage.getItem("th_lieu") || ""; } catch { return ""; }
+  });
 
   const [offres, setOffres] = useState([]);
   const [statut, setStatut] = useState("chargement"); // "chargement" | "ok" | "erreur"
@@ -52,25 +61,34 @@ export default function TrouverDesHeures() {
   const charger = useCallback(async () => {
     setStatut("chargement");
     try {
-      const data = await fetchIntermittentJobOffers({
+      const data = await fetchOffresFranceTravail({
         roleType: roleType || undefined,
-        region: region || undefined,
         contractType: contractType || undefined,
+        lieu: lieuApplique || undefined,
+        rayon,
       });
       setOffres(data);
       setStatut("ok");
     } catch (e) {
       setStatut("erreur");
     }
-  }, [roleType, region, contractType]);
+  }, [roleType, contractType, lieuApplique, rayon]);
 
   useEffect(() => { charger(); }, [charger]);
+
+  // Mémorise le dernier choix de localisation (localStorage suffit en V1).
+  useEffect(() => {
+    try {
+      localStorage.setItem("th_lieu", lieu);
+      localStorage.setItem("th_rayon", String(rayon));
+    } catch { /* stockage indisponible : on ignore */ }
+  }, [lieu, rayon]);
+
+  const appliquerLieu = () => setLieuApplique(lieu.trim());
 
   const ouvrirOffre = (url) => {
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   };
-
-  const regions = regionsDisponibles();
 
   return (
     <>
@@ -80,7 +98,7 @@ export default function TrouverDesHeures() {
           <i className="ti ti-briefcase" aria-hidden="true" style={{ color: BLEU_CLAIR, fontSize: 20 }} />
         </div>
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Trouver des heures</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Trouver des cachets & des heures</h1>
           <p style={{ fontSize: 13.5, color: TEXTE_DOUX, margin: "2px 0 0" }}>Des missions qui peuvent t'aider à te rapprocher des 507h.</p>
         </div>
       </div>
@@ -93,7 +111,25 @@ export default function TrouverDesHeures() {
         </div>
       </div>
 
-      {/* Filtres */}
+      {/* Où cherches-tu ? */}
+      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+        <input type="text" value={lieu} onChange={(e) => setLieu(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") appliquerLieu(); }}
+          placeholder="Où cherches-tu ? (ville ou département)"
+          style={{ ...champStyle, flex: "1 1 220px" }} aria-label="Où cherches-tu ?" />
+        <select value={rayon} onChange={(e) => setRayon(Number(e.target.value))} style={{ ...champStyle, flex: "0 1 110px" }} aria-label="Rayon">
+          <option value={10}>10 km</option>
+          <option value={20}>20 km</option>
+          <option value={50}>50 km</option>
+          <option value={100}>100 km</option>
+        </select>
+        <button type="button" onClick={appliquerLieu}
+          style={{ flex: "0 0 auto", background: VERT, color: "#04342C", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+          Rechercher
+        </button>
+      </div>
+
+      {/* Filtres métier / contrat */}
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 18 }}>
         <select value={roleType} onChange={(e) => setRoleType(e.target.value)} style={{ ...champStyle, flex: "1 1 150px" }} aria-label="Filtrer par métier">
           <option value="">Tous les métiers</option>
@@ -104,10 +140,6 @@ export default function TrouverDesHeures() {
           <option value="">Tous les contrats</option>
           <option value="cachet">Cachet</option>
           <option value="CDDU">CDDU</option>
-        </select>
-        <select value={region} onChange={(e) => setRegion(e.target.value)} style={{ ...champStyle, flex: "1 1 180px" }} aria-label="Filtrer par région">
-          <option value="">Toutes les régions</option>
-          {regions.map((r) => <option key={r} value={r}>{r}</option>)}
         </select>
       </div>
 
@@ -164,7 +196,7 @@ export default function TrouverDesHeures() {
                   {CONTRAT_LABELS[o.contractType] || o.contractType}
                 </span>
                 <span style={{ fontSize: 10.5, color: "#6B8299", marginLeft: "auto" }}>
-                  {o.source} · {formatDateFr(o.publishedAt)}
+                  Source : {o.source}{o.publishedAt ? ` · ${formatDateFr(o.publishedAt)}` : ""}
                 </span>
               </div>
 
