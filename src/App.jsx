@@ -414,6 +414,9 @@ function AppInner() {
   const [interShowAdd, setInterShowAdd] = useState(true);
   const [interSaving, setInterSaving] = useState(false);
   const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+  // Autocomplétion du champ employeur : menu maison des employeurs déjà saisis par l'utilisateur.
+  const [empSugOpen, setEmpSugOpen] = useState(false);   // le menu est-il ouvert ?
+  const [empSugHover, setEmpSugHover] = useState(-1);     // ligne survolée (surlignage)
   // Report des heures déjà faites (saisie de départ)
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
@@ -8848,9 +8851,57 @@ function AppInner() {
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
                         placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                      <input type="text" value={interForm.employeur} onChange={e => setInterForm({ ...interForm, employeur: e.target.value })}
-                        placeholder="Employeur (optionnel)"
-                        style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      {(() => {
+                        // Autocomplétion employeur : suggère les employeurs DÉJÀ saisis par l'utilisateur
+                        // (ses activités uniquement — aucune base globale, aucun partage entre comptes).
+                        // Dédupliqués (normEmployeur : insensible accents/casse/espaces), plus récents d'abord.
+                        const empConnus = (() => {
+                          const map = new Map();
+                          for (const a of (interActivites || [])) {
+                            const nom = (a.employeur || "").trim();
+                            if (!nom) continue;
+                            const clef = normEmployeur(nom);
+                            const prev = map.get(clef);
+                            if (!prev || String(a.date) > String(prev.date)) map.set(clef, { nom, date: a.date });
+                          }
+                          return Array.from(map.values())
+                            .sort((x, y) => String(y.date).localeCompare(String(x.date)))
+                            .map(v => v.nom);
+                        })();
+                        const saisi = normEmployeur(interForm.employeur);
+                        const suggestions = empConnus
+                          .filter(e => { const n = normEmployeur(e); return saisi ? (n.includes(saisi) && n !== saisi) : true; })
+                          .slice(0, 6);
+                        const ouvert = empSugOpen && suggestions.length > 0;
+                        return (
+                          <div style={{ position: "relative", flex: "1 1 160px" }}>
+                            <input type="text" value={interForm.employeur} autoComplete="off"
+                              onChange={e => { setInterForm({ ...interForm, employeur: e.target.value }); setEmpSugOpen(true); }}
+                              onFocus={() => setEmpSugOpen(true)}
+                              onBlur={() => setTimeout(() => setEmpSugOpen(false), 120)}
+                              onKeyDown={e => { if (e.key === "Escape") setEmpSugOpen(false); }}
+                              placeholder="Employeur (optionnel)"
+                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                            {ouvert && (
+                              <div style={{ position: "absolute", top: "calc(100% + 4px)", left: 0, right: 0, zIndex: 40, background: "#10294a", border: "1px solid #2a4a72", borderRadius: 8, boxShadow: "0 8px 24px rgba(0,0,0,0.45)", overflow: "hidden", maxHeight: 210, overflowY: "auto" }}>
+                                {!saisi && (
+                                  <div style={{ padding: "7px 12px", fontSize: 10.5, letterSpacing: 0.3, textTransform: "uppercase", color: "#6B8299", fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>Tes employeurs</div>
+                                )}
+                                {suggestions.map((nom, i) => (
+                                  <div key={nom}
+                                    onMouseDown={e => { e.preventDefault(); setInterForm({ ...interForm, employeur: nom }); setEmpSugOpen(false); }}
+                                    onMouseEnter={() => setEmpSugHover(i)}
+                                    onMouseLeave={() => setEmpSugHover(-1)}
+                                    style={{ display: "flex", alignItems: "center", gap: 9, padding: "9px 12px", cursor: "pointer", background: empSugHover === i ? "rgba(55,138,221,0.16)" : "transparent" }}>
+                                    <i className="ti ti-building" aria-hidden="true" style={{ fontSize: 14, color: "#9FCBF5", flexShrink: 0 }} />
+                                    <span style={{ fontSize: 13, color: "#E8F4FF", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{nom}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })()}
                     </div>
                     {/* Salaire brut : seulement pour le travail (sert aux Congés Spectacles + revenus) */}
                     {(interForm.type_activite === "cachet_isole" || interForm.type_activite === "cachet_groupe" || interForm.type_activite === "heures") && (
