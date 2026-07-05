@@ -1737,6 +1737,65 @@ function AppInner() {
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
   const [deletingAccount, setDeletingAccount] = useState(false);
 
+  const [pwdCurrent, setPwdCurrent] = useState("");
+  const [pwdNew, setPwdNew] = useState("");
+  const [pwdConfirm, setPwdConfirm] = useState("");
+  const [pwdSaving, setPwdSaving] = useState(false);
+  const [pwdMsg, setPwdMsg] = useState("");
+  const [pwdErr, setPwdErr] = useState("");
+
+  async function handleChangePassword() {
+    setPwdErr(""); setPwdMsg("");
+    if (pwdNew.length < 8) { setPwdErr("Le nouveau mot de passe doit contenir au moins 8 caractères."); return; }
+    if (pwdNew !== pwdConfirm) { setPwdErr("La confirmation ne correspond pas."); return; }
+    setPwdSaving(true);
+    try {
+      await apiFetch("/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({ current_password: pwdCurrent, new_password: pwdNew }),
+      });
+      setPwdMsg("✓ Mot de passe changé.");
+      setPwdCurrent(""); setPwdNew(""); setPwdConfirm("");
+    } catch (err) {
+      setPwdErr(err.message || "Impossible de changer le mot de passe.");
+    } finally {
+      setPwdSaving(false);
+    }
+  }
+
+  // Carte « Mon mot de passe » réutilisée dans les deux écrans Réglages (intermittent + AE).
+  function renderChangePassword(dark = true) {
+    const champ = { width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+    const vide = !pwdCurrent || !pwdNew || !pwdConfirm;
+    // Enveloppe selon le shell : intermittent = fond sombre (overlay) ; AE = carte S.card sur fond clair.
+    const carte = dark
+      ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
+      : { ...S.card, marginBottom: 16 };
+    return (
+      <div style={carte}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mon mot de passe</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Change ton mot de passe quand tu veux — il te faut ton mot de passe actuel. <span style={{ color: "#5A7088" }}>(Si tu te connectes avec Google, tu n'as pas de mot de passe à changer.)</span></div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 380 }}>
+          <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Mot de passe actuel
+            <input type="password" autoComplete="current-password" value={pwdCurrent} onChange={e => setPwdCurrent(e.target.value)} style={champ} />
+          </label>
+          <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Nouveau mot de passe <span style={{ color: "#5A7088", fontWeight: 400 }}>(8 caractères min.)</span>
+            <input type="password" autoComplete="new-password" value={pwdNew} onChange={e => setPwdNew(e.target.value)} style={champ} />
+          </label>
+          <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Confirmer le nouveau
+            <input type="password" autoComplete="new-password" value={pwdConfirm} onChange={e => setPwdConfirm(e.target.value)} style={champ} />
+          </label>
+        </div>
+        {pwdErr && <div style={{ fontSize: 12.5, color: "#F09595", marginTop: 12 }}>{pwdErr}</div>}
+        {pwdMsg && <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 700, marginTop: 12 }}>{pwdMsg}</div>}
+        <button type="button" onClick={handleChangePassword} disabled={pwdSaving || vide}
+          style={{ marginTop: 14, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: (pwdSaving || vide) ? "default" : "pointer", fontFamily: "inherit", opacity: (pwdSaving || vide) ? 0.6 : 1 }}>
+          {pwdSaving ? "…" : "Changer mon mot de passe"}
+        </button>
+      </div>
+    );
+  }
+
   async function handleExportData() {
     setExportingData(true);
     try {
@@ -9100,6 +9159,8 @@ function AppInner() {
                 </div>
               </div>
 
+              {renderChangePassword()}
+
               {/* Mon statut */}
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mon statut</div>
@@ -12530,6 +12591,8 @@ function AppInner() {
                 Aujourd'hui, tu mets ton solde à jour à la main en 10 secondes : tes identifiants bancaires ne nous sont jamais demandés. Bientôt, tu pourras choisir de connecter ton compte en lecture seule, via un partenaire agréé par la Banque de France — H€CTOR pourra lire ton solde, jamais toucher à ton argent. Connexion ou saisie manuelle : ce sera ton choix, à tout moment.
               </p>
             </div>
+
+            {renderChangePassword(false)}
 
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Mes données</div>
