@@ -113,10 +113,6 @@ const MOCK_OFFERS = [
   },
 ];
 
-// Petit délai simulé pour que l'écran montre son état de chargement (comme un vrai réseau).
-const LATENCE_MS = 500;
-const delay = (ms) => new Promise((r) => setTimeout(r, ms));
-
 /**
  * Récupère les offres utiles à un·e intermittent·e.
  *
@@ -131,7 +127,9 @@ const delay = (ms) => new Promise((r) => setTimeout(r, ms));
  * @returns {Promise<JobOffer[]>}
  */
 export async function fetchIntermittentJobOffers(filtres = {}) {
-  await delay(LATENCE_MS);
+  // Pas de latence simulée : un setTimeout peut être GELÉ par Chrome en onglet
+  // d'arrière-plan et bloquer le spinner indéfiniment. On renvoie directement
+  // (la fonction reste async → signature identique à la future API réelle).
 
   // Crochets de test des états de l'écran (jamais utilisés en usage normal).
   if (filtres._simulate === "error") {
