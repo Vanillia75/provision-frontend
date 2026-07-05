@@ -4761,10 +4761,53 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 05 — Je veille sur toi (moment de confiance, centré, sans visuel : un seul Hector, au hero) ===== */}
+        {/* ===== 05 — H€CTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) ===== */}
+        <section style={secShell}>
+          <div style={secGrid}>
+            <div>
+              <div style={numFantome}>05</div>
+              <h2 style={titreSec}>H€CTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
+              <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel. Les offres France Travail directement dans H€CTOR, filtrées selon ton métier et ta ville.</p>
+            </div>
+            <div style={demoFondu}>
+              {/* Filtres visibles — on montre le produit sans le décrire */}
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, color: "#B5D4F4" }}>🎭 Comédien·ne</span>
+                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, color: "#B5D4F4" }}>📍 Paris + 30 km</span>
+              </div>
+              {/* Offres d'exemple (fictives mais réalistes — pas de vraies offres, elles expirent) */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {[
+                  { titre: "Régisseur·se lumière — festival d'été", metier: "Technicien", contrat: "CDDU" },
+                  { titre: "Comédien·ne — création jeune public", metier: "Artiste", contrat: "Cachet" },
+                ].map((o) => (
+                  <div key={o.titre} style={sousPanel}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "white", lineHeight: 1.35 }}>{o.titre}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 6, padding: "2px 8px" }}>{o.metier}</span>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 6, padding: "2px 8px" }}>{o.contrat}</span>
+                      <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#7FB8F0", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>Voir l'offre sur France Travail <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 12 }} /></span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              {/* Mention obligatoire — l'honnêteté fait partie de la promesse */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 14, fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
+                <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, color: "#FAC775", flexShrink: 0, marginTop: 1 }} />
+                Vérifie toujours que le contrat est bien éligible à ton annexe.
+              </div>
+            </div>
+          </div>
+          {/* Clôture de section */}
+          <p style={{ fontFamily: SERIF, fontSize: isMobile ? 18 : 22, color: "#EAF2FB", lineHeight: 1.5, textAlign: "center", maxWidth: 720, margin: isMobile ? "34px auto 0" : "48px auto 0" }}>
+            Quand il te manque encore des heures, H€CTOR ne se contente plus de te le dire. Il t'aide aussi à <span style={{ color: "#5DCAA5" }}>trouver où les faire</span>.
+          </p>
+        </section>
+
+        {/* ===== 06 — Je veille sur toi (moment de confiance, centré, sans visuel : un seul Hector, au hero) ===== */}
         <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "58px 22px" : "104px 48px" }}>
           <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
-            <div style={{ ...numFantome, margin: "0 0 6px" }}>05</div>
+            <div style={{ ...numFantome, margin: "0 0 6px" }}>06</div>
             <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
               {[
@@ -4778,11 +4821,11 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 06 — Et j'aide aussi ta micro-entreprise ===== */}
+        {/* ===== 07 — Et j'aide aussi ta micro-entreprise ===== */}
         <section style={secShell}>
           <div style={secGrid}>
             <div>
-              <div style={numFantome}>06</div>
+              <div style={numFantome}>07</div>
               <h2 style={titreSec}>Et j'aide aussi<br />ta <span style={{ color: "#5DCAA5" }}>micro-entreprise</span>. <i className="ti ti-gift" aria-hidden="true" style={{ fontSize: 25, color: "#5DCAA5", verticalAlign: "middle" }} /></h2>
               <p style={texteSec}>Devis, factures, trésorerie, prévisions : tout est connecté pour te faire gagner du temps.</p>
             </div>
