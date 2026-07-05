@@ -9,6 +9,8 @@ import { LegalPageView } from "./LegalPage";
 import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
+import { FEATURE_TROUVER_HEURES } from "./featureFlags";
+import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -5977,6 +5979,8 @@ function AppInner() {
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
       { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
+      // Caché derrière feature flag : invisible en prod tant que la V1 n'est pas validée.
+      ...(FEATURE_TROUVER_HEURES ? [{ id: "trouver-heures", icon: "ti-briefcase", label: "Trouver des heures", dispo: true }] : []),
     ];
     const interSidebar = (
       <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
@@ -9017,6 +9021,7 @@ function AppInner() {
 
               {/* ═══ PAGE RÉGLAGES ═══ */}
               {interNav === "carnet" && renderCarnet()}
+              {FEATURE_TROUVER_HEURES && interNav === "trouver-heures" && <TrouverDesHeures />}
               {interNav === "abonnement" && renderAbonnement(() => setInterNav("cockpit"))}
               {interNav === "reglages" && (<>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
