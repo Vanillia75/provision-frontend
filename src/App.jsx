@@ -4540,12 +4540,12 @@ function AppInner() {
               <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
                 {[
-                  "Quand je ne suis pas sûr, je te le dis.",
-                  "Je n'invente jamais un chiffre.",
-                  "Je suis là pour t'éclairer, pas pour te vendre du rêve.",
+                  "Derrière chaque chiffre, il y a une explication.",
+                  "Derrière chaque estimation, il y a de la transparence.",
                 ].map(t => (
                   <span key={t} style={{ fontSize: isMobile ? 16 : 19, color: "#EAF2FB", lineHeight: 1.5, maxWidth: 560 }}>{t}</span>
                 ))}
+                <span style={{ fontSize: isMobile ? 18 : 21, color: "#5DCAA5", fontWeight: 700, marginTop: 4 }}>C'est ça, H€CTOR.</span>
               </div>
             </div>
           </section>
@@ -4553,7 +4553,7 @@ function AppInner() {
           {/* ===== 06 — pont inverse vers l'intermittent ===== */}
           <section style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "48px 22px" : "64px 48px" }}>
             <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(55,138,221,0.06))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
-              <div style={{ fontSize: 40, marginBottom: 14 }}>🎁</div>
+              <div style={{ marginBottom: 14 }}><i className="ti ti-masks-theater" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
               <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 24 : 30, fontWeight: 700, color: "white", lineHeight: 1.25, margin: "0 0 12px" }}>
                 Et si tu es aussi intermittent du spectacle…
               </h2>
@@ -4811,12 +4811,12 @@ function AppInner() {
             <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
             <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
               {[
-                "Quand je ne suis pas sûr, je te le dis.",
-                "Je n'invente jamais un chiffre.",
-                "Je suis là pour t'éclairer, pas pour te vendre du rêve.",
+                "Derrière chaque chiffre, il y a une explication.",
+                "Derrière chaque estimation, il y a de la transparence.",
               ].map(t => (
                 <span key={t} style={{ fontSize: isMobile ? 16 : 19, color: "#EAF2FB", lineHeight: 1.5, maxWidth: 560 }}>{t}</span>
               ))}
+              <span style={{ fontSize: isMobile ? 18 : 21, color: "#5DCAA5", fontWeight: 700, marginTop: 4 }}>C'est ça, H€CTOR.</span>
             </div>
           </div>
         </section>
