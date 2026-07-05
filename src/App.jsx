@@ -5775,7 +5775,7 @@ function AppInner() {
       const nbPrevus = (interActivites || []).filter(a => a && a.date && a.date > todayISO).length;
       const avecPrevus = (c && c.projection_disponible && nbPrevus > 0 && c.projection_avec_prevus_heures != null)
         ? {
-            label: `Avec tes ${nbPrevus} contrat${nbPrevus > 1 ? "s" : ""} prévu${nbPrevus > 1 ? "s" : ""}`,
+            label: nbPrevus > 1 ? `Avec tes ${nbPrevus} contrats prévus` : `Avec ton contrat prévu`,
             valeur: `~${c.projection_avec_prevus_heures}h à ta date anniversaire`,
             ok: !!c.projection_avec_prevus_securise,
             note: c.projection_avec_prevus_securise ? "ça passe" : `il manquerait ${c.projection_avec_prevus_manquant}h`,
