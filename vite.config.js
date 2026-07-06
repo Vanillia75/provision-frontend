@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import { sentryVitePlugin } from "@sentry/vite-plugin";
 import fs from "fs";
 import path from "path";
 
@@ -29,9 +30,31 @@ function hectorVersionPlugin() {
   };
 }
 
-export default defineConfig({
-  plugins: [react(), hectorVersionPlugin()],
-  define: {
-    __BUILD_ID__: JSON.stringify(BUILD_ID),
-  },
+export default defineConfig(() => {
+  // Upload des sourcemaps à Sentry UNIQUEMENT si le token est fourni (variable d'env).
+  // Sans token (dev local, ou prod tant que les variables Vercel ne sont pas posées),
+  // le comportement reste IDENTIQUE à avant : pas de sourcemap, pas d'upload, aucun risque.
+  const uploadSentry = !!process.env.SENTRY_AUTH_TOKEN;
+  return {
+    plugins: [
+      react(),
+      hectorVersionPlugin(),
+      ...(uploadSentry
+        ? [sentryVitePlugin({
+            org: process.env.SENTRY_ORG,
+            project: process.env.SENTRY_PROJECT,
+            authToken: process.env.SENTRY_AUTH_TOKEN,
+            release: { name: BUILD_ID },
+            // Les .map sont uploadées PUIS supprimées du build : jamais servies au public.
+            sourcemaps: { filesToDeleteAfterUpload: ["./dist/**/*.js.map"] },
+          })]
+        : []),
+    ],
+    // "hidden" = sourcemaps générées (pour l'upload) mais SANS commentaire
+    // //# sourceMappingURL dans les bundles servis → non exposées publiquement.
+    build: { sourcemap: uploadSentry ? "hidden" : false },
+    define: {
+      __BUILD_ID__: JSON.stringify(BUILD_ID),
+    },
+  };
 });

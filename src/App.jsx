@@ -13,6 +13,9 @@ import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
+  // release = __BUILD_ID__ (injecté par vite.config) : lie chaque event aux sourcemaps
+  // uploadées pour ce build, pour que les stacks soient dé-minifiées dans Sentry.
+  release: __BUILD_ID__,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.2,
   environment: "production",
