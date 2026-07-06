@@ -6440,8 +6440,8 @@ function AppInner() {
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Type
                         <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                          <option value="cachet_isole">Cachets (artiste · 12h)</option>
-                          <option value="heures">Heures (hors cachet)</option>
+                          <option value="cachet_isole">Cachet (artiste · 12h)</option>
+                          <option value="heures">Heures (artiste ou technicien)</option>
                         </select>
                       </label>
                     </div>
@@ -8640,8 +8640,8 @@ function AppInner() {
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Type
                         <select value={aemExtrait.type_activite} onChange={e => setAemExtrait({ ...aemExtrait, type_activite: e.target.value })}
                           style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                          <option value="cachet_isole">Cachets (artiste · 12h)</option>
-                          <option value="heures">Heures (hors cachet)</option>
+                          <option value="cachet_isole">Cachet (artiste · 12h)</option>
+                          <option value="heures">Heures (artiste ou technicien)</option>
                         </select>
                       </label>
                     </div>
@@ -8985,7 +8985,7 @@ function AppInner() {
                             <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
                               style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                               <option value="cachet_isole">Cachet (artiste · 12h)</option>
-                              <option value="heures">Heures (hors cachet)</option>
+                              <option value="heures">Heures (artiste ou technicien)</option>
                               <option value="formation">Formation suivie (plafond 338h)</option>
                               <option value="enseignement">Enseignement dispensé (plafond 70h)</option>
                               <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
@@ -9246,8 +9246,8 @@ function AppInner() {
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                               <select value={interEditForm.type_activite} onChange={e => setInterEditForm({ ...interEditForm, type_activite: e.target.value })}
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                                <option value="heures">heures réelles</option>
-                                <option value="cachet_isole">cachets (artiste · 12h)</option>
+                                <option value="heures">Heures (artiste ou technicien)</option>
+                                <option value="cachet_isole">Cachet (artiste · 12h)</option>
                                 <option value="formation">formation suivie</option>
                                 <option value="enseignement">enseignement dispensé</option>
                                 <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
@@ -9287,10 +9287,10 @@ function AppInner() {
                         );
                       }
                       const ARRET_LABELS = { arret_maternite: "Congé maternité / adoption", arret_accident: "Accident du travail", arret_ald: "Maladie longue durée (ALD)", arret_suspension: "Arrêt pendant un contrat", arret_maladie_ordinaire: "Maladie ordinaire (allonge la période)", arret_paternite: "Congé paternité (allonge la période)" };
-                      const typeLabelComplet = a.type_activite === "heures" ? "Heures réelles" :
+                      const typeLabelComplet = a.type_activite === "heures" ? "Heures (artiste ou technicien)" :
                         a.type_activite === "formation" ? "Formation suivie" :
                         a.type_activite === "enseignement" ? "Enseignement dispensé" :
-                        ARRET_LABELS[a.type_activite] || "Cachets";
+                        ARRET_LABELS[a.type_activite] || "Cachet (artiste)";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
                       return (
