@@ -6134,6 +6134,19 @@ function AppInner() {
     // Fenêtre : on considère l'actualisation "ouverte" entre le 28 et le 15. Sinon "à venir".
     const actuOuverte = jourCourant >= 28 || jourCourant <= 15;
     const joursAvantOuverture = jourCourant < 28 ? (28 - jourCourant) : 0;
+    // ── Loi VIII : Hector n'affirme pas ce qu'il ne peut pas savoir. L'actualisation
+    // se fait sur France Travail, hors de l'app → l'utilisateur peut la DÉCLARER faite
+    // (ex : actualisée sur FT, mais les AEM n'arrivent que le mois suivant). Hector le croit.
+    const actuEntry = (actuHistorique || []).find(h => h.clef === actuClef);
+    // "declaree sans data" : déclarée faite alors qu'aucune activité du mois n'est encore
+    // dans l'app → on adapte le ton (on "guette les AEM" au lieu de raconter un mois vide).
+    const actuDeclareeSansData = !!(actuEntry && actuEntry.declaree) && actusDuMois.length === 0;
+    const declarerActualise = () => {
+      const entry = { clef: actuClef, label: moisDeclLabel, date: new Date().toISOString(), heures: Math.round(totalHeuresMois), cachets: totalCachetsMois, brut: Math.round(totalBrutMois), employeurs: nbEmployeursMois, declaree: true };
+      const next = [entry, ...(actuHistorique || []).filter(h => h.clef !== actuClef)].slice(0, 24);
+      setActuHistorique(next);
+      safeStorage.setItem("actuHistorique", JSON.stringify(next));
+    };
 
     // Les entrées du menu intermittent (reflètent les 6 promesses de la landing)
     const interMenuItems = [
@@ -6619,6 +6632,10 @@ function AppInner() {
                       style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
                       Voir mon récap →
                     </button>
+                    <button type="button" onClick={declarerActualise}
+                      style={{ background: "transparent", color: "#8FB4D8", border: "1px solid rgba(143,180,216,0.3)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                      Je me suis actualisé·e
+                    </button>
                   </div>
                 );
               })()}
@@ -6876,6 +6893,21 @@ function AppInner() {
                             Annuler
                           </button>
                         </div>
+                      </div>
+                    ) : (c && c.montant_journalier != null) ? (
+                      // Loi VIII : l'ARE est déjà importée (Hector connaît le montant journalier)
+                      // → on ne redemande plus. Encart discret, réimport possible si besoin.
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
+                          <div style={{ fontSize: 12.5, color: "#9FE1CB", fontWeight: 600 }}>Attestation importée</div>
+                        </div>
+                        <label style={{ background: "transparent", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                          <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 13 }} />
+                          {areUploading ? "Lecture…" : "Réimporter"}
+                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                            style={{ display: "none" }} />
+                        </label>
                       </div>
                     ) : (
                       // Bouton d'import (upload PDF/photo de l'attestation ARE).
@@ -7348,6 +7380,11 @@ function AppInner() {
                   <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Pour {moisDeclNom}, je n'ai aucune activité enregistrée.</h1>
                   <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 20px" }}>Ajoute tes contrats du mois pour que je te prépare ton actualisation. Et n'oublie pas : même un mois sans cachet, il faut t'actualiser sur France Travail.</p>
                   <button type="button" onClick={() => { setInterNav("activites"); }} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ajouter mes contrats</button>
+                  {/* Déjà actualisée sur France Travail (AEM pas encore arrivées) : Hector la croit. */}
+                  <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.06)", maxWidth: 380, margin: "22px auto 0" }}>
+                    <p style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 12 }}>Tu t'es déjà actualisé·e sur France Travail et tes AEM arrivent plus tard ?</p>
+                    <button type="button" onClick={declarerActualise} style={{ background: "transparent", color: "#8FB4D8", border: "1px solid rgba(143,180,216,0.3)", borderRadius: 11, padding: "12px 20px", minHeight: 44, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Je me suis déjà actualisé·e</button>
+                  </div>
                 </div>
               )}
 
@@ -7359,13 +7396,16 @@ function AppInner() {
                     <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
                     </div>
-                    <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1.25, margin: "0 auto 8px" }}>✅ {moisDeclNom} terminé</h1>
+                    <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1.25, margin: "0 auto 8px" }}>{actuDeclareeSansData ? `🐾 C'est noté pour ${moisDeclNom}` : `✅ ${moisDeclNom} terminé`}</h1>
                     <p style={{ fontSize: 13.5, color: "#8FB4D8", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
-                      {totalCachetsMois > 0 ? `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""} ajouté${totalCachetsMois > 1 ? "s" : ""}. ` : ""}{Math.round(totalHeuresMois)} heures enregistrées. Tout est cohérent.
+                      {actuDeclareeSansData
+                        ? "Bien noté — je guette tes AEM avec toi. Dès qu'elles arrivent, scanne-les et je vérifie que tout colle."
+                        : `${totalCachetsMois > 0 ? `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""} ajouté${totalCachetsMois > 1 ? "s" : ""}. ` : ""}${Math.round(totalHeuresMois)} heures enregistrées. Tout est cohérent.`}
                     </p>
                   </div>
 
-                  {/* 2. Stats en phrase (icône + espace, pas des KPI) */}
+                  {/* 2. Stats en phrase (icône + espace, pas des KPI) — masquées si déclaration sans données */}
+                  {!actuDeclareeSansData && (
                   <div style={{ display: "flex", justifyContent: "center", gap: 22, marginBottom: 22, flexWrap: "wrap" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                       <i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
@@ -7380,6 +7420,7 @@ function AppInner() {
                       <span style={{ fontSize: 14, color: "#E8F4FF" }}><strong style={{ fontWeight: 800 }}>{employeursMois.length}</strong> employeur{employeursMois.length > 1 ? "s" : ""}</span>
                     </div>
                   </div>
+                  )}
 
                   {/* 3. Le détail : cartes (pas un tableau) sous ~10 lignes, sinon tableau */}
                   {actusDuMois.length > 0 && (() => {
@@ -7470,8 +7511,8 @@ function AppInner() {
                     );
                   })()}
 
-                  {/* 5. Célébration + lien avec le cockpit */}
-                  {(() => {
+                  {/* 5. Célébration + lien avec le cockpit — masquée si déclaration sans données */}
+                  {!actuDeclareeSansData && (() => {
                     const pct = calc.seuil > 0 ? Math.min(100, Math.round((calc.heures / calc.seuil) * 100)) : 0;
                     return (
                       <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(10,19,34,0.4))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 16, padding: "18px 20px" }}>
@@ -7581,6 +7622,7 @@ function AppInner() {
                   <i className="ti ti-player-play" aria-hidden="true" style={{ fontSize: 18 }} /> M'actualiser sereinement
                 </button>
                 <div style={{ fontSize: 10.5, color: "#45596F", textAlign: "center", lineHeight: 1.5, marginTop: 14 }}>C'est toujours toi qui valides sur France Travail.</div>
+                <button type="button" onClick={declarerActualise} style={{ display: "block", margin: "12px auto 0", background: "none", border: "none", color: "#6B8299", fontSize: 12, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}>Je me suis déjà actualisé·e ailleurs</button>
               </>)}
 
               {/* ── Historique des actualisations ── */}
@@ -7602,10 +7644,14 @@ function AppInner() {
                           {/* Contenu du mois */}
                           <div style={{ flex: 1, paddingBottom: dernier ? 0 : 16 }}>
                             <div style={{ fontSize: 14, fontWeight: 800, color: "white", marginBottom: 5 }}>{h.label}</div>
-                            <div style={{ display: "flex", gap: 16 }}>
-                              <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.cachets} cachet{h.cachets > 1 ? "s" : ""}</span>
-                              <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.heures} h</span>
-                            </div>
+                            {h.declaree && !h.heures && !h.cachets ? (
+                              <div style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-checks" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />Déclarée faite</div>
+                            ) : (
+                              <div style={{ display: "flex", gap: 16 }}>
+                                <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.cachets} cachet{h.cachets > 1 ? "s" : ""}</span>
+                                <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.heures} h</span>
+                              </div>
+                            )}
                           </div>
                         </div>
                       );
