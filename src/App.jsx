@@ -1549,25 +1549,37 @@ function AppInner() {
     <div>
       <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
 
-      {profile?.is_premium ? (
+      {profile?.is_premium ? (() => {
+        const estStripe = profile?.premium_source === "stripe";
+        const enEssai = estStripe && profile?.trial_days_left != null;   // abonnement Stripe en période d'essai
+        const jours = profile?.trial_days_left;
+        return (
         <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: `2px solid ${ACCENT}` }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>{profile?.premium_source === "stripe" ? "🐶" : "🐾"}</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{profile?.premium_source === "stripe" ? "Je m'occupe de tout pour toi" : "Tu es Membre VIP"}</div>
-          {profile?.premium_source !== "stripe" && (
+          <div style={{ fontSize: 40, marginBottom: 8 }}>{!estStripe ? "🐾" : (enEssai ? "🎁" : "🐶")}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{!estStripe ? "Tu es Membre VIP" : (enEssai ? "Ton essai Premium est en cours" : "Je m'occupe de tout pour toi")}</div>
+          {!estStripe && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.45)", borderRadius: 999, padding: "5px 13px", marginBottom: 10 }}>
               <span style={{ fontSize: 13 }}>🐾</span>
               <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 0.6, color: "#5DCAA5" }}>MEMBRE VIP · ACCÈS À VIE</span>
             </div>
           )}
+          {enEssai && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.45)", borderRadius: 999, padding: "5px 13px", marginBottom: 10 }}>
+              <span style={{ fontSize: 13 }}>🎁</span>
+              <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 0.4, color: "#5DCAA5" }}>{jours > 0 ? `IL TE RESTE ${jours} JOUR${jours > 1 ? "S" : ""}` : "DERNIER JOUR"}</span>
+            </div>
+          )}
           <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>
-            {profile?.premium_source === "stripe"
-              ? "Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️"
-              : "Tu fais partie des tout premiers à m'avoir fait confiance. Ton Premium est à toi, à vie. Merci. ❤️"}
+            {!estStripe
+              ? "Tu fais partie des tout premiers à m'avoir fait confiance. Ton Premium est à toi, à vie. Merci. ❤️"
+              : (enEssai
+                  ? "Tu profites de tout, sans limite. À la fin de l'essai, ton abonnement démarre — tu peux l'annuler avant, sans être prélevé."
+                  : "Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️")}
           </div>
-          {profile?.premium_source === "stripe" ? (
+          {estStripe ? (
             <>
               <button style={{ ...S.btnPrimary }} disabled={billingBusy} onClick={openBillingPortal}>
-                {billingBusy ? "…" : "Gérer mon abonnement"}
+                {billingBusy ? "…" : (enEssai ? "Gérer ou annuler mon essai" : "Gérer mon abonnement")}
               </button>
               <div style={{ fontSize: 11, color: "#6B8299", marginTop: 10 }}>Changer de carte ou résilier, en 2 clics (via Stripe).</div>
             </>
@@ -1575,7 +1587,8 @@ function AppInner() {
             <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 600 }}>🐾 Rien à gérer, rien à payer — profite à fond !</div>
           )}
         </div>
-      ) : (
+        );
+      })() : (
         <>
           <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(2, minmax(0, 340px))", gap: 16, justifyContent: "center" }}>
             {/* Gratuit — Je t'accompagne */}
@@ -1627,7 +1640,8 @@ function AppInner() {
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
                 {billingBusy ? "…" : "🐶 Je laisse Hector s'en occuper"}
               </button>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>{planChoisi === "annuel" ? "79 € aujourd'hui, puis chaque année. Annule quand tu veux." : "Essaye aujourd'hui. Annule quand tu veux."}</div>
+              <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 8, textAlign: "center" }}>🎁 14 jours gratuits{planChoisi === "annuel" ? ", puis 79 €/an" : ", puis 9,99 €/mois"}</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 4, textAlign: "center" }}>Annule quand tu veux avant la fin — sans être prélevé.</div>
             </div>
           </div>
 
