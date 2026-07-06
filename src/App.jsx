@@ -1550,9 +1550,19 @@ function AppInner() {
 
       {profile?.is_premium ? (
         <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: `2px solid ${ACCENT}` }}>
-          <div style={{ fontSize: 40, marginBottom: 8 }}>{profile?.premium_source === "stripe" ? "🐶" : "🎁"}</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{profile?.premium_source === "stripe" ? "Je m'occupe de tout pour toi" : "Accès offert à vie"}</div>
-          <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️</div>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>{profile?.premium_source === "stripe" ? "🐶" : "🐾"}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{profile?.premium_source === "stripe" ? "Je m'occupe de tout pour toi" : "Tu es Membre VIP"}</div>
+          {profile?.premium_source !== "stripe" && (
+            <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.45)", borderRadius: 999, padding: "5px 13px", marginBottom: 10 }}>
+              <span style={{ fontSize: 13 }}>🐾</span>
+              <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: 0.6, color: "#5DCAA5" }}>MEMBRE VIP · ACCÈS À VIE</span>
+            </div>
+          )}
+          <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>
+            {profile?.premium_source === "stripe"
+              ? "Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️"
+              : "Tu fais partie des tout premiers à m'avoir fait confiance. Ton Premium est à toi, à vie. Merci. ❤️"}
+          </div>
           {profile?.premium_source === "stripe" ? (
             <>
               <button style={{ ...S.btnPrimary }} disabled={billingBusy} onClick={openBillingPortal}>
@@ -1561,7 +1571,7 @@ function AppInner() {
               <div style={{ fontSize: 11, color: "#6B8299", marginTop: 10 }}>Changer de carte ou résilier, en 2 clics (via Stripe).</div>
             </>
           ) : (
-            <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 600 }}>🐾 Accès offert — rien à gérer, profite à fond !</div>
+            <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 600 }}>🐾 Rien à gérer, rien à payer — profite à fond !</div>
           )}
         </div>
       ) : (
