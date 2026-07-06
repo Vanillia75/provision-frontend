@@ -856,8 +856,8 @@ function AppInner() {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       const isObj = body.detail && typeof body.detail === "object";
-      // Quota gratuit mensuel atteint → on déclenche l'écran « passe en Premium ».
-      if (isObj && body.detail.code === "quota_gratuit_atteint") {
+      // Quota gratuit atteint OU fonction premium → on déclenche l'écran « passe en Premium ».
+      if (isObj && (body.detail.code === "quota_gratuit_atteint" || body.detail.code === "premium_requis")) {
         setPremiumGate(body.detail);
       }
       const err = new Error(isObj ? (body.detail.message || "Erreur") : (body.detail || `Erreur (code ${res.status})`));
@@ -1430,6 +1430,8 @@ function AppInner() {
             aem_scan: "C'est bon, je l'ai reconnue. Il ne me reste plus qu'à l'ajouter à ton suivi. Laisse-moi m'en occuper autant de fois que tu veux. 🔓",
             chat: "Je reste là quand tu as besoin de moi. On a utilisé nos messages du mois. Laisse-moi rester dispo non-stop. 🔓",
             doc_scan: "Laisse-moi le faire. Tu as utilisé tes scans gratuits du mois. Je peux m'occuper de toute ta paperasse. 🔓",
+            relance_auto: "Laisse-moi réclamer tes impayés à ta place : je relance tes clients automatiquement, au bon moment, sans que tu aies à t'en occuper. 🔓",
+            conformite: "Laisse-moi vérifier ta décision : je compare ce que tu as reconstitué avec France Travail et je t'explique chaque écart, pour repérer un problème avant qu'il te coûte des droits. 🔓",
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
@@ -1630,8 +1632,8 @@ function AppInner() {
               )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
-                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Hector illimités"]
-                : ["Tout ce qui est gratuit, sans limite", "Scans illimités — je m'occupe de ta paperasse", "Échanges avec Hector illimités"]
+                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Hector illimités", "Je vérifie ta décision face à France Travail"]
+                : ["Tout ce qui est gratuit, sans limite", "Scans illimités — je m'occupe de ta paperasse", "Échanges avec Hector illimités", "Je relance tes impayés automatiquement"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -7030,6 +7032,25 @@ function AppInner() {
                 const hectorH = c.total_heures;
                 const ecart = Math.round(hectorH - ftH);
                 const coherentH = Math.abs(ecart) <= 5;
+                // Fonction Premium : les comptes gratuits voient un teaser verrouillé (le premium/essai voit le contrôle complet).
+                if (!profile?.is_premium) {
+                  return (
+                    <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                        <span style={{ fontSize: 18 }}>🔒</span>
+                        <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Hector vérifie ta décision</div>
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+                      </div>
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
+                        Je compare ce que tu as reconstitué avec ce que France Travail a retenu, et je t'explique chaque écart — pour repérer une AEM manquante ou une erreur <strong style={{ color: "#E8F4FF" }}>avant qu'elle te coûte des droits</strong>.
+                      </div>
+                      <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "conformite" })}
+                        style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        🔓 Débloquer avec Premium
+                      </button>
+                    </div>
+                  );
+                }
                 return (
                   <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
