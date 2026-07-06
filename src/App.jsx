@@ -420,6 +420,10 @@ function AppInner() {
   // Autocomplétion du champ employeur : menu maison des employeurs déjà saisis par l'utilisateur.
   const [empSugOpen, setEmpSugOpen] = useState(false);   // le menu est-il ouvert ?
   const [empSugHover, setEmpSugHover] = useState(-1);     // ligne survolée (surlignage)
+  // #1 saisie : type via toggle visible Cachets/Heures ; "Autre" déplie le select (formation/arrêts).
+  const [interTypeAutre, setInterTypeAutre] = useState(false);
+  // #1 saisie : répartition d'une plage de dates — "parjour" (tournée) ou "total" (N sur la période).
+  const [interRepartition, setInterRepartition] = useState("parjour");
   // Report des heures déjà faites (saisie de départ)
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
@@ -2202,28 +2206,41 @@ function AppInner() {
       setError("Renseigne une date et un nombre valide.");
       return;
     }
-    // Plage optionnelle : si une date de fin est saisie, on crée UNE activité par jour
-    // de [date → date_fin] (cas tournée : un cachet/jour). Plafond de sécurité 92 jours.
-    const dates = [];
+    // Plage optionnelle. Deux répartitions quand une date de fin est saisie :
+    //  • "parjour" (tournée) : UNE activité par jour de [date → date_fin], même nombre chaque jour.
+    //  • "total" (cachets/heures) : UNE seule activité "du X au Y" avec le nombre TOTAL — le moteur
+    //    compte nombre×12h / nombre h ; date_fin ne sert qu'à l'affichage (comme une AEM multi-jours).
     const debut = interForm.date;
-    const fin = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : debut;
-    // IMPORTANT : formatage LOCAL (getFullYear/Month/Date), jamais toISOString() qui
-    // repasse par UTC et décalerait la date de -1 jour en France (UTC+1/+2).
-    const toLocalISO = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    const cur = new Date(debut + "T00:00:00");
-    const end = new Date(fin + "T00:00:00");
-    while (cur <= end) {
-      dates.push(toLocalISO(cur));
-      cur.setDate(cur.getDate() + 1);
-      if (dates.length > 92) { setError("Plage trop longue (max ~3 mois). Découpe-la en plusieurs saisies."); return; }
+    const finValide = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : null;
+    const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures";
+    const modeTotal = finValide && interRepartition === "total" && estCachetOuHeures;
+
+    // Liste des envois {date, date_fin}.
+    let envois;
+    if (modeTotal) {
+      envois = [{ date: debut, date_fin: finValide }];
+    } else {
+      // Expansion "1 par jour" (comportement historique tournée). Plafond de sécurité 92 jours.
+      // IMPORTANT : formatage LOCAL (getFullYear/Month/Date), jamais toISOString() qui
+      // repasse par UTC et décalerait la date de -1 jour en France (UTC+1/+2).
+      const toLocalISO = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+      const cur = new Date(debut + "T00:00:00");
+      const end = new Date((finValide || debut) + "T00:00:00");
+      envois = [];
+      while (cur <= end) {
+        envois.push({ date: toLocalISO(cur), date_fin: null });
+        cur.setDate(cur.getDate() + 1);
+        if (envois.length > 92) { setError("Plage trop longue (max ~3 mois). Découpe-la en plusieurs saisies."); return; }
+      }
     }
     setInterSaving(true);
     try {
-      for (const dt of dates) {
+      for (const env of envois) {
         await apiFetch("/intermittent/activite", {
           method: "POST",
           body: JSON.stringify({
-            date: dt,
+            date: env.date,
+            date_fin: env.date_fin,
             type_activite: interForm.type_activite,
             nombre,
             employeur: interForm.employeur || null,
@@ -2232,6 +2249,7 @@ function AppInner() {
           }),
         });
       }
+      setInterRepartition("parjour");
       setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
@@ -8818,27 +8836,63 @@ function AppInner() {
                 {/* Formulaire d'ajout */}
                 {interShowAdd && (
                   <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <input type="date" value={interForm.date} onChange={e => setInterForm({ ...interForm, date: e.target.value })}
-                        style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                      <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
-                        style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
-                        <option value="cachet_isole">Cachet (artiste · 12h)</option>
-                        <option value="heures">Heures (hors cachet)</option>
-                        <option value="formation">Formation suivie (plafond 338h)</option>
-                        <option value="enseignement">Enseignement dispensé (plafond 70h)</option>
-                        <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
-                          <option value="arret_maternite">Congé maternité / adoption</option>
-                          <option value="arret_accident">Accident du travail (AT/MP)</option>
-                          <option value="arret_ald">Maladie longue durée (ALD)</option>
-                          <option value="arret_suspension">Arrêt pendant un contrat</option>
-                        </optgroup>
-                        <optgroup label="Arrêt qui allonge la période (0h · estimation)">
-                          <option value="arret_maladie_ordinaire">Maladie ordinaire (entre 2 contrats)</option>
-                          <option value="arret_paternite">Congé paternité</option>
-                        </optgroup>
-                      </select>
-                    </div>
+                    <input type="date" value={interForm.date} onChange={e => setInterForm({ ...interForm, date: e.target.value })}
+                      style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    {/* Type d'activité : toggle VISIBLE Cachets/Heures (les 2 cas courants) + "Autre" pour les cas rares */}
+                    {(() => {
+                      const t = interForm.type_activite;
+                      const isCachet = t === "cachet_isole";
+                      const isHeures = t === "heures";
+                      const isAutre = !isCachet && !isHeures;
+                      const showSelect = interTypeAutre || isAutre;
+                      const btn = (actif) => ({
+                        flex: "1 1 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 2,
+                        background: actif ? "#378ADD" : "#0d2440", border: "1px solid " + (actif ? "#378ADD" : "#1e3a5f"),
+                        borderRadius: 8, padding: "9px 10px", cursor: "pointer", fontFamily: "inherit",
+                        color: actif ? "white" : "#8FB4D8", transition: "background 0.15s",
+                      });
+                      return (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button type="button" onClick={() => { setInterForm({ ...interForm, type_activite: "cachet_isole" }); setInterTypeAutre(false); }} style={btn(isCachet)}>
+                              <span style={{ fontSize: 14, fontWeight: 700 }}>🎭 Cachets</span>
+                              <span style={{ fontSize: 10.5, opacity: 0.85, textAlign: "center" }}>artiste · 12h chacun</span>
+                            </button>
+                            <button type="button" onClick={() => { setInterForm({ ...interForm, type_activite: "heures" }); setInterTypeAutre(false); }} style={btn(isHeures)}>
+                              <span style={{ fontSize: 14, fontWeight: 700 }}>⏱️ Heures</span>
+                              <span style={{ fontSize: 10.5, opacity: 0.85, textAlign: "center" }}>artiste ou technicien, payé à l'heure</span>
+                            </button>
+                          </div>
+                          <div style={{ fontSize: 11, color: "#8FB4D8", lineHeight: 1.4 }}>
+                            Payé au cachet&nbsp;? En heures&nbsp;? Les deux existent — choisis ce qui est sur ta fiche de paie.
+                          </div>
+                          {!showSelect ? (
+                            <button type="button" onClick={() => setInterTypeAutre(true)}
+                              style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#6B8299", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
+                              Autre&nbsp;: formation, arrêt maladie…
+                            </button>
+                          ) : (
+                            <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
+                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                              <option value="cachet_isole">Cachet (artiste · 12h)</option>
+                              <option value="heures">Heures (hors cachet)</option>
+                              <option value="formation">Formation suivie (plafond 338h)</option>
+                              <option value="enseignement">Enseignement dispensé (plafond 70h)</option>
+                              <optgroup label="Arrêt indemnisé (5h/jour · estimation)">
+                                <option value="arret_maternite">Congé maternité / adoption</option>
+                                <option value="arret_accident">Accident du travail (AT/MP)</option>
+                                <option value="arret_ald">Maladie longue durée (ALD)</option>
+                                <option value="arret_suspension">Arrêt pendant un contrat</option>
+                              </optgroup>
+                              <optgroup label="Arrêt qui allonge la période (0h · estimation)">
+                                <option value="arret_maladie_ordinaire">Maladie ordinaire (entre 2 contrats)</option>
+                                <option value="arret_paternite">Congé paternité</option>
+                              </optgroup>
+                            </select>
+                          )}
+                        </div>
+                      );
+                    })()}
                     {/* Plage de dates optionnelle : une activité par jour (cas tournée) */}
                     <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", fontSize: 12, color: "#8FB4D8" }}>
                       <span style={{ whiteSpace: "nowrap" }}>Plusieurs jours&nbsp;? Jusqu'au</span>
@@ -8850,6 +8904,32 @@ function AppInner() {
                         return <span style={{ color: "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>= {n} jour{n > 1 ? "s" : ""}</span>;
                       })()}
                     </div>
+                    {/* Répartition d'une plage : n'apparaît QUE si une date de fin est saisie (et type cachets/heures) */}
+                    {(() => {
+                      const fin = interForm.date_fin && interForm.date_fin >= interForm.date ? interForm.date_fin : null;
+                      const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures";
+                      if (!fin || !estCachetOuHeures) return null;
+                      const unite = interForm.type_activite === "cachet_isole" ? "cachets" : "heures";
+                      const opt = (val, titre, sous) => (
+                        <label style={{ flex: "1 1 0", display: "flex", flexDirection: "column", gap: 3, cursor: "pointer",
+                          background: interRepartition === val ? "rgba(55,138,221,0.12)" : "rgba(255,255,255,0.02)",
+                          border: "1px solid " + (interRepartition === val ? "rgba(55,138,221,0.45)" : "rgba(255,255,255,0.1)"),
+                          borderRadius: 8, padding: "8px 10px" }}>
+                          <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <input type="radio" name="interRepartition" checked={interRepartition === val} onChange={() => setInterRepartition(val)}
+                              style={{ accentColor: "#378ADD", width: 15, height: 15, flexShrink: 0, cursor: "pointer" }} />
+                            <span style={{ fontSize: 12.5, color: "#C8E0F5", fontWeight: 600 }}>{titre}</span>
+                          </span>
+                          <span style={{ fontSize: 10.5, color: "#8FB4D8", marginLeft: 21, lineHeight: 1.35 }}>{sous}</span>
+                        </label>
+                      );
+                      return (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                          {opt("parjour", "1 par jour", "tournée : le même nombre chaque jour")}
+                          {opt("total", "Au total sur la période", `${interForm.nombre || "N"} ${unite} en tout, une seule ligne`)}
+                        </div>
+                      );
+                    })()}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
                         placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : "Nb d'heures"}
