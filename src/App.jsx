@@ -374,36 +374,52 @@ function AppInner() {
   const [pwaDismissed, setPwaDismissed] = useState(() => safeStorage.getItem("pwa_dismissed") === "1");
   const [legalPage, setLegalPage] = useState(null);
   const [authMode, setAuthMode] = useState("login");
-  // Choix de statut sur la landing (avant connexion) : null = écran de choix,
-  // "auto_entrepreneur" = landing AE, "intermittent" = écran "bientôt dispo".
-  // On retient le choix entre visites pour ne pas le redemander à chaque fois.
-  const [landingStatut, setLandingStatut] = useState(() => safeStorage.getItem("landingStatut") || null);
+  // Statut AFFICHÉ (avant connexion), piloté par l'URL :
+  //   "/" (et inconnu) → "choix" (page de choix pure) · "/intermittent" → landing intermittent
+  //   · "/auto-entrepreneur" (et "/ae") → landing AE.
+  const pathToStatut = (p) =>
+    (p === "/auto-entrepreneur" || p === "/ae") ? "auto_entrepreneur"
+      : p === "/intermittent" ? "intermittent"
+      : "choix";
+  const [landingStatut, setLandingStatut] = useState(() => pathToStatut(typeof window !== "undefined" ? window.location.pathname : "/"));
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
 
-  // Routing des 2 vitrines (logged-out) : l'URL est la source de vérité.
-  //   /auto-entrepreneur → landing AE · / et /intermittent → landing intermittent (intermittent-first).
+  // L'URL est la source de vérité. On mémorise le DERNIER choix RÉEL (jamais "choix")
+  // pour proposer un « Reprendre → » sur la page de choix — mais JAMAIS de redirection auto.
   useEffect(() => {
     if (token) return; // ne concerne que les visiteurs non connectés
     const applyFromPath = () => {
-      const p = window.location.pathname;
-      chooseLandingStatut(p === "/auto-entrepreneur" ? "auto_entrepreneur" : "intermittent");
+      const s = pathToStatut(window.location.pathname);
+      setLandingStatut(s);
+      if (s !== "choix") safeStorage.setItem("landingStatut", s);
     };
     applyFromPath();
     window.addEventListener("popstate", applyFromPath);
     return () => window.removeEventListener("popstate", applyFromPath);
   }, [token]);
 
-  // SEO discret : title + meta description adaptés à la vitrine affichée.
+  // SEO : title + meta description + canonical adaptés aux 3 pages.
   useEffect(() => {
     if (token) return;
     const meta = document.querySelector('meta[name="description"]');
+    const setCanonical = (path) => {
+      let l = document.querySelector('link[rel="canonical"]');
+      if (!l) { l = document.createElement("link"); l.setAttribute("rel", "canonical"); document.head.appendChild(l); }
+      l.setAttribute("href", "https://www.hector-app.fr" + path);
+    };
     if (landingStatut === "auto_entrepreneur") {
       document.title = "Auto-entrepreneur : ce que tu peux vraiment dépenser — H€CTOR";
       if (meta) meta.setAttribute("content", "H€CTOR provisionne tes cotisations URSSAF, te montre ton disponible réel et relance tes impayés à ta place. L'assistant des auto-entrepreneurs.");
-    } else {
+      setCanonical("/auto-entrepreneur");
+    } else if (landingStatut === "intermittent") {
       document.title = "H€CTOR — Ton cockpit d'intermittent (507h, allocation, cachets)";
       if (meta) meta.setAttribute("content", "H€CTOR compte tes heures vers les 507h, estime ton allocation et t'explique chaque chiffre, sources à l'appui. Le compagnon des intermittents du spectacle.");
+      setCanonical("/intermittent");
+    } else {
+      document.title = "H€CTOR — Le compagnon des intermittents et des auto-entrepreneurs";
+      if (meta) meta.setAttribute("content", "H€CTOR, ton compagnon au quotidien : intermittent du spectacle ou auto-entrepreneur, il compte, provisionne et t'explique chaque chiffre. Choisis ton profil, il s'occupe du reste.");
+      setCanonical("/");
     }
   }, [landingStatut, token]);
   // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
@@ -2034,7 +2050,7 @@ function AppInner() {
   const landingStatutApplied = useRef(false);
   useEffect(() => {
     if (landingStatutApplied.current) return;
-    if (token && profile && !profile.onboarding_complete && onbStep === "statut" && landingStatut) {
+    if (token && profile && !profile.onboarding_complete && onbStep === "statut" && landingStatut && landingStatut !== "choix") {
       landingStatutApplied.current = true;
       handleOnboardingStatut(landingStatut);
     }
@@ -4453,6 +4469,64 @@ function AppInner() {
         </div>
       );
     };
+
+    // ═══════════════ PAGE DE CHOIX ("/") — la porte d'entrée, plein écran, deux mondes ═══════════════
+    if (landingStatut === "choix") {
+      // Dernier choix RÉEL mémorisé → « Reprendre → » discret. JAMAIS de redirection auto.
+      const dernier = safeStorage.getItem("landingStatut");
+      const carte = (o) => (
+        <button type="button" className="hx-card" onClick={o.onClick}
+          style={{ textAlign: "left", background: "#0D2138", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 18, padding: isMobile ? "17px 18px" : "22px 24px", display: "flex", alignItems: "center", gap: 16, fontFamily: "inherit", color: "white", width: "100%" }}>
+          <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 24, color: "#5DCAA5" }} />
+          </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontFamily: SERIF, fontSize: isMobile ? 20 : 23, fontWeight: 700, color: "white", lineHeight: 1.15 }}>{o.titre}</div>
+            <div style={{ fontSize: isMobile ? 13.5 : 14.5, color: "#8BA5C0", marginTop: 4, lineHeight: 1.45 }}>{o.sous} <span style={{ color: "#9FE1CB", fontWeight: 600 }}>{o.promesse}</span></div>
+          </div>
+          {o.reprendre
+            ? <span className="hx-arrow" style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 13.5, fontWeight: 700, color: "#5DCAA5", flexShrink: 0, whiteSpace: "nowrap" }}>Reprendre <i className="ti ti-arrow-right" aria-hidden="true" style={{ fontSize: 17 }} /></span>
+            : <i className="ti ti-arrow-right hx-arrow" aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5", flexShrink: 0 }} />}
+        </button>
+      );
+      return (
+        <div style={{ minHeight: "100vh", background: "#07192E", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "26px 22px" : "40px 48px", boxSizing: "border-box" }}>
+          <style>{`
+            .hx-card{position:relative;transition:transform .2s cubic-bezier(.2,.7,.3,1);will-change:transform;transform:translateZ(0);cursor:pointer;}
+            .hx-card::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 20px 55px rgba(0,0,0,.5);opacity:0;transition:opacity .2s ease;pointer-events:none;}
+            .hx-card:hover{transform:translateY(-6px) scale(1.012);}
+            .hx-card:hover::after{opacity:1;}
+            .hx-arrow{opacity:.5;transform:translateX(-5px);transition:transform .2s ease,opacity .2s ease;will-change:transform;}
+            .hx-card:hover .hx-arrow{opacity:1;transform:translateX(0);}
+            @media (hover:none){.hx-card:hover{transform:none}.hx-card:active{transform:scale(.99)}.hx-card .hx-arrow{opacity:.7;transform:none}}
+          `}</style>
+          <div style={{ width: "100%", maxWidth: 1000, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.9fr 1.1fr", gap: isMobile ? 12 : 56, alignItems: "center" }}>
+            {/* Hector accueille — présence forte, il émerge du noir */}
+            <div style={{ textAlign: isMobile ? "center" : "left" }}>
+              <img src="/hector-land-hero.webp" alt="H€CTOR t'accueille"
+                style={{ width: "100%", maxWidth: isMobile ? 190 : 400, display: "block", margin: isMobile ? "0 auto" : 0 }} />
+            </div>
+            {/* La question + les deux mondes */}
+            <div>
+              <div style={{ fontFamily: SERIF, fontSize: isMobile ? 19 : 24, fontWeight: 700, letterSpacing: 1.5, color: "white", marginBottom: isMobile ? 4 : 8 }}>
+                H<span style={{ color: "#5DCAA5" }}>€</span>CTOR
+              </div>
+              <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 36 : 52, fontWeight: 700, lineHeight: 1.04, margin: "0 0 10px", color: "white" }}>
+                Qui es-tu&nbsp;?
+              </h1>
+              <p style={{ fontSize: isMobile ? 16 : 18.5, color: "#5DCAA5", fontWeight: 600, margin: "0 0 26px" }}>
+                Dis-le moi, je m'occupe du reste.
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => navLanding("intermittent") })}
+                {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => navLanding("auto_entrepreneur") })}
+              </div>
+              <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 18, textAlign: "center" }}>Tu peux changer à tout moment.</div>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
     // ═══════════════ LANDING AUTO-ENTREPRENEUR (sœur jumelle, même DA) ═══════════════
     if (landingStatut === "auto_entrepreneur") {
