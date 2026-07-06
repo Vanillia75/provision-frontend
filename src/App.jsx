@@ -1622,8 +1622,8 @@ function AppInner() {
               </div>
               {planChoisi === "annuel" ? (
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>79 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/an</span>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>≈ 6,58 €/mois · ⭐ Recommandé</div>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>6,58 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 79 € facturé une fois par an · ⭐ Recommandé</div>
                 </div>
               ) : (
                 <div style={{ marginBottom: 4 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span></div>
