@@ -424,6 +424,8 @@ function AppInner() {
   const [interTypeAutre, setInterTypeAutre] = useState(false);
   // #1 saisie : répartition d'une plage de dates — "parjour" (tournée) ou "total" (N sur la période).
   const [interRepartition, setInterRepartition] = useState("parjour");
+  // Vue de la liste "Mes activités" : "toutes" (à plat) | "mois" | "employeur". Filtre d'affichage pur.
+  const [actVue, setActVue] = useState("toutes");
   // Report des heures déjà faites (saisie de départ)
   const [reportForm, setReportForm] = useState({ unite: "heures", nombre: "", periode: "annee" });
   const [reportSaving, setReportSaving] = useState(false);
@@ -9173,6 +9175,15 @@ function AppInner() {
                 )}
                 {interActivites.length > 0 && (
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {/* Filtre d'affichage : toutes / par mois / par employeur (tri & regroupement, aucun calcul touché) */}
+                    <div style={{ display: "flex", gap: 6, marginBottom: 6, flexWrap: "wrap" }}>
+                      {[["toutes", "Toutes"], ["mois", "Par mois"], ["employeur", "Par employeur"]].map(([val, label]) => (
+                        <button key={val} type="button" onClick={() => setActVue(val)}
+                          style={{ flex: "1 1 0", minWidth: 90, background: actVue === val ? "rgba(55,138,221,0.15)" : "rgba(255,255,255,0.02)", color: actVue === val ? "#9FCBF5" : "#8BA5C0", border: "1px solid " + (actVue === val ? "rgba(55,138,221,0.45)" : "rgba(255,255,255,0.1)"), borderRadius: 8, padding: "8px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                     {/* En-tête de colonnes (style tableau) */}
                     <div style={{ display: "flex", alignItems: "center", padding: "4px 14px", fontSize: 10.5, color: "#5A7088", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
                       <div style={{ width: 96, flexShrink: 0 }}>Date</div>
@@ -9180,7 +9191,45 @@ function AppInner() {
                       <div style={{ width: 90, flexShrink: 0, textAlign: "right" }}>Volume</div>
                       <div style={{ width: 96, flexShrink: 0 }} />
                     </div>
-                    {interActivites.map(a => {
+                    {(() => {
+                      // Tri récent → ancien (l'ordre serveur n'est pas garanti), puis regroupement selon la vue.
+                      const tri = [...interActivites].sort((x, y) => String(y.date || "").localeCompare(String(x.date || "")));
+                      const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                      const totalH = (items) => Math.round(items.reduce((s, a) => s + heuresDe(a), 0));
+                      let groupes;
+                      if (actVue === "mois") {
+                        const parMois = {};
+                        tri.forEach(a => {
+                          const d = a.date ? new Date(a.date + "T00:00:00") : null;
+                          const cle = d && !isNaN(d) ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}` : "0000-00";
+                          const titre = d && !isNaN(d) ? `${MOIS[d.getMonth()]} ${d.getFullYear()}` : "Date inconnue";
+                          if (!parMois[cle]) parMois[cle] = { key: cle, titre, items: [] };
+                          parMois[cle].items.push(a);
+                        });
+                        groupes = Object.values(parMois).sort((g1, g2) => g2.key.localeCompare(g1.key))
+                          .map(g => ({ key: g.key, header: `${g.titre} · ${g.items.length} activité${g.items.length > 1 ? "s" : ""} · ${totalH(g.items)} h`, items: g.items }));
+                      } else if (actVue === "employeur") {
+                        const parEmp = {};
+                        tri.forEach(a => {
+                          const nom = (a.employeur && a.employeur.trim()) || "";
+                          const cle = nom ? nom.toLowerCase() : "￿"; // les sans-employeur regroupés en dernier
+                          if (!parEmp[cle]) parEmp[cle] = { key: cle, nom: nom || "Employeur non précisé", items: [] };
+                          parEmp[cle].items.push(a);
+                        });
+                        groupes = Object.values(parEmp).sort((g1, g2) => g1.key.localeCompare(g2.key))
+                          .map(g => ({ key: g.key, header: `${g.nom} · ${g.items.length} activité${g.items.length > 1 ? "s" : ""} · ${totalH(g.items)} h`, items: g.items }));
+                      } else {
+                        groupes = [{ key: "all", header: null, items: tri }];
+                      }
+                      return groupes.map((g) => (
+                        <div key={g.key} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {g.header && (
+                            <div style={{ fontSize: 11.5, fontWeight: 700, color: "#7FB8F0", padding: "10px 14px 2px", display: "flex", alignItems: "center", gap: 7 }}>
+                              <i className={`ti ${actVue === "mois" ? "ti-calendar-month" : "ti-building"}`} aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5", flexShrink: 0 }} />
+                              {g.header}
+                            </div>
+                          )}
+                          {g.items.map(a => {
                       const estArretNeutralise = a.type_activite === "arret_maladie_ordinaire" || a.type_activite === "arret_paternite";
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "formation" ? `${a.nombre}h formation` :
@@ -9318,7 +9367,10 @@ function AppInner() {
                           )}
                         </div>
                       );
-                    })}
+                          })}
+                        </div>
+                      ));
+                    })()}
                   </div>
                 )}
               </div>
