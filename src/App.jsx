@@ -1278,20 +1278,21 @@ function AppInner() {
 
   // ── Abonnement Stripe (Premium) ──
   const [billingBusy, setBillingBusy] = useState(false);
+  const [planChoisi, setPlanChoisi] = useState("annuel");   // "annuel" (recommandé) | "mensuel"
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
   const [updateReady, setUpdateReady] = useState(false); // une nouvelle version a été déployée
   const [showGame, setShowGame] = useState(false); // mini-jeu "Course avec Hector"
 
-  async function startCheckout(code = null) {
+  async function startCheckout(code = null, plan = null) {
     setBillingBusy(true);
     try {
       // On mémorise le mode + l'origine pour revenir au bon endroit après paiement.
       if (profile?.statut) safeStorage.setItem("billing_return_mode", profile.statut);
       const { url } = await apiFetch("/billing/create-checkout-session", {
         method: "POST",
-        body: JSON.stringify({ promo_code: code, mode: profile?.statut || null, origin: window.location.origin }),
+        body: JSON.stringify({ promo_code: code, mode: profile?.statut || null, origin: window.location.origin, plan }),
       });
       window.location = url; // redirection vers le paiement hébergé Stripe
     } catch (e) {
@@ -1596,8 +1597,24 @@ function AppInner() {
 
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je prends le relais</div>
-              <div style={{ marginBottom: 4 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span></div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐶 Je prends le relais</div>
+              {/* Choix mensuel / annuel — annuel recommandé par défaut */}
+              <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: 3, marginBottom: 10 }}>
+                {[["annuel", "Annuel"], ["mensuel", "Mensuel"]].map(([v, lab]) => (
+                  <button key={v} type="button" onClick={() => setPlanChoisi(v)}
+                    style={{ flex: 1, background: planChoisi === v ? ACCENT : "transparent", color: planChoisi === v ? "white" : "#8BA5C0", border: "none", borderRadius: 999, padding: "6px 8px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                    {lab}{v === "annuel" ? <span style={{ fontSize: 9.5, marginLeft: 4, fontWeight: 800, color: planChoisi === v ? "white" : "#5DCAA5" }}>−34 %</span> : null}
+                  </button>
+                ))}
+              </div>
+              {planChoisi === "annuel" ? (
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>79 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/an</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>≈ 6,58 €/mois · ⭐ Recommandé</div>
+                </div>
+              ) : (
+                <div style={{ marginBottom: 4 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span></div>
+              )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
                 ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Hector illimités"]
@@ -1607,10 +1624,10 @@ function AppInner() {
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
                 </div>
               ))}
-              <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout()}>
+              <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
                 {billingBusy ? "…" : "🐶 Je laisse Hector s'en occuper"}
               </button>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>Essaye aujourd'hui. Annule quand tu veux.</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>{planChoisi === "annuel" ? "79 € aujourd'hui, puis chaque année. Annule quand tu veux." : "Essaye aujourd'hui. Annule quand tu veux."}</div>
             </div>
           </div>
 
