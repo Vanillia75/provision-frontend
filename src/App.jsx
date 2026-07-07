@@ -8589,6 +8589,177 @@ function AppInner() {
 
               {/* ═══ PAGE SCANNER UNE AEM ═══ */}
 
+
+              {/* ═══ PAGE PARLE À HECTOR ═══ */}
+              {interNav === "hector" && (<>
+
+              {/* ── Le chat Hector intermittent (assistant expert du régime) ── */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
+                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-message" fallbackColor="#3a5169" />
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>Parle à Hector</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Ton expert du régime intermittent. Pose-lui tes questions.</div>
+                </div>
+              </div>
+
+              {renderQuotaJauge("chat", "message")}
+
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
+                {/* Fil de discussion */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 14, maxHeight: 420, overflowY: "auto" }}>
+                  {interChat.length === 0 && (
+                    <div style={{ textAlign: "center", padding: "12px 8px" }}>
+                      <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
+                        Demande-moi ce que tu veux sur ton régime : tes 507h, les annexes, ta date anniversaire, la clause de rattrapage, les congés spectacles… Je suis là pour rendre tout ça clair.
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                        {[
+                          "C'est quoi exactement la date anniversaire ?",
+                          "Combien d'heures il me reste pour mes droits ?",
+                          "Comment marche la clause de rattrapage ?",
+                          "Un cachet, ça compte pour combien d'heures ?",
+                        ].map(q => (
+                          <button key={q} type="button" onClick={() => { setInterChatInput(q); }}
+                            style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 10, padding: "10px 12px", fontSize: 13, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                            {q}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {interChat.map((m, i) => (
+                    <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
+                      <div style={{ maxWidth: "85%", background: m.role === "user" ? "#378ADD" : "rgba(255,255,255,0.06)", color: m.role === "user" ? "white" : "#E8F4FF", borderRadius: 14, padding: "10px 14px", fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                        {m.content}
+                      </div>
+                    </div>
+                  ))}
+                  {interChatLoading && (
+                    <div style={{ display: "flex", justifyContent: "flex-start" }}>
+                      <div style={{ background: "rgba(255,255,255,0.06)", color: "#8BA5C0", borderRadius: 14, padding: "10px 14px", fontSize: 13.5 }}>Hector réfléchit…</div>
+                    </div>
+                  )}
+                </div>
+                {/* Saisie */}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input type="text" value={interChatInput} onChange={e => setInterChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") askInterChat(e); }}
+                    placeholder="Écris ta question à Hector…"
+                    style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 10, padding: "11px 14px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  <button type="button" onClick={askInterChat} disabled={interChatLoading || !interChatInput.trim()}
+                    style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 10, padding: "0 16px", fontSize: 15, fontWeight: 700, cursor: (interChatLoading || !interChatInput.trim()) ? "default" : "pointer", fontFamily: "inherit", opacity: (interChatLoading || !interChatInput.trim()) ? 0.5 : 1, flexShrink: 0 }}>
+                    <i className="ti ti-send" aria-hidden="true" />
+                  </button>
+                </div>
+                <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
+                  Hector connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
+                </div>
+              </div>
+
+              {/* ── Brique 5.4 : "Quoi accepter" — le conseiller de décision ── */}
+              <div id="inter-simulateur" style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <i className="ti ti-phone-call" aria-hidden="true" style={{ color: "#378ADD", fontSize: 16 }} />
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>On te propose un contrat ?</div>
+                </div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 14 }}>
+                  Dis-moi ce qu'on te propose, je te dis si tu dois accepter. 🐾
+                </div>
+
+                {/* Boutons rapides cachets (pour décider vite, au téléphone) */}
+                <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+                  {[1, 2, 3, 5, 10].map(n => (
+                    <button key={n} type="button" onClick={() => { setSimForm({ ...simForm, nombre: String(n) }); setSimResult(null); }}
+                      style={{ flex: "1 1 auto", minWidth: 46, background: simForm.nombre === String(n) ? "#378ADD" : "#0d2440", color: simForm.nombre === String(n) ? "white" : "#B5D4F4", border: `1px solid ${simForm.nombre === String(n) ? "#378ADD" : "#1e3a5f"}`, borderRadius: 8, padding: "10px 0", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+                  <input type="number" min="0" value={simForm.nombre} onChange={e => { setSimForm({ ...simForm, nombre: e.target.value }); setSimResult(null); }}
+                    placeholder="ou tape un nombre"
+                    style={{ flex: "1 1 110px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  <select value={simForm.type_activite} onChange={e => { setSimForm({ ...simForm, type_activite: e.target.value }); setSimResult(null); }}
+                    style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                    <option value="cachet_isole">cachets (12h)</option>
+                    <option value="heures">heures</option>
+                    <option value="formation">heures de formation</option>
+                  </select>
+                </div>
+                <button type="button" disabled={simLoading} onClick={handleSimuler}
+                  style={{ width: "100%", background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "12px", fontSize: 14.5, fontWeight: 700, cursor: simLoading ? "default" : "pointer", fontFamily: "inherit", opacity: simLoading ? 0.6 : 1 }}>
+                  {simLoading ? "Hector réfléchit…" : "Je dois accepter ?"}
+                </button>
+
+                {/* Verdict décisionnel d'Hector */}
+                {simResult && (() => {
+                  // On calcule un verdict tranché à partir des champs du moteur + la date anniversaire connue côté front.
+                  const secu = simResult.securise_apres;
+                  const dejaSecu = c.droits_securises; // déjà sécurisé AVANT ce contrat
+                  const manque = simResult.manquant_apres || 0;
+                  const passeLaBarre = secu && !dejaSecu; // ce contrat précis fait franchir les 507h
+                  // Formatage de la date anniversaire pour le verdict
+                  let dateAnnivTxt = "";
+                  if (c.date_anniversaire) {
+                    try {
+                      const d = new Date(c.date_anniversaire);
+                      const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                      dateAnnivTxt = `${d.getDate()} ${MOIS[d.getMonth()]}`;
+                    } catch {}
+                  }
+                  // Choix du verdict
+                  let niveau, emoji, titre, sous;
+                  if (passeLaBarre) {
+                    niveau = "green"; emoji = "🎯"; titre = "Fonce, c'est LE contrat";
+                    sous = dateAnnivTxt ? `Il te fait passer les 507h et sécurise ton renouvellement du ${dateAnnivTxt}.` : "Il te fait passer les 507h et sécurise tes droits.";
+                  } else if (dejaSecu) {
+                    niveau = "blue"; emoji = "👍"; titre = "Prends-le si tu peux";
+                    sous = "Tes droits sont déjà sécurisés. Celui-là, c'est du bonus pour la suite.";
+                  } else if (secu) {
+                    niveau = "green"; emoji = "✅"; titre = "Accepte les yeux fermés";
+                    sous = dateAnnivTxt ? `Avec lui, tes droits sont sécurisés pour ton renouvellement du ${dateAnnivTxt}.` : "Avec lui, tes droits sont sécurisés.";
+                  } else {
+                    niveau = "orange"; emoji = "🟠"; titre = "Ça aide, mais continue à chercher";
+                    sous = `Bon à prendre, mais il te manquera encore ${manque}h après${dateAnnivTxt ? ` pour ton renouvellement du ${dateAnnivTxt}` : ""}.`;
+                  }
+                  const palette = {
+                    green: { bg: "rgba(93,202,165,0.12)", bd: "rgba(93,202,165,0.4)", tc: "#5DCAA5" },
+                    blue: { bg: "rgba(55,138,221,0.1)", bd: "rgba(55,138,221,0.35)", tc: "#7FB8F0" },
+                    orange: { bg: "rgba(250,199,117,0.1)", bd: "rgba(250,199,117,0.35)", tc: "#FAC775" },
+                  }[niveau];
+                  return (
+                    <div style={{ marginTop: 14, background: palette.bg, border: `1px solid ${palette.bd}`, borderRadius: 12, padding: "16px 16px" }}>
+                      {/* Verdict en tête, gros */}
+                      <div style={{ display: "flex", alignItems: "center", gap: 11, marginBottom: 12 }}>
+                        <div style={{ fontSize: 28, flexShrink: 0 }}>{emoji}</div>
+                        <div>
+                          <div style={{ fontSize: 17, fontWeight: 800, color: palette.tc, lineHeight: 1.2 }}>{titre}</div>
+                          <div style={{ fontSize: 12.5, color: "#D6E8FA", lineHeight: 1.5, marginTop: 3 }}>{sous}</div>
+                        </div>
+                      </div>
+                      {/* Les chiffres qui justifient, en dessous */}
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.1)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>+{simResult.heures_ajoutees}h</span>
+                        <span style={{ fontSize: 11, color: "#B5D4F4", background: "rgba(255,255,255,0.05)", borderRadius: 6, padding: "3px 8px" }}>{simResult.total_avant}h → {simResult.total_apres}h</span>
+                        {!secu && (
+                          <span style={{ fontSize: 11, color: "#FAC775", background: "rgba(250,199,117,0.1)", borderRadius: 6, padding: "3px 8px" }}>il manquerait {manque}h</span>
+                        )}
+                        {secu && (
+                          <span style={{ fontSize: 11, color: "#5DCAA5", background: "rgba(93,202,165,0.15)", borderRadius: 6, padding: "3px 8px", fontWeight: 600 }}>✓ 507h atteintes</span>
+                        )}
+                      </div>
+                      {!c.date_anniversaire && (
+                        <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 11, lineHeight: 1.5 }}>
+                          🐾 Renseigne ta date anniversaire sur le cockpit pour que je te dise si c'est à temps pour ton renouvellement.
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+              </div>
+              </>)}
+
               {/* ═══ PAGE MES ACTIVITÉS ═══ */}
               {interNav === "activites" && (<>
 

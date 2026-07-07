@@ -12,8 +12,15 @@
   **Injoignable depuis le 1er juillet 2026** : aucune entrée de menu n'y mène, aucun
   `setInterNav("coffre")` n'existe, et `interNav` démarre à `"cockpit"` sans jamais être
   réhydraté depuis le stockage. → **code mort d'interface pur.**
-- **Action** : bloc retiré d'`App.jsx` (327 lignes). **Frontend uniquement.** Aucun backend,
+- **Action** : bloc retiré d'`App.jsx`. **Frontend uniquement.** Aucun backend,
   aucune colonne DB, aucun R2, aucune donnée touchée.
+- **⚠️ Post-mortem (2026-07-07)** : la suppression initiale (`21b5226`) a retiré 327 lignes
+  en croyant que tout était le bloc coffre — en réalité 157 lignes de coffre mort **+ 170
+  lignes de la page « Parle à Hector » (VIVANTE)** située juste après : la borne de fin
+  (`</>)}`) appartenait au bloc chat, pas au coffre. Résultat : page chat vide en prod,
+  détectée par le fondateur, **restaurée verbatim** depuis `21b5226~1` le jour même.
+  Leçon : une assertion de bornes doit vérifier l'IDENTITÉ du bloc (compter les
+  ouvertures/fermetures depuis le début), pas seulement la forme des lignes de bord.
 
 ### 2. Coffre-fort R2 backend = stockage des AEM originales (VIVANT — INTOUCHABLE 🔒)
 - **Ce que c'est** : `r2_storage.py` + son câblage dans `api.py`. Stocke sur Cloudflare R2
