@@ -42,8 +42,8 @@ export function PourquoiHector({ onBack }) {
 
         {/* La lettre — texte exact, vouvoiement volontaire */}
         <div style={{ padding: "26px 24px 0" }}>
-          <p style={pStyle}>Avant d'être une application, TOTOR était mon chien.</p>
-          <p style={pStyle}>Un Bull Terrier. Sur les papiers, il s'appelait Hector. Mais à la maison, ça a toujours été Totor. Têtu, drôle, parfois complètement fou… mais surtout toujours là.</p>
+          <p style={pStyle}>Avant d'être une application, Hector était mon chien.</p>
+          <p style={pStyle}>Un Bull Terrier. Têtu, drôle, parfois complètement fou… mais surtout toujours là. Et à la maison, on ne disait jamais Hector : on disait Totor.</p>
           <p style={pStyle}>Il ne savait rien des factures, des impôts, des devis ou de la comptabilité. Pourtant, il faisait déjà ce que cette application essaie de faire aujourd'hui : il rendait les journées un peu plus légères.</p>
           <p style={pStyle}>Quand tout allait bien, il faisait la fête avec moi. Quand les journées étaient compliquées, il était simplement présent. Sans jugement. Sans rien demander.</p>
           <p style={pStyle}>En créant cette application, je ne voulais pas construire un logiciel de plus.<br />Je voulais créer un compagnon.</p>
