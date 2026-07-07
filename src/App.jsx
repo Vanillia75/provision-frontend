@@ -268,17 +268,18 @@ function HectorImage({ etat, size = 200, cover = false }) {
 }
 
 function Logo({ size = 28, dark = false }) {
-  // Logo = tête d'Hector (dominante) + texte "H€CTOR" en support.
-  // size = hauteur de référence. La tête est plus grande pour avoir vraiment de la présence.
+  // Logo 2026 : le portrait studio d'Hector (regard levé) + wordmark en Playfair Display
+  // (la typo des titres du site), € vert menthe. La tête est ronde (l'asset est un carré
+  // fond nuit → borderRadius 50% l'intègre partout).
   const textColor = dark ? "white" : INK;
-  const headSize = size * 1.4;  // la tête déborde au-dessus pour mieux remplir
+  const headSize = size * 1.4;
   const textSize = size * 0.55;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: size * 0.1, lineHeight: 1 }}>
-      <img src="/hector-tete.png" alt="" height={headSize} width={headSize}
-           style={{ height: headSize, width: headSize, objectFit: "contain", display: "block", flexShrink: 0, marginTop: -size * 0.2, marginBottom: -size * 0.2 }} />
-      <span style={{ fontFamily: "Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.01 }}>
-        H€CTOR
+    <div style={{ display: "flex", alignItems: "center", gap: size * 0.18, lineHeight: 1 }}>
+      <img src="/logo-tete.webp" alt="" height={headSize} width={headSize}
+           style={{ height: headSize, width: headSize, objectFit: "cover", borderRadius: "50%", display: "block", flexShrink: 0, marginTop: -size * 0.2, marginBottom: -size * 0.2 }} />
+      <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.02 }}>
+        H<span style={{ color: "#5DCAA5" }}>€</span>CTOR
       </span>
     </div>
   );
@@ -286,8 +287,8 @@ function Logo({ size = 28, dark = false }) {
 
 function LogoIcon({ size = 32 }) {
   return (
-    <img src="/hector-tete.png" alt="H€CTOR" height={size} width={size}
-         style={{ height: size, width: size, objectFit: "contain", display: "block" }} />
+    <img src="/logo-tete.webp" alt="H€CTOR" height={size} width={size}
+         style={{ height: size, width: size, objectFit: "cover", borderRadius: "50%", display: "block" }} />
   );
 }
 
