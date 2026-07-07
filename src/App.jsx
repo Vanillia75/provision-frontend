@@ -483,6 +483,8 @@ function AppInner() {
   const [aemScanProgress, setAemScanProgress] = useState(null); // { courant, total } — progression quand on scanne PLUSIEURS fichiers d'un coup
   const [aemSaving, setAemSaving] = useState(false);
   const [aemError, setAemError] = useState("");
+  const [aemEchecs, setAemEchecs] = useState([]); // fichiers que le scan n'a pas su lire — proposés à l'envoi pour lecture humaine
+  const [signalementEnvoi, setSignalementEnvoi] = useState(false);
   // Import attestation ARE (date anniversaire + montant journalier lus, jamais calculés).
   const [areUploading, setAreUploading] = useState(false);
   const [areExtrait, setAreExtrait] = useState(null); // résultat lu, en attente de validation
@@ -2396,6 +2398,7 @@ function AppInner() {
     if (fichiers.length === 0) return;
     setAemUploading(true);
     setAemError("");
+    setAemEchecs([]);
     setAemExtrait(null);
     setAemQueue([]);
     setAemTotal(0);
@@ -2417,6 +2420,7 @@ function AppInner() {
       // On lit chaque fichier l'un après l'autre et on empile TOUTES les AEM trouvées dans une seule file.
       const tousLesForms = [];
       const echecs = [];
+      let premierMessageErreur = ""; // le message honnête du backend (ex. « je ne sais pas lire ce type de document »)
       for (let i = 0; i < fichiers.length; i++) {
         const file = fichiers[i];
         if (fichiers.length > 1) setAemScanProgress({ courant: i + 1, total: fichiers.length });
@@ -2426,21 +2430,26 @@ function AppInner() {
           const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
           // Le backend renvoie { aems: [...] }. Compatibilité : si un seul objet arrive, on l'emballe.
           const liste = Array.isArray(data?.aems) ? data.aems : (data ? [data] : []);
-          if (liste.length === 0) { echecs.push(file.name); continue; }
+          if (liste.length === 0) { echecs.push({ name: file.name, file }); continue; }
           for (const d of liste) tousLesForms.push(toForm(d, file.name));
         } catch (e) {
-          echecs.push(file.name); // un fichier illisible ne doit pas faire perdre les autres
+          // Quota atteint : ce n'est pas un document illisible, la modale Premium s'en charge.
+          if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") continue;
+          if (!premierMessageErreur && e.status === 422 && e.message) premierMessageErreur = e.message;
+          echecs.push({ name: file.name, file }); // un fichier illisible ne doit pas faire perdre les autres
         }
       }
+      setAemEchecs(echecs); // fichiers gardés en main pour proposer la lecture humaine
       if (tousLesForms.length === 0) {
-        setAemError(fichiers.length > 1
+        if (echecs.length === 0) return; // tout venait du quota : rien à afficher ici
+        setAemError(premierMessageErreur || (fichiers.length > 1
           ? "Je n'ai rien trouvé d'exploitable dans ces documents. Réessaie avec des scans plus nets."
-          : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette.");
+          : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette."));
         return;
       }
       if (echecs.length > 0) {
         // Lecture partielle : on garde ce qu'on a lu, mais on prévient honnêtement pour les fichiers ratés.
-        setAemError(`Je n'ai pas réussi à lire ${echecs.length} fichier${echecs.length > 1 ? "s" : ""} (${echecs.join(", ")}). J'ai gardé les autres — valide-les ci-dessous, puis rescanne ceux-là.`);
+        setAemError(`Je n'ai pas réussi à lire ${echecs.length} fichier${echecs.length > 1 ? "s" : ""} (${echecs.map(e => e.name).join(", ")}). J'ai gardé les autres — valide-les ci-dessous, puis rescanne ceux-là.`);
       }
       setAemTotal(tousLesForms.length);
       setAemExtrait(tousLesForms[0]);        // la 1ère à valider
@@ -2452,6 +2461,39 @@ function AppInner() {
       setAemScanProgress(null);
     }
   }
+
+  // ─── Un document que le scan n'a pas su lire → envoi au coffre pour lecture humaine ───
+  async function envoyerSignalementAEM() {
+    if (aemEchecs.length === 0 || signalementEnvoi) return;
+    setSignalementEnvoi(true);
+    try {
+      for (const e of aemEchecs) {
+        const form = new FormData();
+        form.append("file", e.file);
+        await apiFetch("/intermittent/aem/signalement", { method: "POST", body: form });
+      }
+      setAemEchecs([]);
+      setAemError("");
+      showToast("C'est envoyé ! Un humain lit ton document et je reviens vers toi sous 24h. 🐾", "ti-paw");
+    } catch (err) {
+      setAemError(err.message || "L'envoi a échoué. Réessaie dans un moment.");
+    } finally {
+      setSignalementEnvoi(false);
+    }
+  }
+
+  // Encart proposé sous l'erreur de scan : transforme l'échec technique en service.
+  const renderEnvoiHumain = () => aemEchecs.length > 0 && (
+    <div style={{ marginTop: 10, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 10, padding: "12px 16px" }}>
+      <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 10 }}>
+        Ce document me résiste ? Pas de blocage pour autant : envoie-le moi, <strong style={{ color: "white" }}>un humain de l'équipe le lit</strong> et on revient vers toi sous 24h.
+      </div>
+      <button type="button" onClick={envoyerSignalementAEM} disabled={signalementEnvoi}
+        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "9px 14px", fontSize: 13, fontWeight: 700, cursor: signalementEnvoi ? "default" : "pointer", fontFamily: "inherit", opacity: signalementEnvoi ? 0.7 : 1 }}>
+        {signalementEnvoi ? "Envoi en cours…" : `📮 Envoyer pour lecture humaine${aemEchecs.length > 1 ? ` (${aemEchecs.length} fichiers)` : ""}`}
+      </button>
+    </div>
+  );
 
   // ─── Confirme l'AEM lue : crée l'activité avec brut + aem_recue=true ───
   async function handleConfirmAEM() {
@@ -6631,6 +6673,7 @@ function AppInner() {
                   {aemError && (
                     <div style={{ marginTop: 14, fontSize: 12.5, color: "#F09595" }}>{aemError}</div>
                   )}
+                  {renderEnvoiHumain()}
 
                   {(() => {
                     const dup = trouveDoublonAEM(aemExtrait, interActivites);
@@ -6682,7 +6725,10 @@ function AppInner() {
                     </div>
 
                     {aemError && (
-                      <div style={{ marginBottom: 14, background: "rgba(226,75,74,0.08)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#F09595", lineHeight: 1.5 }}>{aemError}</div>
+                      <div style={{ marginBottom: 14 }}>
+                        <div style={{ background: "rgba(226,75,74,0.08)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10, padding: "12px 16px", fontSize: 13, color: "#F09595", lineHeight: 1.5 }}>{aemError}</div>
+                        {renderEnvoiHumain()}
+                      </div>
                     )}
 
                     {aems.length === 0 ? (
