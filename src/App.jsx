@@ -4622,11 +4622,11 @@ function AppInner() {
             </div>
             {/* La question + les deux mondes */}
             <div>
-              <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 36 : 52, fontWeight: 700, lineHeight: 1.04, margin: "0 0 10px", color: "white" }}>
-                Qui es-tu&nbsp;?
+              <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 34 : 48, fontWeight: 700, lineHeight: 1.06, margin: "0 0 10px", color: "white" }}>
+                Dis-moi ce&nbsp;que&nbsp;tu&nbsp;fais.
               </h1>
               <p style={{ fontSize: isMobile ? 16 : 18.5, color: "#5DCAA5", fontWeight: 600, margin: "0 0 26px" }}>
-                Dis-le moi, je m'occupe du reste.
+                Je m'occupe du reste.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
                 {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => navLanding("intermittent") })}
