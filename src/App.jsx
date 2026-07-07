@@ -1461,7 +1461,7 @@ function AppInner() {
         <div style={{ fontSize: 40, marginBottom: 10 }}>🐶</div>
         <div style={{ fontSize: 14.5, color: "#E6EDF5", lineHeight: 1.55, marginBottom: 18 }}>
           {({
-            aem_scan: "C'est bon, je l'ai reconnue. Il ne me reste plus qu'à l'ajouter à ton suivi. Laisse-moi m'en occuper autant de fois que tu veux. 🔓",
+            aem_scan: "Tu as utilisé tes scans gratuits du mois — je n'ai pas encore lu celle-ci. Laisse-moi lire toutes tes AEM, autant de fois que tu veux. 🔓",
             chat: "Je reste là quand tu as besoin de moi. On a utilisé nos messages du mois. Laisse-moi rester dispo non-stop. 🔓",
             doc_scan: "Laisse-moi le faire. Tu as utilisé tes scans gratuits du mois. Je peux m'occuper de toute ta paperasse. 🔓",
             relance_auto: "Laisse-moi réclamer tes impayés à ta place : je relance tes clients automatiquement, au bon moment, sans que tu aies à t'en occuper. 🔓",
