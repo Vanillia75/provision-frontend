@@ -4594,7 +4594,12 @@ function AppInner() {
         </button>
       );
       return (
-        <div style={{ minHeight: "100vh", background: "#07192E", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "26px 22px" : "40px 48px", boxSizing: "border-box" }}>
+        <div style={{ minHeight: "100vh", background: "#07192E", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "26px 22px" : "40px 48px", boxSizing: "border-box", position: "relative" }}>
+          {/* Enseigne discrète en haut à gauche : la marque vit dans son coin,
+              la question « Qui es-tu ? » vit seule (sinon on lit « TOTOR, qui es-tu ? »). */}
+          <div style={{ position: "absolute", top: isMobile ? 16 : 22, left: isMobile ? 18 : 26 }}>
+            <Logo size={isMobile ? 24 : 28} dark />
+          </div>
           <style>{`
             .hx-card{position:relative;transition:transform .2s cubic-bezier(.2,.7,.3,1);will-change:transform;transform:translateZ(0);cursor:pointer;}
             .hx-card::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 20px 55px rgba(0,0,0,.5);opacity:0;transition:opacity .2s ease;pointer-events:none;}
@@ -4617,9 +4622,6 @@ function AppInner() {
             </div>
             {/* La question + les deux mondes */}
             <div>
-              <div style={{ fontFamily: SERIF, fontSize: isMobile ? 19 : 24, fontWeight: 700, letterSpacing: 1.5, color: "white", marginBottom: isMobile ? 4 : 8 }}>
-                T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R
-              </div>
               <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 36 : 52, fontWeight: 700, lineHeight: 1.04, margin: "0 0 10px", color: "white" }}>
                 Qui es-tu&nbsp;?
               </h1>
