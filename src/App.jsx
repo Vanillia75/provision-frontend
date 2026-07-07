@@ -9980,7 +9980,7 @@ function AppInner() {
                       <img
                         src={hectorEtat?.img || "/hector-tete.png"}
                         alt="Hector"
-                        style={{ width: "100%", height: "auto", maxHeight: "100%", objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
+                        style={{ width: "100%", height: "auto", maxHeight: 240, objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
                       />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
