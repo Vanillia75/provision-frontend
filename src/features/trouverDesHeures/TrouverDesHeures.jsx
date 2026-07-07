@@ -62,9 +62,9 @@ export default function TrouverDesHeures() {
   // Offre dont la description est dépliée (id) — cartes compactes par défaut,
   // sinon la liste devient un puits à scroller. Affichage pur.
   const [offreOuverte, setOffreOuverte] = useState(null);
-  // Nombre d'offres affichées : 8 d'abord, « Voir plus » pour la suite (la page
+  // Nombre d'offres affichées : 10 d’abord, « Voir plus » pour la suite (la page
   // reste courte même quand la recherche renvoie 20+ offres). Affichage pur.
-  const [nbVisibles, setNbVisibles] = useState(8);
+  const [nbVisibles, setNbVisibles] = useState(10);
   // Rayon RÉELLEMENT utilisé (le rayon choisi peut être auto-élargi une fois s'il ne donne rien).
   const [rayonEffectif, setRayonEffectif] = useState(() => {
     try { return Number(localStorage.getItem("th_rayon")) || 20; } catch { return 20; }
@@ -96,7 +96,7 @@ export default function TrouverDesHeures() {
       }
       setRayonEffectif(r);
       setOffres(data);
-      setNbVisibles(8);      // nouvelle recherche → on repart sur une page courte
+      setNbVisibles(10);     // nouvelle recherche → on repart sur une page courte
       setOffreOuverte(null); // et aucune description dépliée
       setStatut("ok");
     } catch (e) {
