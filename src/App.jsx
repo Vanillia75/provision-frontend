@@ -1808,10 +1808,16 @@ function AppInner() {
         </div>
         <div style={{ fontSize: 12.5, color: "#E6EDF5", fontWeight: 600, marginTop: 8 }}>
           {reste > 0
-            ? `🐶 Il te reste ${reste} ${nomSingulier}${reste > 1 ? "s" : ""} ce mois-ci`
+            ? `🐶 Offre gratuite : il te reste ${reste} ${nomSingulier}${reste > 1 ? "s" : ""} ce mois-ci`
             : `🐶 Tu as fait le plein de ${nomSingulier}s ce mois-ci 👏`}
         </div>
-        <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 3 }}>🐶 Je pourrais m'en occuper autant de fois que tu veux.</div>
+        <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 3 }}>
+          🐶 Je pourrais m'en occuper autant de fois que tu veux —{" "}
+          <button type="button" onClick={() => (profile?.statut === "intermittent" ? setInterNav("abonnement") : setNav("abonnement"))}
+            style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+            voir l'offre illimitée →
+          </button>
+        </div>
       </div>
     );
   };
@@ -2323,11 +2329,14 @@ function AppInner() {
           }),
         });
       }
+      // Célébration : on dit tout de suite ce que ça change (heures ajoutées au compteur).
+      const heuresAjoutees = Math.round(heuresDe({ type_activite: interForm.type_activite, nombre }) * envois.length);
       setInterRepartition("parjour");
       setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
       setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
+      showToast(heuresAjoutees > 0 ? `+${heuresAjoutees} h ajoutées à ton compteur 🐾` : "C'est noté 🐾", "ti-paw");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -4427,13 +4436,21 @@ function AppInner() {
                   <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                   <p style={S.orDivider}>ou avec un email</p>
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
-                  <PasswordField label="Mot de passe" value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
+                  <PasswordField label={authMode === "register" ? "Mot de passe (8 caractères min.)" : "Mot de passe"} value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
                   {authMode === "register" && (<>
                     <PasswordField label="Confirme ton mot de passe" value={authPasswordConfirm} onChange={e => setAuthPasswordConfirm(e.target.value)} autoComplete="new-password" />
                     {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas — revérifie</p>)}
                   </>)}
                   {authMode === "login" && (<p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}><button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button></p>)}
                   <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
+                  {authMode === "register" && (
+                    <p style={{ fontSize: 11, color: "#8595a8", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
+                      En créant ton compte, tu acceptes les{" "}
+                      <button type="button" onClick={() => setLegalPage("cgu")} style={{ background: "none", border: "none", color: "#5a7ea6", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>CGU</button>
+                      {" "}et la{" "}
+                      <button type="button" onClick={() => setLegalPage("confidentialite")} style={{ background: "none", border: "none", color: "#5a7ea6", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>politique de confidentialité</button>.
+                    </p>
+                  )}
                   <p style={S.switchAuth}>{authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}<button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button></p>
                 </form>
               )}
@@ -4534,7 +4551,13 @@ function AppInner() {
                 {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => navLanding("intermittent") })}
                 {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => navLanding("auto_entrepreneur") })}
               </div>
-              <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 18, textAlign: "center" }}>Tu peux changer à tout moment.</div>
+              <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 18, textAlign: "center" }}>
+                Tu peux changer à tout moment.{" "}
+                <button type="button" onClick={() => setLegalPage("pourquoi")}
+                  style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+                  Pourquoi un chien ? →
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -5296,7 +5319,8 @@ function AppInner() {
               <input type="file" accept="image/*,application/pdf" disabled={areUploading} style={{ display: "none" }}
                 onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }} />
             </label>
-            <p style={{ fontSize: 11.5, color: "#8BA5C0", margin: 0, textAlign: "center", lineHeight: 1.5 }}>Je lis la date (et ton montant journalier) tout seul — le plus simple.</p>
+            <p style={{ fontSize: 11.5, color: "#8BA5C0", margin: 0, textAlign: "center", lineHeight: 1.5 }}>C'est le courrier « notification de droits » de France Travail. Je lis la date (et ton montant journalier) tout seul — le plus simple.</p>
+            <p style={{ fontSize: 11, color: "#6B8299", margin: "6px 0 0", textAlign: "center", lineHeight: 1.5 }}>🔒 Ton document reste privé : conservé en sécurité, jamais partagé, supprimable à tout moment.</p>
             {areError && <p style={{ color: "#E8927C", fontSize: 12, margin: "6px 0 0", textAlign: "center" }}>{areError}</p>}
             {areExtrait && (
               <p style={{ color: "#5DCAA5", fontSize: 12.5, margin: "8px 0 0", textAlign: "center", lineHeight: 1.5 }}>
@@ -6589,7 +6613,7 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 12, marginBottom: 20 }}>
                       <div>
                         <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 4px" }}>🐾 Mes AEM</h1>
-                        <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une ou plusieurs AEM d'un coup, je m'occupe du reste.</p>
+                        <p style={{ fontSize: 13.5, color: "#8BA5C0", margin: 0 }}>Ajoute une ou plusieurs AEM (attestations employeur) d'un coup, je m'occupe du reste.</p>
                       </div>
                       <label style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: aemUploading ? "default" : "pointer", fontFamily: "inherit", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
                         <input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading} onChange={e => { const fs = Array.from(e.target.files || []); if (fs.length) handleScanAEM(fs); e.target.value = ""; }} style={{ display: "none" }} />
@@ -6606,6 +6630,7 @@ function AppInner() {
                         <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
                         <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}><strong style={{ color: "white" }}>On commence ici.</strong> Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "14px auto 0" }}><strong style={{ color: "#B5D4F4" }}>Où les trouver ?</strong> Tes employeurs te remettent une AEM après chaque contrat de travail. Tu les retrouves aussi dans ton espace personnel France Travail.</div>
+                        <div style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>🔒 Ton document reste privé : conservé en sécurité, jamais partagé, supprimable à tout moment. Et si tu as déjà saisi un contrat à la main, scanne quand même — <strong style={{ color: "#9FE1CB" }}>je repère les doublons</strong>.</div>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>
                           Pas d'AEM sous la main ? Tu peux saisir tes cachets et tes heures directement dans{" "}
                           <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités →</button>
@@ -6720,7 +6745,9 @@ function AppInner() {
                 return (
                   <div style={{ background: "#0a1322", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 14, padding: "13px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                     <div style={{ flex: 1, minWidth: 220, fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>
-                      🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong> — je te l'ai préparée.
+                      {(interActivites || []).length === 0
+                        ? <>🐾 Tu es déjà indemnisé·e par France Travail ? Ton actualisation de <strong>{nomMoisDecl}</strong> est alors à faire avant le <strong>~15 {nomMoisLimite}</strong> — je peux te la préparer.</>
+                        : <>🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong> — je te l'ai préparée.</>}
                     </div>
                     <button type="button" onClick={() => setInterNav("actu")}
                       style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
@@ -9134,7 +9161,7 @@ function AppInner() {
                         a.type_activite === "enseignement" ? `${a.nombre}h enseignement` :
                         estArretNeutralise ? `${a.nombre} j → 0h (allonge)` :
                         (a.type_activite || "").startsWith("arret_") ? `${a.nombre} j arrêt → ${Math.round((a.nombre || 0) * 5)}h` :
-                        `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`;
+                        `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} · ${Math.round(heuresDe(a))} h`;
                       // Mode édition de cette ligne
                       if (interEditId === a.id) {
                         return (
