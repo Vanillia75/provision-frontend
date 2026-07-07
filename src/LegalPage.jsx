@@ -18,7 +18,7 @@ Siège social : 32 rue Damrémont, 75018 Paris, France
 SIREN : 990 086 209
 SIRET (siège) : 990 086 209 00014
 RCS Paris
-Gérante : Camille Gardereau
+Gérant : Camille Gardereau
 Contact : vanilliabusiness@gmail.com
 
 ## Hébergement
@@ -30,7 +30,7 @@ Les données peuvent donc être hébergées sur des serveurs situés en dehors d
 
 ## Directeur de la publication
 
-Camille Gardereau, en sa qualité de gérante de VANILLIA.
+Camille Gardereau, en sa qualité de gérant de VANILLIA.
 
 ## Propriété intellectuelle
 
