@@ -804,7 +804,7 @@ function AppInner() {
   const [profilAdresse, setProfilAdresse] = useState(() => safeStorage.getItem("profilAdresse") || "");
   const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
   const [siretLookupMessage, setSiretLookupMessage] = useState("");
-  const [outilsOpen, setOutilsOpen] = useState(false);
+  const [argentOpen, setArgentOpen] = useState(false);
   const [prepareOpen, setPrepareOpen] = useState(false);
   const [facturerOpen, setFacturerOpen] = useState(false);
   const [montantCopie, setMontantCopie] = useState(false);
@@ -10247,12 +10247,12 @@ function AppInner() {
             assistant) sont INCHANGÉS : tous les `nav === "..."` et `setNav("...")`
             existants continuent de fonctionner. Seuls les labels et le regroupement
             changent. "Préparer" est un groupe qui ouvre declaration + echeances. */}
+        {/* ═══ MENU AE V2 — organisé autour des 3 questions de l'auto-entrepreneur :
+             où j'en suis (Cockpit) · mon argent · facturer · déclarer. Aucune page
+             supprimée : les id ne bougent pas, seule l'organisation change. ═══ */}
         {[
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
           { id: "assistant", icon: "ti-message-2", label: "Parle à Hector" },
-          { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
-          { id: "revenus", icon: "ti-chart-bar", label: "Mes encaissements" },
-          { id: "frais", icon: "ti-receipt-2", label: "Mes dépenses" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
@@ -10260,9 +10260,30 @@ function AppInner() {
           </button>
         ))}
 
-        {/* Groupe "Facturer" : factures + devis (même flux commercial). */}
+        {/* Groupe « Mon argent » : ce qui entre, ce qui sort, ce que tu peux te verser ou t'offrir. */}
         <button
-          style={{ ...S.navItem, ...((nav === "factures" || nav === "devis") ? S.navItemActive : {}) }}
+          style={{ ...S.navItem, ...(["revenus", "frais", "salaire", "achat"].includes(nav) ? S.navItemActive : {}) }}
+          onClick={() => setArgentOpen(!argentOpen)}
+        >
+          <i className="ti ti-wallet" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Mon argent</span>}
+          {(isMobile || sidebarOpen) && <i className={`ti ${argentOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
+        </button>
+        {argentOpen && (isMobile || sidebarOpen) && [
+          { id: "revenus", icon: "ti-chart-bar", label: "Mes encaissements" },
+          { id: "frais", icon: "ti-receipt-2", label: "Mes dépenses" },
+          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
+          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
+        ].map(item => (
+          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          </button>
+        ))}
+
+        {/* Groupe « Facturer » : tout le flux commercial — du contact au modèle de relance. */}
+        <button
+          style={{ ...S.navItem, ...(["factures", "devis", "coach", "contacts", "modeles"].includes(nav) ? S.navItemActive : {}) }}
           onClick={() => setFacturerOpen(!facturerOpen)}
         >
           <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
@@ -10272,6 +10293,9 @@ function AppInner() {
         {facturerOpen && (isMobile || sidebarOpen) && [
           { id: "factures", icon: "ti-file-invoice", label: "Mes factures" },
           { id: "devis", icon: "ti-file-description", label: "Mes devis" },
+          { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
+          { id: "contacts", icon: "ti-address-book", label: "Contacts" },
+          { id: "modeles", icon: "ti-template", label: "Modèles" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -10279,18 +10303,19 @@ function AppInner() {
           </button>
         ))}
 
-        {/* Groupe "Préparer" : déclaration + échéances. Actif si l'un des deux est ouvert. */}
+        {/* Groupe « Déclarer » : la corvée n°1 de l'AE, préparée — URSSAF, échéances, simulateur. */}
         <button
-          style={{ ...S.navItem, ...((nav === "declaration" || nav === "echeances") ? S.navItemActive : {}) }}
+          style={{ ...S.navItem, ...(["declaration", "echeances", "simulateur"].includes(nav) ? S.navItemActive : {}) }}
           onClick={() => setPrepareOpen(!prepareOpen)}
         >
           <i className="ti ti-clipboard-check" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Préparer</span>}
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Déclarer</span>}
           {(isMobile || sidebarOpen) && <i className={`ti ${prepareOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
         </button>
         {prepareOpen && (isMobile || sidebarOpen) && [
           { id: "declaration", icon: "ti-clipboard-check", label: "Ma déclaration" },
           { id: "echeances", icon: "ti-calendar-due", label: "Mes échéances" },
+          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -10298,28 +10323,16 @@ function AppInner() {
           </button>
         ))}
 
-        {/* (Assistant remonté en 2e position dans le groupe principal ci-dessus) */}
-
-        {/* ─── OUTILS — tout le reste, accessible mais secondaire. Rien n'est supprimé. ─── */}
-        <button style={{ ...S.navItem, borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 8, paddingTop: 14 }} onClick={() => setOutilsOpen(!outilsOpen)}>
-          <i className="ti ti-dots" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Outils</span>}
-          {(isMobile || sidebarOpen) && <i className={`ti ${outilsOpen ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 14, marginLeft: "auto" }} />}
-        </button>
-        {outilsOpen && (isMobile || sidebarOpen) && [
-          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
-          { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
-          { id: "simulateur", icon: "ti-chart-pie", label: "Simulateur fiscal" },
-          { id: "coach", icon: "ti-target-arrow", label: "Mes tarifs" },
-          { id: "contacts", icon: "ti-address-book", label: "Contacts" },
+        {/* ─── Le reste : la vie d'Hector et le compte. Rien n'est supprimé. ─── */}
+        <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 4px" }} />
+        {[
+          { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
-          { id: "modeles", icon: "ti-template", label: "Modèles" },
           { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
-          { id: "profil", icon: "ti-settings", label: "Réglages" },
         ].map(item => (
-          <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
-            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
-            <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
+          <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
+            <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+            {(isMobile || sidebarOpen) && <span style={S.navLabel}>{item.label}</span>}
           </button>
         ))}
         {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
@@ -10331,6 +10344,10 @@ function AppInner() {
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
           <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
           {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
+        </button>
+        <button style={{ ...S.navItem, marginTop: 4, ...(nav === "profil" ? S.navItemActive : {}) }} onClick={() => { setNav("profil"); setMobileMenuOpen(false); }}>
+          <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={{ ...S.navLabel, fontSize: 12 }}>Réglages</span>}
         </button>
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
           <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
