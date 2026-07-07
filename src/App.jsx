@@ -8466,6 +8466,45 @@ function AppInner() {
                 )}
               </div>
 
+              {/* ── ARTISTE OU TECHNICIEN·NE ? (répartition cachets vs heures — demande testeuse :
+                   utile pour savoir à quelle « appellation » FT t'assimile, et pour les dossiers AFDAS).
+                   V1 honnête : un cachet = artiste (sûr) ; des heures = artiste OU technicien (pas
+                   encore départageable — le tag par activité viendra avec l'étage 2). ── */}
+              {(() => {
+                const ilYa365 = new Date(); ilYa365.setDate(ilYa365.getDate() - 365);
+                const seuil365 = ilYa365.toISOString().split("T")[0];
+                let hCachets = 0, hHeures = 0;
+                for (const a of (interActivites || [])) {
+                  if (!a || !a.date || a.date < seuil365 || a.date > todayISO) continue;
+                  if (a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe" || a.type_activite === "cachet") hCachets += heuresDe(a);
+                  else if (a.type_activite === "heures") hHeures += heuresDe(a);
+                }
+                hCachets = Math.round(hCachets); hHeures = Math.round(hHeures);
+                if (hCachets === 0 && hHeures === 0) return null;
+                return (
+                  <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <i className="ti ti-masks-theater" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 18 }} />
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Artiste ou technicien·ne ?</div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 12 }}>Sur tes 12 derniers mois :</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 10, padding: "10px 13px" }}>
+                        <span style={{ fontSize: 12.5, color: "#C2E6D8" }}>🎭 Heures issues de cachets <span style={{ color: "#7E97B3" }}>(artiste — un cachet est toujours artiste)</span></span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: "white", whiteSpace: "nowrap" }}>{hCachets} h</span>
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 10, padding: "10px 13px" }}>
+                        <span style={{ fontSize: 12.5, color: "#C8E0F5" }}>⏱️ Heures payées à l'heure <span style={{ color: "#7E97B3" }}>(artiste ou technicien·ne — je ne peux pas encore les départager)</span></span>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: "white", whiteSpace: "nowrap" }}>{hHeures} h</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 11, color: "#7E97B3", marginTop: 10, lineHeight: 1.5 }}>
+                      🐾 France Travail t'« assimile » à l'appellation où tu as fait le plus d'heures — c'est elle qui fixe ton annexe (8 technicien·ne · 10 artiste). France Travail reste seul juge.
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ── MÉMOIRE DE CARRIÈRE (placeholder — à construire) ── */}
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px dashed rgba(159,203,245,0.3)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
