@@ -753,6 +753,13 @@ function AppInner() {
   };
   const showSavedToast = () => showToast();
   const [showWalkthrough, setShowWalkthrough] = useState(false);
+  // Drapeau « tour déjà vu » PAR COMPTE (clé + email) : il survit à la purge de
+  // clearLocalAccountData (appelée à chaque changement de session), qui effaçait
+  // l'ancienne clé globale → le tour se rouvrait à chaque connexion.
+  // `email` optionnel : au premier chargement, l'état `profile` n'est pas encore
+  // posé dans la closure (setProfile asynchrone) — le site d'appel passe le sien.
+  const walkthroughDoneKey = (email) => "hector_walkthrough_done:" + (email || (profile && profile.email) || "anon");
+  const walkthroughDejaVu = (email) => !!(safeStorage.getItem(walkthroughDoneKey(email)) || safeStorage.getItem("hector_walkthrough_done"));
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const [tvaSaving, setTvaSaving] = useState(false);
   const [factureNumeroDepart, setFactureNumeroDepart] = useState(""); // reprise de numérotation (sauvé au blur)
@@ -919,8 +926,8 @@ function AppInner() {
         setProjectionData(proj);
         // État de la connexion bancaire (Powens) — best effort, n'interrompt rien.
         loadBankStatus();
-        // Ouvrir le walkthrough au premier login uniquement
-        if (!safeStorage.getItem("hector_walkthrough_done")) {
+        // Ouvrir le walkthrough au premier accès de CE compte uniquement
+        if (!walkthroughDejaVu(p.email)) {
           setShowWalkthrough(true);
         }
       }
@@ -3007,7 +3014,7 @@ function AppInner() {
       loadIntermittentCockpit();
       // Walkthrough intermittent au premier accès (indépendant de loadEverything,
       // qui appelle des endpoints AE pouvant échouer pour un intermittent).
-      if (profile.onboarding_complete && !safeStorage.getItem("hector_walkthrough_done")) {
+      if (profile.onboarding_complete && !walkthroughDejaVu(profile.email)) {
         setShowWalkthrough(true);
       }
     }
@@ -9452,7 +9459,7 @@ function AppInner() {
           const [wtStep, setWtStep] = useState(0);
           const s = wtSteps[wtStep];
           const closeWalkthrough = () => {
-            safeStorage.setItem("hector_walkthrough_done", "1");
+            safeStorage.setItem(walkthroughDoneKey(), "1");
             setShowWalkthrough(false);
           };
           return (
@@ -13046,7 +13053,7 @@ function AppInner() {
           const [wtStep, setWtStep] = useState(0);
           const s = wtSteps[wtStep];
           const closeWalkthrough = () => {
-            safeStorage.setItem("hector_walkthrough_done", "1");
+            safeStorage.setItem(walkthroughDoneKey(), "1");
             setShowWalkthrough(false);
           };
           return (
