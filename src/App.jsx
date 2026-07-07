@@ -8481,38 +8481,38 @@ function AppInner() {
                   )}
 
                   {/* Aperçu du document */}
-                  <div style={{ background: "white", borderRadius: 14, padding: isMobile ? "20px 18px" : "28px 30px", marginBottom: 16, color: "#1a2b42" }}>
+                  <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 14, padding: isMobile ? "20px 18px" : "28px 30px", marginBottom: 16, color: "#D6E8FA" }}>
                     {/* En-tête */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid #0A2540", paddingBottom: 14, marginBottom: 18 }}>
-                      <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 800, color: "#0A2540" }}>H<span style={{ color: "#378ADD" }}>€</span>CTOR</div>
-                      <div style={{ textAlign: "right", fontSize: 11, color: "#5a6b80", lineHeight: 1.5 }}>Document généré le<br />{new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid rgba(93,202,165,0.45)", paddingBottom: 14, marginBottom: 18 }}>
+                      <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 800, color: "white" }}>H<span style={{ color: "#5DCAA5" }}>€</span>CTOR</div>
+                      <div style={{ textAlign: "right", fontSize: 11, color: "#8BA5C0", lineHeight: 1.5 }}>Document généré le<br />{new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
                     </div>
-                    <div style={{ fontSize: 17, fontWeight: 700, color: "#0A2540", marginBottom: 3 }}>Récapitulatif de revenus</div>
-                    <div style={{ fontSize: 12.5, color: "#5a6b80", marginBottom: 18 }}>Intermittent du spectacle · {recapRevenus.periodeLabel}</div>
-                    <div style={{ background: "#f4f7fb", borderRadius: 8, padding: "12px 16px", marginBottom: 18, fontSize: 13.5 }}>
-                      <b style={{ color: "#0A2540" }}>{[profilPrenom, profilNom].filter(Boolean).join(" ") || "Ton nom"}</b><br />
-                      <span style={{ color: "#5a6b80", fontSize: 12.5 }}>Revenus déclarés sur les 12 derniers mois</span>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "white", marginBottom: 3 }}>Récapitulatif de revenus</div>
+                    <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 18 }}>Intermittent du spectacle · {recapRevenus.periodeLabel}</div>
+                    <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "12px 16px", marginBottom: 18, fontSize: 13.5 }}>
+                      <b style={{ color: "white" }}>{[profilPrenom, profilNom].filter(Boolean).join(" ") || "Ton nom"}</b><br />
+                      <span style={{ color: "#8BA5C0", fontSize: 12.5 }}>Revenus déclarés sur les 12 derniers mois</span>
                     </div>
                     {/* Stats */}
                     <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>
-                      <div style={{ flex: "1 1 100px", border: "1px solid #dde5ee", borderRadius: 8, padding: "12px", textAlign: "center" }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#0A2540" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.totalBrut)} €</div>
-                        <div style={{ fontSize: 10.5, color: "#5a6b80", marginTop: 3 }}>Total brut</div>
+                      <div style={{ flex: "1 1 100px", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.totalBrut)} €</div>
+                        <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Total brut</div>
                       </div>
-                      <div style={{ flex: "1 1 100px", border: "1px solid #dde5ee", borderRadius: 8, padding: "12px", textAlign: "center" }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#0A2540" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.moyenneMensuelle)} €</div>
-                        <div style={{ fontSize: 10.5, color: "#5a6b80", marginTop: 3 }}>Moyenne / mois</div>
+                      <div style={{ flex: "1 1 100px", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.moyenneMensuelle)} €</div>
+                        <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Moyenne / mois</div>
                       </div>
-                      <div style={{ flex: "1 1 100px", border: "1px solid #dde5ee", borderRadius: 8, padding: "12px", textAlign: "center" }}>
-                        <div style={{ fontSize: 20, fontWeight: 800, color: "#0A2540" }}>{recapRevenus.totalContrats}</div>
-                        <div style={{ fontSize: 10.5, color: "#5a6b80", marginTop: 3 }}>Contrats</div>
+                      <div style={{ flex: "1 1 100px", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                        <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{recapRevenus.totalContrats}</div>
+                        <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Contrats</div>
                       </div>
                     </div>
                     {/* Tableau */}
                     <div style={{ overflowX: "auto" }}>
                       <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12.5 }}>
                         <thead>
-                          <tr style={{ background: "#0A2540", color: "white" }}>
+                          <tr style={{ background: "#12304f", color: "#C8E0F5" }}>
                             <th style={{ padding: "8px 10px", textAlign: "left" }}>Mois</th>
                             <th style={{ padding: "8px 10px", textAlign: "center" }}>Contrats</th>
                             <th style={{ padding: "8px 10px", textAlign: "center" }}>Employeurs</th>
@@ -8522,24 +8522,24 @@ function AppInner() {
                         <tbody>
                           {recapRevenus.lignes.map((l, i) => (
                             <tr key={i}>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0" }}>{l.label}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0", textAlign: "center" }}>{l.contrats}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0", textAlign: "center" }}>{l.employeurs}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid #e5e9f0", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>{l.label}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.contrats}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.employeurs}</td>
+                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot>
                           <tr style={{ fontWeight: 700 }}>
-                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540" }}>Total</td>
-                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540", textAlign: "center" }}>{recapRevenus.totalContrats}</td>
-                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540", textAlign: "center" }}>{recapRevenus.employeursUniques}</td>
-                            <td style={{ padding: "10px", borderTop: "2px solid #0A2540", textAlign: "right" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.totalBrut)} €</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid rgba(93,202,165,0.45)" }}>Total</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid rgba(93,202,165,0.45)", textAlign: "center" }}>{recapRevenus.totalContrats}</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid rgba(93,202,165,0.45)", textAlign: "center" }}>{recapRevenus.employeursUniques}</td>
+                            <td style={{ padding: "10px", borderTop: "2px solid rgba(93,202,165,0.45)", textAlign: "right" }}>{new Intl.NumberFormat("fr-FR").format(recapRevenus.totalBrut)} €</td>
                           </tr>
                         </tfoot>
                       </table>
                     </div>
-                    <div style={{ fontSize: 10, color: "#8595a8", marginTop: 16, lineHeight: 1.6 }}>
+                    <div style={{ fontSize: 10, color: "#6B8299", marginTop: 16, lineHeight: 1.6 }}>
                       Document personnel établi à partir des données saisies dans H€CTOR. Ne constitue pas une attestation officielle et n'a pas de valeur juridique. Pour un document officiel, s'adresser aux organismes compétents.
                     </div>
                   </div>
