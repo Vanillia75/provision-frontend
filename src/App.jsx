@@ -4579,10 +4579,12 @@ function AppInner() {
                 {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => navLanding("auto_entrepreneur") })}
               </div>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 18, textAlign: "center" }}>
-                Tu peux changer à tout moment.{" "}
+                Tu peux changer à tout moment.
+              </div>
+              <div style={{ marginTop: isMobile ? 12 : 18, textAlign: "center" }}>
                 <button type="button" onClick={() => setLegalPage("pourquoi")}
-                  style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
-                  Pourquoi un chien ? →
+                  style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline", textUnderlineOffset: 3 }}>
+                  <i className="ti ti-paw" style={{ marginRight: 6, fontStyle: "normal" }} />Pourquoi un chien ? →
                 </button>
               </div>
             </div>
