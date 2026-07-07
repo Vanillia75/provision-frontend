@@ -431,6 +431,12 @@ function AppInner() {
   // Brique 5.2 : saisie et liste des activités intermittent
   const [interActivites, setInterActivites] = useState([]);
   const [interShowAdd, setInterShowAdd] = useState(true);
+  // Formulaire d'ajout replié par défaut dès qu'il existe au moins une activité :
+  // l'utilisateur récurrent consulte plus qu'il ne saisit (liste d'abord). Un compte
+  // neuf le garde ouvert (parcours d'accueil). Effet d'AFFICHAGE pur — le bouton
+  // « + Ajouter » et le deep-link du cockpit (setInterShowAdd(true)) l'ouvrent toujours.
+  const aDejaDesActivites = (interActivites || []).length > 0;
+  useEffect(() => { if (aDejaDesActivites) setInterShowAdd(false); }, [aDejaDesActivites]);
   const [interSaving, setInterSaving] = useState(false);
   const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
   // Autocomplétion du champ employeur : menu maison des employeurs déjà saisis par l'utilisateur.
@@ -6607,7 +6613,7 @@ function AppInner() {
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM te rapproche de ton renouvellement — et tes documents originaux sont conservés : tu peux les rouvrir à tout moment.</div>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
                             <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -8664,8 +8670,10 @@ function AppInner() {
                 {/* Formulaire d'ajout */}
                 {interShowAdd && (
                   <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: 16, marginBottom: 12, display: "flex", flexDirection: "column", gap: 10 }}>
-                    <input type="date" value={interForm.date} onChange={e => setInterForm({ ...interForm, date: e.target.value })}
-                      style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Premier jour
+                      <input type="date" value={interForm.date} onChange={e => setInterForm({ ...interForm, date: e.target.value })}
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
                     {/* Type d'activité : toggle VISIBLE Cachets/Heures (les 2 cas courants) + "Autre" pour les cas rares */}
                     {(() => {
                       const t = interForm.type_activite;
@@ -8833,14 +8841,15 @@ function AppInner() {
                           Un arrêt <strong style={{ color: "#FCE0A8" }}>indemnisé</strong> compte <strong style={{ color: "#FCE0A8" }}>5h par jour</strong> (week-ends inclus) vers tes 507h. C'est une <strong style={{ color: "#FCE0A8" }}>estimation</strong> : ça vaut si l'arrêt était bien indemnisé et si tu as retravaillé après. Une maladie ordinaire entre deux contrats, elle, n'ajoute pas d'heures — vérifie toujours avec France Travail.
                         </div>
                       </div>
-                    ) : (
+                    ) : (interForm.date && interForm.date > todayISO) ? (
+                      /* Contextuel : n'apparaît que si la date saisie est FUTURE (c'est là qu'il éclaire). */
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 8, padding: "9px 11px" }}>
                         <i className="ti ti-info-circle" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
                         <div style={{ fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.45 }}>
-                          Ajoute tes contrats <strong style={{ color: "#C8E0F5" }}>déjà faits ou déjà signés</strong> — même ceux <strong style={{ color: "#C8E0F5" }}>à venir</strong> : mets leur vraie date, je les compterai le moment venu. Pour un contrat <strong style={{ color: "#C8E0F5" }}>pas encore signé</strong>, teste-le plutôt avec <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
+                          Contrat <strong style={{ color: "#C8E0F5" }}>à venir</strong> ? Parfait si c'est <strong style={{ color: "#C8E0F5" }}>déjà signé</strong> : garde sa vraie date, je le compterai le moment venu. Pour un contrat <strong style={{ color: "#C8E0F5" }}>pas encore signé</strong>, teste-le plutôt avec <strong style={{ color: "#C8E0F5" }}>« Que se passe-t-il si… »</strong>.
                         </div>
                       </div>
-                    )}
+                    ) : null}
                     <label style={{ display: "flex", alignItems: "flex-start", gap: 9, cursor: "pointer", background: interForm.estime ? "rgba(55,138,221,0.10)" : "rgba(255,255,255,0.02)", border: "1px solid " + (interForm.estime ? "rgba(55,138,221,0.4)" : "rgba(255,255,255,0.1)"), borderRadius: 8, padding: "10px 12px" }}>
                       <input type="checkbox" checked={!!interForm.estime} onChange={e => setInterForm({ ...interForm, estime: e.target.checked })}
                         style={{ marginTop: 2, width: 16, height: 16, accentColor: "#378ADD", flexShrink: 0, cursor: "pointer" }} />
@@ -9022,7 +9031,7 @@ function AppInner() {
                                 {a.employeur || "—"}
                               </span>
                               {estAEM && (
-                                <span style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                <span title="Extraite de ton AEM scannée" style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3, cursor: "help" }}>
                                   <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
                                 </span>
                               )}
