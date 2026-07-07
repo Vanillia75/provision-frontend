@@ -59,6 +59,9 @@ export default function TrouverDesHeures() {
 
   const [offres, setOffres] = useState([]);
   const [statut, setStatut] = useState("chargement"); // "chargement" | "ok" | "erreur"
+  // Offre dont la description est dépliée (id) — cartes compactes par défaut,
+  // sinon la liste devient un puits à scroller. Affichage pur.
+  const [offreOuverte, setOffreOuverte] = useState(null);
   // Rayon RÉELLEMENT utilisé (le rayon choisi peut être auto-élargi une fois s'il ne donne rien).
   const [rayonEffectif, setRayonEffectif] = useState(() => {
     try { return Number(localStorage.getItem("th_rayon")) || 20; } catch { return 20; }
@@ -297,9 +300,21 @@ export default function TrouverDesHeures() {
                 </span>
               </div>
 
-              {o.description && (
-                <div style={{ fontSize: 12.5, color: "#9FB6CE", lineHeight: 1.5, marginTop: 10 }}>{o.description}</div>
-              )}
+              {/* Description repliée par défaut : cartes compactes, on déplie ce qui intéresse. */}
+              {o.description && (offreOuverte === o.id ? (
+                <>
+                  <div style={{ fontSize: 12.5, color: "#9FB6CE", lineHeight: 1.5, marginTop: 10 }}>{o.description}</div>
+                  <button type="button" onClick={() => setOffreOuverte(null)}
+                    style={{ background: "none", border: "none", color: "#6B8299", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 8, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                    Réduire <i className="ti ti-chevron-up" aria-hidden="true" style={{ fontSize: 13 }} />
+                  </button>
+                </>
+              ) : (
+                <button type="button" onClick={() => setOffreOuverte(o.id)}
+                  style={{ background: "none", border: "none", color: BLEU_CLAIR, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 9, display: "inline-flex", alignItems: "center", gap: 4 }}>
+                  Voir le détail <i className="ti ti-chevron-down" aria-hidden="true" style={{ fontSize: 13 }} />
+                </button>
+              ))}
             </div>
           ))}
         </div>
