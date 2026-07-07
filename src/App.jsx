@@ -3037,6 +3037,11 @@ function AppInner() {
       const form = new FormData();
       form.append("file", file);
       const data = await apiFetch("/intermittent/are/extract", { method: "POST", body: form });
+      // Lecture vide (ni date, ni montant) : message honnête plutôt qu'un formulaire vide muet.
+      if (!data.date_anniversaire && data.montant_journalier == null) {
+        setAreError("Je n'ai trouvé ni ta date anniversaire ni ton allocation sur ce document. Vérifie que c'est bien la notification de droits de France Travail (le courrier « décision »), et que la photo est nette. Tu peux aussi saisir les valeurs à la main.");
+        return;
+      }
       // Pré-remplit l'écran de vérification avec ce qu'Hector a lu (tout reste éditable).
       setAreExtrait({
         date_anniversaire: data.date_anniversaire || "",
