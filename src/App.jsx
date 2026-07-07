@@ -6589,13 +6589,18 @@ function AppInner() {
                     )}
 
                     {aems.length === 0 ? (
-                      <div style={{ textAlign: "center", padding: "40px 24px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
+                      <div style={{ textAlign: "center", padding: "36px 24px 30px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
                         <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
-                        <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}>On commence ici. Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
+                        <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}><strong style={{ color: "white" }}>On commence ici.</strong> Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "14px auto 0" }}><strong style={{ color: "#B5D4F4" }}>Où les trouver ?</strong> Tes employeurs te remettent une AEM après chaque contrat de travail. Tu les retrouves aussi dans ton espace personnel France Travail.</div>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>
+                          Pas d'AEM sous la main ? Tu peux saisir tes cachets et tes heures directement dans{" "}
+                          <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités →</button>
+                        </div>
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM te rapproche de ton renouvellement.</div>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM te rapproche de ton renouvellement — et tes documents originaux sont conservés : tu peux les rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
                             <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -8435,7 +8440,6 @@ function AppInner() {
               <div style={{ display: "flex", gap: 6, marginBottom: 18, background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: 4 }}>
                 {[
                   { id: "revenus", label: "Revenus", icon: "ti-file-text" },
-                  { id: "aem", label: "Mes AEM", icon: "ti-file-check" },
                   { id: "actualisations", label: "Actualisations", icon: "ti-clipboard-check" },
                 ].map(t => (
                   <button key={t.id} type="button" onClick={() => setDocTab(t.id)}
@@ -8540,60 +8544,6 @@ function AppInner() {
               </>)}
 
               {/* ─── SECTION MES AEM ─── */}
-              {docTab === "aem" && (() => {
-                const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
-                const dupSig = {};
-                aems.forEach((a) => { const s = signatureAEM(a); if (s) dupSig[s] = (dupSig[s] || 0) + 1; });
-                if (aems.length === 0) {
-                  return (
-                    <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
-                      Tu n'as pas encore scanné d'AEM.<br />Photographie-les, je les range ici automatiquement.
-                      <div style={{ marginTop: 16 }}>
-                        <button type="button" onClick={() => setInterNav("mesaem")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
-                      </div>
-                    </div>
-                  );
-                }
-                const fmtDate = (iso) => { try { const d = new Date(iso); const M = ["jan","fév","mar","avr","mai","juin","juil","août","sep","oct","nov","déc"]; return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`; } catch { return iso; } };
-                return (
-                  <>
-                    <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
-                      {aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Tes documents originaux sont conservés en sécurité — tu peux les rouvrir à tout moment.
-                    </div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {aems.map((a, i) => (
-                        <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
-                          <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                            <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
-                          </div>
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                              <span style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</span>
-                              {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && (
-                                <span style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                  <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible
-                                </span>
-                              )}
-                            </div>
-                            <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)}{a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : ""}</div>
-                          </div>
-                          {a.a_document && (
-                            <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
-                              style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                              <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
-                            </button>
-                          )}
-                          <button type="button" aria-label="Supprimer cette AEM"
-                            onClick={() => { if (window.confirm(`Supprimer cette AEM ?\n\n${a.employeur || "Employeur à compléter"} · ${fmtDate(a.date)}${a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : ""}\n\nElle sera retirée de ton compteur d'heures. Ton document original reste conservé.`)) handleDeleteActivite(a.id); }}
-                            style={{ background: "transparent", border: "1px solid rgba(226,75,74,0.3)", color: "#E24B4A", borderRadius: 8, padding: "7px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", flexShrink: 0 }}>
-                            <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
 
               {/* ─── SECTION ACTUALISATIONS ─── */}
               {docTab === "actualisations" && (
