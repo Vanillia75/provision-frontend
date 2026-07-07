@@ -27,6 +27,11 @@ if (typeof window !== "undefined") {
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 
+// Espace personnel France Travail (page stable, vérifiée 07/2026) : là où vit « M'actualiser ».
+// On n'automatise JAMAIS l'actualisation (pas d'API FT, identifiants intouchables) : Totor
+// prépare les chiffres, l'utilisateur les recopie chez FT. C'est lui qui valide, toujours.
+const FT_ESPACE_URL = "https://candidat.francetravail.fr/espacepersonnel/";
+
 // Accès localStorage sécurisé : en navigation privée (Safari surtout), ou si le quota
 // est plein, localStorage peut LEVER une exception et faire planter toute l'app (écran blanc).
 // safeStorage encapsule chaque accès dans un try/catch : en cas d'échec, on retombe sur un
@@ -7570,11 +7575,18 @@ function AppInner() {
                     <div style={{ maxWidth: 440, width: "100%", background: "#0c1f38", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 22, padding: "22px 20px 20px", position: "relative" }}>
                       <button type="button" onClick={() => setActuGuideStep(null)} style={{ position: "absolute", top: 16, right: 18, background: "none", border: "none", color: "#4A6280", fontSize: 19, cursor: "pointer", fontFamily: "inherit" }}><i className="ti ti-x" aria-hidden="true" /></button>
                       {/* progression */}
-                      <div style={{ display: "flex", gap: 6, marginBottom: 24, paddingRight: 28 }}>
+                      <div style={{ display: "flex", gap: 6, marginBottom: s.type === "done" ? 24 : 10, paddingRight: 28 }}>
                         {steps.map((_, i) => (
                           <div key={i} style={{ flex: 1, height: 4, borderRadius: 2, background: i < actuGuideStep ? "#5DCAA5" : i === actuGuideStep ? "rgba(93,202,165,0.55)" : "rgba(255,255,255,0.1)" }} />
                         ))}
                       </div>
+                      {/* France Travail à portée de patte pendant la recopie */}
+                      {s.type !== "done" && (
+                        <a href={FT_ESPACE_URL} target="_blank" rel="noopener noreferrer"
+                          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 12, fontWeight: 600, color: "#9FCBF5", textDecoration: "none", marginBottom: 14 }}>
+                          <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 14 }} /> Ouvrir France Travail dans un autre onglet
+                        </a>
+                      )}
                       {s.type === "done" ? (
                         <div style={{ textAlign: "center", padding: "6px 0" }}>
                           <div style={{ width: 82, height: 82, borderRadius: "50%", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
@@ -7639,7 +7651,13 @@ function AppInner() {
                   <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Pour {moisDeclNom}, je n'ai aucune activité enregistrée.</h1>
                   <p style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.5, maxWidth: 380, margin: "0 auto 10px" }}>Pourquoi {moisDeclNom} ? On déclare toujours le mois écoulé : sa fenêtre est ouverte jusqu'au ~15 du mois suivant.</p>
                   <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 20px" }}>Ajoute tes contrats du mois pour que je te prépare ton actualisation. Et n'oublie pas : même un mois sans cachet, il faut t'actualiser sur France Travail.</p>
-                  <button type="button" onClick={() => { setInterNav("activites"); }} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ajouter mes contrats</button>
+                  <div style={{ display: "flex", gap: 10, justifyContent: "center", flexWrap: "wrap" }}>
+                    <button type="button" onClick={() => { setInterNav("activites"); }} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ajouter mes contrats</button>
+                    <a href={FT_ESPACE_URL} target="_blank" rel="noopener noreferrer"
+                      style={{ background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 11, padding: "13px 22px", fontSize: 14, fontWeight: 700, fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, textDecoration: "none" }}>
+                      <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 15 }} /> Ouvrir France Travail
+                    </a>
+                  </div>
                   {/* Déjà actualisée sur France Travail (AEM pas encore arrivées) : Totor la croit. */}
                   <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.06)", maxWidth: 380, margin: "22px auto 0" }}>
                     <p style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 12 }}>Tu t'es déjà actualisé·e sur France Travail et tes AEM arrivent plus tard ?</p>
@@ -7881,6 +7899,10 @@ function AppInner() {
                 <button type="button" onClick={() => { setActuGuideStep(0); setActuEmpChecked({}); }} style={{ width: "100%", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 13, padding: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
                   <i className="ti ti-player-play" aria-hidden="true" style={{ fontSize: 18 }} /> M'actualiser sereinement
                 </button>
+                <a href={FT_ESPACE_URL} target="_blank" rel="noopener noreferrer"
+                  style={{ width: "100%", boxSizing: "border-box", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 13, padding: 13, marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
+                  <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 16 }} /> Ouvrir France Travail dans un autre onglet
+                </a>
                 <div style={{ fontSize: 10.5, color: "#45596F", textAlign: "center", lineHeight: 1.5, marginTop: 14 }}>C'est toujours toi qui valides sur France Travail.</div>
                 <button type="button" onClick={declarerActualise} style={{ display: "block", margin: "12px auto 0", background: "none", border: "none", color: "#6B8299", fontSize: 12, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}>Je me suis déjà actualisé·e ailleurs</button>
               </>)}
