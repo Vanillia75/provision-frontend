@@ -25,9 +25,9 @@ export const CARNET = {
       ],
     },
     {
-      titre: "Connaître ta banque",
+      titre: "Me connecter à ta banque — si tu le veux, un jour",
       entrees: [
-        { date: "2026-06-28", public: "tous", texte: "Je commence à apprendre à discuter avec ta banque pour récupérer tes opérations tout seul. Encore un peu de patience." },
+        { date: "2026-06-28", public: "tous", texte: "J'apprends à récupérer tes opérations bancaires pour t'éviter de la saisie — uniquement si tu me le demandes, jamais sans toi. Encore un peu de patience." },
       ],
     },
   ],

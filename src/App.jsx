@@ -4813,6 +4813,7 @@ function AppInner() {
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
+              <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
             </div>
           </section>
 
@@ -5100,6 +5101,7 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
+            <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
           </div>
         </section>
 
@@ -6169,6 +6171,10 @@ function AppInner() {
         texte: "Pour ouvrir ou renouveler tes droits, tu dois justifier d'au moins 507 heures de travail sur les 12 mois qui précèdent ta dernière fin de contrat. C'est une fenêtre glissante : à chaque examen, France Travail regarde les 12 derniers mois. Une fois les droits ouverts, tu es indemnisé pour 12 mois, jusqu'à ta date anniversaire.",
       },
       {
+        icon: "ti-file-check", titre: "C'est quoi une AEM ?",
+        texte: "L'AEM (Attestation Employeur Mensuelle) est le document que ton employeur envoie à France Travail après chaque contrat — et qu'il doit aussi te remettre. C'est elle qui prouve tes heures et tes cachets : sans AEM, un contrat n'existe pas pour France Travail. Tu les reçois de tes employeurs et tu les retrouves dans ton espace personnel France Travail. Scanne-les dans « Mes AEM » : je lis tout et je les ajoute à ton compteur.",
+      },
+      {
         icon: "ti-arrows-shuffle", titre: "Annexe 8 ou annexe 10 ?",
         texte: "L'annexe 8 concerne les techniciens, payés en heures réelles. L'annexe 10 concerne les artistes, payés au cachet. Pour le décompte des droits, un cachet d'artiste compte forfaitairement pour 12h. Tu peux cumuler des heures des deux annexes ; c'est celle où tu as le plus d'heures qui s'applique.",
       },
@@ -6292,11 +6298,6 @@ function AppInner() {
               </button>
             );
           })}
-          <button type="button" onClick={() => { setShowGame(true); setInterMenuOpen(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-            <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
-            <span>Course avec Hector</span>
-          </button>
           {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
           <button type="button" onClick={() => { setLegalPage("pourquoi"); setInterMenuOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
@@ -6308,6 +6309,12 @@ function AppInner() {
           <button type="button" onClick={() => { setInterNav("reglages"); setInterMenuOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 10, background: interNav === "reglages" ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: interNav === "reglages" ? "#5DCAA5" : "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
             <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 17 }} /> Réglages
+          </button>
+          {/* Le mini-jeu, rangé en fin de menu : un cadeau, pas une fonction de premier rang. */}
+          <button type="button" onClick={() => { setShowGame(true); setInterMenuOpen(false); }}
+            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#8BA5C0", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+            <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
+            <span>Course avec Hector</span>
           </button>
           <button type="button" onClick={() => { setShowWalkthrough(true); setInterMenuOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
@@ -7513,6 +7520,7 @@ function AppInner() {
                     <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                   </div>
                   <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Pour {moisDeclNom}, je n'ai aucune activité enregistrée.</h1>
+                  <p style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.5, maxWidth: 380, margin: "0 auto 10px" }}>Pourquoi {moisDeclNom} ? On déclare toujours le mois écoulé : sa fenêtre est ouverte jusqu'au ~15 du mois suivant.</p>
                   <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 20px" }}>Ajoute tes contrats du mois pour que je te prépare ton actualisation. Et n'oublie pas : même un mois sans cachet, il faut t'actualiser sur France Travail.</p>
                   <button type="button" onClick={() => { setInterNav("activites"); }} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ajouter mes contrats</button>
                   {/* Déjà actualisée sur France Travail (AEM pas encore arrivées) : Hector la croit. */}
@@ -7680,7 +7688,7 @@ function AppInner() {
                   </div>
                   <h1 style={{ fontSize: 21, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto" }}>Salut 🐾 J'ai préparé ton actualisation de {moisDeclNom}.</h1>
                   <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 8 }}>
-                    {actuOuverte ? "Elle est ouverte — tu peux y aller" : `Elle ouvre dans ${joursAvantOuverture} jour${joursAvantOuverture > 1 ? "s" : ""}`}
+                    {actuOuverte ? "Elle est ouverte — tu peux y aller" : `Elle ouvre dans ${joursAvantOuverture} jour${joursAvantOuverture > 1 ? "s" : ""}`}{" "}· on déclare toujours le mois écoulé, jusqu'au ~15 du mois suivant
                   </div>
                 </div>
 
@@ -7859,7 +7867,7 @@ function AppInner() {
                     return (
                       <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 11, padding: "12px 14px", marginBottom: 14 }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                          <span style={{ fontSize: 12, color: "#A9C2DC", fontWeight: 600 }}>Confiance de l'analyse</span>
+                          <span style={{ fontSize: 12, color: "#A9C2DC", fontWeight: 600 }}>Confiance de l'analyse <span style={{ color: "#5A7088", fontWeight: 400 }}>— selon ce qui manque à ton dossier</span></span>
                           <span style={{ fontSize: 13, fontWeight: 800, color: cc }}>{conf} %</span>
                         </div>
                         <div style={{ height: 7, background: "#07192E", borderRadius: 5, overflow: "hidden" }}>
@@ -8379,7 +8387,9 @@ function AppInner() {
                   </div>
                   {(() => {
                     const passes = (timeline.buckets || []).filter(b => !b.futur && b.heuresFaites > 0);
-                    if (passes.length === 0) return null;
+                    // Pas de superlatif (« ton meilleur mois ») avant d'avoir un vrai historique :
+                    // avec 1-2 mois de données, la phrase sonne creux.
+                    if (passes.length < 3) return null;
                     const best = passes.reduce((m, b) => b.heuresFaites > m.heuresFaites ? b : m, passes[0]);
                     const trois = passes.slice(-3);
                     const monte = trois.length === 3 && trois[0].heuresFaites < trois[1].heuresFaites && trois[1].heuresFaites < trois[2].heuresFaites;
@@ -10189,16 +10199,15 @@ function AppInner() {
             <span style={{ ...S.navLabel, fontSize: 12 }}>{item.label}</span>
           </button>
         ))}
-        {/* Course avec Hector — ouvre le mini-jeu (action, pas une page de nav). En CLÔTURE de la
-            navigation, après le métier : le jeu vient après le travail, pas dedans (modèle intermittent). */}
-        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
-          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
-        </button>
         {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setLegalPage("pourquoi"); setMobileMenuOpen(false); }}>
           <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
           {(isMobile || sidebarOpen) && <span style={S.navLabel}>Pourquoi H€CTOR ?</span>}
+        </button>
+        {/* Le mini-jeu, rangé en fin de menu : un cadeau, pas une fonction de premier rang. */}
+        <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
+          <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
         </button>
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => setShowWalkthrough(true)}>
           <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
