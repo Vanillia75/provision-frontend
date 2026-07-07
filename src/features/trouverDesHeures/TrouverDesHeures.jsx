@@ -62,6 +62,9 @@ export default function TrouverDesHeures() {
   // Offre dont la description est dépliée (id) — cartes compactes par défaut,
   // sinon la liste devient un puits à scroller. Affichage pur.
   const [offreOuverte, setOffreOuverte] = useState(null);
+  // Nombre d'offres affichées : 8 d'abord, « Voir plus » pour la suite (la page
+  // reste courte même quand la recherche renvoie 20+ offres). Affichage pur.
+  const [nbVisibles, setNbVisibles] = useState(8);
   // Rayon RÉELLEMENT utilisé (le rayon choisi peut être auto-élargi une fois s'il ne donne rien).
   const [rayonEffectif, setRayonEffectif] = useState(() => {
     try { return Number(localStorage.getItem("th_rayon")) || 20; } catch { return 20; }
@@ -93,6 +96,8 @@ export default function TrouverDesHeures() {
       }
       setRayonEffectif(r);
       setOffres(data);
+      setNbVisibles(8);      // nouvelle recherche → on repart sur une page courte
+      setOffreOuverte(null); // et aucune description dépliée
       setStatut("ok");
     } catch (e) {
       setStatut("erreur");
@@ -272,7 +277,7 @@ export default function TrouverDesHeures() {
               Je n'ai rien trouvé à moins de {autoElargi.de} km. J'ai regardé jusqu'à {autoElargi.vers} km pour toi.
             </div>
           )}
-          {offres.map((o) => (
+          {offres.slice(0, nbVisibles).map((o) => (
             <div key={o.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "15px 17px" }}>
               <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                 <div style={{ flex: "1 1 240px", minWidth: 0 }}>
@@ -317,6 +322,13 @@ export default function TrouverDesHeures() {
               ))}
             </div>
           ))}
+          {offres.length > nbVisibles && (
+            <button type="button" onClick={() => setNbVisibles((n) => n + 10)}
+              style={{ width: "100%", background: "rgba(93,202,165,0.10)", border: `1px solid rgba(93,202,165,0.35)`, color: VERT, borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              <i className="ti ti-chevron-down" aria-hidden="true" style={{ fontSize: 16 }} />
+              Voir plus d'offres ({offres.length - nbVisibles} restante{offres.length - nbVisibles > 1 ? "s" : ""})
+            </button>
+          )}
         </div>
       )}
     </>
