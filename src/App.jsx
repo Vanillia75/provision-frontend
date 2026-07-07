@@ -446,6 +446,9 @@ function AppInner() {
   const [interTypeAutre, setInterTypeAutre] = useState(false);
   // #1 saisie : répartition d'une plage de dates — "parjour" (tournée) ou "total" (N sur la période).
   const [interRepartition, setInterRepartition] = useState("parjour");
+  // Métier des HEURES saisies à la main : "" (je ne sais pas) | "artiste" | "technicien".
+  // Informatif (répartition annexe 8/10) — les cachets sont toujours artiste, pas de choix.
+  const [interMetier, setInterMetier] = useState("");
   // Vue de la liste "Mes activités" : "toutes" (à plat) | "mois" | "employeur". Filtre d'affichage pur.
   const [actVue, setActVue] = useState("toutes");
   // Report des heures déjà faites (saisie de départ)
@@ -2326,12 +2329,15 @@ function AppInner() {
             employeur: interForm.employeur || null,
             salaire_brut: interForm.salaire_brut !== "" ? parseFloat(String(interForm.salaire_brut).replace(",", ".")) : null,
             estime: !!interForm.estime,
+            // Cachet = toujours artiste ; heures = choix de l'utilisateur (ou null) ; autres types = null.
+            metier: interForm.type_activite === "cachet_isole" ? "artiste" : (interForm.type_activite === "heures" ? (interMetier || null) : null),
           }),
         });
       }
       // Célébration : on dit tout de suite ce que ça change (heures ajoutées au compteur).
       const heuresAjoutees = Math.round(heuresDe({ type_activite: interForm.type_activite, nombre }) * envois.length);
       setInterRepartition("parjour");
+      setInterMetier("");
       setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
@@ -2403,6 +2409,7 @@ function AppInner() {
         type_activite: d.type_activite || "cachet_isole",
         nombre: d.nombre != null ? String(d.nombre) : "",
         salaire_brut: d.salaire_brut != null ? String(d.salaire_brut) : "",
+        metier: (d.metier === "artiste" || d.metier === "technicien") ? d.metier : "",
         filename: d.filename || fallbackName,
         aem_r2_key: d.aem_r2_key || null,
       });
@@ -2467,6 +2474,8 @@ function AppInner() {
           aem_recue: true,
           aem_filename: aemExtrait.filename || null,
           aem_r2_key: aemExtrait.aem_r2_key || null,
+          // Un cachet est toujours artiste ; pour des heures, le métier lu/choisi (ou null).
+          metier: aemExtrait.type_activite === "cachet_isole" ? "artiste" : (aemExtrait.metier || null),
         }),
       });
       // S'il reste des AEM dans la file (document multi-attestations), on enchaîne sur la suivante.
@@ -2529,6 +2538,8 @@ function AppInner() {
           aem_recue: true,
           aem_filename: aemExtrait.filename || null,
           aem_r2_key: aemExtrait.aem_r2_key || null,
+          // Un cachet est toujours artiste ; pour des heures, le métier lu/choisi (ou null).
+          metier: aemExtrait.type_activite === "cachet_isole" ? "artiste" : (aemExtrait.metier || null),
         }),
       });
       if (aemQueue.length > 0) {                                         // multi-AEM : on enchaîne la validation, pas de victoire
@@ -2865,6 +2876,7 @@ function AppInner() {
       nombre: String(a.nombre ?? ""),
       employeur: a.employeur || "",
       estime: a.estime === true,
+      metier: (a.metier === "artiste" || a.metier === "technicien") ? a.metier : "",
     });
   }
   async function handleSaveEditActivite() {
@@ -2883,6 +2895,7 @@ function AppInner() {
           nombre,
           employeur: interEditForm.employeur || null,
           estime: !!interEditForm.estime,
+          metier: interEditForm.type_activite === "cachet_isole" ? "artiste" : (interEditForm.type_activite === "heures" ? (interEditForm.metier || null) : null),
         }),
       });
       setInterEditId(null);
@@ -6580,6 +6593,16 @@ function AppInner() {
                           <option value="heures">Heures (artiste ou technicien)</option>
                         </select>
                       </label>
+                      {aemExtrait.type_activite === "heures" && (
+                        <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>Métier <span style={{ color: "#5A7088", fontWeight: 400 }}>(lu sur l'AEM)</span>
+                          <select value={aemExtrait.metier || ""} onChange={e => setAemExtrait({ ...aemExtrait, metier: e.target.value })}
+                            style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                            <option value="">Je ne sais pas</option>
+                            <option value="artiste">Artiste</option>
+                            <option value="technicien">Technicien·ne</option>
+                          </select>
+                        </label>
+                      )}
                     </div>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 130px" }}>{aemExtrait.type_activite === "heures" ? "Nombre d'heures" : "Nombre de cachets"}
@@ -8473,31 +8496,46 @@ function AppInner() {
               {(() => {
                 const ilYa365 = new Date(); ilYa365.setDate(ilYa365.getDate() - 365);
                 const seuil365 = ilYa365.toISOString().split("T")[0];
-                let hCachets = 0, hHeures = 0;
+                let hArtiste = 0, hTech = 0, hInconnu = 0;
                 for (const a of (interActivites || [])) {
                   if (!a || !a.date || a.date < seuil365 || a.date > todayISO) continue;
-                  if (a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe" || a.type_activite === "cachet") hCachets += heuresDe(a);
-                  else if (a.type_activite === "heures") hHeures += heuresDe(a);
+                  const estCachet = a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe" || a.type_activite === "cachet";
+                  if (estCachet) hArtiste += heuresDe(a);            // un cachet est toujours artiste
+                  else if (a.type_activite === "heures") {
+                    if (a.metier === "artiste") hArtiste += heuresDe(a);
+                    else if (a.metier === "technicien") hTech += heuresDe(a);
+                    else hInconnu += heuresDe(a);
+                  }
                 }
-                hCachets = Math.round(hCachets); hHeures = Math.round(hHeures);
-                if (hCachets === 0 && hHeures === 0) return null;
+                hArtiste = Math.round(hArtiste); hTech = Math.round(hTech); hInconnu = Math.round(hInconnu);
+                if (hArtiste === 0 && hTech === 0 && hInconnu === 0) return null;
+                const ligne = (emoji, titre, note, val, teinte) => (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: `rgba(${teinte},0.07)`, border: `1px solid rgba(${teinte},0.2)`, borderRadius: 10, padding: "10px 13px" }}>
+                    <span style={{ fontSize: 12.5, color: "#C8E0F5" }}>{emoji} {titre} {note && <span style={{ color: "#7E97B3" }}>{note}</span>}</span>
+                    <span style={{ fontSize: 15, fontWeight: 800, color: "white", whiteSpace: "nowrap" }}>{val} h</span>
+                  </div>
+                );
                 return (
                   <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                       <i className="ti ti-masks-theater" aria-hidden="true" style={{ color: "#9FCBF5", fontSize: 18 }} />
                       <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Artiste ou technicien·ne ?</div>
+                      <span style={{ marginLeft: "auto", fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: "#F0C070", background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.3)", borderRadius: 10, padding: "1px 6px", textTransform: "uppercase" }}>estimation</span>
                     </div>
                     <div style={{ fontSize: 12, color: "#8FB4D8", lineHeight: 1.5, marginBottom: 12 }}>Sur tes 12 derniers mois :</div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 10, padding: "10px 13px" }}>
-                        <span style={{ fontSize: 12.5, color: "#C2E6D8" }}>🎭 Heures issues de cachets <span style={{ color: "#7E97B3" }}>(artiste — un cachet est toujours artiste)</span></span>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: "white", whiteSpace: "nowrap" }}>{hCachets} h</span>
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 10, padding: "10px 13px" }}>
-                        <span style={{ fontSize: 12.5, color: "#C8E0F5" }}>⏱️ Heures payées à l'heure <span style={{ color: "#7E97B3" }}>(artiste ou technicien·ne — je ne peux pas encore les départager)</span></span>
-                        <span style={{ fontSize: 15, fontWeight: 800, color: "white", whiteSpace: "nowrap" }}>{hHeures} h</span>
-                      </div>
+                      {hArtiste > 0 && ligne("🎭", "Artiste", "(cachets + heures « artiste »)", hArtiste, "93,202,165")}
+                      {hTech > 0 && ligne("🔧", "Technicien·ne", "", hTech, "55,138,221")}
+                      {hInconnu > 0 && ligne("❔", "Heures non départagées", "(modifie l'activité pour préciser le métier — ou rescanne l'AEM, je le lis désormais)", hInconnu, "159,182,206")}
                     </div>
+                    {hInconnu === 0 && hArtiste !== hTech && (
+                      <div style={{ marginTop: 12, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 10, padding: "11px 13px", fontSize: 12.5, color: "#C2E6D8", lineHeight: 1.5 }}>
+                        → À ce compte, France Travail devrait t'assimiler <strong style={{ color: "white" }}>{hArtiste > hTech ? "artiste (annexe 10)" : "technicien·ne (annexe 8)"}</strong>.
+                      </div>
+                    )}
+                    {hInconnu === 0 && hArtiste === hTech && (
+                      <div style={{ marginTop: 12, fontSize: 12, color: "#8FB4D8", lineHeight: 1.5 }}>Égalité parfaite entre les deux — France Travail tranchera.</div>
+                    )}
                     <div style={{ fontSize: 11, color: "#7E97B3", marginTop: 10, lineHeight: 1.5 }}>
                       🐾 France Travail t'« assimile » à l'appellation où tu as fait le plus d'heures — c'est elle qui fixe ton annexe (8 technicien·ne · 10 artiste). France Travail reste seul juge.
                     </div>
@@ -8967,6 +9005,17 @@ function AppInner() {
                           <div style={{ fontSize: 11, color: "#8FB4D8", lineHeight: 1.4 }}>
                             Payé au cachet&nbsp;? En heures&nbsp;? Les deux existent — choisis ce qui est sur ta fiche de paie.
                           </div>
+                          {isHeures && (
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                              <span style={{ fontSize: 11.5, color: "#8FB4D8" }}>Ces heures, c'était en tant que&nbsp;:</span>
+                              {[["artiste", "Artiste"], ["technicien", "Technicien·ne"], ["", "Je ne sais pas"]].map(([val, label]) => (
+                                <button key={val || "nsp"} type="button" onClick={() => setInterMetier(val)}
+                                  style={{ background: interMetier === val ? "rgba(55,138,221,0.15)" : "rgba(255,255,255,0.03)", border: "1px solid " + (interMetier === val ? "rgba(55,138,221,0.5)" : "rgba(255,255,255,0.1)"), color: interMetier === val ? "#9FCBF5" : "#8BA5C0", borderRadius: 14, padding: "4px 10px", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
+                                  {label}
+                                </button>
+                              ))}
+                            </div>
+                          )}
                           {!showSelect ? (
                             <button type="button" onClick={() => setInterTypeAutre(true)}
                               style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#6B8299", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
@@ -9253,6 +9302,14 @@ function AppInner() {
                                   <option value="arret_paternite">congé paternité</option>
                                 </optgroup>
                               </select>
+                              {interEditForm.type_activite === "heures" && (
+                                <select value={interEditForm.metier || ""} onChange={e => setInterEditForm({ ...interEditForm, metier: e.target.value })}
+                                  style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                                  <option value="">métier : je ne sais pas</option>
+                                  <option value="artiste">métier : artiste</option>
+                                  <option value="technicien">métier : technicien·ne</option>
+                                </select>
+                              )}
                             </div>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
                               <input type="number" min="0" value={interEditForm.nombre} onChange={e => setInterEditForm({ ...interEditForm, nombre: e.target.value })} placeholder="Nombre"
