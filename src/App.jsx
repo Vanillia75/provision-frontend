@@ -4607,8 +4607,13 @@ function AppInner() {
           <div style={{ width: "100%", maxWidth: 1000, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.9fr 1.1fr", gap: isMobile ? 12 : 56, alignItems: "center" }}>
             {/* Totor accueille — présence forte, il émerge du noir */}
             <div style={{ textAlign: isMobile ? "center" : "left" }}>
-              <img src="/hector-land-hero.webp" alt="TOTOR t'accueille"
-                style={{ width: "100%", maxWidth: isMobile ? 190 : 400, display: "block", margin: isMobile ? "0 auto" : 0 }} />
+              {/* Fondu CSS sur les 4 bords : le fond de l'image (#08192C) diffère d'un cheveu du fond
+                  de page (#07192E) — invisible sur la plupart des écrans, rectangle net sur les
+                  écrans large gamut. L'ombre interne couleur de page scelle l'image partout. */}
+              <div style={{ position: "relative", maxWidth: isMobile ? 190 : 400, margin: isMobile ? "0 auto" : 0 }}>
+                <img src="/hector-land-hero.webp" alt="TOTOR t'accueille" style={{ width: "100%", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 52px 30px #07192E", pointerEvents: "none" }} />
+              </div>
             </div>
             {/* La question + les deux mondes */}
             <div>
@@ -4668,8 +4673,11 @@ function AppInner() {
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: isMobile ? "8px 22px 8px" : "44px 48px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.82fr 1.18fr", gap: isMobile ? 12 : 52, alignItems: "center" }}>
             {/* Colonne gauche — Totor (émerge du noir) + widget « disponible réel » dessous */}
             <div>
-              <img src="/hector-land-hero.webp" alt="TOTOR, ton compagnon d'auto-entrepreneur"
-                style={{ width: "100%", maxWidth: isMobile ? 290 : 420, display: "block", margin: isMobile ? "0 auto" : 0 }} />
+              {/* Fondu CSS 4 bords (voir hero de la page de choix) : scelle l'image au fond de page. */}
+              <div style={{ position: "relative", maxWidth: isMobile ? 290 : 420, margin: isMobile ? "0 auto" : 0 }}>
+                <img src="/hector-land-hero.webp" alt="TOTOR, ton compagnon d'auto-entrepreneur" style={{ width: "100%", display: "block" }} />
+                <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 52px 30px #07192E", pointerEvents: "none" }} />
+              </div>
               <div style={{ marginTop: isMobile ? 2 : -18, maxWidth: isMobile ? 340 : 420, marginLeft: isMobile ? "auto" : 0, marginRight: isMobile ? "auto" : 0 }}>
                 <div style={{ ...demoFondu, padding: isMobile ? "16px 18px" : "18px 22px" }}>
                   <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#6B8299", textTransform: "uppercase", marginBottom: 12 }}>Ton disponible réel · ce mois-ci <span style={{ textTransform: "none", color: "#45596F" }}>· exemple</span></div>
@@ -4931,8 +4939,11 @@ function AppInner() {
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: isMobile ? "8px 22px 8px" : "44px 48px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.82fr 1.18fr", gap: isMobile ? 6 : 52, alignItems: "center" }}>
           {/* Colonne gauche — Totor (émerge du noir) + compteur circulaire en bas */}
           <div>
-            <img src="/hector-land-hero.webp" alt="TOTOR, ton compagnon d'intermittence"
-              style={{ width: "100%", maxWidth: isMobile ? 290 : 420, display: "block", margin: isMobile ? "0 auto" : 0 }} />
+            {/* Fondu CSS 4 bords (voir hero de la page de choix) : scelle l'image au fond de page. */}
+            <div style={{ position: "relative", maxWidth: isMobile ? 290 : 420, margin: isMobile ? "0 auto" : 0 }}>
+              <img src="/hector-land-hero.webp" alt="TOTOR, ton compagnon d'intermittence" style={{ width: "100%", display: "block" }} />
+              <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 52px 30px #07192E", pointerEvents: "none" }} />
+            </div>
             <div style={{ marginTop: isMobile ? -6 : -34, display: "flex", justifyContent: isMobile ? "center" : "flex-start" }}>
               {compteurCirculaire(isMobile ? 90 : 106)}
             </div>
