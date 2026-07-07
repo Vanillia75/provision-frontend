@@ -19,7 +19,7 @@ SIREN : 990 086 209
 SIRET (siège) : 990 086 209 00014
 RCS Paris
 Gérant : Camille Gardereau
-Contact : vanilliabusiness@gmail.com
+Contact : bonjour@montotor.fr
 
 ## Hébergement
 
@@ -93,7 +93,7 @@ VANILLIA met en œuvre des moyens raisonnables pour assurer l'exactitude des cal
 
 ## 8. Résiliation
 
-L'utilisateur peut supprimer son compte à tout moment depuis l'application ou en en faisant la demande à vanilliabusiness@gmail.com. VANILLIA se réserve le droit de suspendre ou supprimer un compte en cas de manquement aux présentes CGU.
+L'utilisateur peut supprimer son compte à tout moment depuis l'application ou en en faisant la demande à bonjour@montotor.fr. VANILLIA se réserve le droit de suspendre ou supprimer un compte en cas de manquement aux présentes CGU.
 
 ## 9. Modification des CGU
 
@@ -105,7 +105,7 @@ Les présentes CGU sont soumises au droit français. Tout litige relève, à dé
 
 ## Contact
 
-Pour toute question relative aux présentes CGU : vanilliabusiness@gmail.com
+Pour toute question relative aux présentes CGU : bonjour@montotor.fr
 `;
 
 const CONFIDENTIALITE_MD = `# Politique de confidentialité
@@ -117,7 +117,7 @@ La présente politique explique comment VANILLIA (SARL), éditrice de TOTOR, col
 ## 1. Responsable de traitement
 
 **VANILLIA**, SARL au capital de 1 000 €, SIREN 990 086 209, 32 rue Damrémont, 75018 Paris.
-Contact pour toute question relative à vos données : **vanilliabusiness@gmail.com**
+Contact pour toute question relative à vos données : **bonjour@montotor.fr**
 
 ## 2. Données collectées
 
@@ -178,7 +178,7 @@ Conformément au RGPD, vous disposez des droits suivants sur vos données person
 - **Droit à la portabilité** : recevoir vos données dans un format structuré
 - **Droit d'opposition et de limitation** du traitement, dans les cas prévus par la loi
 
-Vous pouvez exercer ces droits directement depuis l'application (modification ou suppression de votre profil et de vos données) ou en nous contactant à **vanilliabusiness@gmail.com**. Nous nous engageons à répondre dans un délai d'un mois.
+Vous pouvez exercer ces droits directement depuis l'application (modification ou suppression de votre profil et de vos données) ou en nous contactant à **bonjour@montotor.fr**. Nous nous engageons à répondre dans un délai d'un mois.
 
 Vous disposez également du droit d'introduire une réclamation auprès de la CNIL (www.cnil.fr) si vous estimez que vos droits ne sont pas respectés.
 
@@ -192,7 +192,7 @@ Cette politique peut être mise à jour. La date de dernière mise à jour figur
 
 ## Contact
 
-Pour toute question ou exercice de vos droits : **vanilliabusiness@gmail.com**
+Pour toute question ou exercice de vos droits : **bonjour@montotor.fr**
 `;
 
 function renderLegalMarkdown(md) {

@@ -96,7 +96,7 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
           1. Appuie sur le bouton <strong>Partager</strong> <i className="ti ti-upload" aria-hidden="true" /> (en bas de l'écran)<br />
           2. Choisis <strong>« Sur l'écran d'accueil »</strong><br />
           3. Appuie sur <strong>Ajouter</strong> 🐾
-          <div style={{ marginTop: 8, fontSize: 11.5, color: "#8BA5C0" }}>Si tu es dans Chrome, ouvre d'abord hector-app.fr dans <strong style={{ color: "#9FCBF5" }}>Safari</strong> (l'install marche que là sur iPhone).</div>
+          <div style={{ marginTop: 8, fontSize: 11.5, color: "#8BA5C0" }}>Si tu es dans Chrome, ouvre d'abord montotor.fr dans <strong style={{ color: "#9FCBF5" }}>Safari</strong> (l'install marche que là sur iPhone).</div>
         </div>
       )}
       {showHelp && !isIOSDevice() && !pwaPrompt && (
@@ -407,7 +407,7 @@ function AppInner() {
     const setCanonical = (path) => {
       let l = document.querySelector('link[rel="canonical"]');
       if (!l) { l = document.createElement("link"); l.setAttribute("rel", "canonical"); document.head.appendChild(l); }
-      l.setAttribute("href", "https://www.hector-app.fr" + path);
+      l.setAttribute("href", "https://www.montotor.fr" + path);
     };
     if (landingStatut === "auto_entrepreneur") {
       document.title = "Auto-entrepreneur : ce que tu peux vraiment dépenser — TOTOR";
