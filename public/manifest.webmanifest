@@ -1,7 +1,7 @@
 {
-  "name": "H€CTOR",
-  "short_name": "Hector",
-  "description": "Ton copilote financier pour intermittents et auto-entrepreneurs.",
+  "name": "TOTOR",
+  "short_name": "Totor",
+  "description": "Le compagnon des intermittents et des auto-entrepreneurs.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#07192E",

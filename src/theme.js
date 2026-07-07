@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  Thème H€CTOR : couleurs, styles globaux (CSS) et catalogue de styles (S).
+//  Thème TOTOR : couleurs, styles globaux (CSS) et catalogue de styles (S).
 //  Extrait de App.jsx (refactorisation) : contenu identique, simplement déplacé
 //  et rendu importable. Utilisé partout dans l'application.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +13,7 @@ export const CSS = `
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,83,61,0.5); } 50% { box-shadow: 0 0 0 6px rgba(224,83,61,0); } }
   @keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes shrink { from { width: 100%; } to { width: 0%; } }
-  /* ─── Vie d'Hector (cockpit intermittent) ─── */
+  /* ─── Vie de Totor (cockpit intermittent) ─── */
   @keyframes hectorBreathe { 0%,100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.012) translateY(-3px); } }
   @keyframes hectorHalo { 0%,100% { opacity: 0.4; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.06); } }
   @keyframes hectorPop { 0% { transform: scale(1); } 30% { transform: scale(1.06) rotate(-1deg); } 60% { transform: scale(0.98) rotate(1deg); } 100% { transform: scale(1); } }

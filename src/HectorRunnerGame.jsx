@@ -2,10 +2,10 @@ import React, { useRef, useEffect, useState, useCallback } from "react";
 
 /**
  * <HectorRunnerGame />
- * Endless runner easter-egg pour H€CTOR — "Course avec Hector".
+ * Endless runner easter-egg pour TOTOR — "Course avec Totor".
  *
  * ── ASSETS ──────────────────────────────────────────────────────────
- * Place les PNG (fond transparent, Hector orienté à droite) dans :
+ * Place les PNG (fond transparent, Totor orienté à droite) dans :
  *   src/assets/game/
  *     hector_run_1.png … hector_run_4.png   (cycle de course)
  *     hector_jump.png  hector_fall.png  hector_land.png  hector_ko.png
@@ -43,7 +43,7 @@ const CONFIG = {
   startLives: 3,
   coinPoints: 10,
   invuln: 1.2,
-  hectorScreenH: 92, // hauteur d'affichage d'Hector en px
+  hectorScreenH: 92, // hauteur d'affichage de Totor en px
 };
 
 /* Paliers de difficulté selon la distance (m) ─ endless, jamais de fin. */
@@ -102,7 +102,7 @@ const OBSTACLE_DEFS = [
   { id: "achat",   sprite: "obstacle_achat.png",   label: "ACHAT",   color: "#5FA83C", h: 56 },
 ];
 
-/* Sprites Hector. */
+/* Sprites Totor. */
 const HECTOR_SPRITES = {
   run: ["hector_run_1.png", "hector_run_2.png", "hector_run_3.png", "hector_run_4.png"],
   jump: "hector_jump.png",
@@ -404,7 +404,7 @@ export default function HectorRunnerGame({
     if (sky) { const dh = 270; blitTiled(ctx, sky, GR - 0.80 * dh, dh, off * 0.18); }
     // bandeau sombre : masque le reflet de la skyline + bouche tout interstice sous les toits
     ctx.fillStyle = "#1b2536"; ctx.fillRect(0, GR, W, H - GR);
-    // 4) Toits — premier plan, Hector court DESSUS (même vitesse que le jeu)
+    // 4) Toits — premier plan, Totor court DESSUS (même vitesse que le jeu)
     if (toits) {
       const dh = 250, roofFrac = 0.63;            // 0.63 = surface de marche du toit dans l'image
       blitTiled(ctx, toits, GR - roofFrac * dh, dh, off);
@@ -474,7 +474,7 @@ export default function HectorRunnerGame({
     ctx.restore();
   }
 
-  /* ---------- Hector (sprite + fallback) ---------- */
+  /* ---------- Totor (sprite + fallback) ---------- */
   function currentHectorSprite(g) {
     const h = g.hector;
     if (g.lives <= 0) return HECTOR_SPRITES.ko;
@@ -489,7 +489,7 @@ export default function HectorRunnerGame({
     const img = getImg(name);
     ctx.save();
     ctx.translate(h.x, h.y);
-    // Invincibilité (après un choc) : anneau vert pulsant — Hector RESTE opaque (plus de bleu qui le traverse).
+    // Invincibilité (après un choc) : anneau vert pulsant — Totor RESTE opaque (plus de bleu qui le traverse).
     if (g.invuln > 0) {
       const pulse = 0.5 + 0.5 * Math.sin(g.t * 16);
       ctx.save();
@@ -584,7 +584,7 @@ export default function HectorRunnerGame({
       <div style={frameStyle}>
         <canvas ref={canvasRef} width={CONFIG.width} height={CONFIG.height} onPointerDown={onPointerDown} onPointerUp={release} style={ST.canvas} />
 
-        {!loaded && <div style={ST.overlay}><div style={{ fontSize: 16 }}>Chargement d'Hector…</div></div>}
+        {!loaded && <div style={ST.overlay}><div style={{ fontSize: 16 }}>Chargement de Totor…</div></div>}
 
         {loaded && (screen === "playing" || screen === "paused") && (
           <div style={ST.hud}>
@@ -600,7 +600,7 @@ export default function HectorRunnerGame({
 
         {loaded && screen === "menu" && (
           <div style={ST.menuWrap} onClick={start}>
-            <img src={assetBase + "game_menu.png?v=" + ASSET_VER} alt="Course avec Hector" style={ST.menuImg} draggable={false} />
+            <img src={assetBase + "game_menu.png?v=" + ASSET_VER} alt="Course avec Totor" style={ST.menuImg} draggable={false} />
             <div style={ST.menuActions}>
               <button style={ST.play} onClick={start}>🐾 Jouer</button>
               {best.bestDist > 0 && <p style={ST.bestL}>🏆 Record : {best.bestDist} m · {best.best} €</p>}

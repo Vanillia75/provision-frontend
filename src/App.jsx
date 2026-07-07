@@ -73,9 +73,9 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
     <div style={{ background: "#07192E", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 12, padding: compact ? "11px 13px" : "14px 16px", marginBottom: 14 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap", justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 11, flex: "1 1 220px" }}>
-          <img src="/hector-icon-192.png" alt="Hector" style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0 }} />
+          <img src="/hector-icon-192.png" alt="Totor" style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0 }} />
           <div>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Installe Hector sur ton téléphone</div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Installe Totor sur ton téléphone</div>
             <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil. <span style={{ color: "#8BA5C0" }}>(En attendant l'app sur les stores)</span></div>
           </div>
         </div>
@@ -215,10 +215,10 @@ function MontantInput({ value, onChange, decimales = false, style, ...rest }) {
 
 
 function HectorTete({ size = 32 }) {
-  // Tête d'Hector pour l'assistant. Fallback sur une icône si l'image n'est pas déposée.
+  // Tête de Totor pour l'assistant. Fallback sur une icône si l'image n'est pas déposée.
   const [ok, setOk] = useState(true);
   if (ok) {
-    return <img src="/hector-tete.png" alt="Hector" width={size} height={size}
+    return <img src="/hector-tete.png" alt="Totor" width={size} height={size}
       onError={() => setOk(false)}
       style={{ width: size, height: size, objectFit: "contain", display: "block", flexShrink: 0 }} />;
   }
@@ -240,7 +240,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
   const src = etat?.img;
   if (src && imgOk) {
     return (
-      <img src={src} alt={`Hector ${etat?.label || ""}`}
+      <img src={src} alt={`Totor ${etat?.label || ""}`}
         onError={() => setImgOk(false)}
         style={cover
           ? { width: "100%", height: "100%", objectFit: "contain", objectPosition: "center center", display: "block" }
@@ -250,7 +250,7 @@ function HectorImage({ etat, size = 200, cover = false }) {
   // Silhouette de secours (bull terrier couché stylisé)
   const c = etat?.couleur || "#5DCAA5";
   return (
-    <svg width={size} height={size * 0.8} viewBox="0 0 200 160" role="img" aria-label={`Hector ${etat?.label || ""}`}>
+    <svg width={size} height={size * 0.8} viewBox="0 0 200 160" role="img" aria-label={`Totor ${etat?.label || ""}`}>
       <ellipse cx="100" cy="140" rx="70" ry="10" fill="rgba(0,0,0,0.2)" />
       <ellipse cx="100" cy="110" rx="58" ry="32" fill="#EDE3D4" />
       <circle cx="52" cy="100" r="28" fill="#EDE3D4" />
@@ -268,9 +268,9 @@ function HectorImage({ etat, size = 200, cover = false }) {
 }
 
 function Logo({ size = 28, dark = false }) {
-  // Logo 2026 : le portrait studio d'Hector (regard levé) + wordmark en Playfair Display
-  // (la typo des titres du site), € vert menthe. La tête est ronde (l'asset est un carré
-  // fond nuit → borderRadius 50% l'intègre partout).
+  // Logo 2026 : le portrait studio de Totor (regard levé) + wordmark en Playfair Display
+  // (la typo des titres du site), les deux O en vert menthe (le code couleur de la marque).
+  // La tête est ronde (l'asset est un carré fond nuit → borderRadius 50% l'intègre partout).
   const textColor = dark ? "white" : INK;
   const headSize = size * 1.4;
   const textSize = size * 0.55;
@@ -279,7 +279,7 @@ function Logo({ size = 28, dark = false }) {
       <img src="/logo-tete.webp" alt="" height={headSize} width={headSize}
            style={{ height: headSize, width: headSize, objectFit: "cover", borderRadius: "50%", display: "block", flexShrink: 0, marginTop: -size * 0.2, marginBottom: -size * 0.2 }} />
       <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.02 }}>
-        H<span style={{ color: "#5DCAA5" }}>€</span>CTOR
+        T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R
       </span>
     </div>
   );
@@ -287,7 +287,7 @@ function Logo({ size = 28, dark = false }) {
 
 function LogoIcon({ size = 32 }) {
   return (
-    <img src="/logo-tete.webp" alt="H€CTOR" height={size} width={size}
+    <img src="/logo-tete.webp" alt="TOTOR" height={size} width={size}
          style={{ height: size, width: size, objectFit: "cover", borderRadius: "50%", display: "block" }} />
   );
 }
@@ -335,7 +335,7 @@ function messageParDefautDevis(clientNom, numero, emetteur) {
   return `${salut}\n\nVeuillez trouver ci-dessous notre devis ${numero || ""}.\n\n${signature}`;
 }
 
-// Message de non-correspondance des mots de passe (voix d'Hector, ton doux).
+// Message de non-correspondance des mots de passe (voix de Totor, ton doux).
 const styleMismatch = { fontSize: 12.5, color: "#B26A2B", margin: "-4px 0 12px", display: "flex", alignItems: "center", gap: 6, lineHeight: 1.4 };
 
 // Champ mot de passe avec œil afficher/masquer (zone de tap ≥ 44px, mobile-first).
@@ -410,16 +410,16 @@ function AppInner() {
       l.setAttribute("href", "https://www.hector-app.fr" + path);
     };
     if (landingStatut === "auto_entrepreneur") {
-      document.title = "Auto-entrepreneur : ce que tu peux vraiment dépenser — H€CTOR";
-      if (meta) meta.setAttribute("content", "H€CTOR provisionne tes cotisations URSSAF, te montre ton disponible réel et relance tes impayés à ta place. L'assistant des auto-entrepreneurs.");
+      document.title = "Auto-entrepreneur : ce que tu peux vraiment dépenser — TOTOR";
+      if (meta) meta.setAttribute("content", "TOTOR provisionne tes cotisations URSSAF, te montre ton disponible réel et relance tes impayés à ta place. L'assistant des auto-entrepreneurs.");
       setCanonical("/auto-entrepreneur");
     } else if (landingStatut === "intermittent") {
-      document.title = "H€CTOR — Ton cockpit d'intermittent (507h, allocation, cachets)";
-      if (meta) meta.setAttribute("content", "H€CTOR compte tes heures vers les 507h, estime ton allocation et t'explique chaque chiffre, sources à l'appui. Le compagnon des intermittents du spectacle.");
+      document.title = "TOTOR — Ton cockpit d'intermittent (507h, allocation, cachets)";
+      if (meta) meta.setAttribute("content", "TOTOR compte tes heures vers les 507h, estime ton allocation et t'explique chaque chiffre, sources à l'appui. Le compagnon des intermittents du spectacle.");
       setCanonical("/intermittent");
     } else {
-      document.title = "H€CTOR — Le compagnon des intermittents et des auto-entrepreneurs";
-      if (meta) meta.setAttribute("content", "H€CTOR, ton compagnon au quotidien : intermittent du spectacle ou auto-entrepreneur, il compte, provisionne et t'explique chaque chiffre. Choisis ton profil, il s'occupe du reste.");
+      document.title = "TOTOR — Le compagnon des intermittents et des auto-entrepreneurs";
+      if (meta) meta.setAttribute("content", "TOTOR, ton compagnon au quotidien : intermittent du spectacle ou auto-entrepreneur, il compte, provisionne et t'explique chaque chiffre. Choisis ton profil, il s'occupe du reste.");
       setCanonical("/");
     }
   }, [landingStatut, token]);
@@ -460,7 +460,7 @@ function AppInner() {
   const [interEditId, setInterEditId] = useState(null);
   const [interEditForm, setInterEditForm] = useState({ date: "", type_activite: "cachet_isole", nombre: "", employeur: "", estime: false });
   const [interEditSaving, setInterEditSaving] = useState(false);
-  // Brique 5.4 : "Parle à Hector" — simulation de contrat
+  // Brique 5.4 : "Parle à Totor" — simulation de contrat
   const [simForm, setSimForm] = useState({ type_activite: "cachet_isole", nombre: "" });
   const [simResult, setSimResult] = useState(null);
   const [simLoading, setSimLoading] = useState(false);
@@ -497,11 +497,11 @@ function AppInner() {
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
   // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
   const [docTab, setDocTab] = useState("revenus");
-  // ─── Vie d'Hector sur le cockpit (micro-interactions) ───
+  // ─── Vie de Totor sur le cockpit (micro-interactions) ───
   const [hectorPop, setHectorPop] = useState(false); // déclenche l'animation pop quand on ajoute
   // ─── Centre de calcul conversationnel ───
   const [calcConvo, setCalcConvo] = useState([]); // fil de la conversation : {role, text, questions?}
-  const [calcThinking, setCalcThinking] = useState(false); // Hector "réfléchit"
+  const [calcThinking, setCalcThinking] = useState(false); // Totor "réfléchit"
   // ─── Visionneuse de document AEM (overlay, sans quitter l'app) ───
   const [docViewer, setDocViewer] = useState(null); // { url, filename, loading } | null
   // ─── Champ "Que se passe-t-il si…" (saisie libre) ───
@@ -524,11 +524,11 @@ function AppInner() {
   // Navigation interne du cockpit intermittent (sidebar)
   const [interNav, setInterNav] = useState("cockpit");
   const [interMenuOpen, setInterMenuOpen] = useState(false);
-  // Chat Hector intermittent (assistant IA spécialisé régime)
+  // Chat Totor intermittent (assistant IA spécialisé régime)
   const [interChat, setInterChat] = useState([]);
   const [interChatInput, setInterChatInput] = useState("");
   const [interChatLoading, setInterChatLoading] = useState(false);
-  // Brique 5.3 : les 6 paliers d'Hector intermittent (frise visuelle, mêmes codes que le cockpit AE)
+  // Brique 5.3 : les 6 paliers de Totor intermittent (frise visuelle, mêmes codes que le cockpit AE)
   const PALIERS_INTERMITTENT = [
     { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",        img: "/hector-1.png" },
     { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",          img: "/hector-2.png" },
@@ -1013,7 +1013,7 @@ function AppInner() {
   useEffect(() => { safeStorage.setItem("tmi", tmi); }, [tmi]);
   useEffect(() => { safeStorage.setItem("nav", nav); }, [nav]);
 
-  // Message Hector si solde périmé (calcul interne, déclenché une fois par session)
+  // Message Totor si solde périmé (calcul interne, déclenché une fois par session)
   useEffect(() => {
     if (nav !== "dashboard") return;
     const updatedAt = safeStorage.getItem("soldeUpdatedAt") || "";
@@ -1049,12 +1049,12 @@ function AppInner() {
     // Célébration si on vient de franchir un palier
     const paliers = [7, 14, 30, 90, 180, 365];
     const palierMots = {
-      7: "7 jours d'affilée 🛏️ Hector dort maintenant paisiblement dans son panier. Tu prends soin de ta tranquillité.",
-      14: "14 jours ensemble 🌱 Hector grandit grâce à toi. Continue, vous formez une belle équipe.",
-      30: "30 jours d'affilée 🧸 Hector a reçu un jouet ! Il est heureux de ce rituel avec toi.",
-      90: "90 jours 🏡 Hector a maintenant une belle niche, confortable et sûre. Il se sent chez lui.",
-      180: "180 jours 🦴 Hector est devenu adulte, serein et solide. Vous êtes une vraie équipe.",
-      365: "365 jours 👑 Hector est le gardien légendaire de ta tranquillité. Bravo pour cette année.",
+      7: "7 jours d'affilée 🛏️ Totor dort maintenant paisiblement dans son panier. Tu prends soin de ta tranquillité.",
+      14: "14 jours ensemble 🌱 Totor grandit grâce à toi. Continue, vous formez une belle équipe.",
+      30: "30 jours d'affilée 🧸 Totor a reçu un jouet ! Il est heureux de ce rituel avec toi.",
+      90: "90 jours 🏡 Totor a maintenant une belle niche, confortable et sûre. Il se sent chez lui.",
+      180: "180 jours 🦴 Totor est devenu adulte, serein et solide. Vous êtes une vraie équipe.",
+      365: "365 jours 👑 Totor est le gardien légendaire de ta tranquillité. Bravo pour cette année.",
     };
     if (paliers.includes(newStreak) && palierMots[newStreak]) {
       setTimeout(() => addHectorMessage(palierMots[newStreak], "#FAC775"), 1200);
@@ -1320,7 +1320,7 @@ function AppInner() {
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
   const [updateReady, setUpdateReady] = useState(false); // une nouvelle version a été déployée
-  const [showGame, setShowGame] = useState(false); // mini-jeu "Course avec Hector"
+  const [showGame, setShowGame] = useState(false); // mini-jeu "Course avec Totor"
 
   async function startCheckout(code = null, plan = null) {
     setBillingBusy(true);
@@ -1408,7 +1408,7 @@ function AppInner() {
   // L'app installée (PWA) garde la page en mémoire et ne se recharge pas après un
   // déploiement. On compare l'id embarqué (__BUILD_ID__) à /version.json (servi frais)
   // au retour au premier plan + périodiquement. Si une version plus récente existe,
-  // on lève updateReady → message Hector + rechargement propre (jamais pendant une saisie).
+  // on lève updateReady → message Totor + rechargement propre (jamais pendant une saisie).
   useEffect(() => {
     const APP_VERSION = (typeof __BUILD_ID__ !== "undefined") ? __BUILD_ID__ : null;
     if (!APP_VERSION) return;
@@ -1472,7 +1472,7 @@ function AppInner() {
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
-          {billingBusy ? "…" : "🐶 Je laisse Hector s'en occuper"}
+          {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
         </button>
         <div style={{ display: "flex", gap: 8, marginTop: 14 }}>
           <input
@@ -1504,7 +1504,7 @@ function AppInner() {
     </div>
   ) : null;
 
-  // Overlay « nouvelle version » — message dans la voix d'Hector, puis rechargement propre.
+  // Overlay « nouvelle version » — message dans la voix de Totor, puis rechargement propre.
   const updateOverlay = updateReady ? (
     <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", zIndex: 700, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }}>
       <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 18, padding: "28px 26px", maxWidth: 360, width: "100%", textAlign: "center" }}>
@@ -1514,7 +1514,7 @@ function AppInner() {
     </div>
   ) : null;
 
-  // (Le mini-jeu s'ouvre depuis l'entrée "Course avec Hector" du menu de gauche, dans les deux modes.)
+  // (Le mini-jeu s'ouvre depuis l'entrée "Course avec Totor" du menu de gauche, dans les deux modes.)
 
   // Modal plein écran du mini-jeu. Le jeu garde son propre record en localStorage.
   const gameOverlay = showGame ? (
@@ -1635,8 +1635,8 @@ function AppInner() {
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je t'accompagne</div>
               <div style={{ marginBottom: 16 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>Gratuit</span></div>
               {(profile?.statut === "intermittent"
-                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression d'Hector", "2 scans d'AEM par mois", "3 échanges avec Hector par mois"]
-                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression d'Hector", "3 scans de factures/frais par mois", "3 échanges avec Hector par mois", "Factures et devis illimités"]
+                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "2 scans d'AEM par mois", "3 échanges avec Totor par mois"]
+                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "3 scans de factures/frais par mois", "3 échanges avec Totor par mois", "Factures et devis illimités"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -1669,15 +1669,15 @@ function AppInner() {
               )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
-                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Hector illimités", "Je vérifie ta décision face à France Travail"]
-                : ["Tout ce qui est gratuit, sans limite", "Scans illimités — je m'occupe de ta paperasse", "Échanges avec Hector illimités", "Je relance tes impayés automatiquement"]
+                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Totor illimités", "Je vérifie ta décision face à France Travail"]
+                : ["Tout ce qui est gratuit, sans limite", "Scans illimités — je m'occupe de ta paperasse", "Échanges avec Totor illimités", "Je relance tes impayés automatiquement"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
                 </div>
               ))}
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
-                {billingBusy ? "…" : "🐶 Je laisse Hector s'en occuper"}
+                {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
               </button>
               <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 8, textAlign: "center" }}>🎁 14 jours gratuits{planChoisi === "annuel" ? ", puis 79 €/an" : ", puis 9,99 €/mois"}</div>
               <div style={{ fontSize: 11, color: "#6B8299", marginTop: 4, textAlign: "center" }}>Annule quand tu veux avant la fin — sans être prélevé.</div>
@@ -1714,7 +1714,7 @@ function AppInner() {
     </div>
   );
 
-  // ── Carnet de bord d'Hector ("Ce que j'ai appris") — visible par TOUS (gratuit inclus). ──
+  // ── Carnet de bord de Totor ("Ce que j'ai appris") — visible par TOUS (gratuit inclus). ──
   // Lit le fichier statique CARNET (édité à la main). 3 cartes "en_cours" max, + encart
   // "Cette semaine, j'ai appris…" pour les "termine" datés de moins de 7 jours.
   const renderCarnet = () => {
@@ -2101,7 +2101,7 @@ function AppInner() {
     }
   }, [token, profile, onbStep]);
 
-  // Pendant la mini-étape intermittent : quand Hector a lu l'ARE, on pré-remplit le champ
+  // Pendant la mini-étape intermittent : quand Totor a lu l'ARE, on pré-remplit le champ
   // date avec la date anniversaire détectée (reste éditable à la main).
   useEffect(() => {
     if (onbStep === "inter" && areExtrait && areExtrait.date_anniversaire) {
@@ -2132,7 +2132,7 @@ function AppInner() {
   const [profileDetailsSaved, setProfileDetailsSaved] = useState(false);
   const [relanceAutoSaved, setRelanceAutoSaved] = useState(false);
 
-  // Relances automatiques : l'utilisateur choisit la règle (ou la coupe), Hector l'applique.
+  // Relances automatiques : l'utilisateur choisit la règle (ou la coupe), Totor l'applique.
   async function saveRelanceAuto(jours) {
     try {
       await apiFetch("/profile/relance-auto", { method: "POST", body: JSON.stringify({ jours }) });
@@ -2631,12 +2631,12 @@ function AppInner() {
   }
 
   // ─── Impression du récapitulatif de revenus (PDF via le navigateur) ───
-  // ─── Centre de calcul : pose une question, Hector "réfléchit" puis répond ───
+  // ─── Centre de calcul : pose une question, Totor "réfléchit" puis répond ───
   // reponseObj = { text, questions } déjà calculé par le moteur (dans le rendu).
   function poserQuestionCalc(label, reponseObj) {
     // 1. Ajoute la question de l'utilisateur
     setCalcConvo(prev => [...prev, { role: "me", text: label }]);
-    // 2. Hector réfléchit
+    // 2. Totor réfléchit
     setCalcThinking(true);
     // 3. Après un court délai, il répond (on transmet toute la matière du moteur)
     setTimeout(() => {
@@ -2654,7 +2654,7 @@ function AppInner() {
     }, 1100);
   }
 
-  // ─── Moteur "Que se passe-t-il si…" : RÈGLE D'OR — Hector calcule TOUS les chiffres lui-même.
+  // ─── Moteur "Que se passe-t-il si…" : RÈGLE D'OR — Totor calcule TOUS les chiffres lui-même.
   // L'IA ne sert qu'à comprendre une question non reconnue ; elle ne fabrique jamais un nombre.
   function calculerScenarioEtSi(question) {
     const q = (question || "").toLowerCase();
@@ -2753,7 +2753,7 @@ function AppInner() {
     setCalcConvo(prev => [...prev, { role: "me", text: question }]);
     setCalcThinking(true);
 
-    // 1. Hector tente de calculer lui-même (déterministe)
+    // 1. Totor tente de calculer lui-même (déterministe)
     const scenario = calculerScenarioEtSi(question);
     if (scenario) {
       setTimeout(() => {
@@ -2769,7 +2769,7 @@ function AppInner() {
     const heuresActuelles = Math.round((c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts));
     const seuil = (c && c.seuil) || valeurDe("seuilHeures");
     const contexte = `Données réelles de l'utilisateur (NE LES MODIFIE PAS, n'invente AUCUN autre chiffre) : heures actuelles = ${heuresActuelles}h, seuil = ${seuil}h, il manque = ${Math.max(0, seuil - heuresActuelles)}h.`;
-    const consigne = `Tu es Hector, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
+    const consigne = `Tu es Totor, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
     try {
       const data = await apiFetch("/assistant/chat", {
         method: "POST",
@@ -2821,8 +2821,8 @@ function AppInner() {
         @media print { body { padding: 20px; } }
       </style></head><body>
       <div class="head">
-        <div class="brand">H<span>&euro;</span>CTOR</div>
-        <div class="meta">Document genere le ${aujourdhui}<br>par l'utilisateur via H&euro;CTOR</div>
+        <div class="brand">TOTOR</div>
+        <div class="meta">Document genere le ${aujourdhui}<br>par l'utilisateur via TOTOR</div>
       </div>
       <h1>Recapitulatif de revenus</h1>
       <div class="sub">Intermittent du spectacle &middot; periode ${recap.periodeLabel}</div>
@@ -2950,7 +2950,7 @@ function AppInner() {
     }
   }
 
-  // ─── Brique 5.4 : "Parle à Hector" — simuler un contrat ───
+  // ─── Brique 5.4 : "Parle à Totor" — simuler un contrat ───
   async function handleSimuler() {
     const nombre = parseFloat(simForm.nombre);
     if (!nombre || nombre <= 0) {
@@ -3024,7 +3024,7 @@ function AppInner() {
     }
   }
 
-  // ─── Import attestation ARE : Hector LIT (date anniversaire + montant journalier),
+  // ─── Import attestation ARE : Totor LIT (date anniversaire + montant journalier),
   // il ne calcule rien. On affiche ce que France Travail a déjà décidé. ───
   // BACKEND À FAIRE — endpoint POST /intermittent/are/extract (multipart "file"),
   // qui doit renvoyer un JSON : { date_anniversaire: "AAAA-MM-JJ"|null,
@@ -3042,7 +3042,7 @@ function AppInner() {
         setAreError("Je n'ai trouvé ni ta date anniversaire ni ton allocation sur ce document. Vérifie que c'est bien la notification de droits de France Travail (le courrier « décision »), et que la photo est nette. Tu peux aussi saisir les valeurs à la main.");
         return;
       }
-      // Pré-remplit l'écran de vérification avec ce qu'Hector a lu (tout reste éditable).
+      // Pré-remplit l'écran de vérification avec ce que Totor a lu (tout reste éditable).
       setAreExtrait({
         date_anniversaire: data.date_anniversaire || "",
         montant_journalier: data.montant_journalier != null ? String(data.montant_journalier) : "",
@@ -3241,7 +3241,7 @@ function AppInner() {
   // En TWA, window.open(blob:) renvoie une fenêtre non-nulle mais BLANCHE (le blob
   // appartient au contexte WebView) : on ne peut donc pas se fier à `!w`. On détecte
   // le contexte Android-app et on télécharge directement (le lecteur PDF du téléphone
-  // prend le relais), avec un toast dans la voix d'Hector — car un téléchargement
+  // prend le relais), avec un toast dans la voix de Totor — car un téléchargement
   // Android silencieux ressemble à un bug. Ailleurs : nouvel onglet, repli download.
   function ouvrirOuTelechargerPdf(blob, filename, toastLabel) {
     const url = URL.createObjectURL(blob);
@@ -3819,7 +3819,7 @@ function AppInner() {
     }
   }
 
-  // --- Chat Hector intermittent : même endpoint, le backend détecte le statut ---
+  // --- Chat Totor intermittent : même endpoint, le backend détecte le statut ---
   async function askInterChat(e) {
     if (e && e.preventDefault) e.preventDefault();
     if (!interChatInput.trim() || interChatLoading) return;
@@ -3841,7 +3841,7 @@ function AppInner() {
     }
   }
 
-  // --- Hector prépare un devis ou une facture : parse le bloc [[DOC:{...}]] d'un message ---
+  // --- Totor prépare un devis ou une facture : parse le bloc [[DOC:{...}]] d'un message ---
   function parseDevisBlock(content) {
     if (!content) return null;
     const m = content.match(/\[\[DOC:(\{.*?\})\]\]/s);
@@ -3885,7 +3885,7 @@ function AppInner() {
     }
   }
 
-  // --- Dictée vocale : parle à Hector, ça remplit la barre (tu relis avant d'envoyer) ---
+  // --- Dictée vocale : parle à Totor, ça remplit la barre (tu relis avant d'envoyer) ---
   const speechSupported = typeof window !== "undefined" && (window.SpeechRecognition || window.webkitSpeechRecognition);
 
   function toggleVoiceInput() {
@@ -4064,11 +4064,11 @@ function AppInner() {
   const moyenneMensuelleFrais = expensesSummary?.frais_annee ? expensesSummary.frais_annee / moisEcoulesAnnee : 0;
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
-  // --- Sérénité d'Hector : jours de tranquillité + paliers acquis ---
+  // --- Sérénité de Totor : jours de tranquillité + paliers acquis ---
   // RÈGLE STRICTE : on calcule les jours UNIQUEMENT sur le train de vie déclaré.
   // Pas de fallback (ni CA, ni frais) : ça produisait des résultats absurdes
   // (ex : 25 € de solde → 216 jours parce que les frais déclarés étaient minuscules).
-  // Sans train de vie réaliste, Hector reste en mode accueil et invite à le renseigner.
+  // Sans train de vie réaliste, Totor reste en mode accueil et invite à le renseigner.
   const trainDeVieNum = parseFloat(depensesMensuelles) || 0;
   const depenseJournaliere = trainDeVieNum > 0 ? trainDeVieNum / 30 : 0;
   // Cas 1 : disponible négatif → 0 jour, alerte directe (pas besoin du train de vie pour le savoir).
@@ -4088,7 +4088,7 @@ function AppInner() {
     : null;
   // Les 6 niveaux-lieux (accomplissements permanents, ne régressent jamais).
   const PALIERS_SERENITE = [
-    { seuil: 7, nom: "Hector arrive", court: "7 jours", img: "/niveau-1.png" },
+    { seuil: 7, nom: "Totor arrive", court: "7 jours", img: "/niveau-1.png" },
     { seuil: 30, nom: "Son panier", court: "30 jours", img: "/niveau-2.png" },
     { seuil: 90, nom: "Sa niche", court: "90 jours", img: "/niveau-3.png" },
     { seuil: 180, nom: "Son jardin", court: "180 jours", img: "/niveau-4.png" },
@@ -4108,10 +4108,10 @@ function AppInner() {
   const palierActuelIndex = (joursTranquillite !== null)
     ? PALIERS_SERENITE.reduce((acc, p, i) => joursTranquillite >= p.seuil ? i : acc, -1)
     : -1;
-  // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
+  // Les 4 états émotionnels de Totor selon les jours ACTUELS (pas le record).
   function etatHector(j) {
     if (j === null) return { id: "accueil", label: "🐾 Pour aller encore plus loin", couleur: "#378ADD", pastille: "#378ADD",
-      titre: "Réveille Hector 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/hector-attentif-fondu.webp", accueil: true };
+      titre: "Réveille Totor 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/hector-attentif-fondu.webp", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
       mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein-fondu.webp" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
@@ -4126,19 +4126,19 @@ function AppInner() {
   // ─── STREAK ÉMOTIONNEL : jours consécutifs d'ouverture ───
   // Calcul au render (pas d'effet de bord ici). La mise à jour se fait dans un useEffect plus bas.
   const streakCount = parseInt(safeStorage.getItem("streakCount") || "0", 10);
-  // Paliers émotionnels : Hector évolue avec la fidélité, pas avec un chiffre froid
+  // Paliers émotionnels : Totor évolue avec la fidélité, pas avec un chiffre froid
   const PALIERS_STREAK = [
-    { seuil: 365, emoji: "👑", titre: "Gardien légendaire du foyer", mot: "365 jours ensemble. Hector est devenu le gardien légendaire de ta tranquillité. Personne ne veille mieux que lui." },
-    { seuil: 180, emoji: "🦴", titre: "Hector adulte", mot: "180 jours. Hector a grandi, il est désormais un adulte serein et solide. Vous formez une vraie équipe." },
-    { seuil: 90, emoji: "🏡", titre: "Niche améliorée", mot: "90 jours de fidélité. Hector a maintenant une belle niche, confortable et sûre. Il se sent chez lui." },
-    { seuil: 30, emoji: "🧸", titre: "Hector reçoit un jouet", mot: "30 jours d'affilée ! Hector est heureux, il a même reçu un jouet. Continue, il adore ce rituel." },
-    { seuil: 14, emoji: "🌱", titre: "Hector grandit", mot: "14 jours ensemble. Hector grandit grâce à toi. Tu prends soin de ta tranquillité, et ça se voit." },
-    { seuil: 7, emoji: "🛏️", titre: "Hector dort dans son panier", mot: "7 jours d'affilée. Hector dort paisiblement dans son panier — il se sent en sécurité avec toi." },
+    { seuil: 365, emoji: "👑", titre: "Gardien légendaire du foyer", mot: "365 jours ensemble. Totor est devenu le gardien légendaire de ta tranquillité. Personne ne veille mieux que lui." },
+    { seuil: 180, emoji: "🦴", titre: "Totor adulte", mot: "180 jours. Totor a grandi, il est désormais un adulte serein et solide. Vous formez une vraie équipe." },
+    { seuil: 90, emoji: "🏡", titre: "Niche améliorée", mot: "90 jours de fidélité. Totor a maintenant une belle niche, confortable et sûre. Il se sent chez lui." },
+    { seuil: 30, emoji: "🧸", titre: "Totor reçoit un jouet", mot: "30 jours d'affilée ! Totor est heureux, il a même reçu un jouet. Continue, il adore ce rituel." },
+    { seuil: 14, emoji: "🌱", titre: "Totor grandit", mot: "14 jours ensemble. Totor grandit grâce à toi. Tu prends soin de ta tranquillité, et ça se voit." },
+    { seuil: 7, emoji: "🛏️", titre: "Totor dort dans son panier", mot: "7 jours d'affilée. Totor dort paisiblement dans son panier — il se sent en sécurité avec toi." },
   ];
   const palierStreakActuel = PALIERS_STREAK.find(p => streakCount >= p.seuil) || null;
   const prochainPalierStreak = [...PALIERS_STREAK].reverse().find(p => streakCount < p.seuil) || null;
 
-  // ─── BRIEFING DU MATIN : Hector a "réfléchi pendant la nuit" ───
+  // ─── BRIEFING DU MATIN : Totor a "réfléchi pendant la nuit" ───
   // Construit un briefing structuré et contextuel selon la vraie situation financière.
   const briefingMatin = (() => {
     const prenom = profilPrenom || "";
@@ -4146,7 +4146,7 @@ function AppInner() {
     const salut = heure < 12 ? "Bonjour" : heure < 18 ? "Bon après-midi" : "Bonsoir";
     const dispo = argentDisponibleBrut;
 
-    // Ce qu'Hector "garde au chaud"
+    // Ce que Totor "garde au chaud"
     const gardeAuChaud = [];
     if (urssafProvision > 0) gardeAuChaud.push({ label: "URSSAF à mettre de côté", montant: urssafProvision });
     if (impotsNum > 0) gardeAuChaud.push({ label: "Impôts", montant: impotsNum });
@@ -4181,7 +4181,7 @@ function AppInner() {
   })();
 
   // ─── PENSÉE PPa : conseil rare, seulement si CA modeste, max 1× / 60 jours ───
-  // Hector suggère de vérifier l'éligibilité à la Prime d'activité. Il ne promet rien.
+  // Totor suggère de vérifier l'éligibilité à la Prime d'activité. Il ne promet rien.
   const penseePPa = (() => {
     if (argentDisponibleBrut === null) return null;        // pas assez d'infos → silence
     if (!(moyenneMensuelleCA > 0)) return null;            // pas de CA connu → silence
@@ -4202,8 +4202,8 @@ function AppInner() {
     return "🐾 Dis donc… tu sais que pas mal d'indépendants ont droit à la Prime d'activité sans le savoir ? C'est la CAF qui complète quand les revenus sont modestes. Ça vaut peut-être le coup de faire une simu sur caf.fr — c'est gratuit et ça prend 5 minutes. Je dis ça, je dis rien.";
   })();
 
-  // ─── LES PENSÉES D'HECTOR : rares, contextuelles, jamais forcées ───
-  // Règle d'or : si Hector n'a rien de vrai à dire, il ne dit RIEN.
+  // ─── LES PENSÉES DE TOTOR : rares, contextuelles, jamais forcées ───
+  // Règle d'or : si Totor n'a rien de vrai à dire, il ne dit RIEN.
   // Une pensée par jour MAX, et seulement ~1 jour sur 3 (sélection déterministe par date).
   const penseeHector = (() => {
     if (argentDisponibleBrut === null) return null; // pas assez d'infos → silence
@@ -4238,7 +4238,7 @@ function AppInner() {
     return "🐾 " + pool[seed % pool.length];
   })();
 
-  // ─── SOUVENIR À RAPPELER : Hector se souvient, en langage humain ───
+  // ─── SOUVENIR À RAPPELER : Totor se souvient, en langage humain ───
   // Affiché rarement (~1 jour sur 4), un seul à la fois, le plus émouvant disponible.
   const souvenirHector = (() => {
     let souvenirs;
@@ -4270,9 +4270,9 @@ function AppInner() {
   const joursSurvie = moisSurvie !== null ? Math.round(moisSurvie * 30) : null;
   const dateRupture = joursSurvie !== null ? new Date(Date.now() + joursSurvie * 86400000) : null;
 
-  // ─── SOUVENIRS D'HECTOR : détecte et mémorise les moments marquants ───
+  // ─── SOUVENIRS DE TOTOR : détecte et mémorise les moments marquants ───
   // Stockés en localStorage avec la date du jour où ils sont survenus pour la 1ère fois.
-  // Hector pourra les rappeler plus tard, en langage humain.
+  // Totor pourra les rappeler plus tard, en langage humain.
   useEffect(() => {
     if (!token || argentDisponibleBrut === null) return;
     const lire = () => { try { return JSON.parse(safeStorage.getItem("hectorSouvenirs") || "{}"); } catch { return {}; } };
@@ -4301,7 +4301,7 @@ function AppInner() {
     if (modifie) safeStorage.setItem("hectorSouvenirs", JSON.stringify(souvenirs));
   }, [token, argentDisponibleBrut, reserveAtteinte, joursTranquillite]);
 
-  // ─── MOTEUR DE DÉCISION D'HECTOR — 100% local, zéro crédit, totalement transparent ───
+  // ─── MOTEUR DE DÉCISION DE TOTOR — 100% local, zéro crédit, totalement transparent ───
   // Simule l'impact d'un achat ou d'un versement sur la situation réelle.
   // Retourne un verdict 🟢🟠🔴 + tout le détail du raisonnement (pour le bouton "Pourquoi ?").
   // RÈGLE : ne devine jamais. Si données insuffisantes → verdict "inconnu" + message honnête.
@@ -4393,7 +4393,7 @@ function AppInner() {
         <div style={S.authLeft}>
           <Logo size={110} dark />
           <h1 style={S.authHero}>Nouveau mot de passe</h1>
-          <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte H€CTOR.</p>
+          <p style={S.authSub}>Choisissez un nouveau mot de passe pour votre compte TOTOR.</p>
         </div>
         <div style={S.authRight}>
           <div style={S.authCard}>
@@ -4438,14 +4438,14 @@ function AppInner() {
                 <div style={{ fontSize: 40, marginBottom: 12 }}>✅</div>
                 <h2 style={S.authTitle}>Email confirmé !</h2>
                 <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20 }}>Votre adresse email est maintenant vérifiée.</p>
-                <button style={S.btnPrimary} onClick={() => { window.location.href = "/"; }}>Continuer vers H€CTOR</button>
+                <button style={S.btnPrimary} onClick={() => { window.location.href = "/"; }}>Continuer vers TOTOR</button>
               </>
             )}
             {verifyStatus === "error" && (
               <>
                 <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
                 <h2 style={S.authTitle}>Lien invalide ou expiré</h2>
-                <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20 }}>Reconnectez-vous à H€CTOR, vous pourrez demander un nouveau lien depuis votre profil.</p>
+                <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20 }}>Reconnectez-vous à TOTOR, vous pourrez demander un nouveau lien depuis votre profil.</p>
                 <button style={S.btnPrimary} onClick={() => { window.location.href = "/"; }}>Aller à la connexion</button>
               </>
             )}
@@ -4530,7 +4530,7 @@ function AppInner() {
       );
     }
 
-    // ── Composition éditoriale V3 : reproduction fidèle de la maquette, identité 100 % H€CTOR ──
+    // ── Composition éditoriale V3 : reproduction fidèle de la maquette, identité 100 % TOTOR ──
     // Titres serif (Playfair), gros numéros serif gris, widgets sombres fondus, texte à gauche / démo à droite.
     const SERIF = "'Playfair Display', Georgia, 'Times New Roman', serif";
     const secShell = { maxWidth: 1140, margin: "0 auto", padding: isMobile ? "48px 22px" : "88px 48px", borderTop: "1px solid rgba(255,255,255,0.05)" };
@@ -4605,15 +4605,15 @@ function AppInner() {
             @media (hover:none){.hx-card:hover{transform:none}.hx-card:active{transform:scale(.99)}.hx-card .hx-arrow{opacity:.7;transform:none}}
           `}</style>
           <div style={{ width: "100%", maxWidth: 1000, display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.9fr 1.1fr", gap: isMobile ? 12 : 56, alignItems: "center" }}>
-            {/* Hector accueille — présence forte, il émerge du noir */}
+            {/* Totor accueille — présence forte, il émerge du noir */}
             <div style={{ textAlign: isMobile ? "center" : "left" }}>
-              <img src="/hector-land-hero.webp" alt="H€CTOR t'accueille"
+              <img src="/hector-land-hero.webp" alt="TOTOR t'accueille"
                 style={{ width: "100%", maxWidth: isMobile ? 190 : 400, display: "block", margin: isMobile ? "0 auto" : 0 }} />
             </div>
             {/* La question + les deux mondes */}
             <div>
               <div style={{ fontFamily: SERIF, fontSize: isMobile ? 19 : 24, fontWeight: 700, letterSpacing: 1.5, color: "white", marginBottom: isMobile ? 4 : 8 }}>
-                H<span style={{ color: "#5DCAA5" }}>€</span>CTOR
+                T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R
               </div>
               <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 36 : 52, fontWeight: 700, lineHeight: 1.04, margin: "0 0 10px", color: "white" }}>
                 Qui es-tu&nbsp;?
@@ -4664,11 +4664,11 @@ function AppInner() {
             </button>
           </nav>
 
-          {/* ===== HERO — calqué sur l'intermittent : Hector à gauche + widget dessous, texte à droite ===== */}
+          {/* ===== HERO — calqué sur l'intermittent : Totor à gauche + widget dessous, texte à droite ===== */}
           <section style={{ maxWidth: 1180, margin: "0 auto", padding: isMobile ? "8px 22px 8px" : "44px 48px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.82fr 1.18fr", gap: isMobile ? 12 : 52, alignItems: "center" }}>
-            {/* Colonne gauche — Hector (émerge du noir) + widget « disponible réel » dessous */}
+            {/* Colonne gauche — Totor (émerge du noir) + widget « disponible réel » dessous */}
             <div>
-              <img src="/hector-land-hero.webp" alt="H€CTOR, ton compagnon d'auto-entrepreneur"
+              <img src="/hector-land-hero.webp" alt="TOTOR, ton compagnon d'auto-entrepreneur"
                 style={{ width: "100%", maxWidth: isMobile ? 290 : 420, display: "block", margin: isMobile ? "0 auto" : 0 }} />
               <div style={{ marginTop: isMobile ? 2 : -18, maxWidth: isMobile ? 340 : 420, marginLeft: isMobile ? "auto" : 0, marginRight: isMobile ? "auto" : 0 }}>
                 <div style={{ ...demoFondu, padding: isMobile ? "16px 18px" : "18px 22px" }}>
@@ -4692,7 +4692,7 @@ function AppInner() {
                 Tu sais vraiment ce que tu peux dépenser&nbsp;?
               </h1>
               <p style={{ fontSize: isMobile ? 18 : 22, color: "#5DCAA5", fontWeight: 600, lineHeight: 1.4, margin: "0 0 18px", maxWidth: 470 }}>
-                Pendant que tu bosses, H€CTOR veille sur ta micro-entreprise.
+                Pendant que tu bosses, TOTOR veille sur ta micro-entreprise.
               </p>
               <p style={{ fontSize: isMobile ? 14.5 : 16, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 440 }}>
                 Il provisionne tes cotisations, te dit ce qui est vraiment à toi, et relance tes impayés à ta place.
@@ -4709,8 +4709,8 @@ function AppInner() {
             <div style={secGrid}>
               <div>
                 <div style={numFantome}>01</div>
-                <h2 style={titreSec}>H€CTOR veille sur<br />ton <span style={{ color: "#5DCAA5" }}>disponible réel</span>.</h2>
-                <p style={texteSec}>Ton compte en banque ment : une partie de ce qu'il affiche appartient à l'URSSAF. H€CTOR fait le tri en direct.</p>
+                <h2 style={titreSec}>TOTOR veille sur<br />ton <span style={{ color: "#5DCAA5" }}>disponible réel</span>.</h2>
+                <p style={texteSec}>Ton compte en banque ment : une partie de ce qu'il affiche appartient à l'URSSAF. TOTOR fait le tri en direct.</p>
               </div>
               <div style={demoFondu}>
                 <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "auto 1fr", gap: isMobile ? 16 : 24, alignItems: "center" }}>
@@ -4764,7 +4764,7 @@ function AppInner() {
             <div style={secGrid}>
               <div>
                 <div style={numFantome}>02</div>
-                <h2 style={titreSec}>H€CTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>échéances</span>.</h2>
+                <h2 style={titreSec}>TOTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>échéances</span>.</h2>
                 <p style={texteSec}>Déclarations, cotisations, impôts : il te prévient avant, avec les montants déjà calculés.</p>
               </div>
               <div style={demoFondu}>
@@ -4796,7 +4796,7 @@ function AppInner() {
             <div style={secGrid}>
               <div>
                 <div style={numFantome}>03</div>
-                <h2 style={titreSec}>H€CTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>impayés</span>.</h2>
+                <h2 style={titreSec}>TOTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>impayés</span>.</h2>
                 <p style={texteSec}>Une facture en retard ? Il relance ton client à ta place — un email pro, signé de ton nom, jamais de spam.</p>
               </div>
               <div style={demoFondu}>
@@ -4820,7 +4820,7 @@ function AppInner() {
             <div style={secGrid}>
               <div>
                 <div style={numFantome}>04</div>
-                <h2 style={titreSec}>H€CTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
+                <h2 style={titreSec}>TOTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
                 <p style={texteSec}>Pose ta question en langage naturel. Il te répond clairement, avec le raisonnement.</p>
               </div>
               <div style={demoFondu}>
@@ -4859,7 +4859,7 @@ function AppInner() {
                 ].map(t => (
                   <span key={t} style={{ fontSize: isMobile ? 16 : 19, color: "#EAF2FB", lineHeight: 1.5, maxWidth: 560 }}>{t}</span>
                 ))}
-                <span style={{ fontSize: isMobile ? 18 : 21, color: "#5DCAA5", fontWeight: 700, marginTop: 4 }}>C'est ça, H€CTOR.</span>
+                <span style={{ fontSize: isMobile ? 18 : 21, color: "#5DCAA5", fontWeight: 700, marginTop: 4 }}>C'est ça, TOTOR.</span>
               </div>
             </div>
           </section>
@@ -4872,7 +4872,7 @@ function AppInner() {
                 Et si tu es aussi intermittent du spectacle…
               </h2>
               <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 18px", maxWidth: 500 }}>
-                Cachets, 507 heures, date anniversaire : H€CTOR veille aussi sur ton intermittence.
+                Cachets, 507 heures, date anniversaire : TOTOR veille aussi sur ton intermittence.
               </p>
               <button type="button" onClick={() => navLanding("intermittent")} style={{ ...lienDiscret, marginTop: 0, fontSize: 14 }}>Découvrir <i className="ti ti-arrow-right" aria-hidden="true" /></button>
             </div>
@@ -4883,7 +4883,7 @@ function AppInner() {
             <div style={{ maxWidth: 900, margin: "0 auto" }}>
               <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 30 : 52, fontWeight: 700, color: "white", lineHeight: 1.16, margin: "0 0 34px" }}>
                 Tu continues à faire ton métier.<br />
-                <span style={{ color: "#5DCAA5" }}>H€CTOR veille sur ta micro-entreprise.</span>
+                <span style={{ color: "#5DCAA5" }}>TOTOR veille sur ta micro-entreprise.</span>
               </h2>
               <button onClick={() => ouvrirAuth("register")} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 12, padding: "16px 32px", fontSize: 16.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, minHeight: 54 }}>
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
@@ -4927,11 +4927,11 @@ function AppInner() {
           </button>
         </nav>
 
-        {/* ===== HERO V3 — Hector émerge du noir + compteur à gauche · titre serif à droite ===== */}
+        {/* ===== HERO V3 — Totor émerge du noir + compteur à gauche · titre serif à droite ===== */}
         <section style={{ maxWidth: 1180, margin: "0 auto", padding: isMobile ? "8px 22px 8px" : "44px 48px 56px", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "0.82fr 1.18fr", gap: isMobile ? 6 : 52, alignItems: "center" }}>
-          {/* Colonne gauche — Hector (émerge du noir) + compteur circulaire en bas */}
+          {/* Colonne gauche — Totor (émerge du noir) + compteur circulaire en bas */}
           <div>
-            <img src="/hector-land-hero.webp" alt="H€CTOR, ton compagnon d'intermittence"
+            <img src="/hector-land-hero.webp" alt="TOTOR, ton compagnon d'intermittence"
               style={{ width: "100%", maxWidth: isMobile ? 290 : 420, display: "block", margin: isMobile ? "0 auto" : 0 }} />
             <div style={{ marginTop: isMobile ? -6 : -34, display: "flex", justifyContent: isMobile ? "center" : "flex-start" }}>
               {compteurCirculaire(isMobile ? 90 : 106)}
@@ -4943,7 +4943,7 @@ function AppInner() {
               Tu te demandes<br />si tu vas renouveler&nbsp;?
             </h1>
             <p style={{ fontSize: isMobile ? 18 : 22, color: "#5DCAA5", fontWeight: 600, lineHeight: 1.4, margin: "0 0 18px", maxWidth: 470 }}>
-              Pendant que tu fais ton métier,<br />H€CTOR veille sur ton intermittence.
+              Pendant que tu fais ton métier,<br />TOTOR veille sur ton intermittence.
             </p>
             <p style={{ fontSize: isMobile ? 14.5 : 16, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 440 }}>
               Il compte tes heures à partir de tes attestations, estime ce que tu vas toucher et t'explique chaque chiffre, sources à l'appui.
@@ -4955,12 +4955,12 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 01 — H€CTOR veille sur tes 507 heures ===== */}
+        {/* ===== 01 — TOTOR veille sur tes 507 heures ===== */}
         <section style={secShell}>
           <div style={secGrid}>
             <div>
               <div style={numFantome}>01</div>
-              <h2 style={titreSec}>H€CTOR veille<br />sur tes <span style={{ color: "#5DCAA5" }}>507 heures</span>.</h2>
+              <h2 style={titreSec}>TOTOR veille<br />sur tes <span style={{ color: "#5DCAA5" }}>507 heures</span>.</h2>
               <p style={texteSec}>Il compte tes heures à partir de tes attestations et te montre où tu en es.</p>
               <div style={{ ...lienDiscret, marginTop: 18 }}><i className="ti ti-plus" aria-hidden="true" /> Simulateur de cachets</div>
             </div>
@@ -4989,12 +4989,12 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 02 — H€CTOR veille sur ce que tu vas toucher ===== */}
+        {/* ===== 02 — TOTOR veille sur ce que tu vas toucher ===== */}
         <section style={secShell}>
           <div style={secGrid}>
             <div>
               <div style={numFantome}>02</div>
-              <h2 style={titreSec}>H€CTOR veille sur<br />ce que tu vas <span style={{ color: "#5DCAA5" }}>toucher</span>.</h2>
+              <h2 style={titreSec}>TOTOR veille sur<br />ce que tu vas <span style={{ color: "#5DCAA5" }}>toucher</span>.</h2>
               <p style={texteSec}>Il estime ton allocation et tes Congés Spectacles.</p>
               <p style={{ ...texteSec, color: "#5DCAA5", fontWeight: 700, marginTop: 12 }}>Toujours des estimations, jamais de promesses.</p>
             </div>
@@ -5019,12 +5019,12 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 03 — H€CTOR veille sur les calculs de France Travail ===== */}
+        {/* ===== 03 — TOTOR veille sur les calculs de France Travail ===== */}
         <section style={secShell}>
           <div style={secGrid}>
             <div>
               <div style={numFantome}>03</div>
-              <h2 style={titreSec}>H€CTOR veille sur<br />les <span style={{ color: "#5DCAA5" }}>calculs</span> de France Travail.</h2>
+              <h2 style={titreSec}>TOTOR veille sur<br />les <span style={{ color: "#5DCAA5" }}>calculs</span> de France Travail.</h2>
               <p style={texteSec}>Il reconstitue et vérifie, pour que tu comprennes et avances sereinement.</p>
             </div>
             <div style={demoFondu}>
@@ -5033,7 +5033,7 @@ function AppInner() {
                 <span style={{ fontSize: isMobile ? 20 : 23, fontWeight: 800, color: "white" }}>51,18 €</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 4px 18px" }}>
-                <span style={{ fontSize: 13.5, color: "#B5D4F4" }}>H€CTOR reconstitue</span>
+                <span style={{ fontSize: 13.5, color: "#B5D4F4" }}>TOTOR reconstitue</span>
                 <span style={{ fontSize: isMobile ? 20 : 23, fontWeight: 800, color: "#5DCAA5" }}>51,18 €</span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.09)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "13px 14px" }}>
@@ -5044,12 +5044,12 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 04 — H€CTOR répond quand tu as une question ===== */}
+        {/* ===== 04 — TOTOR répond quand tu as une question ===== */}
         <section style={secShell}>
           <div style={secGrid}>
             <div>
               <div style={numFantome}>04</div>
-              <h2 style={titreSec}>H€CTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
+              <h2 style={titreSec}>TOTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
               <p style={texteSec}>Pose ta question en langage naturel. Il te répond clairement, avec les sources.</p>
             </div>
             <div style={demoFondu}>
@@ -5076,13 +5076,13 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 05 — H€CTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) ===== */}
+        {/* ===== 05 — TOTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) ===== */}
         <section style={secShell}>
           <div style={secGrid}>
             <div>
               <div style={numFantome}>05</div>
-              <h2 style={titreSec}>H€CTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
-              <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel. Les offres France Travail directement dans H€CTOR, filtrées selon ton métier et ta ville.</p>
+              <h2 style={titreSec}>TOTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
+              <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel. Les offres France Travail directement dans TOTOR, filtrées selon ton métier et ta ville.</p>
             </div>
             <div style={demoFondu}>
               {/* Filtres visibles — on montre le produit sans le décrire */}
@@ -5115,11 +5115,11 @@ function AppInner() {
           </div>
           {/* Clôture de section */}
           <p style={{ fontFamily: SERIF, fontSize: isMobile ? 18 : 22, color: "#EAF2FB", lineHeight: 1.5, textAlign: "center", maxWidth: 720, margin: isMobile ? "34px auto 0" : "48px auto 0" }}>
-            Quand il te manque encore des heures, H€CTOR ne se contente plus de te le dire. Il t'aide aussi à <span style={{ color: "#5DCAA5" }}>trouver où les faire</span>.
+            Quand il te manque encore des heures, TOTOR ne se contente plus de te le dire. Il t'aide aussi à <span style={{ color: "#5DCAA5" }}>trouver où les faire</span>.
           </p>
         </section>
 
-        {/* ===== 06 — Je veille sur toi (moment de confiance, centré, sans visuel : un seul Hector, au hero) ===== */}
+        {/* ===== 06 — Je veille sur toi (moment de confiance, centré, sans visuel : un seul Totor, au hero) ===== */}
         <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "58px 22px" : "104px 48px" }}>
           <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
             <div style={{ ...numFantome, margin: "0 0 6px" }}>06</div>
@@ -5131,7 +5131,7 @@ function AppInner() {
               ].map(t => (
                 <span key={t} style={{ fontSize: isMobile ? 16 : 19, color: "#EAF2FB", lineHeight: 1.5, maxWidth: 560 }}>{t}</span>
               ))}
-              <span style={{ fontSize: isMobile ? 18 : 21, color: "#5DCAA5", fontWeight: 700, marginTop: 4 }}>C'est ça, H€CTOR.</span>
+              <span style={{ fontSize: isMobile ? 18 : 21, color: "#5DCAA5", fontWeight: 700, marginTop: 4 }}>C'est ça, TOTOR.</span>
             </div>
           </div>
         </section>
@@ -5180,12 +5180,12 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== SIGNATURE FINALE — serif très grand, seule (Hector n'apparaît qu'au 05) ===== */}
+        {/* ===== SIGNATURE FINALE — serif très grand, seule (Totor n'apparaît qu'au 05) ===== */}
         <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", background: "linear-gradient(180deg, rgba(93,202,165,0.05), rgba(7,25,46,0))", padding: isMobile ? "72px 22px 84px" : "120px 40px 128px", textAlign: "center" }}>
           <div style={{ position: "relative", maxWidth: 900, margin: "0 auto" }}>
             <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 30 : 52, fontWeight: 700, color: "white", lineHeight: 1.16, margin: "0 0 34px" }}>
               Tu continues à faire ton métier.<br />
-              <span style={{ color: "#5DCAA5" }}>H€CTOR veille sur ton intermittence.</span>
+              <span style={{ color: "#5DCAA5" }}>TOTOR veille sur ton intermittence.</span>
             </h2>
             <button onClick={() => ouvrirAuth("register")} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 12, padding: "16px 32px", fontSize: 16.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, minHeight: 54 }}>
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
@@ -5285,7 +5285,7 @@ function AppInner() {
             <div style={{ position: "relative", width: 130, height: 130, margin: "0 auto" }}>
               <div style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.25) 0%, transparent 70%)" }} />
               <div style={{ width: 130, height: 130, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(93,202,165,0.35)", position: "relative", boxShadow: "0 8px 32px rgba(0,0,0,0.35)" }}>
-                <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img src="/hector-tete.png" alt="Totor" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               </div>
             </div>
             <h1 style={{ ...S.authHero, marginTop: 24 }}>Une dernière chose.</h1>
@@ -5357,12 +5357,12 @@ function AppInner() {
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#6B7A8D", marginBottom: 8 }}>💰 Ce que tu peux dépenser aujourd'hui</div>
                 <div style={{ fontSize: 44, fontWeight: 700, color: "#1D9E75", lineHeight: 1.1 }}>{formatEUR(onbSoldeNum)}</div>
                 <p style={{ fontSize: 12, color: "#8BA5C0", margin: "14px auto 0", maxWidth: 320, lineHeight: 1.6 }}>
-                  Pour l'instant, tu n'as encore enregistré aucun revenu — donc rien n'est dû à l'URSSAF ni aux impôts. Dès que tu ajoutes une rentrée d'argent, H€CTOR met automatiquement de côté ce que tu devras, et ce chiffre devient ton <strong>vrai</strong> disponible.
+                  Pour l'instant, tu n'as encore enregistré aucun revenu — donc rien n'est dû à l'URSSAF ni aux impôts. Dès que tu ajoutes une rentrée d'argent, TOTOR met automatiquement de côté ce que tu devras, et ce chiffre devient ton <strong>vrai</strong> disponible.
                 </p>
               </div>
 
               <div style={{ marginTop: 22, padding: "14px 16px", background: "#F4F9FF", border: "1px solid #D6E8FA", borderRadius: 10 }}>
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#0A2540", margin: "0 0 8px" }}>À partir de maintenant, H€CTOR :</p>
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#0A2540", margin: "0 0 8px" }}>À partir de maintenant, TOTOR :</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {[
                     "Calcule ton URSSAF et tes impôts en temps réel",
@@ -5398,14 +5398,14 @@ function AppInner() {
             <div className="hector-breathe" style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", margin: "0 auto 18px" }}>
               <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
             </div>
-            <h1 style={{ fontSize: 23, fontWeight: 800, color: "white", margin: "0 0 8px", lineHeight: 1.3 }}>Bonjour, moi c'est Hector. À partir d'ici, je m'occupe de toi.</h1>
+            <h1 style={{ fontSize: 23, fontWeight: 800, color: "white", margin: "0 0 8px", lineHeight: 1.3 }}>Bonjour, moi c'est Totor. À partir d'ici, je m'occupe de toi.</h1>
             <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti — ensuite, c'est moi qui compte pour toi.</p>
             {error && <div style={S.errorBanner}>{error}</div>}
 
             <p style={{ ...S.sectionLabel, textAlign: "left" }}>📅 Ta date anniversaire</p>
             <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 14px", textAlign: "left", lineHeight: 1.5 }}>C'est la date où France Travail réexamine tes droits. Donne-la-moi comme tu veux :</p>
 
-            {/* Choix 1 — importer l'ARE (Hector lit tout) */}
+            {/* Choix 1 — importer l'ARE (Totor lit tout) */}
             <label style={{ ...S.btnSecondary, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, cursor: areUploading ? "default" : "pointer", opacity: areUploading ? 0.6 : 1, marginBottom: 6 }}>
               {areUploading ? "Lecture en cours…" : "📎 Importer mon attestation (ARE)"}
               <input type="file" accept="image/*,application/pdf" disabled={areUploading} style={{ display: "none" }}
@@ -5450,7 +5450,7 @@ function AppInner() {
         <div style={S.authLeft}>
           <Logo size={110} dark />
           <h1 style={S.authHero}>5 petites questions,<br />et tu sais tout.</h1>
-          <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
+          <p style={S.authSub}>En moins d'une minute, TOTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
         <div style={S.authRight}>
           <form style={S.authCard} onSubmit={handleOnboardingComplete}>
@@ -5520,7 +5520,7 @@ function AppInner() {
               value={onbTrainDeVie} onChange={setOnbTrainDeVie}
             />
             <p style={{ fontSize: 11, color: "#8BA5C0", margin: "8px 0 20px", lineHeight: 1.5 }}>
-              Loyer, courses, abonnements, dépenses perso importantes — juste une estimation, tu pourras la modifier après. Ça permet à Hector de veiller sur ta tranquillité dès maintenant.
+              Loyer, courses, abonnements, dépenses perso importantes — juste une estimation, tu pourras la modifier après. Ça permet à Totor de veiller sur ta tranquillité dès maintenant.
             </p>
 
             <p style={S.sectionLabel}>5. Ton SIRET <span style={{ fontWeight: 400, color: "#8BA5C0" }}>(optionnel)</span></p>
@@ -5543,7 +5543,7 @@ function AppInner() {
             )}
             {onbSiretStatus === "" && (
               <p style={{ fontSize: 11, color: "#8BA5C0", margin: "4px 0 20px", lineHeight: 1.5 }}>
-                Si tu le renseignes, H€CTOR récupère automatiquement ta raison sociale et ton adresse pour tes factures. Tu peux aussi le faire plus tard dans ton profil.
+                Si tu le renseignes, TOTOR récupère automatiquement ta raison sociale et ton adresse pour tes factures. Tu peux aussi le faire plus tard dans ton profil.
               </p>
             )}
 
@@ -5571,16 +5571,16 @@ function AppInner() {
 
   // ═══ BRIQUE 5.1 — COCKPIT INTERMITTENT (compteur 507h vivant) ═══
   // Branché sur GET /intermittent/cockpit. Affiche l'état calculé par le moteur :
-  // total d'heures, manquant, barre de progression, état d'Hector, verdict (niveau C).
+  // total d'heures, manquant, barre de progression, état de Totor, verdict (niveau C).
   // Suivi indicatif, ne remplace pas France Travail.
   if (profile && profile.statut === "intermittent") {
     const c = interCockpit;
     const pct = c ? Math.min(100, c.pourcentage) : 0;
     const etatLabels = {
-      oeuf: "Hector couve", chiot: "Hector chiot", ado: "Hector ado",
-      filet: "Seuil du filet franchi", adulte: "Hector adulte", niche: "Droits sécurisés",
+      oeuf: "Totor couve", chiot: "Totor chiot", ado: "Totor ado",
+      filet: "Seuil du filet franchi", adulte: "Totor adulte", niche: "Droits sécurisés",
     };
-    // Palier actuel + prochain palier (pour l'affichage immersif d'Hector au centre)
+    // Palier actuel + prochain palier (pour l'affichage immersif de Totor au centre)
     const heuresActuelles = c ? c.total_heures : 0;
     let palierActuel = PALIERS_INTERMITTENT[0];
     for (const p of PALIERS_INTERMITTENT) {
@@ -5591,7 +5591,7 @@ function AppInner() {
     const heuresAvantSuivant = palierSuivant ? Math.max(0, palierSuivant.seuil - heuresActuelles) : 0;
     // Prochain objectif exprimé en cachets (≈), plus parlant qu'en heures seules.
     const cachetsAvantSuivant = palierSuivant ? Math.ceil(heuresAvantSuivant / 12) : 0;
-    // "Pensée d'Hector" : une phrase vivante, à la 1re personne, choisie selon la situation.
+    // "Pensée de Totor" : une phrase vivante, à la 1re personne, choisie selon la situation.
     // 4 rôles possibles (me parle / me rassure / me dit où aller / me félicite).
     const penseesHector = (() => {
       if (c && c.droits_securises) {
@@ -5625,7 +5625,7 @@ function AppInner() {
     // On choisit une pensée stable par session (basée sur les heures, pour ne pas clignoter à chaque render).
     const penseeHector = penseesHector[heuresActuelles % penseesHector.length];
 
-    // ═══ "HECTOR CALCULE POUR TOI" : traduit les chiffres en réponses simples ═══
+    // ═══ "TOTOR CALCULE POUR TOI" : traduit les chiffres en réponses simples ═══
     // Petit helper d'affichage de date "12 août".
     const formatDateCourt = (iso) => {
       try {
@@ -5634,7 +5634,7 @@ function AppInner() {
         return `${d.getDate()} ${MOIS[d.getMonth()]}`;
       } catch { return iso; }
     };
-    // Deux cercles : sûr (arithmétique) = Hector affirme ; estimé (rythme/projection) = Hector estime.
+    // Deux cercles : sûr (arithmétique) = Totor affirme ; estimé (rythme/projection) = Totor estime.
     const calc = (() => {
       const seuil = c ? c.seuil : valeurDe("seuilHeures");
       const heures = heuresActuelles;
@@ -5717,7 +5717,7 @@ function AppInner() {
       };
     })();
 
-    // ═══ COACH : le verdict-héros + projections parlantes (voix d'Hector qui veille) ═══
+    // ═══ COACH : le verdict-héros + projections parlantes (voix de Totor qui veille) ═══
     const coach = (() => {
       const heures = calc.heures, seuil = calc.seuil, manque = calc.manque;
       const pctChemin = Math.min(100, Math.round((heures / seuil) * 100));
@@ -5756,7 +5756,7 @@ function AppInner() {
         if (derniere) joursInactif = Math.floor((now - derniere) / 86400000);
       }
 
-      // LE VERDICT-HÉROS : niveau + grande phrase, dans la voix d'Hector qui veille
+      // LE VERDICT-HÉROS : niveau + grande phrase, dans la voix de Totor qui veille
       let niveau, titre, phrase;
       if (calc.secu) {
         niveau = "green";
@@ -5787,7 +5787,7 @@ function AppInner() {
       return { niveau, titre, phrase, pctChemin, rythmeSemaine, cachetsSemaine, cachetsConseillesSemaine, compa, joursInactif, hCeMois, hMoisDernier };
     })();
 
-    // ═══ ÉTAT ÉMOTIONNEL (le héros) : 1 état clair en 3 tons, voix d'Hector ═══
+    // ═══ ÉTAT ÉMOTIONNEL (le héros) : 1 état clair en 3 tons, voix de Totor ═══
     // 🟢 sécurisé (certain) · 🟡 en bonne voie (continue) · 🔴 ça se joue (agis vite)
     // Règle : 🟢 UNIQUEMENT si droits_securises (donnée certaine du moteur).
     // Une projection positive ne donne JAMAIS de vert.
@@ -5913,7 +5913,7 @@ function AppInner() {
       return { lignes, faits, total: lignes.length, vide: nbActs === 0 };
     })();
 
-    // ═══ ANALYSES D'HECTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
+    // ═══ ANALYSES DE TOTOR : il remarque des choses (patterns que l'utilisateur ne voit pas) ═══
     const analyses = (() => {
       const acts = interActivites || [];
       const out = [];
@@ -6006,7 +6006,7 @@ function AppInner() {
       return { sortent30: Math.round(sortent30), sortent60: Math.round(sortent60), sortent90: Math.round(sortent90), prochainesSorties, totalDansFenetre: Math.round(totalDansFenetre), aDesActivites: lignes.length > 0 };
     })();
 
-    // ═══ DÉTECTION D'ERREURS : Hector veille sur ton dossier ═══
+    // ═══ DÉTECTION D'ERREURS : Totor veille sur ton dossier ═══
     // 5 cas fiables, calculés depuis les données qu'on a déjà. Aucune anomalie → rien ne s'affiche.
     const anomalies = (() => {
       const out = [];
@@ -6270,7 +6270,7 @@ function AppInner() {
       },
       {
         icon: "ti-calendar-clock", titre: "La date anniversaire",
-        texte: "C'est le jour où tes droits sont réexaminés, 12 mois après la fin de contrat qui a ouvert tes droits. Elle change chaque année (on parle de date « flottante »). C'est le moment décisif : il faut avoir tes 507h dans les 12 mois précédents. Anticiper est la clé — c'est pour ça qu'Hector te montre où tu en es en permanence.",
+        texte: "C'est le jour où tes droits sont réexaminés, 12 mois après la fin de contrat qui a ouvert tes droits. Elle change chaque année (on parle de date « flottante »). C'est le moment décisif : il faut avoir tes 507h dans les 12 mois précédents. Anticiper est la clé — c'est pour ça que Totor te montre où tu en es en permanence.",
       },
       {
         icon: "ti-lifebuoy", titre: "La clause de rattrapage (338h)",
@@ -6343,9 +6343,9 @@ function AppInner() {
     // Fenêtre : on considère l'actualisation "ouverte" entre le 28 et le 15. Sinon "à venir".
     const actuOuverte = jourCourant >= 28 || jourCourant <= 15;
     const joursAvantOuverture = jourCourant < 28 ? (28 - jourCourant) : 0;
-    // ── Loi VIII : Hector n'affirme pas ce qu'il ne peut pas savoir. L'actualisation
+    // ── Loi VIII : Totor n'affirme pas ce qu'il ne peut pas savoir. L'actualisation
     // se fait sur France Travail, hors de l'app → l'utilisateur peut la DÉCLARER faite
-    // (ex : actualisée sur FT, mais les AEM n'arrivent que le mois suivant). Hector le croit.
+    // (ex : actualisée sur FT, mais les AEM n'arrivent que le mois suivant). Totor le croit.
     const actuEntry = (actuHistorique || []).find(h => h.clef === actuClef);
     // "declaree sans data" : déclarée faite alors qu'aucune activité du mois n'est encore
     // dans l'app → on adapte le ton (on "guette les AEM" au lieu de raconter un mois vide).
@@ -6363,7 +6363,7 @@ function AppInner() {
       { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
       { id: "mesaem", icon: "ti-file-check", label: "Mes AEM", dispo: true },
       { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
-      { id: "hector", icon: "ti-message-2", label: "Parle à Hector", dispo: true },
+      { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
@@ -6392,7 +6392,7 @@ function AppInner() {
           <button type="button" onClick={() => { setLegalPage("pourquoi"); setInterMenuOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
             <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
-            <span>Pourquoi H€CTOR ?</span>
+            <span>Pourquoi TOTOR ?</span>
           </button>
         </div>
         <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 2 }}>
@@ -6404,7 +6404,7 @@ function AppInner() {
           <button type="button" onClick={() => { setShowGame(true); setInterMenuOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#8BA5C0", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
             <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
-            <span>Course avec Hector</span>
+            <span>Course avec Totor</span>
           </button>
           <button type="button" onClick={() => { setShowWalkthrough(true); setInterMenuOpen(false); }}
             style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
@@ -6443,7 +6443,7 @@ function AppInner() {
                 <NiveauImage src={celebPalier.img} fallbackIcon="ti-trophy" fallbackColor="#5DCAA5" />
               </div>
               <div style={{ fontSize: 11, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 1.5, fontWeight: 700, marginBottom: 6 }}>Nouveau palier débloqué</div>
-              <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 10, lineHeight: 1.1 }}>Hector est {celebPalier.nom} ! 🎉</h2>
+              <h2 style={{ fontSize: 26, fontWeight: 800, color: "white", marginBottom: 10, lineHeight: 1.1 }}>Totor est {celebPalier.nom} ! 🎉</h2>
               <p style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, marginBottom: 22 }}>{celebPalier.sous}. Tu avances exactement comme il faut — je suis fier de nous. 🐾</p>
               <button type="button" onClick={() => setCelebPalier(null)} style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 15, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Continuer 🐾</button>
             </div>
@@ -6526,7 +6526,7 @@ function AppInner() {
           {/* Chargement */}
           {interCockpitLoading && !c && (
             <div style={{ textAlign: "center", padding: "80px 0", color: "#6B8299" }}>
-              <div style={{ fontSize: 14 }}>Hector calcule tes heures…</div>
+              <div style={{ fontSize: 14 }}>Totor calcule tes heures…</div>
             </div>
           )}
 
@@ -6544,15 +6544,15 @@ function AppInner() {
           {/* Le compteur vivant */}
           {c && (
             <>
-              {/* Bandeau Hector générique retiré : il répétait la même phrase sur chaque page.
-                  Hector ne s'exprime plus que là où il a un vrai message (cockpit, actualisation…). */}
+              {/* Bandeau Totor générique retiré : il répétait la même phrase sur chaque page.
+                  Totor ne s'exprime plus que là où il a un vrai message (cockpit, actualisation…). */}
               {false && (
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{etatLabels[c.hector_etat] || "Hector veille"}</div>
+                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{etatLabels[c.hector_etat] || "Totor veille"}</div>
                   <div style={{ fontSize: 14, color: "#B5D4F4", marginTop: 2 }}>{c.hector_message}</div>
                 </div>
               </div>
@@ -6585,7 +6585,7 @@ function AppInner() {
                   );
                 }
 
-                // ── 2) VALIDATION (Hector a lu une AEM, on vérifie avant d'enregistrer) — formulaire dupliqué de coffre ──
+                // ── 2) VALIDATION (Totor a lu une AEM, on vérifie avant d'enregistrer) — formulaire dupliqué de coffre ──
                 if (aemExtrait) {
                   return (
                     <div>
@@ -6725,7 +6725,7 @@ function AppInner() {
                       </div>
                       <label style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: aemUploading ? "default" : "pointer", fontFamily: "inherit", flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 6 }}>
                         <input type="file" multiple accept="application/pdf,image/jpeg,image/png,image/webp" disabled={aemUploading} onChange={e => { const fs = Array.from(e.target.files || []); if (fs.length) handleScanAEM(fs); e.target.value = ""; }} style={{ display: "none" }} />
-                        📸 {aemUploading ? (aemScanProgress ? `Hector lit ${aemScanProgress.courant}/${aemScanProgress.total}…` : "Hector lit…") : "Scanner mes AEM"}
+                        📸 {aemUploading ? (aemScanProgress ? `Totor lit ${aemScanProgress.courant}/${aemScanProgress.total}…` : "Totor lit…") : "Scanner mes AEM"}
                       </label>
                     </div>
 
@@ -6787,19 +6787,19 @@ function AppInner() {
                 );
               })()}
 
-              {/* ═══ PAGE COCKPIT : 2 colonnes — Hector (gauche) + infos (droite) ═══ */}
+              {/* ═══ PAGE COCKPIT : 2 colonnes — Totor (gauche) + infos (droite) ═══ */}
               {interNav === "cockpit" && (<>
 
 
 
-              {/* ═══ EN-TÊTE COCKPIT : Hector + état (le héros) ═══ */}
+              {/* ═══ EN-TÊTE COCKPIT : Totor + état (le héros) ═══ */}
               <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                     <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Salon V2 — présence d'abord : salut léger AU-DESSUS de l'état, dans l'unique Hector du
+                    {/* Salon V2 — présence d'abord : salut léger AU-DESSUS de l'état, dans l'unique Totor du
                         héros (image ci-dessus) — aucune 2e image. 🐾 + logique identiques à l'AE. */}
                     <div style={{ fontSize: 13, color: "#8BA5C0", fontWeight: 600, marginBottom: 4 }}>
                       🐾 {salutInter}{profilPrenom ? ` ${profilPrenom}` : ""}
@@ -6914,7 +6914,7 @@ function AppInner() {
                 </div>
               </div>
 
-              {/* Alerte détection d'erreurs (seulement si Hector a repéré quelque chose) */}
+              {/* Alerte détection d'erreurs (seulement si Totor a repéré quelque chose) */}
               {aDesAnomalies && (
                 <button type="button" onClick={() => setInterNav("calcul")}
                   style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
@@ -6931,7 +6931,7 @@ function AppInner() {
 
               {(() => {
                 // Rééquilibrage des colonnes (déplacement pur) : Progression (frise) + Congés
-                // Spectacles passent SOUS Hector à gauche en DESKTOP (comble le vide) ; en mobile
+                // Spectacles passent SOUS Totor à gauche en DESKTOP (comble le vide) ; en mobile
                 // ils restent dans le flux de droite, après « Quand pourrais-tu renouveler ? »
                 // (ordre validé : Chiot → dossier renouvellement → Progression → Congés).
                 // ── Brique 5.3 : la frise des paliers (Progression) ──
@@ -7023,14 +7023,14 @@ function AppInner() {
                 return (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
-                {/* ───────── COLONNE GAUCHE : Hector (la star) ───────── */}
+                {/* ───────── COLONNE GAUCHE : Totor (la star) ───────── */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                 <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", boxShadow: "0 0 0 10px rgba(93,202,165,0.07), 0 10px 30px rgba(0,0,0,0.4)" }}>
-                  {/* Header immersif Hector (agrandi : il est la star) */}
+                  {/* Header immersif Totor (agrandi : il est la star) */}
                   <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
-                    {/* halo doux derrière Hector */}
+                    {/* halo doux derrière Totor */}
                     <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
-                    <img src={palierActuel.img} alt={`Hector ${palierActuel.nom}`} className="hector-breathe"
+                    <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
                       onError={(e) => { e.currentTarget.style.display = "none"; }}
                       style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
 
@@ -7046,7 +7046,7 @@ function AppInner() {
                     {/* Titre + message en bas à gauche */}
                     <div style={{ position: "absolute", bottom: 16, left: 20, right: 20, zIndex: 2 }}>
                       <div style={{ fontSize: 28, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                        Hector {palierActuel.nom}
+                        Totor {palierActuel.nom}
                       </div>
                       <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
                         {c.hector_message}
@@ -7097,7 +7097,7 @@ function AppInner() {
 
                   </div>
 
-                  {/* ── ACCROCHE ANALYSE D'HECTOR (il remarque des choses) ── */}
+                  {/* ── ACCROCHE ANALYSE DE TOTOR (il remarque des choses) ── */}
                   {aDesAnalyses && (
                     <button type="button" onClick={() => setInterNav("calcul")}
                       style={{ width: "100%", textAlign: "left", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px", display: "flex", alignItems: "center", gap: 11, background: "rgba(55,138,221,0.05)", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
@@ -7110,7 +7110,7 @@ function AppInner() {
                     </button>
                   )}
 
-                  {/* ── PENSÉE D'HECTOR (il est vivant) ── */}
+                  {/* ── PENSÉE DE TOTOR (il est vivant) ── */}
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px 18px", display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.04)" }}>
                     <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                       <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
@@ -7162,7 +7162,7 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                       <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
                       <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>
-                        Renseigne ta date anniversaire pour qu'Hector te prévienne avant ton renouvellement.
+                        Renseigne ta date anniversaire pour que Totor te prévienne avant ton renouvellement.
                         <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton renouvellement.</span>
                       </div>
                     </div>
@@ -7187,11 +7187,11 @@ function AppInner() {
                   </div>
                 )}
 
-                {/* ── Import attestation ARE : Hector lit la date anniversaire + le montant (ne calcule rien) ── */}
+                {/* ── Import attestation ARE : Totor lit la date anniversaire + le montant (ne calcule rien) ── */}
                 {!anniversaireEdit && (
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(250,199,117,0.15)" }}>
                     {areExtrait ? (
-                      // Écran de vérification : ce qu'Hector a lu, éditable avant enregistrement.
+                      // Écran de vérification : ce que Totor a lu, éditable avant enregistrement.
                       <div>
                         <div style={{ fontSize: 12.5, color: "#FAE3B6", fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 7 }}>
                           <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 16 }} /> Voici ce que j'ai lu sur ton attestation
@@ -7223,7 +7223,7 @@ function AppInner() {
                         </div>
                       </div>
                     ) : (c && c.montant_journalier != null) ? (
-                      // Loi VIII : l'ARE est déjà importée (Hector connaît le montant journalier)
+                      // Loi VIII : l'ARE est déjà importée (Totor connaît le montant journalier)
                       // → on ne redemande plus. Encart discret, réimport possible si besoin.
                       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
@@ -7262,7 +7262,7 @@ function AppInner() {
 
               {/* ══ ALLOCATION JOURNALIÈRE — recalculée, encadrée par la Loi X ══
                    Un chiffre affiché = un chiffre validé sur un vrai courrier. Sinon,
-                   Hector dit honnêtement « pas encore » plutôt que d'approximer. */}
+                   Totor dit honnêtement « pas encore » plutôt que d'approximer. */}
               <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
                   <span style={{ fontSize: 18 }}>🎭</span>
@@ -7384,8 +7384,8 @@ function AppInner() {
                 )}
               </div>
 
-              {/* ══ HECTOR VÉRIFIE TA DÉCISION (contrôle de conformité — la feature volée au concurrent, en humain) ══
-                   Reconstitution d'Hector vs le chiffre officiel de France Travail, écart expliqué,
+              {/* ══ TOTOR VÉRIFIE TA DÉCISION (contrôle de conformité — la feature volée au concurrent, en humain) ══
+                   Reconstitution de Totor vs le chiffre officiel de France Travail, écart expliqué,
                    drapeau estimation. Ne s'affiche que si l'utilisateur a saisi sa notif (heures_reference). */}
               {c.allocation && c.allocation.heures_reference != null && (() => {
                 const ftH = c.allocation.heures_reference;
@@ -7398,7 +7398,7 @@ function AppInner() {
                     <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
                         <span style={{ fontSize: 18 }}>🔒</span>
-                        <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Hector vérifie ta décision</div>
+                        <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
                         <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
                       </div>
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
@@ -7415,7 +7415,7 @@ function AppInner() {
                   <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
                       <span style={{ fontSize: 18 }}>🔍</span>
-                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Hector vérifie ta décision</div>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
                     </div>
 
                     {/* Les heures */}
@@ -7513,7 +7513,7 @@ function AppInner() {
 
               {/* ═══ ACTIONS (tout en bas : on agit après avoir lu) ═══ */}
               <div style={{ marginTop: 4 }}>
-                    {/* LE gros bouton : Hector fait les calculs */}
+                    {/* LE gros bouton : Totor fait les calculs */}
                     <button type="button" onClick={() => setInterNav("calcul")}
                       style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "15px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
                       <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Analyser ma situation
@@ -7532,7 +7532,7 @@ function AppInner() {
 
               </>)}
 
-              {/* ═══ PAGE ACTUALISATION — "Hector a déjà bossé pour toi" ═══ */}
+              {/* ═══ PAGE ACTUALISATION — "Totor a déjà bossé pour toi" ═══ */}
               {interNav === "actu" && (<>
 
               {/* Mode recopie guidé (plein écran) — affiché si actuGuideStep !== null */}
@@ -7569,7 +7569,7 @@ function AppInner() {
                           </div>
                           <h2 style={{ fontSize: 21, fontWeight: 800, color: "white", marginBottom: 10 }}>C'est fait ! 🐾</h2>
                           <p style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, marginBottom: 22 }}>J'ai archivé ton mois de {moisDeclNom}.<br />Repose-toi, je reprends le 28.</p>
-                          <button type="button" onClick={() => { marquerFait(); setActuGuideStep(null); }} style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 15, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Merci Hector</button>
+                          <button type="button" onClick={() => { marquerFait(); setActuGuideStep(null); }} style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 15, fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Merci Totor</button>
                         </div>
                       ) : (
                         <>
@@ -7627,7 +7627,7 @@ function AppInner() {
                   <p style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.5, maxWidth: 380, margin: "0 auto 10px" }}>Pourquoi {moisDeclNom} ? On déclare toujours le mois écoulé : sa fenêtre est ouverte jusqu'au ~15 du mois suivant.</p>
                   <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 380, margin: "0 auto 20px" }}>Ajoute tes contrats du mois pour que je te prépare ton actualisation. Et n'oublie pas : même un mois sans cachet, il faut t'actualiser sur France Travail.</p>
                   <button type="button" onClick={() => { setInterNav("activites"); }} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "13px 22px", fontSize: 14, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Ajouter mes contrats</button>
-                  {/* Déjà actualisée sur France Travail (AEM pas encore arrivées) : Hector la croit. */}
+                  {/* Déjà actualisée sur France Travail (AEM pas encore arrivées) : Totor la croit. */}
                   <div style={{ marginTop: 22, paddingTop: 18, borderTop: "1px solid rgba(255,255,255,0.06)", maxWidth: 380, margin: "22px auto 0" }}>
                     <p style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 12 }}>Tu t'es déjà actualisé·e sur France Travail et tes AEM arrivent plus tard ?</p>
                     <button type="button" onClick={declarerActualise} style={{ background: "transparent", color: "#8FB4D8", border: "1px solid rgba(143,180,216,0.3)", borderRadius: 11, padding: "12px 20px", minHeight: 44, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Je me suis déjà actualisé·e</button>
@@ -7782,7 +7782,7 @@ function AppInner() {
                 </div>
               )}
 
-              {/* ── État NORMAL : Hector a préparé l'actualisation ── */}
+              {/* ── État NORMAL : Totor a préparé l'actualisation ── */}
               {!actuVide && !dejaActualise && (<>
 
                 {/* 1. LA PRÉSENCE */}
@@ -7911,7 +7911,7 @@ function AppInner() {
               )}
               </>)}
 
-              {/* ═══ PAGE CENTRE DE CALCUL HECTOR — conversationnel ═══ */}
+              {/* ═══ PAGE CENTRE DE CALCUL TOTOR — conversationnel ═══ */}
               {interNav === "calcul" && (<>
 
               {/* En-tête */}
@@ -8048,12 +8048,12 @@ function AppInner() {
               })()}
 
               {(() => {
-                // ───────── MOTEUR DE RÉPONSES : fabrique ce qu'Hector dit, à partir des vraies données ─────────
-                // Règle d'or : Hector ne fait JAMAIS semblant d'avoir une donnée. S'il manque la date
+                // ───────── MOTEUR DE RÉPONSES : fabrique ce que Totor dit, à partir des vraies données ─────────
+                // Règle d'or : Totor ne fait JAMAIS semblant d'avoir une donnée. S'il manque la date
                 // anniversaire, il le dit et invite à l'ajouter, au lieu d'inventer une projection.
                 const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
                 const dateAnnivTxt = c && c.date_anniversaire ? `${new Date(c.date_anniversaire).getDate()} ${MOIS[new Date(c.date_anniversaire).getMonth()]}` : null;
-                // Les données qu'Hector "consulte" (citées dans chaque réponse)
+                // Les données que Totor "consulte" (citées dans chaque réponse)
                 const bases = [
                   `${calc.heures} heures déclarées`,
                   `${totalCachetsMois >= 0 ? (interActivites || []).filter(a => a.type_activite !== "heures").reduce((s, a) => s + (parseFloat(a.nombre) || 0), 0) : 0} cachets au total`,
@@ -8270,7 +8270,7 @@ function AppInner() {
                                     </div>
                                     {m.showPourquoi ? (
                                       <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 8, padding: "10px 12px", fontSize: 12, color: "#B5D4F4", lineHeight: 1.5 }}>
-                                        {/* Niveau 1 : ce sur quoi Hector s'est basé (chaleureux) */}
+                                        {/* Niveau 1 : ce sur quoi Totor s'est basé (chaleureux) */}
                                         <b style={{ color: "#7FB8F0" }}>Je me suis basé sur :</b>
                                         <div style={{ marginTop: 6 }}>
                                           {c && <div>✅ Tes {c.total_heures}h déclarées</div>}
@@ -8337,7 +8337,7 @@ function AppInner() {
                         )
                       ))}
 
-                      {/* Hector réfléchit : séquence d'analyse */}
+                      {/* Totor réfléchit : séquence d'analyse */}
                       {calcThinking && (
                         <div style={{ display: "flex", gap: 10 }}>
                           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
@@ -8416,7 +8416,7 @@ function AppInner() {
 
                 {/* ───────── COLONNE DROITE ───────── */}
                 <div>
-              {/* ── CE QUE J'AI REMARQUÉ (analyses d'Hector) ── */}
+              {/* ── CE QUE J'AI REMARQUÉ (analyses de Totor) ── */}
               {aDesAnalyses && (
                 <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 13 }}>
@@ -8614,7 +8614,7 @@ function AppInner() {
                   <span style={{ marginLeft: "auto", fontSize: 9.5, color: "#FAC775", background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 6, padding: "3px 8px", fontWeight: 700, letterSpacing: 0.4 }}>BIENTÔT</span>
                 </div>
                 <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.55 }}>
-                  Bientôt, Hector se souviendra de tes meilleurs mois, de tes employeurs récurrents et de tes records. 🐾
+                  Bientôt, Totor se souviendra de tes meilleurs mois, de tes employeurs récurrents et de tes records. 🐾
                 </div>
               </div>
 
@@ -8679,7 +8679,7 @@ function AppInner() {
                   <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 14, padding: isMobile ? "20px 18px" : "28px 30px", marginBottom: 16, color: "#D6E8FA" }}>
                     {/* En-tête */}
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", borderBottom: "2px solid rgba(93,202,165,0.45)", paddingBottom: 14, marginBottom: 18 }}>
-                      <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 800, color: "white" }}>H<span style={{ color: "#5DCAA5" }}>€</span>CTOR</div>
+                      <div style={{ fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 800, color: "white" }}>T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R</div>
                       <div style={{ textAlign: "right", fontSize: 11, color: "#8BA5C0", lineHeight: 1.5 }}>Document généré le<br />{new Date().toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })}</div>
                     </div>
                     <div style={{ fontSize: 17, fontWeight: 700, color: "white", marginBottom: 3 }}>Récapitulatif de revenus</div>
@@ -8735,7 +8735,7 @@ function AppInner() {
                       </table>
                     </div>
                     <div style={{ fontSize: 10, color: "#6B8299", marginTop: 16, lineHeight: 1.6 }}>
-                      Document personnel établi à partir des données saisies dans H€CTOR. Ne constitue pas une attestation officielle et n'a pas de valeur juridique. Pour un document officiel, s'adresser aux organismes compétents.
+                      Document personnel établi à partir des données saisies dans TOTOR. Ne constitue pas une attestation officielle et n'a pas de valeur juridique. Pour un document officiel, s'adresser aux organismes compétents.
                     </div>
                   </div>
 
@@ -8757,7 +8757,7 @@ function AppInner() {
               {docTab === "actualisations" && (
                 (actuHistorique || []).length === 0 ? (
                   <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
-                    Aucune actualisation enregistrée pour l'instant.<br />Une fois que tu t'actualises avec Hector, l'historique apparaît ici.
+                    Aucune actualisation enregistrée pour l'instant.<br />Une fois que tu t'actualises avec Totor, l'historique apparaît ici.
                     <div style={{ marginTop: 16 }}>
                       <button type="button" onClick={() => setInterNav("actu")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Voir l'actualisation</button>
                     </div>
@@ -8785,16 +8785,16 @@ function AppInner() {
               {/* ═══ PAGE SCANNER UNE AEM ═══ */}
 
 
-              {/* ═══ PAGE PARLE À HECTOR ═══ */}
+              {/* ═══ PAGE PARLE À TOTOR ═══ */}
               {interNav === "hector" && (<>
 
-              {/* ── Le chat Hector intermittent (assistant expert du régime) ── */}
+              {/* ── Le chat Totor intermittent (assistant expert du régime) ── */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/hector-tete.png" fallbackIcon="ti-message" fallbackColor="#3a5169" />
                 </div>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>Parle à Hector</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>Parle à Totor</div>
                   <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Ton expert du régime intermittent. Pose-lui tes questions.</div>
                 </div>
               </div>
@@ -8833,14 +8833,14 @@ function AppInner() {
                   ))}
                   {interChatLoading && (
                     <div style={{ display: "flex", justifyContent: "flex-start" }}>
-                      <div style={{ background: "rgba(255,255,255,0.06)", color: "#8BA5C0", borderRadius: 14, padding: "10px 14px", fontSize: 13.5 }}>Hector réfléchit…</div>
+                      <div style={{ background: "rgba(255,255,255,0.06)", color: "#8BA5C0", borderRadius: 14, padding: "10px 14px", fontSize: 13.5 }}>Totor réfléchit…</div>
                     </div>
                   )}
                 </div>
                 {/* Saisie */}
                 <div style={{ display: "flex", gap: 8 }}>
                   <input type="text" value={interChatInput} onChange={e => setInterChatInput(e.target.value)} onKeyDown={e => { if (e.key === "Enter") askInterChat(e); }}
-                    placeholder="Écris ta question à Hector…"
+                    placeholder="Écris ta question à Totor…"
                     style={{ flex: 1, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 10, padding: "11px 14px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                   <button type="button" onClick={askInterChat} disabled={interChatLoading || !interChatInput.trim()}
                     style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 10, padding: "0 16px", fontSize: 15, fontWeight: 700, cursor: (interChatLoading || !interChatInput.trim()) ? "default" : "pointer", fontFamily: "inherit", opacity: (interChatLoading || !interChatInput.trim()) ? 0.5 : 1, flexShrink: 0 }}>
@@ -8848,7 +8848,7 @@ function AppInner() {
                   </button>
                 </div>
                 <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
-                  Hector connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
+                  Totor connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
                 </div>
               </div>
 
@@ -8884,10 +8884,10 @@ function AppInner() {
                 </div>
                 <button type="button" disabled={simLoading} onClick={handleSimuler}
                   style={{ width: "100%", background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "12px", fontSize: 14.5, fontWeight: 700, cursor: simLoading ? "default" : "pointer", fontFamily: "inherit", opacity: simLoading ? 0.6 : 1 }}>
-                  {simLoading ? "Hector réfléchit…" : "Je dois accepter ?"}
+                  {simLoading ? "Totor réfléchit…" : "Je dois accepter ?"}
                 </button>
 
-                {/* Verdict décisionnel d'Hector */}
+                {/* Verdict décisionnel de Totor */}
                 {simResult && (() => {
                   // On calcule un verdict tranché à partir des champs du moteur + la date anniversaire connue côté front.
                   const secu = simResult.securise_apres;
@@ -9274,7 +9274,7 @@ function AppInner() {
                 {/* Liste des activités */}
                 {interActivites.length === 0 && !interShowAdd && (
                   <div style={{ textAlign: "center", padding: "24px 16px", color: "#5A7088", fontSize: 13, background: "rgba(255,255,255,0.02)", borderRadius: 12 }}>
-                    Aucune activité pour l'instant. Ajoute ton premier cachet pour qu'Hector commence à compter. 🐾
+                    Aucune activité pour l'instant. Ajoute ton premier cachet pour que Totor commence à compter. 🐾
                   </div>
                 )}
                 {interActivites.length > 0 && (
@@ -9451,7 +9451,7 @@ function AppInner() {
                               </button>
                             </div>
                           </div>
-                          {/* Panneau "revoir ce qu'Hector a lu sur l'AEM" */}
+                          {/* Panneau "revoir ce que Totor a lu sur l'AEM" */}
                           {detailOuvert && (
                             <div style={{ borderTop: "1px solid rgba(93,202,165,0.15)", background: "rgba(93,202,165,0.04)", padding: "12px 14px" }}>
                               <div style={{ fontSize: 11, fontWeight: 700, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
@@ -9502,7 +9502,7 @@ function AppInner() {
                   <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Comprendre ton régime</div>
                 </div>
                 <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 16, lineHeight: 1.5 }}>
-                  Hector t'explique l'essentiel, sans jargon. Pour ne plus jamais te sentir perdu.
+                  Totor t'explique l'essentiel, sans jargon. Pour ne plus jamais te sentir perdu.
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {FICHES_CONSEILS.map((f, i) => (
@@ -9643,8 +9643,8 @@ function AppInner() {
         const wtStepsIntermittent = [
           {
             img: "/hector-tete.png",
-            timerLabel: "BIENVENUE SUR H€CTOR",
-            title: "Bonjour, moi c'est H€CTOR.",
+            timerLabel: "BIENVENUE SUR TOTOR",
+            title: "Bonjour, moi c'est TOTOR.",
             sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
             items: [
               { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
@@ -9657,7 +9657,7 @@ function AppInner() {
             img: "/hector-1.png",
             timerLabel: "LE COCKPIT — TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
-            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Hector grandit visuellement avec ta progression, du chiot au gardien.",
+            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot au gardien.",
             items: [
               { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
               { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
@@ -9681,7 +9681,7 @@ function AppInner() {
             img: "/hector-3.png",
             timerLabel: "MES ACTIVITÉS",
             title: "Ajoute un contrat en quelques secondes.",
-            sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Hector, pour démarrer ton compteur au bon endroit.",
+            sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Totor, pour démarrer ton compteur au bon endroit.",
             items: [
               { icon: "ti-plus", text: "Saisie rapide : date, employeur, cachets ou heures" },
               { icon: "ti-history", text: "Report de tes heures déjà faites pour bien démarrer" },
@@ -9727,9 +9727,9 @@ function AppInner() {
           },
           {
             img: "/hector-2.png",
-            timerLabel: "PARLE À HECTOR",
+            timerLabel: "PARLE À TOTOR",
             title: "Ton expert du régime, dispo 24h/24.",
-            sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Hector ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
+            sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Totor ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
             items: [
               { icon: "ti-message-2", text: "Un chat expert du régime intermittent" },
               { icon: "ti-phone-call", text: "« On te propose un contrat ? » : je te dis si tu acceptes" },
@@ -9765,8 +9765,8 @@ function AppInner() {
         const wtStepsAuto = [
           {
             img: "/hector-tete.png",
-            timerLabel: "BIENVENUE SUR H€CTOR",
-            title: "Bonjour, moi c'est H€CTOR.",
+            timerLabel: "BIENVENUE SUR TOTOR",
+            title: "Bonjour, moi c'est TOTOR.",
             sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
             items: [
               { icon: "ti-check", text: "Zéro case à remplir pour commencer" },
@@ -9777,13 +9777,13 @@ function AppInner() {
           },
           {
             img: "/niveau-1.png",
-            timerLabel: "LE COCKPIT + PARLE À HECTOR",
+            timerLabel: "LE COCKPIT + PARLE À TOTOR",
             title: "Fini les mauvaises surprises URSSAF.",
-            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. Et dans « Parle à Hector », je réponds à toutes tes questions — par texte ou dictée vocale.",
+            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. Et dans « Parle à Totor », je réponds à toutes tes questions — par texte ou dictée vocale.",
             items: [
               { icon: "ti-check", text: "« Aujourd'hui, tu peux dépenser X € » — le chiffre qui compte, en premier" },
               { icon: "ti-check", text: "Charges URSSAF + impôts calculées automatiquement" },
-              { icon: "ti-mic", text: "« Parle à Hector » : par texte ou dictée vocale" },
+              { icon: "ti-mic", text: "« Parle à Totor » : par texte ou dictée vocale" },
             ],
             next: "Suivant",
           },
@@ -9803,7 +9803,7 @@ function AppInner() {
             img: "/niveau-3.png",
             timerLabel: "LES OUTILS",
             title: "Simule avant de décider.",
-            sub: "H€CTOR met à ta disposition 4 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
+            sub: "TOTOR met à ta disposition 4 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
             items: [
               { icon: "ti-cash", text: "Mode Salaire — combien puis-je me verser ce mois ?" },
               { icon: "ti-shopping-cart", text: "Mode Achat — puis-je me permettre cette dépense ?" },
@@ -9825,11 +9825,11 @@ function AppInner() {
           },
           {
             img: "/niveau-5.png",
-            timerLabel: "LA SÉRÉNITÉ D'HECTOR",
-            title: "Hector grandit avec toi.",
-            sub: "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
+            timerLabel: "LA SÉRÉNITÉ DE TOTOR",
+            title: "Totor grandit avec toi.",
+            sub: "Chaque jour où ta trésorerie est saine, Totor avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
             items: [
-              { icon: "ti-dog", text: "Hector arrive → Son panier → Sa niche → Son jardin" },
+              { icon: "ti-dog", text: "Totor arrive → Son panier → Sa niche → Son jardin" },
               { icon: "ti-home", text: "Sa maison → Son domaine (6 niveaux à débloquer)" },
               { icon: "ti-check", text: "Plus tu es régulier, plus vite il progresse" },
             ],
@@ -9839,7 +9839,7 @@ function AppInner() {
             img: "/niveau-6.png",
             timerLabel: "TU ES PRÊT(E) !",
             title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
-            sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
+            sub: "Commence par ajouter ton premier revenu. En 10 secondes, TOTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
             items: [
               { icon: "ti-receipt-2", text: "Ajouter un revenu ou une dépense" },
               { icon: "ti-file-plus", text: "Créer mon premier devis" },
@@ -9927,7 +9927,7 @@ function AppInner() {
   //    Ceinture : tout estimateData.X ici est en optional chaining (cf crash 664adee).
   const renderHeroHector = () => (
     <>
-            {/* ── EN-TÊTE HECTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ── */}
+            {/* ── EN-TÊTE TOTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ── */}
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
                 <div>
@@ -9935,7 +9935,7 @@ function AppInner() {
                     <div style={{ padding: "16px 16px 0", flex: 1 }}>
                       <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
                       <div style={{ fontSize: 11, color: "#6B8299", marginBottom: briefingMatin.prenom ? 12 : 4 }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
-                      {/* Sans prénom, Hector invite à se présenter (Loi VIII : un vide est un point de départ). */}
+                      {/* Sans prénom, Totor invite à se présenter (Loi VIII : un vide est un point de départ). */}
                       {!briefingMatin.prenom && (
                         <button type="button" onClick={() => setNav("profil")}
                           style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 11.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginBottom: 12, textAlign: "left" }}>
@@ -10022,7 +10022,7 @@ function AppInner() {
                     <div style={{ position: "relative", zIndex: 2, padding: "20px 28px 8px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                       <div style={{ fontSize: 20, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
                       <div style={{ fontSize: 12, color: "#6B8299" }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
-                      {/* Sans prénom, Hector invite à se présenter (Loi VIII : un vide est un point de départ). */}
+                      {/* Sans prénom, Totor invite à se présenter (Loi VIII : un vide est un point de départ). */}
                       {!briefingMatin.prenom && (
                         <button type="button" onClick={() => setNav("profil")}
                           style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 6, textAlign: "left" }}>
@@ -10033,7 +10033,7 @@ function AppInner() {
                     <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
                       <img
                         src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Hector"
+                        alt="Totor"
                         style={{ width: "100%", height: "auto", maxHeight: 240, objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
                       />
                       <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
@@ -10141,7 +10141,7 @@ function AppInner() {
                     style={{ display: "flex", alignItems: "center", gap: 10, background: "#0a1322", border: `1px solid ${couleurTon}33`, borderRadius: 12, padding: "10px 16px", cursor: "pointer", textAlign: "left", width: "100%" }}
                   >
                     <HectorTete size={28} />
-                    <span style={{ fontSize: 13, color: "#B5D4F4", flex: 1 }}>Revoir le détail d'Hector du jour</span>
+                    <span style={{ fontSize: 13, color: "#B5D4F4", flex: 1 }}>Revoir le détail de Totor du jour</span>
                     <span style={{ fontSize: 12, color: couleurTon }}>Ouvrir →</span>
                   </button>
                 );
@@ -10149,7 +10149,7 @@ function AppInner() {
               return (
                 <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #0e1b30 100%)", border: `1px solid ${couleurTon}44`, borderRadius: 16, padding: "20px 22px", position: "relative", animation: "fadeInDown 0.4s ease" }}>
                   <button onClick={marquerVu} style={{ position: "absolute", top: 14, right: 14, background: "none", border: "none", color: "#8BA5C0", fontSize: 16, cursor: "pointer", lineHeight: 1 }}>✕</button>
-                  <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Le détail d'Hector</div>
+                  <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 14, textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Le détail de Totor</div>
                   {b.gardeAuChaud.length > 0 && (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 6 }}>🧾 Ce que je garde au chaud pour toi</div>
@@ -10202,7 +10202,7 @@ function AppInner() {
                     <div style={{ fontSize: 13, color: "#E4EEF8", lineHeight: 1.5 }}>{b.conseil}</div>
                   </div>
 
-                  {/* Souvenir : Hector se souvient (prioritaire car plus rare et plus fort) */}
+                  {/* Souvenir : Totor se souvient (prioritaire car plus rare et plus fort) */}
                   {souvenirHector && (
                     <div style={{ marginTop: 14, fontSize: 13, color: "#C9B8E0", lineHeight: 1.6, fontStyle: "italic", paddingLeft: 12, borderLeft: "2px solid rgba(150,120,200,0.4)" }}>
                       {souvenirHector}
@@ -10233,7 +10233,7 @@ function AppInner() {
                   {streakCount > 0 && (
                     <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", gap: 8 }}>
                       <span style={{ fontSize: 16 }}>🔥</span>
-                      <span style={{ fontSize: 13, color: "#FAC775", fontWeight: 700 }}>{streakCount} jour{streakCount > 1 ? "s" : ""} avec Hector</span>
+                      <span style={{ fontSize: 13, color: "#FAC775", fontWeight: 700 }}>{streakCount} jour{streakCount > 1 ? "s" : ""} avec Totor</span>
                       {palierStreakActuel && <span style={{ fontSize: 12, color: "#8BA5C0" }}>· {palierStreakActuel.emoji} {palierStreakActuel.titre}</span>}
                     </div>
                   )}
@@ -10306,7 +10306,7 @@ function AppInner() {
              supprimée : les id ne bougent pas, seule l'organisation change. ═══ */}
         {[
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
-          { id: "assistant", icon: "ti-message-2", label: "Parle à Hector" },
+          { id: "assistant", icon: "ti-message-2", label: "Parle à Totor" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
@@ -10377,7 +10377,7 @@ function AppInner() {
           </button>
         ))}
 
-        {/* ─── Le reste : la vie d'Hector et le compte. Rien n'est supprimé. ─── */}
+        {/* ─── Le reste : la vie de Totor et le compte. Rien n'est supprimé. ─── */}
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 4px" }} />
         {[
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
@@ -10392,12 +10392,12 @@ function AppInner() {
         {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setLegalPage("pourquoi"); setMobileMenuOpen(false); }}>
           <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Pourquoi H€CTOR ?</span>}
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Pourquoi TOTOR ?</span>}
         </button>
         {/* Le mini-jeu, rangé en fin de menu : un cadeau, pas une fonction de premier rang. */}
         <button style={{ ...S.navItem, marginTop: 4 }} onClick={() => { setShowGame(true); setMobileMenuOpen(false); }}>
           <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
-          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Hector</span>}
+          {(isMobile || sidebarOpen) && <span style={S.navLabel}>Course avec Totor</span>}
         </button>
         <button style={{ ...S.navItem, marginTop: 4, ...(nav === "profil" ? S.navItemActive : {}) }} onClick={() => { setNav("profil"); setMobileMenuOpen(false); }}>
           <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -10466,7 +10466,7 @@ function AppInner() {
         {/* État de chargement : jamais d'écran vide entre le login et l'arrivée des données (3G mobile). */}
         {nav === "dashboard" && !estimateData && !error && (
           <div style={{ textAlign: "center", padding: "90px 24px", color: "#8BA5C0", fontSize: 14, lineHeight: 1.6 }}>
-            🐾 Hector prépare ton cockpit…
+            🐾 Totor prépare ton cockpit…
           </div>
         )}
 
@@ -10551,10 +10551,10 @@ function AppInner() {
                     <div style={{ fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>Renseigne ton solde bancaire pour voir ton disponible et ta réserve de sécurité.</div>
                   </div>
                   {/* Salon V2 — PR3 : plus de 2ᵉ champ solde ici. La saisie se fait dans la bande
-                      d'en-tête d'Hector (champ canonique, toujours visible). Simple renvoi. */}
+                      d'en-tête de Totor (champ canonique, toujours visible). Simple renvoi. */}
                   <div style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, color: "#7FB8F0", fontWeight: 600 }}>
                     <span style={{ fontSize: 15 }}>☝️</span>
-                    <span>Renseigne-le dans la carte d'Hector, tout en haut de l'écran.</span>
+                    <span>Renseigne-le dans la carte de Totor, tout en haut de l'écran.</span>
                   </div>
                 </div>
               )}
@@ -10562,14 +10562,14 @@ function AppInner() {
 
             {/* ── CHECKLIST DE SÉRÉNITÉ (style cockpit) ── */}
             {(() => {
-              // Salon V2 — Changement 4 : la checklist de coches devient une phrase d'Hector.
+              // Salon V2 — Changement 4 : la checklist de coches devient une phrase de Totor.
               // Affichage seul — panique.solde / incomeList / urssafProvision / reserveAtteinte inchangés.
               const aSolde = panique.solde !== "";
               const aRevenus = incomeList.length > 0;
               const aUrssaf = urssafProvision > 0;
               const aReserve = reserveAtteinte === true;
               const toutBon = aSolde && aRevenus && aUrssaf && aReserve;
-              // Ce qui aiderait Hector à mieux veiller (formulé en douceur, jamais des coches scolaires).
+              // Ce qui aiderait Totor à mieux veiller (formulé en douceur, jamais des coches scolaires).
               // L'URSSAF n'y figure pas : elle se provisionne automatiquement, ce n'est pas une action de l'utilisateur.
               const coupsDePouce = [];
               if (!aSolde) coupsDePouce.push("ton solde bancaire");
@@ -10591,7 +10591,7 @@ function AppInner() {
             })()}
             </div>
 
-            {/* ── RELANCE D'IMPAYÉ — Hector voit la facture en retard et propose la relance rédigée.
+            {/* ── RELANCE D'IMPAYÉ — Totor voit la facture en retard et propose la relance rédigée.
                 Né d'un retour testeur (RETOURS_BETA 2026-07-03). Il propose, il n'envoie jamais seul (Loi IV). ── */}
             {(() => {
               const enRetard = invoicesList.filter(invoiceIsOverdue);
@@ -10616,7 +10616,7 @@ function AppInner() {
               if (panique.solde === "" || incomeList.length === 0) return null;
               const action = reserveAtteinte === false
                 ? { txt: "Renforce ta réserve de sécurité", sub: `Il te manque ${formatEUR(manqueReserveDashboard)}`, icon: "ti-shield-half", nav: "revenus" }
-                : { txt: "Tout est à jour, profite", sub: "Hector veille, tu peux souffler", icon: "ti-check", nav: "revenus" };
+                : { txt: "Tout est à jour, profite", sub: "Totor veille, tu peux souffler", icon: "ti-check", nav: "revenus" };
               return (
                 <button type="button" onClick={() => setNav(action.nav)}
                   style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "#0e1f35", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 14, padding: "15px 18px", cursor: "pointer", fontFamily: "inherit" }}>
@@ -10633,7 +10633,7 @@ function AppInner() {
               );
             })()}
 
-            {/* ── PROJECTION TRÉSORERIE : « Hector regarde ton mois prochain » ── */}
+            {/* ── PROJECTION TRÉSORERIE : « Totor regarde ton mois prochain » ── */}
             {projectionData?.disponible && (() => {
               const pr = projectionData;
               const accent = pr.ton === "alerte" ? "#F09595" : pr.ton === "vigilant" ? "#FAC775" : "#5DCAA5";
@@ -10648,7 +10648,7 @@ function AppInner() {
                       <i className="ti ti-telescope" aria-hidden="true" style={{ fontSize: 20 }} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Hector regarde ton mois prochain</div>
+                      <div style={{ fontSize: 14.5, fontWeight: 700, color: "white" }}>Totor regarde ton mois prochain</div>
                       <div style={{ fontSize: 11.5, color: "#6B8299" }}>à {pr.horizon_label} · une projection, pas une certitude</div>
                     </div>
                     <span style={{ fontSize: 10, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase", color: "#7FB8F0", background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap" }}>Estimation</span>
@@ -10684,7 +10684,7 @@ function AppInner() {
                   {hasDetail && (
                     <div style={{ borderTop: "1px solid rgba(255,255,255,0.07)", paddingTop: 14, marginBottom: hasLeviers ? 14 : 0 }}>
                       <div onClick={() => setProjDetailOpen(o => !o)} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", cursor: "pointer", marginBottom: projDetailOpen ? 10 : 0 }}>
-                        <span style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5 }}>Ce qu'Hector a pris en compte</span>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5 }}>Ce que Totor a pris en compte</span>
                         <i className={`ti ti-chevron-${projDetailOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 16, color: "#6B8299" }} />
                       </div>
                       {projDetailOpen && (
@@ -10738,7 +10738,7 @@ function AppInner() {
               );
             })()}
 
-            {/* ── MESSAGES HECTOR ── */}
+            {/* ── MESSAGES TOTOR ── */}
             {hectorMessages.map(msg => (
               <div key={msg.id} style={{ background: "#0a1322", border: `1px solid ${msg.couleur}44`, borderRadius: 12, padding: "12px 16px", display: "flex", alignItems: "flex-start", gap: 12, position: "relative", animation: "fadeInDown 0.3s ease" }}>
                 <HectorTete size={32} />
@@ -10752,14 +10752,14 @@ function AppInner() {
               </div>
             ))}
 
-            {/* ── HECTOR UNIFIÉ : écrire librement OU décision rapide ── */}
+            {/* ── TOTOR UNIFIÉ : écrire librement OU décision rapide ── */}
             <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #10233f 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(93,202,165,0.4)", flexShrink: 0 }}>
-                  <img src="/hector-tete.png" alt="Hector" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img src="/hector-tete.png" alt="Totor" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 </div>
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Parle à Hector</div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Parle à Totor</div>
                   <div style={{ fontSize: 12, color: "#8BA5C0" }}>Pose ta question, ou vérifie un achat / un versement. Il répond avec tes vrais chiffres.</div>
                 </div>
               </div>
@@ -10909,11 +10909,11 @@ function AppInner() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> H€CTOR lit ton solde, jamais bouger ton argent (règle européenne DSP2).</span>
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> TOTOR lit ton solde, jamais bouger ton argent (règle européenne DSP2).</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Powens, agréé par la Banque de France. Tes identifiants ne transitent jamais par H€CTOR.</span>
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Powens, agréé par la Banque de France. Tes identifiants ne transitent jamais par TOTOR.</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
@@ -10936,15 +10936,15 @@ function AppInner() {
               </>)}
             </div>
 
-            {/* ── SÉRÉNITÉ D'HECTOR — visible pour tous ── */}
+            {/* ── SÉRÉNITÉ DE TOTOR — visible pour tous ── */}
             {hectorEtat && (
               <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat.accueil ? "rgba(55,138,221,0.2)" : hectorEtat.couleur + "22"}`, borderRadius: 14, padding: "16px 20px" }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 16, flexWrap: "wrap", gap: 10 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 Le foyer d'Hector grandit avec toi</div>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 Le foyer de Totor grandit avec toi</div>
                     <div style={{ fontSize: 11, color: "#6B8299" }}>
                       {hectorEtat.accueil
-                        ? "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine."
+                        ? "Chaque jour où ta trésorerie est saine, Totor avance vers son domaine."
                         : dateTranquillite && joursTranquillite > 0
                           ? `Jusqu'au ${dateTranquillite} · ${hectorEtat.mot}`
                           : hectorEtat.mot}
@@ -11049,7 +11049,7 @@ function AppInner() {
                       <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>manquants pour atteindre ta réserve</div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
                         <button onClick={() => setNav("achat")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Analyser la situation →</button>
-                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Demander à Hector →</button>
+                        <button onClick={() => { setAiInput("Ma réserve de sécurité n'est pas encore atteinte. Que faire ?"); setNav("assistant"); }} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Demander à Totor →</button>
                       </div>
                     </>
                   ) : (
@@ -11058,7 +11058,7 @@ function AppInner() {
                       <div style={{ fontSize: 18, fontWeight: 800, color: "#F09595", marginBottom: 2 }}>−{formatEUR(Math.abs(argentDisponibleBrut))}</div>
                       <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>de déficit actuellement</div>
                       <button onClick={() => { setAiInput("Ma trésorerie est dans le rouge. Qu'est-ce que je peux faire concrètement ?"); setNav("assistant"); }}
-                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>En parler à Hector →</button>
+                        style={{ background: "none", border: "none", color: "#F09595", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>En parler à Totor →</button>
                     </>
                   )}
                 </div>
@@ -11090,8 +11090,8 @@ function AppInner() {
                 </div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
                   {panique.solde !== ""
-                    ? "Ajoute maintenant ton premier revenu encaissé. H€CTOR calculera automatiquement l'URSSAF à mettre de côté et te dira ce que tu peux vraiment dépenser."
-                    : "1. Renseigne ton solde bancaire dans la carte en haut — ouvre ton appli de banque, lis le chiffre, recopie-le. 10 secondes.\n2. Ajoute tes revenus encaissés.\nH€CTOR s'occupe du reste."}
+                    ? "Ajoute maintenant ton premier revenu encaissé. TOTOR calculera automatiquement l'URSSAF à mettre de côté et te dira ce que tu peux vraiment dépenser."
+                    : "1. Renseigne ton solde bancaire dans la carte en haut — ouvre ton appli de banque, lis le chiffre, recopie-le. 10 secondes.\n2. Ajoute tes revenus encaissés.\nTOTOR s'occupe du reste."}
                 </div>
                 <button style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}
                   onClick={() => setNav("revenus")}>
@@ -11316,7 +11316,7 @@ function AppInner() {
                 </div>
 
                 {(declarationCa !== "" || declarationCotisations !== "" || declarationPeriode !== "") && (
-                  <button style={{ ...S.linkBtn, marginTop: 4 }} onClick={() => { setDeclarationCa(""); setDeclarationCotisations(""); setDeclarationPeriode(""); }}>↺ Revenir aux valeurs calculées par H€CTOR</button>
+                  <button style={{ ...S.linkBtn, marginTop: 4 }} onClick={() => { setDeclarationCa(""); setDeclarationCotisations(""); setDeclarationPeriode(""); }}>↺ Revenir aux valeurs calculées par TOTOR</button>
                 )}
               </div>
 
@@ -11406,7 +11406,7 @@ function AppInner() {
                 <>
                   <div style={S.explainBanner}>
                     Tu as <strong>{formatEUR(argentDisponibleBrut)}</strong> disponibles. Après maintien de ta réserve de sécurité, ta marge prudente est de <strong>{formatEUR(Math.max(0, apresReserve))}</strong>.
-                    <span style={{ display: "block", fontSize: 11, color: "#5B82A8", marginTop: 4 }}>C'est cette marge prudente que H€CTOR utilise pour ses recommandations d'achat ci-dessous.</span>
+                    <span style={{ display: "block", fontSize: 11, color: "#5B82A8", marginTop: 4 }}>C'est cette marge prudente que TOTOR utilise pour ses recommandations d'achat ci-dessous.</span>
                   </div>
 
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
@@ -12333,7 +12333,7 @@ function AppInner() {
                           ) : invoiceIsOverdue(inv) ? (
                             <p style={{ fontSize: 12, color: "#FAC775", margin: "0 0 8px", lineHeight: 1.5 }}>🐾 Cette facture a {joursDeRetard(inv)} jour{joursDeRetard(inv) > 1 ? "s" : ""} de retard — je t'ai préparé la relance (aperçu ci-dessous). Tu peux la personnaliser, et rien ne part sans toi.</p>
                           ) : (
-                            <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
+                            <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 TOTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
                           )}
                           <textarea
                             style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
@@ -12578,7 +12578,7 @@ function AppInner() {
                       ) : (
                         <>
                           <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px" }}>Sera envoyé à <strong>{q.client_email}</strong></p>
-                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 H€CTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
+                          <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 8px", lineHeight: 1.5 }}>🐶 TOTOR a préparé un email professionnel pour ton client. Tu peux le personnaliser si tu veux.</p>
                           <textarea
                             style={{ ...S.input, height: 50, resize: "none", marginBottom: 8 }}
                             placeholder="Ajouter un message personnel (optionnel)"
@@ -12766,7 +12766,7 @@ function AppInner() {
         {nav === "profil" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>⚙️ Réglages</h1><p style={S.pageSub}>Personnalise H€CTOR</p></div>
+              <div><h1 style={S.pageTitle}>⚙️ Réglages</h1><p style={S.pageSub}>Personnalise TOTOR</p></div>
             </div>
 
             <div style={S.card}>
@@ -12781,7 +12781,7 @@ function AppInner() {
               {/* ── Statut du compte (bascule auto-entrepreneur / intermittent) ── */}
               <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Ton statut</div>
-                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Change le cockpit affiché par H€CTOR. Réversible à tout moment.</div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Change le cockpit affiché par TOTOR. Réversible à tout moment.</div>
                 <div style={{ display: "flex", gap: 8 }}>
                   {[
                     { id: "auto_entrepreneur", label: "Auto-entrepreneur", icon: "ti-briefcase" },
@@ -12894,7 +12894,7 @@ function AppInner() {
               {/* ── Reprise de numérotation des factures (plancher, jamais d'édition libre) ── */}
               <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Reprendre ma numérotation de factures</div>
-                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Tu factures déjà ailleurs ? Indique le numéro de ta prochaine facture : H€CTOR continuera ta série à partir de là, sans trou ni doublon.</div>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Tu factures déjà ailleurs ? Indique le numéro de ta prochaine facture : TOTOR continuera ta série à partir de là, sans trou ni doublon.</div>
                 <label style={{ ...S.label, marginBottom: 0 }}>Prochain numéro de facture
                   <input style={S.input} type="text" value={factureNumeroDepart}
                     onChange={e => setFactureNumeroDepart(e.target.value)}
@@ -12968,11 +12968,11 @@ function AppInner() {
                 </label>
                 <label style={S.labelDark}>Mon train de vie mensuel
                   <MontantInput decimales style={S.input} value={depensesMensuelles} onChange={e => setDepensesMensuelles(e)} placeholder="Ex : 1800 €/mois" />
-                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Ce que tu dépenses environ chaque mois pour vivre. Sert à Hector pour calculer tes jours de tranquillité.</span>
+                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Ce que tu dépenses environ chaque mois pour vivre. Sert à Totor pour calculer tes jours de tranquillité.</span>
                 </label>
                 <label style={S.labelDark}>Mes autres revenus mensuels (optionnel)
                   <MontantInput decimales style={S.input} value={autresRevenus} onChange={e => setAutresRevenus(e)} placeholder="Ex : salaire 1 800 €/mois" />
-                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Salaire ou autre revenu en dehors de ton auto-entreprise. Hector ne calcule jamais d'URSSAF dessus — c'est juste pour avoir une vue complète de ce que tu peux te permettre.</span>
+                  <span style={{ fontSize: 10, color: "#8BA5C0", marginTop: 4, display: "block" }}>Salaire ou autre revenu en dehors de ton auto-entreprise. Totor ne calcule jamais d'URSSAF dessus — c'est juste pour avoir une vue complète de ce que tu peux te permettre.</span>
                   {autresRevenusNum > 0 && (
                     <label style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 8, cursor: "pointer", fontSize: 12, color: "#E6EDF5", fontWeight: 500 }}>
                       <input type="checkbox" checked={inclureAutresRevenus} onChange={e => setInclureAutresRevenus(e.target.checked)} style={{ width: 16, height: 16, cursor: "pointer" }} />
@@ -13018,7 +13018,7 @@ function AppInner() {
                 <span style={{ ...S.badge, ...S.badgeGreen }}>🟢 Tes données chez toi</span>
               </div>
               <p style={{ fontSize: 11, color: "#8BA5C0", marginTop: 10, lineHeight: 1.5 }}>
-                Aujourd'hui, tu mets ton solde à jour à la main en 10 secondes : tes identifiants bancaires ne nous sont jamais demandés. Bientôt, tu pourras choisir de connecter ton compte en lecture seule, via un partenaire agréé par la Banque de France — H€CTOR pourra lire ton solde, jamais toucher à ton argent. Connexion ou saisie manuelle : ce sera ton choix, à tout moment.
+                Aujourd'hui, tu mets ton solde à jour à la main en 10 secondes : tes identifiants bancaires ne nous sont jamais demandés. Bientôt, tu pourras choisir de connecter ton compte en lecture seule, via un partenaire agréé par la Banque de France — TOTOR pourra lire ton solde, jamais toucher à ton argent. Connexion ou saisie manuelle : ce sera ton choix, à tout moment.
               </p>
             </div>
 
@@ -13027,7 +13027,7 @@ function AppInner() {
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Mes données</div>
               <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 14px", lineHeight: 1.5 }}>
-                Conformément au RGPD, vous pouvez exporter l'ensemble de vos données ou supprimer définitivement votre compte H€CTOR.
+                Conformément au RGPD, vous pouvez exporter l'ensemble de vos données ou supprimer définitivement votre compte TOTOR.
               </p>
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                 <button type="button" style={S.btnSecondary} onClick={handleExportData} disabled={exportingData}>
@@ -13152,11 +13152,11 @@ function AppInner() {
 
         {nav === "assistant" && (
           <div>
-            {/* Header premium : grande tête d'Hector, titre fort, ambiance copilote */}
+            {/* Header premium : grande tête de Totor, titre fort, ambiance copilote */}
             <div style={{ background: "linear-gradient(135deg, #0A2540 0%, #1B4068 100%)", borderRadius: 16, padding: isMobile ? "20px 18px" : "24px 28px", marginBottom: 16, display: "flex", alignItems: "center", gap: isMobile ? 14 : 22, flexWrap: isMobile ? "wrap" : "nowrap" }}>
               <HectorTete size={isMobile ? 80 : 110} />
               <div style={{ flex: 1, minWidth: 200 }}>
-                <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white", margin: 0, lineHeight: 1.15 }}>Hector, ton copilote</h1>
+                <h1 style={{ fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white", margin: 0, lineHeight: 1.15 }}>Totor, ton copilote</h1>
                 <p style={{ fontSize: isMobile ? 13 : 14, color: "#B5D4F4", margin: "6px 0 0", lineHeight: 1.5 }}>Il connaît tes chiffres, prépare tes devis, et te dit ce que tu peux vraiment dépenser.</p>
                 <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 10, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 999, padding: "3px 10px" }}>
                   <span className="hector-ping" style={{ width: 7, height: 7 }} />
@@ -13182,7 +13182,7 @@ function AppInner() {
                       {devis && (
                         <div style={{ background: "#F4F9FF", border: `1px solid ${ACCENT}`, borderRadius: 12, padding: 16, maxWidth: 380, width: "100%" }}>
                           <div style={{ fontSize: 12, fontWeight: 700, color: ACCENT, marginBottom: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                            <i className={`ti ${devis.type === "facture" ? "ti-file-invoice" : "ti-file-description"}`} aria-hidden="true" style={{ fontSize: 16 }} /> {devis.type === "facture" ? "Facture préparée" : "Devis préparé"} par Hector
+                            <i className={`ti ${devis.type === "facture" ? "ti-file-invoice" : "ti-file-description"}`} aria-hidden="true" style={{ fontSize: 16 }} /> {devis.type === "facture" ? "Facture préparée" : "Devis préparé"} par Totor
                           </div>
                           <div style={{ fontSize: 13, color: "#E6EDF5", marginBottom: 4 }}><strong>Client :</strong> {devis.data.client_nom}</div>
                           <div style={{ display: "flex", flexDirection: "column", gap: 2, margin: "8px 0", paddingLeft: 4 }}>
@@ -13215,15 +13215,15 @@ function AppInner() {
                     </div>
                   );
                 })}
-                {aiLoading && <div style={{ ...S.aiMsg, ...S.aiMsgBot, color: "#8BA5C0" }}>H€CTOR réfléchit…</div>}
+                {aiLoading && <div style={{ ...S.aiMsg, ...S.aiMsgBot, color: "#8BA5C0" }}>TOTOR réfléchit…</div>}
               </div>
               <form style={{ display: "flex", gap: 10, borderTop: "1px solid #DDE5EE", paddingTop: 14 }} onSubmit={askAI}>
-                <input style={{ ...S.input, flex: 1 }} placeholder={isListening ? "🎤 Je t'écoute…" : "Pose ta question à H€CTOR…"} value={aiInput} onChange={e => setAiInput(e.target.value)} />
+                <input style={{ ...S.input, flex: 1 }} placeholder={isListening ? "🎤 Je t'écoute…" : "Pose ta question à TOTOR…"} value={aiInput} onChange={e => setAiInput(e.target.value)} />
                 {speechSupported && (
                   <button
                     type="button"
                     onClick={toggleVoiceInput}
-                    title={isListening ? "Arrêter" : "Parler à Hector"}
+                    title={isListening ? "Arrêter" : "Parler à Totor"}
                     style={{
                       ...S.btnPrimarySmall,
                       background: isListening ? "#E0533D" : "#EAF2FB",
@@ -13261,8 +13261,8 @@ function AppInner() {
         const wtStepsIntermittent = [
           {
             img: "/hector-tete.png",
-            timerLabel: "BIENVENUE SUR H€CTOR",
-            title: "Bonjour, moi c'est H€CTOR.",
+            timerLabel: "BIENVENUE SUR TOTOR",
+            title: "Bonjour, moi c'est TOTOR.",
             sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es — sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
             items: [
               { icon: "ti-check", text: "Je ne remplace pas France Travail — je t'aide à y voir clair" },
@@ -13275,7 +13275,7 @@ function AppInner() {
             img: "/hector-1.png",
             timerLabel: "LE COCKPIT — TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
-            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Hector grandit visuellement avec ta progression, du chiot au gardien.",
+            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot au gardien.",
             items: [
               { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
               { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
@@ -13299,7 +13299,7 @@ function AppInner() {
             img: "/hector-3.png",
             timerLabel: "MES ACTIVITÉS",
             title: "Ajoute un contrat en quelques secondes.",
-            sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Hector, pour démarrer ton compteur au bon endroit.",
+            sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Totor, pour démarrer ton compteur au bon endroit.",
             items: [
               { icon: "ti-plus", text: "Saisie rapide : date, employeur, cachets ou heures" },
               { icon: "ti-history", text: "Report de tes heures déjà faites pour bien démarrer" },
@@ -13345,9 +13345,9 @@ function AppInner() {
           },
           {
             img: "/hector-2.png",
-            timerLabel: "PARLE À HECTOR",
+            timerLabel: "PARLE À TOTOR",
             title: "Ton expert du régime, dispo 24h/24.",
-            sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Hector ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
+            sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Totor ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
             items: [
               { icon: "ti-message-2", text: "Un chat expert du régime intermittent" },
               { icon: "ti-phone-call", text: "« On te propose un contrat ? » : je te dis si tu acceptes" },
@@ -13383,8 +13383,8 @@ function AppInner() {
         const wtStepsAuto = [
           {
             img: "/hector-tete.png",
-            timerLabel: "BIENVENUE SUR H€CTOR",
-            title: "Bonjour, moi c'est H€CTOR.",
+            timerLabel: "BIENVENUE SUR TOTOR",
+            title: "Bonjour, moi c'est TOTOR.",
             sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser — sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
             items: [
               { icon: "ti-check", text: "Zéro case à remplir pour commencer" },
@@ -13395,13 +13395,13 @@ function AppInner() {
           },
           {
             img: "/niveau-1.png",
-            timerLabel: "LE COCKPIT + PARLE À HECTOR",
+            timerLabel: "LE COCKPIT + PARLE À TOTOR",
             title: "Fini les mauvaises surprises URSSAF.",
-            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. Et dans « Parle à Hector », je réponds à toutes tes questions — par texte ou dictée vocale.",
+            sub: "Le Cockpit est ton tableau de bord principal. Tu y vois en temps réel ce que tu peux vraiment dépenser après charges. Et dans « Parle à Totor », je réponds à toutes tes questions — par texte ou dictée vocale.",
             items: [
               { icon: "ti-check", text: "« Aujourd'hui, tu peux dépenser X € » — le chiffre qui compte, en premier" },
               { icon: "ti-check", text: "Charges URSSAF + impôts calculées automatiquement" },
-              { icon: "ti-mic", text: "« Parle à Hector » : par texte ou dictée vocale" },
+              { icon: "ti-mic", text: "« Parle à Totor » : par texte ou dictée vocale" },
             ],
             next: "Suivant",
           },
@@ -13421,7 +13421,7 @@ function AppInner() {
             img: "/niveau-3.png",
             timerLabel: "LES OUTILS",
             title: "Simule avant de décider.",
-            sub: "H€CTOR met à ta disposition 4 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
+            sub: "TOTOR met à ta disposition 4 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
             items: [
               { icon: "ti-cash", text: "Mode Salaire — combien puis-je me verser ce mois ?" },
               { icon: "ti-shopping-cart", text: "Mode Achat — puis-je me permettre cette dépense ?" },
@@ -13443,11 +13443,11 @@ function AppInner() {
           },
           {
             img: "/niveau-5.png",
-            timerLabel: "LA SÉRÉNITÉ D'HECTOR",
-            title: "Hector grandit avec toi.",
-            sub: "Chaque jour où ta trésorerie est saine, Hector avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
+            timerLabel: "LA SÉRÉNITÉ DE TOTOR",
+            title: "Totor grandit avec toi.",
+            sub: "Chaque jour où ta trésorerie est saine, Totor avance vers son domaine. De sa première nuit chez toi jusqu'à son château — c'est ton activité qui le fait progresser.",
             items: [
-              { icon: "ti-dog", text: "Hector arrive → Son panier → Sa niche → Son jardin" },
+              { icon: "ti-dog", text: "Totor arrive → Son panier → Sa niche → Son jardin" },
               { icon: "ti-home", text: "Sa maison → Son domaine (6 niveaux à débloquer)" },
               { icon: "ti-check", text: "Plus tu es régulier, plus vite il progresse" },
             ],
@@ -13457,7 +13457,7 @@ function AppInner() {
             img: "/niveau-6.png",
             timerLabel: "TU ES PRÊT(E) !",
             title: "Ta trésorerie ne te réserve plus de mauvaises surprises.",
-            sub: "Commence par ajouter ton premier revenu. En 10 secondes, H€CTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
+            sub: "Commence par ajouter ton premier revenu. En 10 secondes, TOTOR te dit exactement ce que tu peux dépenser aujourd'hui.",
             items: [
               { icon: "ti-receipt-2", text: "Ajouter un revenu ou une dépense" },
               { icon: "ti-file-plus", text: "Créer mon premier devis" },
@@ -13617,7 +13617,7 @@ export default Sentry.withErrorBoundary(AppInner, {
   onError: tenterAutoRecuperation,
   fallback: ({ resetError }) => (
     <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
-      <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>Hector a eu un petit souci 🐾</p>
+      <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>Totor a eu un petit souci 🐾</p>
       <p style={{ fontSize: 14, color: "#8BA5C0", maxWidth: 380 }}>Quelque chose a coincé de mon côté — j'ai prévenu l'équipe automatiquement. Recharge la page, je reviens tout de suite.</p>
       <button onClick={() => { resetError(); window.location.reload(); }} style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
         Recharger la page

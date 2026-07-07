@@ -1,5 +1,5 @@
 // ============================================================================
-//  CARNET DE BORD D'HECTOR — "Ce que j'ai appris"
+//  CARNET DE BORD DE TOTOR — "Ce que j'ai appris"
 //  Écrit À LA MAIN par Camille. Pour éditer : modifie les listes ci-dessous.
 //
 //  Champ "public" sur CHAQUE entrée : "tous" | "intermittent" | "auto".

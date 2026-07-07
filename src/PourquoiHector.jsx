@@ -1,5 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-//  « Pourquoi H€CTOR ? » — la lettre du fondateur. Page hommage cachée,
+//  « Pourquoi TOTOR ? » — la lettre du fondateur. Page hommage cachée,
+//  SEUL endroit où le chien garde son prénom (Hector) : la marque est TOTOR
+//  (son surnom réel), voir la note mémoire hector-marque-inpi.
 //  accessible depuis le profil (AE) et les réglages (intermittent).
 //  Vouvoiement volontaire (Loi IX : zone hors tutoiement, comme le légal).
 //  Aucune fonction, aucun CTA : une photo, une lettre, un merci.
@@ -40,18 +42,18 @@ export function PourquoiHector({ onBack }) {
 
         {/* La lettre — texte exact, vouvoiement volontaire */}
         <div style={{ padding: "26px 24px 0" }}>
-          <p style={pStyle}>Avant d'être une application, H€CTOR était mon chien.</p>
-          <p style={pStyle}>Un Bull Terrier. Têtu, drôle, parfois complètement fou… mais surtout toujours là.</p>
+          <p style={pStyle}>Avant d'être une application, TOTOR était mon chien.</p>
+          <p style={pStyle}>Un Bull Terrier. Sur les papiers, il s'appelait Hector. Mais à la maison, ça a toujours été Totor. Têtu, drôle, parfois complètement fou… mais surtout toujours là.</p>
           <p style={pStyle}>Il ne savait rien des factures, des impôts, des devis ou de la comptabilité. Pourtant, il faisait déjà ce que cette application essaie de faire aujourd'hui : il rendait les journées un peu plus légères.</p>
           <p style={pStyle}>Quand tout allait bien, il faisait la fête avec moi. Quand les journées étaient compliquées, il était simplement présent. Sans jugement. Sans rien demander.</p>
           <p style={pStyle}>En créant cette application, je ne voulais pas construire un logiciel de plus.<br />Je voulais créer un compagnon.</p>
           <p style={pStyle}>Un compagnon qui veille sur votre activité, qui vous prévient avant les mauvaises surprises, qui vous rassure quand tout paraît flou et qui vous aide à y voir plus clair.</p>
-          <p style={pStyle}>C'est pour ça que cette application porte son nom.</p>
+          <p style={pStyle}>C'est pour ça que cette application porte son surnom : celui qu'on lui donnait vraiment, tous les jours.</p>
           <p style={pStyle}>Parce que derrière chaque auto-entrepreneur, chaque intermittent, il y a une personne qui porte énormément de choses seule.</p>
-          <p style={pStyle}>Je souhaite à chacun d'avoir un Hector dans sa vie.</p>
+          <p style={pStyle}>Je souhaite à chacun d'avoir un Totor dans sa vie.</p>
           <p style={pStyle}>Si cette application peut vous enlever un peu de ce poids, alors elle porte parfaitement son nom.</p>
 
-          <p style={{ fontSize: 14, color: "#8BA5C0", fontStyle: "italic", margin: "30px 0 0" }}>— Camille, créateur de H€CTOR</p>
+          <p style={{ fontSize: 14, color: "#8BA5C0", fontStyle: "italic", margin: "30px 0 0" }}>— Camille, créateur de TOTOR</p>
 
           <p style={{ textAlign: "center", fontSize: 15.5, color: "#5DCAA5", fontWeight: 600, margin: "80px 0 0" }}>Merci, mon vieux. 🐾</p>
         </div>

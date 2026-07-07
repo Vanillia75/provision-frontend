@@ -1,12 +1,12 @@
 // ============================================================================
 //  fiscalite.js — Règles fiscales et sociales des micro-entrepreneurs
 // ============================================================================
-//  RÈGLE D'OR : Hector ne doit JAMAIS inventer en fiscalité.
+//  RÈGLE D'OR : Totor ne doit JAMAIS inventer en fiscalité.
 //  Toutes les valeurs ici sont sourcées. Si une situation sort du cadre micro
 //  (dépassement de seuil, ACRE incertaine, activité mixte, CIPAV, régime réel),
 //  le moteur doit afficher "À vérifier selon ton régime exact" plutôt que deviner.
 //
-//  Pour mettre à jour Hector chaque année : modifier UNIQUEMENT ce fichier.
+//  Pour mettre à jour Totor chaque année : modifier UNIQUEMENT ce fichier.
 //  Le moteur de décision (App.jsx) lit ces règles, il ne les code jamais en dur.
 //
 //  ⚠️ JUMEAU BACKEND : les taux ci-dessous sont dupliqués dans tax_engine.py
@@ -91,7 +91,7 @@ export const FISCALITE = {
 
   // ──────────────────────────────────────────────────────────────────────
   //  FORMATION : CFP versée (calculable) + droits ouverts (informatif)
-  //  ⚠️ Hector estime la CFP versée (CA × taux), mais ne peut PAS donner le
+  //  ⚠️ Totor estime la CFP versée (CA × taux), mais ne peut PAS donner le
   //  solde exact des droits CPF/FAF (visible seulement sur les plateformes
   //  officielles). Il informe et oriente, il n'invente jamais un montant.
   // ──────────────────────────────────────────────────────────────────────
