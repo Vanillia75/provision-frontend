@@ -4468,6 +4468,10 @@ function AppInner() {
     const numFantome = { fontFamily: SERIF, fontSize: isMobile ? 58 : 92, fontWeight: 700, lineHeight: 0.9, color: "rgba(130,155,185,0.16)", margin: "0 0 6px" };
     const titreSec = { fontFamily: SERIF, fontSize: isMobile ? 29 : 42, fontWeight: 700, color: "white", lineHeight: 1.1, margin: "0 0 16px" };
     const texteSec = { fontSize: isMobile ? 14.5 : 15, color: "#8BA5C0", lineHeight: 1.6, margin: 0, maxWidth: 340 };
+    // Témoignages de testeurs — À REMPLIR UNIQUEMENT avec de vraies citations
+    // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
+    // Format : { texte: "…", prenom: "…", metier: "…" }
+    const TEMOIGNAGES = [];
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
     const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
@@ -4494,7 +4498,7 @@ function AppInner() {
           </div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Il te manque 63h</div>
-            <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 3 }}>Objectif 507 heures</div>
+            <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 3 }}>Objectif 507 heures <span style={{ color: "#45596F", fontSize: 10.5 }}>· exemple</span></div>
           </div>
         </div>
       );
@@ -4870,7 +4874,7 @@ function AppInner() {
               Pendant que tu fais ton métier,<br />H€CTOR veille sur ton intermittence.
             </p>
             <p style={{ fontSize: isMobile ? 14.5 : 16, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 28px", maxWidth: 440 }}>
-              Il compte automatiquement tes heures, estime ce que tu vas toucher et t'explique chaque chiffre, sources à l'appui.
+              Il compte tes heures à partir de tes attestations, estime ce que tu vas toucher et t'explique chaque chiffre, sources à l'appui.
             </p>
             <button onClick={() => ouvrirAuth("register")} style={{ background: "#5DCAA5", color: "#07192E", border: "none", borderRadius: 12, padding: "16px 30px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 8, minHeight: 54 }}>
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
@@ -4885,7 +4889,7 @@ function AppInner() {
             <div>
               <div style={numFantome}>01</div>
               <h2 style={titreSec}>H€CTOR veille<br />sur tes <span style={{ color: "#5DCAA5" }}>507 heures</span>.</h2>
-              <p style={texteSec}>Il compte automatiquement toutes tes heures et te montre où tu en es.</p>
+              <p style={texteSec}>Il compte tes heures à partir de tes attestations et te montre où tu en es.</p>
               <div style={{ ...lienDiscret, marginTop: 18 }}><i className="ti ti-plus" aria-hidden="true" /> Simulateur de cachets</div>
             </div>
             <div style={demoFondu}>
@@ -4926,7 +4930,7 @@ function AppInner() {
               {/* Allocation journalière */}
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, paddingBottom: 18, borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
                 <div>
-                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton allocation journalière</div>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton allocation journalière <span style={{ color: "#45596F", fontSize: 10 }}>· exemple</span></div>
                   <div style={{ fontSize: isMobile ? 25 : 30, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>Environ 51,18 €<span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}> / jour</span></div>
                 </div>
                 <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
@@ -5059,6 +5063,20 @@ function AppInner() {
             </div>
           </div>
         </section>
+
+        {/* ===== TÉMOIGNAGES (uniquement de vraies citations — section invisible tant que vide) ===== */}
+        {TEMOIGNAGES.length > 0 && (
+          <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
+            <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
+              {TEMOIGNAGES.map((t, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 19 : 24, color: "#EAF2FB", lineHeight: 1.5, fontStyle: "italic", margin: "0 0 12px" }}>« {t.texte} »</p>
+                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>— {t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
+                </div>
+              ))}
+            </div>
+          </section>
+        )}
 
         {/* ===== 07 — Et j'aide aussi ta micro-entreprise ===== */}
         <section style={secShell}>
