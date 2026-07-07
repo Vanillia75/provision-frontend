@@ -4004,6 +4004,15 @@ function AppInner() {
   // --- Mois de survie (si l'activite s'arrete demain) ---
   const moisEcoulesAnnee = new Date().getMonth() + 1;
   const moyenneMensuelleCA = estimateData?.ca_annuel != null ? estimateData.ca_annuel / moisEcoulesAnnee : 0;
+  // Simulateur fiscal SEMÉ du CA réel (une seule fois) : le 4 000 € par défaut déclenchait
+  // une alerte TVA hors-sujet pour un petit CA — on part de SA réalité, il ajuste ensuite.
+  const simFiscalSeeded = useRef(false);
+  useEffect(() => {
+    if (!simFiscalSeeded.current && moyenneMensuelleCA > 0) {
+      setSimFiscalCa(String(Math.max(1, Math.round(moyenneMensuelleCA))));
+      simFiscalSeeded.current = true;
+    }
+  }, [moyenneMensuelleCA]);
   const moyenneMensuelleFrais = expensesSummary?.frais_annee ? expensesSummary.frais_annee / moisEcoulesAnnee : 0;
   const baseMensuelleSecurite = moyenneMensuelleFrais > 0 ? moyenneMensuelleFrais : moyenneMensuelleCA;
 
@@ -4054,15 +4063,15 @@ function AppInner() {
   // Les 4 états émotionnels d'Hector selon les jours ACTUELS (pas le record).
   function etatHector(j) {
     if (j === null) return { id: "accueil", label: "🐾 Pour aller encore plus loin", couleur: "#378ADD", pastille: "#378ADD",
-      titre: "Réveille Hector 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/hector-attentif.png", accueil: true };
+      titre: "Réveille Hector 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/hector-attentif-fondu.webp", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
-      mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein.png" };
+      mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein-fondu.webp" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
-      mot: "Tout va bien, restons attentifs. Gardons un œil ensemble.", img: "/hector-attentif.png" };
+      mot: "Tout va bien, restons attentifs. Gardons un œil ensemble.", img: "/hector-attentif-fondu.webp" };
     if (j >= 7) return { id: "vigilant", label: "Vigilant", couleur: "#EF9F27", pastille: "#EF9F27",
-      mot: "On devrait renforcer un peu ta réserve. Je suis là.", img: "/hector-vigilant.png" };
+      mot: "On devrait renforcer un peu ta réserve. Je suis là.", img: "/hector-vigilant-fondu.webp" };
     return { id: "alerte", label: "Alerte", couleur: "#E24B4A", pastille: "#E24B4A",
-      mot: "Viens, on regarde ça ensemble. On va s'en sortir !", img: "/hector-alerte.png" };
+      mot: "Viens, on regarde ça ensemble. On va s'en sortir !", img: "/hector-alerte-fondu.webp" };
   }
   const hectorEtat = etatHector(joursTranquillite);
 
@@ -4613,7 +4622,7 @@ function AppInner() {
                 style={{ width: "100%", maxWidth: isMobile ? 290 : 420, display: "block", margin: isMobile ? "0 auto" : 0 }} />
               <div style={{ marginTop: isMobile ? 2 : -18, maxWidth: isMobile ? 340 : 420, marginLeft: isMobile ? "auto" : 0, marginRight: isMobile ? "auto" : 0 }}>
                 <div style={{ ...demoFondu, padding: isMobile ? "16px 18px" : "18px 22px" }}>
-                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#6B8299", textTransform: "uppercase", marginBottom: 12 }}>Ton disponible réel · ce mois-ci</div>
+                  <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 1.2, color: "#6B8299", textTransform: "uppercase", marginBottom: 12 }}>Ton disponible réel · ce mois-ci <span style={{ textTransform: "none", color: "#45596F" }}>· exemple</span></div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 13.5, color: "#B5D4F4", padding: "4px 0" }}>
                     <span>Encaissé</span><span style={{ fontWeight: 700, color: "white" }}>3 200 €</span>
                   </div>
@@ -5390,7 +5399,7 @@ function AppInner() {
         <style>{CSS}</style>
         <div style={S.authLeft}>
           <Logo size={110} dark />
-          <h1 style={S.authHero}>3 questions,<br />et tu sais tout.</h1>
+          <h1 style={S.authHero}>5 petites questions,<br />et tu sais tout.</h1>
           <p style={S.authSub}>En moins d'une minute, H€CTOR te dira exactement combien tu peux dépenser sans te mettre en danger avec l'URSSAF, les impôts et la TVA.</p>
         </div>
         <div style={S.authRight}>
@@ -9894,7 +9903,7 @@ function AppInner() {
                     const heroAffiche = deficitReel ? disponibleAujourdhui : Math.max(0, disponibleAujourdhui);
                     return (
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>Aujourd'hui, tu peux dépenser</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>{reserveEntamee ? "Ta réserve d'abord, ton salaire ensuite — dispo aujourd'hui" : "Aujourd'hui, tu peux dépenser"}</div>
                         <div style={{ fontSize: 38, fontWeight: 800, color: deficitReel ? "#F09595" : "#5DCAA5", lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums" }}>
                           {heroAffiche < 0 ? "−" : ""}{formatEUR(Math.abs(heroAffiche))}
                         </div>
@@ -9986,7 +9995,7 @@ function AppInner() {
                     const heroAffiche = deficitReel ? disponibleAujourdhui : Math.max(0, disponibleAujourdhui);
                     return (
                       <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>Aujourd'hui, tu peux dépenser</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 4 }}>{reserveEntamee ? "Ta réserve d'abord, ton salaire ensuite — dispo aujourd'hui" : "Aujourd'hui, tu peux dépenser"}</div>
                         <div style={{ fontSize: 38, fontWeight: 800, color: deficitReel ? "#F09595" : "#5DCAA5", lineHeight: 1, letterSpacing: -1, fontVariantNumeric: "tabular-nums" }}>
                           {heroAffiche < 0 ? "−" : ""}{formatEUR(Math.abs(heroAffiche))}
                         </div>
@@ -10242,7 +10251,7 @@ function AppInner() {
           { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
           { id: "assistant", icon: "ti-message-2", label: "Parle à Hector" },
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
-          { id: "revenus", icon: "ti-chart-bar", label: "Mes revenus" },
+          { id: "revenus", icon: "ti-chart-bar", label: "Mes encaissements" },
           { id: "frais", icon: "ti-receipt-2", label: "Mes dépenses" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
@@ -10306,7 +10315,7 @@ function AppInner() {
           { id: "conseils", icon: "ti-star", label: "Conseils" },
           { id: "modeles", icon: "ti-template", label: "Modèles" },
           { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
-          { id: "profil", icon: "ti-user", label: "Profil" },
+          { id: "profil", icon: "ti-settings", label: "Réglages" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 15, flexShrink: 0 }} />
@@ -10366,7 +10375,7 @@ function AppInner() {
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
             <span style={{ fontSize: 13, color: "#0C447C", display: "flex", alignItems: "center", gap: 8 }}>
               <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16 }} />
-              Pensez à vérifier votre adresse email.
+              Pense à vérifier ton adresse email.
             </span>
             {resendVerifStatus === "sent" ? (
               <span style={{ fontSize: 12, color: "#0F6E56", fontWeight: 600 }}>✓ Email envoyé</span>
@@ -11170,7 +11179,7 @@ function AppInner() {
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
                 <div><h1 style={S.pageTitle}>📋 Préparer ma déclaration</h1><p style={S.pageSub}>Tout est pré-rempli, modifie si besoin</p></div>
-                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>Voir mes revenus</button>
+                <button style={S.btnSecondary} onClick={() => setNav("revenus")}>Voir mes encaissements</button>
               </div>
 
               <div style={{ ...S.card, textAlign: "center", padding: "20px 24px" }}>
@@ -11416,7 +11425,15 @@ function AppInner() {
               <div style={S.card}><p style={S.empty}>Renseigne d'abord ton solde dans <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour voir ce calcul.</p></div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                {[
+                {(salairePrudent === 0 && salaireRecommande === 0 && salaireMaximum === 0) ? (
+                  /* Rien de versable : UNE carte honnête plutôt que trois zéros mis en scène. */
+                  <div style={S.card}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>🐾 Pour l'instant : 0 €</div>
+                    <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.55 }}>
+                      Ta réserve de sécurité n'est pas encore complète — c'est elle qui protège ton futur salaire des coups durs. Dès qu'elle y est, je te proposerai trois niveaux de versement (prudent, recommandé, maximum).
+                    </div>
+                  </div>
+                ) : [
                   { emoji: "🟢", label: "Prudent", desc: "Marge confortable, idéal en période incertaine", montant: salairePrudent, color: "#1D9E75", border: "1px solid #EEF2F7" },
                   { emoji: "🔵", label: "Recommandé", desc: "Bon équilibre entre revenu et sécurité", montant: salaireRecommande, color: ACCENT, border: `2px solid ${ACCENT}` },
                   { emoji: "🔴", label: "Maximum", desc: "Tout le disponible — zéro marge supplémentaire après", montant: salaireMaximum, color: "#A32D2D", border: "1px solid #EEF2F7" },
@@ -11698,7 +11715,7 @@ function AppInner() {
             return (
               <div>
                 <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                  <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que tu émets à tes clients — pas tes dépenses</p></div>
+                  <div><h1 style={S.pageTitle}>Mes encaissements</h1><p style={S.pageSub}>Ce que tes clients t'ont payé — pas tes dépenses</p></div>
                 </div>
                 <div style={{ ...S.card, textAlign: "center", padding: "40px 20px", color: "#8BA5C0" }}>Chargement de tes revenus…</div>
               </div>
@@ -11734,7 +11751,7 @@ function AppInner() {
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-                <div><h1 style={S.pageTitle}>Mes revenus</h1><p style={S.pageSub}>Les factures que tu émets à tes clients — pas tes dépenses</p></div>
+                <div><h1 style={S.pageTitle}>Mes encaissements</h1><p style={S.pageSub}>Ce que tes clients t'ont payé — pas tes dépenses</p></div>
                 <button style={S.btnPrimarySmall} onClick={() => setShowAddIncome(!showAddIncome)}>+ Ajouter</button>
               </div>
 
@@ -11745,7 +11762,7 @@ function AppInner() {
                 <>
                   <div style={isMobile ? { ...S.kpiGrid, gridTemplateColumns: "1fr 1fr" } : S.kpiGrid}>
                     <div style={S.kpiCard}><span style={S.kpiLabel}>CA ce mois</span><span style={S.kpiValue}>{formatEUR(caMoisCi)}</span></div>
-                    <div style={S.kpiCard}><span style={S.kpiLabel}>Factures / revenus</span><span style={S.kpiValue}>{nbFactures}</span></div>
+                    <div style={S.kpiCard}><span style={S.kpiLabel}>Encaissements</span><span style={S.kpiValue}>{nbFactures}</span></div>
                     <div style={S.kpiCard}><span style={S.kpiLabel}>Facture moyenne</span><span style={S.kpiValue}>{formatEUR(factureMoyenne)}</span></div>
                     <div style={S.kpiCard}><span style={S.kpiLabel}>Meilleur client</span><span style={{ ...S.kpiValue, fontSize: 16 }}>{meilleurClientRevenus?.[0] || "—"}</span></div>
                   </div>
@@ -12678,7 +12695,7 @@ function AppInner() {
         {nav === "profil" && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
-              <div><h1 style={S.pageTitle}>👤 Profil</h1><p style={S.pageSub}>Personnalisez H€CTOR</p></div>
+              <div><h1 style={S.pageTitle}>⚙️ Réglages</h1><p style={S.pageSub}>Personnalise H€CTOR</p></div>
             </div>
 
             <div style={S.card}>
