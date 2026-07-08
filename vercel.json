@@ -3,6 +3,8 @@
     { "source": "/ae", "destination": "/auto-entrepreneur", "statusCode": 301 }
   ],
   "rewrites": [
+    { "source": "/guides", "destination": "/guides/index.html" },
+    { "source": "/guides/", "destination": "/guides/index.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
