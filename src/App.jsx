@@ -565,6 +565,7 @@ function AppInner() {
   const [bankCardOpen, setBankCardOpen] = useState(false); // carte connexion bancaire repliée par défaut (accordéon)
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
+  const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
@@ -1295,6 +1296,20 @@ function AppInner() {
         setBankSyncing(false);
       });
   }, [bankCallbackConnId, token]);
+
+  // Active/désactive le rappel mensuel d'actualisation (email du 28). Opt-out simple, jamais premium.
+  async function saveRappelActu(active) {
+    setRappelActuSaving(true);
+    try {
+      await apiFetch("/profile/rappel-actu", { method: "POST", body: JSON.stringify({ active }) });
+      setProfile(prev => (prev ? { ...prev, rappel_actu_active: active } : prev));
+      showToast(active ? "Rappel d'actualisation activé 🐾" : "Rappel désactivé — je ne t'écrirai plus le 28.", "ti-bell");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRappelActuSaving(false);
+    }
+  }
 
   async function handleResendVerification() {
     setResendVerifStatus("sending");
@@ -6550,6 +6565,24 @@ function AppInner() {
             <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
           )}
 
+          {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ─── */}
+          {!emailVerified && (
+            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 12, padding: "11px 16px", marginBottom: 16 }}>
+              <span style={{ fontSize: 13, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 8, lineHeight: 1.4 }}>
+                <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
+                Vérifie ton adresse email : c'est là que je t'enverrai tes rappels d'actualisation.
+              </span>
+              {resendVerifStatus === "sent" ? (
+                <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>✓ Email envoyé, clique le lien dedans</span>
+              ) : (
+                <button onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}
+                  style={{ background: "transparent", border: "1px solid rgba(159,203,245,0.35)", color: "#9FCBF5", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  {resendVerifStatus === "sending" ? "Envoi…" : "M'envoyer le lien"}
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Chargement */}
           {interCockpitLoading && !c && (
             <div style={{ textAlign: "center", padding: "80px 0", color: "#6B8299" }}>
@@ -9610,6 +9643,30 @@ function AppInner() {
               </div>
 
               {renderChangePassword()}
+
+              {/* Rappel d'actualisation (email du 28) — opt-out simple */}
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🐾 Rappel d'actualisation</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+                  Le 28 de chaque mois, quand la fenêtre France Travail ouvre, je t'envoie un email avec ton mois déjà préparé. Un seul par mois, jamais plus.
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {[{ v: true, l: "Activé" }, { v: false, l: "Désactivé" }].map(o => {
+                    const actif = (profile?.rappel_actu_active !== false) === o.v;
+                    return (
+                      <button key={String(o.v)} type="button" disabled={rappelActuSaving} onClick={() => saveRappelActu(o.v)}
+                        style={{ flex: "0 1 auto", background: actif ? "#5DCAA5" : "transparent", color: actif ? "#04342C" : "#B5D4F4", border: `1.5px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.2)"}`, borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: rappelActuSaving ? "default" : "pointer", fontFamily: "inherit", opacity: rappelActuSaving ? 0.6 : 1 }}>
+                        {actif ? "✓ " : ""}{o.l}
+                      </button>
+                    );
+                  })}
+                </div>
+                {!emailVerified && (
+                  <div style={{ fontSize: 11.5, color: "#FAC775", marginTop: 12, lineHeight: 1.5 }}>
+                    ⚠️ Pense à vérifier ton adresse email (bandeau en haut de l'app) pour être sûr·e de bien le recevoir.
+                  </div>
+                )}
+              </div>
 
               {/* Mon statut */}
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
