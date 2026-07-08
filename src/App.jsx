@@ -4942,6 +4942,7 @@ function AppInner() {
               ].map(l => (
                 <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
               ))}
+              <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}>Une question ? bonjour@montotor.fr</a>
             </div>
             <div style={{ fontSize: 11, color: "#4A6280" }}>Fait pour les auto-entrepreneurs.</div>
           </footer>
@@ -5247,6 +5248,7 @@ function AppInner() {
             ].map(l => (
               <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
             ))}
+            <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}>Une question ? bonjour@montotor.fr</a>
           </div>
           <div style={{ fontSize: 11, color: "#4A6280" }}>Fait pour les intermittents du spectacle.</div>
         </footer>
@@ -9644,6 +9646,15 @@ function AppInner() {
 
               {renderChangePassword()}
 
+              {/* Une question ? — le contact humain, bien visible */}
+              <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>💬 Une question ?</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Un doute, un bug, une idée ? Écris-moi, c'est Camille (le créateur de TOTOR) qui te répond en personne.</div>
+                <a href="mailto:bonjour@montotor.fr" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "1px solid rgba(93,202,165,0.4)", color: "#5DCAA5", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, textDecoration: "none", fontFamily: "inherit" }}>
+                  <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 15 }} /> bonjour@montotor.fr
+                </a>
+              </div>
+
               {/* Rappel d'actualisation (email du 28) — opt-out simple */}
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🐾 Rappel d'actualisation</div>
@@ -9733,6 +9744,8 @@ function AppInner() {
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("cgu")}>CGU</button>
                 <span>·</span>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+                <span>·</span>
+                <a href="mailto:bonjour@montotor.fr" style={{ color: "#5A7088", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
               </p>
               </>)}
             </>
@@ -13126,6 +13139,14 @@ function AppInner() {
             {renderChangePassword(false)}
 
             <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>💬 Une question ?</div>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 12px", lineHeight: 1.5 }}>Un doute, un bug, une idée ? Écris-moi, c'est Camille (le créateur de TOTOR) qui te répond en personne.</p>
+              <a href="mailto:bonjour@montotor.fr" style={{ ...S.btnSecondary, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 7 }}>
+                <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 14 }} /> bonjour@montotor.fr
+              </a>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Mes données</div>
               <p style={{ fontSize: 12, color: "#8BA5C0", margin: "0 0 14px", lineHeight: 1.5 }}>
                 Conformément au RGPD, vous pouvez exporter l'ensemble de vos données ou supprimer définitivement votre compte TOTOR.
@@ -13182,6 +13203,8 @@ function AppInner() {
               <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("cgu")}>CGU</button>
               <span>·</span>
               <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+              <span>·</span>
+              <a href="mailto:bonjour@montotor.fr" style={{ color: "#B0B6C0", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
             </p>
           </div>
         )}
