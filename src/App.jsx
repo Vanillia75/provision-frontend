@@ -1872,10 +1872,19 @@ function AppInner() {
     const carte = dark
       ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
       : { ...S.card, marginBottom: 16 };
+    // Compte Google (pas de mot de passe local) : une info claire plutôt qu'un formulaire qui échouerait.
+    if (profile?.has_password === false) {
+      return (
+        <div style={carte}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mon mot de passe</div>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>Ton compte utilise la connexion Google : il n'y a pas de mot de passe TOTOR à gérer. C'est Google qui protège ton accès.</div>
+        </div>
+      );
+    }
     return (
       <div style={carte}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mon mot de passe</div>
-        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Change ton mot de passe quand tu veux — il te faut ton mot de passe actuel. <span style={{ color: "#5A7088" }}>(Si tu te connectes avec Google, tu n'as pas de mot de passe à changer.)</span></div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Change ton mot de passe quand tu veux. Il te faut ton mot de passe actuel.</div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 380 }}>
           <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600 }}>Mot de passe actuel
             <input type="password" autoComplete="current-password" value={pwdCurrent} onChange={e => setPwdCurrent(e.target.value)} style={champ} />
