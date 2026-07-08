@@ -4692,12 +4692,19 @@ function AppInner() {
           <div style={{ position: "absolute", top: isMobile ? 16 : 22, left: isMobile ? 18 : 26 }}>
             <Logo size={isMobile ? 24 : 28} dark />
           </div>
+          {/* Connexion pour les utilisateurs existants : sobre, sans troisième carte
+              (le choix binaire reste pur). L'auth garde sa logique intacte. */}
+          <button type="button" className="hx-login" onClick={() => ouvrirAuth("login")}
+            style={{ position: "absolute", top: isMobile ? 18 : 26, right: isMobile ? 18 : 28, background: "none", border: "none", color: "#B5D4F4", fontSize: isMobile ? 13 : 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 2px" }}>
+            Se connecter
+          </button>
           <style>{`
             .hx-card{position:relative;transition:transform .2s cubic-bezier(.2,.7,.3,1);will-change:transform;transform:translateZ(0);cursor:pointer;}
             .hx-card::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:0 20px 55px rgba(0,0,0,.5);opacity:0;transition:opacity .2s ease;pointer-events:none;}
             .hx-card:hover{transform:translateY(-6px) scale(1.012);}
             .hx-card:hover::after{opacity:1;}
             .hx-arrow{opacity:.5;transform:translateX(-5px);transition:transform .2s ease,opacity .2s ease;will-change:transform;}
+            .hx-login:hover{color:#5DCAA5;text-decoration:underline;text-underline-offset:4px;}
             .hx-card:hover .hx-arrow{opacity:1;transform:translateX(0);}
             @media (hover:none){.hx-card:hover{transform:none}.hx-card:active{transform:scale(.99)}.hx-card .hx-arrow{opacity:.7;transform:none}}
           `}</style>
