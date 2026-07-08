@@ -25,9 +25,11 @@ export const CARNET = {
       ],
     },
     {
-      titre: "Me connecter à ta banque — si tu le veux, un jour",
+      // Connexion bancaire : ne parle qu'aux auto-entrepreneurs (suivi de trésorerie).
+      // Côté intermittent, ça n'a aucun sens (leur sujet = heures et droits, pas le solde).
+      titre: "Me connecter à ta banque, si un jour tu le souhaites",
       entrees: [
-        { date: "2026-06-28", public: "tous", texte: "J'apprends à récupérer tes opérations bancaires pour t'éviter de la saisie — uniquement si tu me le demandes, jamais sans toi. Encore un peu de patience." },
+        { date: "2026-06-28", public: "auto", texte: "J'apprends à lire ton solde et tes encaissements tout seul, en lecture seule, pour t'éviter la saisie à la main. Ce sera toujours ton choix : tu actives si tu veux, tu débranches quand tu veux. Encore un peu de patience." },
       ],
     },
   ],
