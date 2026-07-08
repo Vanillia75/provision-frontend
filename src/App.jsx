@@ -566,6 +566,7 @@ function AppInner() {
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
+  const [rappelUrssafSaving, setRappelUrssafSaving] = useState(false); // toggle du rappel URSSAF (Réglages auto-entrepreneur)
   const [avisTexte, setAvisTexte] = useState("");        // « Ton avis compte » (Réglages)
   const [avisConsent, setAvisConsent] = useState(false); // consentement de publication (prénom + métier)
   const [avisSaving, setAvisSaving] = useState(false);
@@ -1313,6 +1314,21 @@ function AppInner() {
       setError(err.message);
     } finally {
       setRappelActuSaving(false);
+    }
+  }
+
+  // Active/désactive le rappel d'échéance URSSAF (auto-entrepreneurs). Même philosophie :
+  // opt-out simple, jamais premium.
+  async function saveRappelUrssaf(active) {
+    setRappelUrssafSaving(true);
+    try {
+      await apiFetch("/profile/rappel-urssaf", { method: "POST", body: JSON.stringify({ active }) });
+      setProfile(prev => (prev ? { ...prev, rappel_urssaf_active: active } : prev));
+      showToast(active ? "Rappel URSSAF activé 🐾" : "Rappel désactivé — je ne t'écrirai plus avant tes échéances.", "ti-bell");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRappelUrssafSaving(false);
     }
   }
 
@@ -4099,6 +4115,21 @@ function AppInner() {
   // Régularisations de périodes passées (déjà incluses dans urssafProvision). Déclarées ICI,
   // avant tout usage dans le render (anti-TDZ).
   const regularisationsList = estimateData?.regularisations_periodes_passees || [];
+  // ── Déclaration URSSAF actionnable : la PÉRIODE ÉCOULÉE (le CA de juin se déclare en
+  // juillet, jusqu'au dernier jour du mois). periode_courante n'est déclarable que le mois
+  // suivant. « Faite » = cru sur parole (Loi VIII), persisté via historiqueDeclarations.
+  const periodeUrssafADeclarer = estimateData?.disponible !== false ? (estimateData?.periode_precedente || null) : null;
+  const caUrssafADeclarer = estimateData?.ca_periode_precedente || 0;
+  const cotisationsUrssafADeclarer = Math.round(caUrssafADeclarer * ((estimateData?.taux_global_pct || 0) / 100) * 100) / 100;
+  const urssafDeclarationFaite = !!periodeUrssafADeclarer && historiqueDeclarations.some(h => h.periode === periodeUrssafADeclarer.label);
+  const marquerDeclarationUrssafFaite = () => {
+    if (!periodeUrssafADeclarer) return;
+    const entry = { periode: periodeUrssafADeclarer.label, ca: caUrssafADeclarer, cotisations: cotisationsUrssafADeclarer, date: new Date().toISOString() };
+    const next = [entry, ...historiqueDeclarations].slice(0, 12);
+    setHistoriqueDeclarations(next);
+    safeStorage.setItem("historiqueDeclarations", JSON.stringify(next));
+    showToast(`Bien noté — déclaration de ${periodeUrssafADeclarer.label} faite ✓`, "ti-check");
+  };
   const totalRegularisations = Math.round(regularisationsList.reduce((s, r) => s + (r.cotisations || 0), 0) * 100) / 100;
   const activiteInfo = ACTIVITES.find(a => a.id === profile?.activite);
   const revenuImposableAnnuel = activiteInfo ? (estimateData?.ca_annuel || 0) * (1 - activiteInfo.abattement) : 0;
@@ -10349,9 +10380,10 @@ function AppInner() {
                           <span style={{ color: hectorEtat?.couleur || "#5DCAA5", fontWeight: 700 }}>{joursTranquillite}j</span> de tranquillité · jusqu'au {dateTranquillite}
                         </div>
                       )}
-                      {estimateData?.periode_courante?.jours_restants <= 30 && (
+                      {/* La déclaration urgente = celle de la période écoulée (pas la période en cours). */}
+                      {periodeUrssafADeclarer && !urssafDeclarationFaite && periodeUrssafADeclarer.jours_restants <= 30 && (
                         <div style={{ background: "rgba(239,159,39,0.15)", border: "1px solid rgba(239,159,39,0.3)", borderRadius: 6, padding: "4px 10px", fontSize: 10, color: "#FAC775", fontWeight: 600 }}>
-                          ⏱ Déclaration dans {estimateData?.periode_courante?.jours_restants}j
+                          ⏱ Déclaration de {periodeUrssafADeclarer.label} dans {periodeUrssafADeclarer.jours_restants}j
                         </div>
                       )}
                     </div>
@@ -10726,6 +10758,28 @@ function AppInner() {
             )}
 
             {renderHeroHector()}
+
+            {/* ═══ RAPPEL DE DÉCLARATION URSSAF — présence au bon moment (miroir de la
+                bannière d'actualisation intermittent). Repliée dès que l'utilisateur dit
+                « faite » (Loi VIII : on le croit sur parole, on n'affirme rien à sa place). */}
+            {periodeUrssafADeclarer && !urssafDeclarationFaite && periodeUrssafADeclarer.jours_restants >= 0 && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
+                <HectorTete size={30} />
+                <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                  🐾 Ta déclaration URSSAF de <strong>{periodeUrssafADeclarer.label}</strong> est à faire avant le <strong>{formatDate(periodeUrssafADeclarer.date_limite_declaration)}</strong> — je te l'ai préparée.
+                </span>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <button type="button" onClick={() => setNav("declaration")}
+                    style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>
+                    Préparer →
+                  </button>
+                  <button type="button" onClick={marquerDeclarationUrssafFaite}
+                    style={{ background: "transparent", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 8, padding: "9px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>
+                    ✓ je l'ai déjà faite
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* ── MINI-STATS 2 COLONNES (téléphone) ── */}
             {isMobile && (
@@ -11348,16 +11402,16 @@ function AppInner() {
 
           const echeances = [];
 
-          // URSSAF — dynamique, basé sur estimateData
-          if (estimateData && estimateData.disponible !== false && estimateData.periode_courante) {
-            const jUrssaf = estimateData.periode_courante.jours_restants;
+          // URSSAF — la déclaration ACTIONNABLE : celle de la période écoulée
+          // (le CA de juin se déclare en juillet ; la période en cours attendra le mois prochain).
+          if (periodeUrssafADeclarer) {
             echeances.push({
               id: "urssaf",
-              label: "Prochaine déclaration URSSAF",
-              montant: estimateData.montant_a_provisionner || 0,
-              estime: false,
-              dateLabel: formatDate(estimateData.periode_courante.date_limite_declaration),
-              jours: jUrssaf,
+              label: `Déclaration URSSAF (${periodeUrssafADeclarer.label})`,
+              montant: cotisationsUrssafADeclarer,
+              estime: true,
+              dateLabel: formatDate(periodeUrssafADeclarer.date_limite_declaration),
+              jours: periodeUrssafADeclarer.jours_restants,
             });
           }
 
@@ -11475,13 +11529,25 @@ function AppInner() {
         })()}
 
         {nav === "declaration" && estimateData && estimateData.disponible !== false && incomeList && incomeList.length > 0 && (() => {
-          const periodeAffichee = declarationPeriode || estimateData.periode_courante?.label || "";
-          const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : estimateData.ca_periode_courante;
+          // La déclaration ACTIONNABLE est celle de la période écoulée (le CA de juin se
+          // déclare en juillet, jusqu'au dernier jour du mois). Repli défensif sur la
+          // période courante si l'API ne renvoyait pas la précédente.
+          const pDecl = periodeUrssafADeclarer || estimateData.periode_courante;
+          const caDeclDefaut = periodeUrssafADeclarer ? caUrssafADeclarer : estimateData.ca_periode_courante;
+          const cotisDeclDefaut = periodeUrssafADeclarer ? cotisationsUrssafADeclarer : estimateData.montant_a_provisionner;
+          const periodeAffichee = declarationPeriode || pDecl?.label || "";
+          const caAffiche = declarationCa !== "" ? parseFloat(declarationCa) || 0 : caDeclDefaut;
           const cotisationsAffichees = declarationCotisations !== ""
             ? parseFloat(declarationCotisations) || 0
             : declarationCa !== ""
               ? Math.round((parseFloat(declarationCa) || 0) * ((estimateData.taux_global_pct || 0) / 100) * 100) / 100
-              : estimateData.montant_a_provisionner;
+              : cotisDeclDefaut;
+          // Garde-fou Loi X : le chiffre repose sur ce que l'utilisateur a confié à TOTOR.
+          // On rend la base VISIBLE (nb d'encaissements de la période) et on invite à vérifier.
+          const dansPeriode = (d) => pDecl && d && String(d).slice(0, 10) >= pDecl.start && String(d).slice(0, 10) <= pDecl.end;
+          const nbEncaissementsPeriode = (incomeList || []).filter(e => dansPeriode(e.date)).length
+            + (invoicesList || []).filter(f => f.statut === "payee" && dansPeriode(f.date_paiement || f.date_emission)).length;
+          const declFaite = historiqueDeclarations.some(h => h.periode === pDecl?.label);
           return (
             <div>
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
@@ -11491,8 +11557,20 @@ function AppInner() {
 
               <div style={{ ...S.card, textAlign: "center", padding: "20px 24px" }}>
                 <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 6 }}>Période de déclaration</div>
-                <input style={{ ...S.input, textAlign: "center", fontWeight: 600 }} type="text" placeholder={estimateData.periode_courante?.label} value={declarationPeriode} onChange={e => setDeclarationPeriode(e.target.value)} />
-                <div style={{ fontSize: 13, color: "#854F0B", marginTop: 8 }}>à déclarer avant le {formatDate(estimateData.periode_courante?.date_limite_declaration)} ({estimateData.periode_courante?.jours_restants}j restants)</div>
+                <input style={{ ...S.input, textAlign: "center", fontWeight: 600 }} type="text" placeholder={pDecl?.label} value={declarationPeriode} onChange={e => setDeclarationPeriode(e.target.value)} />
+                <div style={{ fontSize: 13, color: "#854F0B", marginTop: 8 }}>à déclarer avant le {formatDate(pDecl?.date_limite_declaration)} ({pDecl?.jours_restants}j restants)</div>
+                {declFaite && (
+                  <div style={{ fontSize: 12.5, color: "#1D9E75", marginTop: 8, fontWeight: 600 }}>✓ Tu m'as dit l'avoir déjà faite — tout est là si tu veux revérifier.</div>
+                )}
+              </div>
+
+              {/* Garde-fou : la base du chiffre, toujours visible. TOTOR prépare, l'utilisateur déclare. */}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 10, padding: "10px 14px", marginTop: 14 }}>
+                <span style={{ fontSize: 16 }}>🐾</span>
+                <span style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.55 }}>
+                  Ce chiffre repose sur <strong style={{ color: "#B5D4F4" }}>{nbEncaissementsPeriode} encaissement{nbEncaissementsPeriode > 1 ? "s" : ""}</strong> que tu m'as confié{nbEncaissementsPeriode > 1 ? "s" : ""} pour {pDecl?.label}.
+                  S'il te manque un règlement, <button style={{ ...S.linkBtn, padding: 0, fontSize: 12.5 }} onClick={() => setNav("revenus")}>ajoute-le d'abord</button> — sinon tu déclarerais un montant incomplet.
+                </span>
               </div>
 
               <div style={{ ...S.card, marginTop: 14 }}>
@@ -11506,7 +11584,7 @@ function AppInner() {
                     <MontantInput
                       style={{ ...S.input, fontSize: 28, fontWeight: 800, textAlign: "center" }}
                       decimales autoFocus
-                      value={declarationCa !== "" ? declarationCa : String(estimateData.ca_periode_courante)}
+                      value={declarationCa !== "" ? declarationCa : String(caDeclDefaut)}
                       onChange={e => setDeclarationCa(e)}
                       onBlur={() => setEditingDeclarationCa(false)}
                     />
@@ -12856,7 +12934,7 @@ function AppInner() {
                 <div style={{ display: "flex", gap: 8 }}>
                   <label style={{ ...S.btnSecondary, cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
                     <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadExpenseInvoice(e.target.files[0])} style={{ display: "none" }} />
-                    {uploadingExpenseFile ? "Lecture…" : "📄 Importer une facture"}
+                    {uploadingExpenseFile ? "Je lis ta facture…" : "📸 Scanner une facture — je remplis tout"}
                   </label>
                   <button style={S.btnPrimarySmall} onClick={() => setShowAddExpense(!showAddExpense)}>+ Ajouter un frais</button>
                 </div>
@@ -13242,6 +13320,21 @@ function AppInner() {
                   <button key={String(o.v)} type="button" onClick={() => saveRelanceAuto(o.v)}
                     style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "8px 14px", ...((profile?.relance_auto_jours ?? null) === o.v ? S.toggleBtnActive : {}) }}>
                     {o.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>🐾 Rappel URSSAF</div>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "-8px 0 12px", lineHeight: 1.55 }}>
+                Avant chaque échéance de déclaration, je t'envoie un email de rappel — ton chiffre exact t'attend dans TOTOR. Un seul par échéance, jamais plus.
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {[{ v: true, l: "Activé" }, { v: false, l: "Désactivé" }].map(o => (
+                  <button key={String(o.v)} type="button" disabled={rappelUrssafSaving} onClick={() => saveRappelUrssaf(o.v)}
+                    style={{ ...S.toggleBtn, flex: "0 1 auto", padding: "8px 14px", opacity: rappelUrssafSaving ? 0.6 : 1, ...((profile?.rappel_urssaf_active !== false) === o.v ? S.toggleBtnActive : {}) }}>
+                    {(profile?.rappel_urssaf_active !== false) === o.v ? "✓ " : ""}{o.l}
                   </button>
                 ))}
               </div>
