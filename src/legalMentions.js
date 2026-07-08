@@ -35,9 +35,18 @@ export function formatVatRate(rate) {
   return s.replace(".", ",");
 }
 
+// Client professionnel à l'étranger (émetteur assujetti uniquement) : TVA 0 %
+// avec mention adaptée. Sources vérifiées 08/07/2026 (impots.gouv.fr, F37527,
+// BOFiP) : prestations B2B → lieu = pays du preneur (art. 259-1 du CGI).
+// UE : mention « Autoliquidation » obligatoire + n° TVA des deux parties + DES.
+// Miroir EXACT des constantes de legal_mentions.py.
+export const MENTION_HORS_FRANCE = "TVA non applicable, art. 259-1 du CGI";
+export const MENTION_AUTOLIQUIDATION = "Autoliquidation";
+
 // Totaux d'AFFICHAGE d'une facture/devis à partir du montant HT (= Σ quantité ×
 // prix_unitaire). Miroir EXACT de legal_mentions.compute_invoice_totals (back).
-// Une seule logique : franchise = taux 0 (HT = TTC) ; assujetti applique vat_rate.
+// Une seule logique : franchise = taux 0 (HT = TTC) ; assujetti applique vat_rate ;
+// assujetti_ue / assujetti_export = taux 0 avec mention art. 259-1 (± Autoliquidation).
 // Purement affichage — ne touche jamais le montant HT (qui seul alimente le CA URSSAF).
 export function computeInvoiceTotals(montantHt, fiscal, invoiceDate = null) {
   const ht = Math.round((Number(montantHt) || 0) * 100) / 100;
@@ -49,6 +58,15 @@ export function computeInvoiceTotals(montantHt, fiscal, invoiceDate = null) {
       mode: "assujetti", ht, rate, tva,
       ttc: Math.round((ht + tva) * 100) / 100,
       vat_number: f.vat_number || null, mention: null,
+    };
+  }
+  if (f.vat_mode === "assujetti_ue" || f.vat_mode === "assujetti_export") {
+    const mention = f.vat_mode === "assujetti_ue"
+      ? `${MENTION_HORS_FRANCE} · ${MENTION_AUTOLIQUIDATION}`
+      : MENTION_HORS_FRANCE;
+    return {
+      mode: f.vat_mode, ht, rate: 0, tva: 0, ttc: ht,
+      vat_number: f.vat_number || null, mention,
     };
   }
   return {

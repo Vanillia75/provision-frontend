@@ -705,7 +705,7 @@ function AppInner() {
   const [quotesLoading, setQuotesLoading] = useState(false);
   const [showNewQuote, setShowNewQuote] = useState(false);
   const [editingQuoteId, setEditingQuoteId] = useState(null);
-  const [quoteForm, setQuoteForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: "", date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  const [quoteForm, setQuoteForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: "", date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [viewingQuote, setViewingQuote] = useState(null);
   const [sendingQuote, setSendingQuote] = useState(false);
   const [sendQuoteStatus, setSendQuoteStatus] = useState("");
@@ -753,7 +753,7 @@ function AppInner() {
   }
 
   const todayISO = new Date().toISOString().split("T")[0];
-  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
   const [aiLoading, setAiLoading] = useState(false);
@@ -3306,7 +3306,7 @@ function AppInner() {
   }
 
   function resetFactureForm() {
-    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
     setEditingInvoiceId(null);
   }
 
@@ -3318,6 +3318,7 @@ function AppInner() {
       client_type: inv.client_type || "particulier",
       client_siret: inv.client_siret || "",
       client_tva: inv.client_tva || "",
+      client_localisation: inv.client_localisation || "france",
       date_emission: inv.date_emission || todayISO,
       date_echeance: inv.date_echeance || "",
       lignes: (inv.lignes && inv.lignes.length > 0) ? inv.lignes : [{ description: "", quantite: 1, prix_unitaire: "" }],
@@ -3439,7 +3440,7 @@ function AppInner() {
   }
 
   function resetQuoteForm() {
-    setQuoteForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", date_emission: todayISO, date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setQuoteForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_validite: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
     setEditingQuoteId(null);
   }
 
@@ -3451,6 +3452,7 @@ function AppInner() {
       client_type: q.client_type || "particulier",
       client_siret: q.client_siret || "",
       client_tva: q.client_tva || "",
+      client_localisation: q.client_localisation || "france",
       date_emission: q.date_emission || todayISO,
       date_validite: q.date_validite || "",
       lignes: (q.lignes && q.lignes.length > 0) ? q.lignes : [{ description: "", quantite: 1, prix_unitaire: "" }],
@@ -3502,8 +3504,44 @@ function AppInner() {
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
             <input style={S.input} placeholder="SIRET client (optionnel)" value={form.client_siret}
               onChange={e => patch({ client_siret: e.target.value })} />
-            <input style={S.input} placeholder="N° TVA client (optionnel)" value={form.client_tva}
+            <input style={S.input} placeholder={form.client_localisation === "ue" ? "N° TVA client (obligatoire)" : "N° TVA client (optionnel)"} value={form.client_tva}
               onChange={e => patch({ client_tva: e.target.value })} />
+          </div>
+        )}
+        {/* Localisation du client PRO : uniquement pour un émetteur assujetti à la TVA.
+            Décide, document par document, la TVA 0 % + mention art. 259-1 (± Autoliquidation).
+            Sources vérifiées 08/07/2026 — voir legalMentions.js (jumeau backend). */}
+        {pro && profile?.fiscal_settings?.vat_mode === "assujetti" && (
+          <div style={{ marginBottom: 10 }}>
+            <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 6 }}>Localisation du client</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {[
+                { v: "france", label: "France" },
+                { v: "ue", label: "UE (hors France)" },
+                { v: "hors_ue", label: "Hors UE" },
+              ].map(opt => {
+                const actif = (form.client_localisation || "france") === opt.v;
+                return (
+                  <button key={opt.v} type="button" onClick={() => patch({ client_localisation: opt.v })}
+                    style={{
+                      flex: "1 1 auto", background: actif ? "#5DCAA5" : "white", color: actif ? "#04342C" : INK,
+                      border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`, borderRadius: 8, padding: "9px 10px",
+                      fontSize: 12.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit",
+                    }}>{opt.label}</button>
+                );
+              })}
+            </div>
+            {form.client_localisation === "ue" && (
+              <div style={{ fontSize: 11, color: "#854F0B", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 8, padding: "8px 10px", marginTop: 8, lineHeight: 1.5 }}>
+                TVA à 0 % en autoliquidation : le n° de TVA de ton client est obligatoire sur la facture.
+                Pense aussi à ta Déclaration européenne de services (DES) sur douane.gouv.fr pour ce mois.
+              </div>
+            )}
+            {form.client_localisation === "hors_ue" && (
+              <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                TVA à 0 % : la facture portera la mention « TVA non applicable, art. 259-1 du CGI ».
+              </div>
+            )}
           </div>
         )}
       </>
@@ -3512,8 +3550,14 @@ function AppInner() {
 
   // fiscalSnap : régime FIGÉ d'une facture/devis existant (snapshot). Si absent (formulaire
   // de création), on prend le réglage courant (la pièce n'est pas encore émise).
-  function renderTotaux(montantHt, flex = false, fiscalSnap = null) {
-    const t = computeInvoiceTotals(montantHt, fiscalSnap || profile?.fiscal_settings);
+  // localisation : "ue" | "hors_ue" choisi dans le FORMULAIRE (client pro à l'étranger) —
+  // reproduit exactement ce que le backend figera, pour un aperçu fidèle.
+  function renderTotaux(montantHt, flex = false, fiscalSnap = null, localisation = null) {
+    let fiscal = fiscalSnap || profile?.fiscal_settings;
+    if (!fiscalSnap && fiscal?.vat_mode === "assujetti" && (localisation === "ue" || localisation === "hors_ue")) {
+      fiscal = { ...fiscal, vat_mode: localisation === "ue" ? "assujetti_ue" : "assujetti_export" };
+    }
+    const t = computeInvoiceTotals(montantHt, fiscal);
     const base = flex ? { display: "flex", justifyContent: "space-between" } : { ...S.netRow };
     const htStyle = flex ? { ...base, fontSize: 13, fontWeight: 600 } : { ...base, fontWeight: 600 };
     const ttcStyle = flex
@@ -3528,7 +3572,7 @@ function AppInner() {
         <div style={htStyle}><span>Total HT</span><span>{formatEUR(t.ht)}</span></div>
         {t.mode === "assujetti"
           ? <div style={midStyle}><span>TVA ({formatVatRate(t.rate)} %)</span><span>{formatEUR(t.tva)}</span></div>
-          : <div style={midStyle}><span>{t.mention}</span><span>0,00 €</span></div>}
+          : <div style={midStyle}><span style={{ maxWidth: "78%" }}>{t.mention}</span><span>0,00 €</span></div>}
         <div style={ttcStyle}><span>Total TTC</span><span>{formatEUR(t.ttc)}</span></div>
       </>
     );
@@ -3551,6 +3595,7 @@ function AppInner() {
             client_type: quoteForm.client_type,
             client_siret: quoteForm.client_siret || null,
             client_tva: quoteForm.client_tva || null,
+            client_localisation: quoteForm.client_localisation || "france",
             date_emission: quoteForm.date_emission,
             date_validite: quoteForm.date_validite || null,
             lignes,
@@ -3567,6 +3612,7 @@ function AppInner() {
             client_type: quoteForm.client_type,
             client_siret: quoteForm.client_siret || null,
             client_tva: quoteForm.client_tva || null,
+            client_localisation: quoteForm.client_localisation || "france",
             date_emission: quoteForm.date_emission,
             date_validite: quoteForm.date_validite || null,
             lignes,
@@ -3668,6 +3714,7 @@ function AppInner() {
             client_type: factureForm.client_type,
             client_siret: factureForm.client_siret || null,
             client_tva: factureForm.client_tva || null,
+            client_localisation: factureForm.client_localisation || "france",
             date_emission: factureForm.date_emission,
             date_echeance: factureForm.date_echeance || null,
             lignes,
@@ -3684,6 +3731,7 @@ function AppInner() {
             client_type: factureForm.client_type,
             client_siret: factureForm.client_siret || null,
             client_tva: factureForm.client_tva || null,
+            client_localisation: factureForm.client_localisation || "france",
             date_emission: factureForm.date_emission,
             date_echeance: factureForm.date_echeance || null,
             lignes,
@@ -12363,7 +12411,7 @@ function AppInner() {
                 ))}
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addFactureLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
-                  {renderTotaux(totalFacture())}
+                  {renderTotaux(totalFacture(), false, null, factureForm.client_type === "professionnel" ? factureForm.client_localisation : null)}
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
@@ -12606,7 +12654,7 @@ function AppInner() {
                 ))}
                 <button style={{ ...S.linkBtn, marginBottom: 16 }} onClick={addQuoteLigne}>+ Ajouter une ligne</button>
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
-                  {renderTotaux(totalQuote())}
+                  {renderTotaux(totalQuote(), false, null, quoteForm.client_type === "professionnel" ? quoteForm.client_localisation : null)}
                 </div>
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={quoteForm.notes} onChange={e => setQuoteForm({ ...quoteForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
