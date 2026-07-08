@@ -566,6 +566,11 @@ function AppInner() {
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
+  const [avisTexte, setAvisTexte] = useState("");        // « Ton avis compte » (Réglages)
+  const [avisConsent, setAvisConsent] = useState(false); // consentement de publication (prénom + métier)
+  const [avisSaving, setAvisSaving] = useState(false);
+  const [avisEnvoye, setAvisEnvoye] = useState(false);
+  const [avisErr, setAvisErr] = useState("");
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
@@ -1877,6 +1882,64 @@ function AppInner() {
     } finally {
       setPwdSaving(false);
     }
+  }
+
+  // ─── « Ton avis compte » : dépôt d'avis avec consentement de publication explicite. ───
+  // Part par email à l'équipe (aucun stockage) ; seuls les avis consentis pourront être
+  // publiés sur le site, avec prénom + métier. Le circuit légal des VRAIS témoignages.
+  async function envoyerAvis() {
+    if (avisSaving) return;
+    setAvisErr("");
+    setAvisSaving(true);
+    try {
+      await apiFetch("/avis", {
+        method: "POST",
+        body: JSON.stringify({
+          message: avisTexte,
+          prenom: profilPrenom || null,
+          metier: profile?.statut === "intermittent" ? "intermittent du spectacle" : "auto-entrepreneur",
+          consentement_publication: avisConsent,
+        }),
+      });
+      setAvisEnvoye(true);
+      setAvisTexte("");
+    } catch (err) {
+      setAvisErr(err.message || "L'envoi a échoué. Réessaie dans un moment.");
+    } finally {
+      setAvisSaving(false);
+    }
+  }
+
+  function renderAvisCard(dark = true) {
+    const carte = dark
+      ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
+      : { ...S.card, marginBottom: 16 };
+    if (avisEnvoye) {
+      return (
+        <div style={carte}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>⭐ Ton avis compte</div>
+          <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 600, lineHeight: 1.5 }}>Merci ! 🐾 Ton avis est bien parti — Camille le lit en personne.</div>
+        </div>
+      );
+    }
+    return (
+      <div style={carte}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>⭐ Ton avis compte</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Qu'est-ce que TOTOR a changé pour toi ? Deux phrases suffisent, avec tes mots.</div>
+        <textarea value={avisTexte} onChange={e => setAvisTexte(e.target.value)} rows={3} maxLength={2000}
+          placeholder="Exemple : ce que ça a changé sur tes heures, ton actualisation, ton stress…"
+          style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box", resize: "vertical", lineHeight: 1.5 }} />
+        <label style={{ display: "flex", alignItems: "flex-start", gap: 9, marginTop: 10, cursor: "pointer", fontSize: 12, color: "#8BA5C0", lineHeight: 1.5 }}>
+          <input type="checkbox" checked={avisConsent} onChange={e => setAvisConsent(e.target.checked)} style={{ marginTop: 2, accentColor: "#5DCAA5" }} />
+          <span>J'accepte que cet avis soit publié sur le site de TOTOR, avec mon prénom et mon métier. <span style={{ color: "#5A7088" }}>(Décoché : il reste un retour privé pour l'équipe.)</span></span>
+        </label>
+        {avisErr && <div style={{ fontSize: 12.5, color: "#F09595", marginTop: 10 }}>{avisErr}</div>}
+        <button type="button" onClick={envoyerAvis} disabled={avisSaving || avisTexte.trim().length < 10}
+          style={{ marginTop: 12, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: (avisSaving || avisTexte.trim().length < 10) ? "default" : "pointer", fontFamily: "inherit", opacity: (avisSaving || avisTexte.trim().length < 10) ? 0.6 : 1 }}>
+          {avisSaving ? "Envoi…" : "Envoyer mon avis"}
+        </button>
+      </div>
+    );
   }
 
   // Carte « Mon mot de passe » réutilisée dans les deux écrans Réglages (intermittent + AE).
@@ -9655,6 +9718,8 @@ function AppInner() {
                 </a>
               </div>
 
+              {renderAvisCard()}
+
               {/* Rappel d'actualisation (email du 28) — opt-out simple */}
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
                 <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🐾 Rappel d'actualisation</div>
@@ -13145,6 +13210,8 @@ function AppInner() {
                 <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 14 }} /> bonjour@montotor.fr
               </a>
             </div>
+
+            <div style={{ marginTop: 14 }}>{renderAvisCard(false)}</div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>🔒 Mes données</div>
