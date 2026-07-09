@@ -116,7 +116,9 @@ const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.go
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
 // Passe à false une fois la prod validée pour réactiver le bouton de connexion.
-const BANK_BIENTOT = true;
+// Connexion bancaire : la disponibilité est désormais décidée par le serveur
+// (/bank/balance → disponible), car Enable Banking est en « production restreinte »
+// (seuls les comptes liés dans leur console fonctionnent, testeurs listés côté Railway).
 
 const STATUTS = [
   { id: "auto_entrepreneur", label: "Auto-entrepreneur", disponible: true },
@@ -552,17 +554,25 @@ function AppInner() {
   const [resetMessage, setResetMessage] = useState("");
   const [verifyToken] = useState(() => new URLSearchParams(window.location.search).get("verify_token"));
   const [verifyStatus, setVerifyStatus] = useState(""); // "", "loading", "success", "error"
-  // Connexion bancaire (Powens) : callback de retour de la webview + état du solde.
-  const [bankCallbackConnId] = useState(() => {
+  // Connexion bancaire (Enable Banking) : callback de retour de la banque + état du solde.
+  const [bankCallbackCode] = useState(() => {
     const inCallback = window.location.pathname.includes("bank-callback");
     if (!inCallback) return null;
-    return new URLSearchParams(window.location.search).get("connection_id");
+    return new URLSearchParams(window.location.search).get("code");
   });
   const [bankConnected, setBankConnected] = useState(false);
   const [bankSolde, setBankSolde] = useState(null);
   const [bankLoading, setBankLoading] = useState(false);
   const [bankSyncing, setBankSyncing] = useState(false);
   const [bankCardOpen, setBankCardOpen] = useState(false); // carte connexion bancaire repliée par défaut (accordéon)
+  const [bankDispo, setBankDispo] = useState(false);       // décidé par le serveur (bêta restreinte Enable Banking)
+  const [bankBanqueNom, setBankBanqueNom] = useState(null); // nom + fin d'IBAN de la banque reliée
+  const [bankIbanFin, setBankIbanFin] = useState(null);
+  const [bankExpiree, setBankExpiree] = useState(false);   // consentement expiré → proposer de relier
+  const [bankListe, setBankListe] = useState([]);          // banques françaises couvertes (picker)
+  const [bankChoixOuvert, setBankChoixOuvert] = useState(false);
+  const [bankRecherche, setBankRecherche] = useState("");
+  const [bankUsage, setBankUsage] = useState("personal");  // "personal" | "business"
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
@@ -1238,12 +1248,31 @@ function AppInner() {
       .catch(err => { setVerifyStatus("error"); setResetMessage(err.message); });
   }, [verifyToken]);
 
-  // ── Connexion bancaire (Powens) ──
-  // Démarre la connexion : récupère l'URL de la webview Powens et y redirige.
-  async function handleBankConnect() {
+  // ── Connexion bancaire (Enable Banking) ──
+  // Ouvre le choix de banque (charge la liste une seule fois).
+  async function handleBankChoisir() {
+    setBankChoixOuvert(true);
+    if (bankListe.length > 0) return;
     setBankLoading(true);
     try {
-      const data = await apiFetch("/bank/connect", { method: "POST" });
+      const data = await apiFetch("/bank/banques");
+      setBankListe((data && data.banques) || []);
+    } catch (err) {
+      addHectorMessage(err.message || "Liste des banques indisponible pour le moment.", "#F0C36D");
+      setBankChoixOuvert(false);
+    } finally {
+      setBankLoading(false);
+    }
+  }
+
+  // Démarre la connexion pour la banque choisie : redirige vers la page de la banque.
+  async function handleBankConnect(banque) {
+    setBankLoading(true);
+    try {
+      const data = await apiFetch("/bank/connect", {
+        method: "POST",
+        body: JSON.stringify({ banque, usage: bankUsage }),
+      });
       if (data && data.webview_url) {
         window.location.href = data.webview_url;
       } else {
@@ -1260,8 +1289,17 @@ function AppInner() {
   async function loadBankStatus() {
     try {
       const data = await apiFetch("/bank/balance");
+      setBankDispo(!!(data && data.disponible));
       setBankConnected(!!(data && data.connected));
-      if (data && data.solde != null) setBankSolde(data.solde);
+      setBankBanqueNom((data && data.banque) || null);
+      setBankIbanFin((data && data.iban_fin) || null);
+      setBankExpiree(!!(data && data.expiree));
+      if (data && data.solde != null) {
+        setBankSolde(data.solde);
+        // Le solde synchronisé alimente le même champ que la saisie manuelle.
+        setPanique(prev => ({ ...prev, solde: String(data.solde) }));
+        safeStorage.setItem("soldeUpdatedAt", new Date().toISOString());
+      }
     } catch {
       // silencieux : pas de banque reliée ou backend pas encore prêt
     }
@@ -1282,26 +1320,36 @@ function AppInner() {
     }
   }
 
-  // Traite le retour de la webview Powens (/bank-callback?connection_id=...).
+  // Traite le retour de la banque (/bank-callback?code=...) : échange le code
+  // contre une session Enable Banking et synchronise le solde.
   useEffect(() => {
-    if (!bankCallbackConnId) return;
+    if (!bankCallbackCode) return;
     if (!token) return; // il faut être authentifié pour enregistrer la connexion
     setBankSyncing(true);
     apiFetch("/bank/callback", {
       method: "POST",
-      body: JSON.stringify({ connection_id: parseInt(bankCallbackConnId, 10) }),
+      body: JSON.stringify({ code: bankCallbackCode }),
     })
       .then(data => {
         setBankConnected(true);
-        if (data && data.solde != null) setBankSolde(data.solde);
+        setBankExpiree(false);
+        if (data && data.solde != null) {
+          setBankSolde(data.solde);
+          setPanique(prev => ({ ...prev, solde: String(data.solde) }));
+          safeStorage.setItem("soldeUpdatedAt", new Date().toISOString());
+        }
+        showToast("Banque connectée — ton solde se met à jour tout seul 🐾", "ti-building-bank");
+        loadBankStatus();
       })
-      .catch(() => {})
+      .catch(err => {
+        addHectorMessage(err.message || "La banque n'a pas confirmé la connexion. Réessaie.", "#F0C36D");
+      })
       .finally(() => {
         // Nettoie l'URL (retire /bank-callback et les paramètres) et revient à l'app.
         window.history.replaceState({}, "", "/");
         setBankSyncing(false);
       });
-  }, [bankCallbackConnId, token]);
+  }, [bankCallbackCode, token]);
 
   // Active/désactive le rappel mensuel d'actualisation (email du 28). Opt-out simple, jamais premium.
   async function saveRappelActu(active) {
@@ -11152,7 +11200,7 @@ function AppInner() {
               </div>
             </div>
 
-            {/* ── CONNEXION BANCAIRE (Powens, lecture seule) — accordéon pleine largeur ── */}
+            {/* ── CONNEXION BANCAIRE (Enable Banking, lecture seule) — accordéon pleine largeur ── */}
             <div style={{ background: "#0a1322", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 14, padding: "18px 20px", position: "relative", overflow: "hidden" }}>
               <div onClick={() => setBankCardOpen(o => !o)} role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: bankCardOpen ? 10 : 0, flexWrap: "wrap", cursor: "pointer" }}>
                 <div style={{ width: 36, height: 36, borderRadius: 10, background: "rgba(55,138,221,0.18)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -11161,7 +11209,7 @@ function AppInner() {
                 <div style={{ fontSize: 15, fontWeight: 800, color: "#FFFFFF" }}>Connexion bancaire</div>
                 {bankConnected
                   ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#5DCAA5", background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 10px" }}>Connectée</span>
-                  : BANK_BIENTOT
+                  : !bankDispo
                     ? <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#FAC775", background: "rgba(250,199,117,0.15)", border: "1px solid rgba(250,199,117,0.45)", borderRadius: 999, padding: "3px 10px" }}>Bientôt</span>
                     : <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Optionnel</span>}
                 <i className={`ti ti-chevron-${bankCardOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 18, color: "#6B8299", marginLeft: "auto" }} />
@@ -11175,9 +11223,14 @@ function AppInner() {
               ) : bankConnected ? (
                 <>
                   <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 6px" }}>
-                    Ta banque est reliée : ton solde se met à jour tout seul, en lecture seule.
+                    {bankBanqueNom ? <><strong style={{ color: "#FFFFFF" }}>{bankBanqueNom}</strong>{bankIbanFin ? <> (compte …{bankIbanFin})</> : null} est reliée</> : "Ta banque est reliée"} : ton solde se met à jour tout seul, en lecture seule.
                     {bankSolde != null && <> Dernier solde lu : <strong style={{ color: "#FFFFFF" }}>{formatEUR(bankSolde)}</strong>.</>}
                   </p>
+                  {bankExpiree && (
+                    <p style={{ fontSize: 12.5, color: "#FAC775", lineHeight: 1.5, margin: "0 0 6px" }}>
+                      ⚠️ Le consentement donné à ta banque semble expiré ou révoqué — relie-la à nouveau pour relancer la synchronisation.
+                    </p>
+                  )}
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
                     <button type="button" onClick={loadBankStatus} disabled={bankLoading}
                       style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.4)", color: "#9FD0FF", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
@@ -11192,7 +11245,7 @@ function AppInner() {
               ) : (
                 <>
                   <p style={{ fontSize: 13.5, color: "#DCE8F5", lineHeight: 1.6, margin: "0 0 14px" }}>
-                    {BANK_BIENTOT
+                    {!bankDispo
                       ? <>Bientôt, tu pourras <strong style={{ color: "#FFFFFF" }}>relier ton compte</strong> pour que ton solde se mette à jour tout seul. On finalise la mise en service avec notre partenaire bancaire — en attendant, continue en <strong style={{ color: "#FFFFFF" }}>saisie manuelle</strong>.</>
                       : <>Relie ton compte pour que ton solde se mette à jour <strong style={{ color: "#FFFFFF" }}>tout seul</strong> — fini de le recopier à la main. C'est <strong style={{ color: "#FFFFFF" }}>toi qui choisis</strong> : tu peux aussi continuer en saisie manuelle.</>}
                   </p>
@@ -11203,23 +11256,60 @@ function AppInner() {
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Powens, agréé par la Banque de France. Tes identifiants ne transitent jamais par TOTOR.</span>
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Partenaire agréé.</strong> La connexion passe par Enable Banking, prestataire agréé dans l'Union européenne (DSP2). Tes identifiants ne transitent jamais par TOTOR : tu t'authentifies directement chez ta banque.</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-hand-stop" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
                       <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Débranchable quand tu veux.</strong></span>
                     </div>
                   </div>
-                  {BANK_BIENTOT ? (
+                  {!bankDispo ? (
                     <div style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "rgba(250,199,117,0.12)", border: "1px solid rgba(250,199,117,0.4)", color: "#FAC775", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700 }}>
                       <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 16 }} /> Bientôt disponible
                     </div>
-                  ) : (
-                    <button type="button" onClick={handleBankConnect} disabled={bankLoading}
-                      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1 }}>
+                  ) : !bankChoixOuvert ? (
+                    <button type="button" onClick={handleBankChoisir} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#378ADD", border: "none", color: "#FFFFFF", borderRadius: 9, padding: "11px 20px", fontSize: 14, fontWeight: 700, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.7 : 1, minHeight: 44 }}>
                       <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 16 }} />
-                      {bankLoading ? "Ouverture…" : "Connecter ma banque"}
+                      {bankLoading ? "Chargement…" : "Connecter ma banque"}
                     </button>
+                  ) : (
+                    <div>
+                      {/* Choix du type de compte puis de la banque (Enable Banking exige la banque avant la redirection). */}
+                      <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                        {[{ v: "personal", l: "Compte perso" }, { v: "business", l: "Compte pro" }].map(o => (
+                          <button key={o.v} type="button" onClick={() => setBankUsage(o.v)}
+                            style={{ background: bankUsage === o.v ? "#378ADD" : "transparent", color: bankUsage === o.v ? "#FFFFFF" : "#9FD0FF", border: `1.5px solid ${bankUsage === o.v ? "#378ADD" : "rgba(55,138,221,0.45)"}`, borderRadius: 8, padding: "8px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                            {o.l}
+                          </button>
+                        ))}
+                      </div>
+                      <input
+                        type="text" placeholder="Cherche ta banque (ex : BRED, Qonto, Crédit Agricole…)"
+                        value={bankRecherche} onChange={e => setBankRecherche(e.target.value)} autoFocus
+                        style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 8 }}
+                      />
+                      <div style={{ maxHeight: 220, overflowY: "auto", display: "flex", flexDirection: "column", gap: 4 }}>
+                        {bankLoading && <span style={{ fontSize: 12.5, color: "#8BA5C0", padding: 8 }}>Je charge la liste des banques…</span>}
+                        {!bankLoading && bankListe
+                          .filter(b => (b.nom || "").toLowerCase().includes(bankRecherche.toLowerCase()))
+                          .slice(0, 30)
+                          .map(b => (
+                            <button key={b.nom} type="button" onClick={() => handleBankConnect(b.nom)} disabled={bankLoading}
+                              style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "#DCE8F5", borderRadius: 8, padding: "10px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", textAlign: "left", minHeight: 44 }}>
+                              <i className="ti ti-building-bank" aria-hidden="true" style={{ fontSize: 15, color: "#5DA9F0", flexShrink: 0 }} />
+                              {b.nom}
+                            </button>
+                          ))}
+                        {!bankLoading && bankListe.length > 0 && bankListe.filter(b => (b.nom || "").toLowerCase().includes(bankRecherche.toLowerCase())).length === 0 && (
+                          <span style={{ fontSize: 12.5, color: "#8BA5C0", padding: 8 }}>Aucune banque trouvée avec ce nom — vérifie l'orthographe, ou continue en saisie manuelle.</span>
+                        )}
+                      </div>
+                      <button type="button" onClick={() => setBankChoixOuvert(false)}
+                        style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 8, padding: 0, textDecoration: "underline" }}>
+                        Annuler
+                      </button>
+                    </div>
                   )}
                 </>
               )}
