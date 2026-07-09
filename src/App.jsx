@@ -10552,7 +10552,9 @@ function AppInner() {
                   {totalRegularisations > 0 && (
                     <div style={{ marginBottom: 16 }}>
                       <div style={{ fontSize: 12.5, color: "#FAC775", marginBottom: 8, lineHeight: 1.5 }}>
-                        dont <strong>{formatEUR(totalRegularisations)}</strong> de régularisations de périodes précédentes
+                        {urssafProvision - totalRegularisations < 0.01
+                          ? <>en totalité des régularisations de périodes précédentes ({formatEUR(totalRegularisations)})</>
+                          : <>dont <strong>{formatEUR(totalRegularisations)}</strong> de régularisations de périodes précédentes</>}
                       </div>
                       <div style={{ background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.22)", borderRadius: 10, padding: "11px 13px", marginBottom: 10 }}>
                         <div style={{ fontSize: 12.5, color: "#E8D3A8", lineHeight: 1.55 }}>
@@ -10904,7 +10906,7 @@ function AppInner() {
             {paieData?.disponible && !paieData?.historique_suffisant && (
               <button type="button" onClick={() => setNav("salaire")}
                 style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", fontSize: 12, color: "#6B8299", padding: "2px 6px", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
-                <span style={{ flex: 1 }}>🐾 La Paie de Totor arrive : {(paieData?.nb_mois_actifs || 0) > 0 ? <>encore {3 - (paieData.nb_mois_actifs || 0)} mois d'encaissements et je te proposerai un salaire lissé.</> : <>dès 3 mois d'encaissements, je te proposerai un salaire lissé.</>}</span>
+                <span style={{ flex: 1 }}>🐾 La Paie de Totor arrive : ajoute tes encaissements de {(paieData?.nb_mois_actifs || 0) > 0 ? `${3 - (paieData.nb_mois_actifs || 0)} mois` : "3 mois"} (même passés !) et je te propose ton salaire lissé tout de suite.</span>
                 <span style={{ color: "#5DCAA5", flexShrink: 0 }}>Comment ça marche →</span>
               </button>
             )}
@@ -11018,7 +11020,7 @@ function AppInner() {
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, color: "#8BA5C0", fontSize: 11, marginBottom: 6 }}><i className="ti ti-pig-money" aria-hidden="true" style={{ fontSize: 14, color: "#FAC775" }} /> URSSAF à mettre de côté</div>
                   <div style={{ color: "#fff", fontSize: 18, fontWeight: 700 }}>{formatEUR(urssafProvision)}</div>
-                  {totalRegularisations > 0 && <div style={{ fontSize: 10, color: "#FAC775", marginTop: 3, lineHeight: 1.35 }}>dont {formatEUR(totalRegularisations)} de régularisations</div>}
+                  {totalRegularisations > 0 && <div style={{ fontSize: 10, color: "#FAC775", marginTop: 3, lineHeight: 1.35 }}>{urssafProvision - totalRegularisations < 0.01 ? "en totalité des régularisations de mois passés" : `dont ${formatEUR(totalRegularisations)} de régularisations`}</div>}
                   {urssafProvision > 0 && <div style={{ fontSize: 9.5, color: "#6B8299", marginTop: 4, lineHeight: 1.4 }}>{urssafDecompo}</div>}
                 </div>
                 <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 14px" }}>
@@ -12117,8 +12119,8 @@ function AppInner() {
                   {paieVerseeEntree ? `Paie de ${paieVerseeEntree.mois} versée : revoir la fiche` : `Voir ma paie de ${paieDuMois.mois_label} →`}
                 </button>
               ) : paieData?.disponible ? (
-                <div style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", borderRadius: 8, padding: "8px 12px", display: "inline-block" }}>
-                  ⏳ Il me faut 3 mois d'encaissements pour te proposer une paie fiable{(paieData?.nb_mois_actifs || 0) > 0 ? ` : encore ${3 - (paieData.nb_mois_actifs || 0)} et c'est parti.` : "."}
+                <div style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", borderRadius: 8, padding: "8px 12px" }}>
+                  ⏳ Il me faut 3 mois d'encaissements pour te proposer une paie fiable{(paieData?.nb_mois_actifs || 0) > 0 ? ` (encore ${3 - (paieData.nb_mois_actifs || 0)})` : ""}. Pas besoin d'attendre : <button style={{ ...S.linkBtn, padding: 0, fontSize: 12.5 }} onClick={() => setNav("revenus")}>ajoute tes encaissements des derniers mois</button>, même passés, et ta paie s'active immédiatement.
                 </div>
               ) : null}
             </div>
