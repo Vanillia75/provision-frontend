@@ -27,6 +27,18 @@ if (typeof window !== "undefined") {
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 
+// Collecteur léger des dernières erreurs JS (pour les signalements de bug de l'Aide
+// vivante) : 5 messages max, jamais envoyés sans action explicite de l'utilisateur.
+const dernieresErreursConsole = [];
+const _consignerErreur = (msg) => {
+  try {
+    dernieresErreursConsole.push(String(msg).slice(0, 300));
+    if (dernieresErreursConsole.length > 5) dernieresErreursConsole.shift();
+  } catch { /* jamais bloquant */ }
+};
+window.addEventListener("error", e => _consignerErreur(e.message || e.error || "erreur inconnue"));
+window.addEventListener("unhandledrejection", e => _consignerErreur(e.reason && (e.reason.message || e.reason)));
+
 // Espace personnel France Travail (page stable, vérifiée 07/2026) : là où vit « M'actualiser ».
 // On n'automatise JAMAIS l'actualisation (pas d'API FT, identifiants intouchables) : Totor
 // prépare les chiffres, l'utilisateur les recopie chez FT. C'est lui qui valide, toujours.
@@ -1456,6 +1468,16 @@ function AppInner() {
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
   const [updateReady, setUpdateReady] = useState(false); // une nouvelle version a été déployée
   const [showGame, setShowGame] = useState(false); // mini-jeu "Course avec Totor"
+  // ─── L'Aide vivante : la pastille mode d'emploi (les deux modes) ───
+  const [aideOuverte, setAideOuverte] = useState(false); // jamais d'ouverture automatique (Loi VII)
+  const [aideMasquee, setAideMasquee] = useState(() => safeStorage.getItem("aideMasquee") === "1");
+  const [aideMessages, setAideMessages] = useState([]);
+  const [aideInput, setAideInput] = useState("");
+  const [aideLoading, setAideLoading] = useState(false);
+  const [aideBugOuvert, setAideBugOuvert] = useState(false);   // formulaire « un truc qui bug ? »
+  const [aideBugDesc, setAideBugDesc] = useState("");
+  const [aideBugEmail, setAideBugEmail] = useState("");
+  const [aideBugEnvoi, setAideBugEnvoi] = useState(false);
 
   async function startCheckout(code = null, plan = null) {
     setBillingBusy(true);
@@ -1650,6 +1672,207 @@ function AppInner() {
   ) : null;
 
   // (Le mini-jeu s'ouvre depuis l'entrée "Course avec Totor" du menu de gauche, dans les deux modes.)
+
+  // ═══ L'AIDE VIVANTE — pastille flottante « Totor · aide & mode d'emploi » ═══
+  // Questions sur le FONCTIONNEMENT de l'app (le métier reste dans « Parle à Totor »).
+  // Règles gravées : jamais d'ouverture auto, pas de badge, pas de rebond (Loi VII) ;
+  // croix = masquée durablement ; le quota chat n'est pas consommé (mode "aide").
+  const aideEcranCourant = profile?.statut === "intermittent" ? interNav : nav;
+  const AIDE_SUGGESTIONS = {
+    // Mode auto-entrepreneur (nav)
+    dashboard: ["Où je renseigne mon solde ?", "C'est quoi la réserve de sécurité ?", "Comment marche la Paie de Totor ?"],
+    revenus: ["Je peux saisir des mois passés ?", "Facturé ou encaissé : je note quoi ?"],
+    frais: ["Comment scanner une facture de dépense ?", "Mes frais changent quoi dans mes chiffres ?"],
+    salaire: ["Comment marche la Paie de Totor ?", "C'est quoi prudent, recommandé, maximum ?"],
+    factures: ["Comment marchent les relances automatiques ?", "Comment marquer une facture payée ?"],
+    devis: ["Comment faire un devis ?", "Comment transformer un devis en facture ?"],
+    declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
+    echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
+    abonnement: ["Que donne le Premium ?", "Comment activer un code ?"],
+    profil: ["Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+    // Mode intermittent (interNav)
+    cockpit: ["Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
+    activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
+    mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
+    actu: ["Quand dois-je m'actualiser ?", "Totor s'actualise à ma place ?"],
+    reglages: ["Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+  };
+  const aideSuggestions = AIDE_SUGGESTIONS[aideEcranCourant]
+    || (profile?.statut === "intermittent" ? AIDE_SUGGESTIONS.cockpit : AIDE_SUGGESTIONS.dashboard);
+
+  async function envoyerAide(texte) {
+    const q = String(texte != null ? texte : aideInput).trim();
+    if (!q || aideLoading) return;
+    const suite = [...aideMessages, { role: "user", content: q }];
+    setAideMessages(suite);
+    setAideInput("");
+    setAideLoading(true);
+    try {
+      const data = await apiFetch("/assistant/chat", {
+        method: "POST",
+        body: JSON.stringify({ messages: suite.slice(-8), mode: "aide", ecran: aideEcranCourant }),
+      });
+      setAideMessages([...suite, { role: "assistant", content: (data && data.reply) || "Hmm, je n'ai pas réussi à répondre. Réessaie ?" }]);
+    } catch {
+      setAideMessages([...suite, { role: "assistant", content: "Je n'arrive pas à répondre pour l'instant. Réessaie dans un moment, ou écris à bonjour@montotor.fr : Camille répond en personne." }]);
+    } finally {
+      setAideLoading(false);
+    }
+  }
+
+  const masquerAide = () => {
+    safeStorage.setItem("aideMasquee", "1");
+    setAideMasquee(true);
+    setAideOuverte(false);
+  };
+
+  // Signalement de bug : Totor ne prétend jamais réparer, il collecte et transmet.
+  // Infos techniques utiles (écran, URL, navigateur, dernières erreurs console) — jamais
+  // de données financières ou personnelles du compte.
+  async function envoyerBug() {
+    const desc = aideBugDesc.trim();
+    if (!desc || aideBugEnvoi) return;
+    setAideBugEnvoi(true);
+    try {
+      await apiFetch("/aide/bug", {
+        method: "POST",
+        body: JSON.stringify({
+          description: desc,
+          email: aideBugEmail.trim() || null,
+          ecran: aideEcranCourant,
+          url: window.location.pathname + window.location.search,
+          navigateur: navigator.userAgent,
+          erreurs_console: dernieresErreursConsole.slice(-5),
+        }),
+      });
+      setAideMessages(m => [...m, { role: "assistant", content: "Aïe, merci de me prévenir 🐾 Je transmets ça direct à Camille, il regarde tout." }]);
+      setAideBugOuvert(false);
+      setAideBugDesc("");
+      setAideBugEmail("");
+    } catch (err) {
+      setAideMessages(m => [...m, { role: "assistant", content: (err && err.message) || "L'envoi n'a pas marché — écris directement à bonjour@montotor.fr." }]);
+    } finally {
+      setAideBugEnvoi(false);
+    }
+  }
+
+  const aideVivanteUI = (token && profile?.onboarding_complete && !aideMasquee) ? (
+    <>
+      <style>{`@keyframes aidePatte { 0%,100% { opacity: 0.15; } 50% { opacity: 1; } }`}</style>
+      {aideOuverte && (
+        <div style={{ position: "fixed", bottom: isMobile ? 84 : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
+          {/* En-tête : la vocation lisible sans cliquer */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+            <HectorTete size={28} />
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>Totor · aide & mode d'emploi</div>
+            </div>
+            <button type="button" onClick={() => setAideOuverte(false)} aria-label="Fermer"
+              style={{ background: "none", border: "none", color: "#6B8299", fontSize: 20, cursor: "pointer", fontFamily: "inherit", padding: "0 4px" }}>×</button>
+          </div>
+
+          {/* Fil de discussion */}
+          <div style={{ flex: 1, overflowY: "auto", padding: "14px", display: "flex", flexDirection: "column", gap: 10 }}>
+            <div style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+              <HectorTete size={24} />
+              <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: "4px 12px 12px 12px", padding: "10px 12px", fontSize: 13, color: "#DCE8F5", lineHeight: 1.55 }}>
+                Perdu dans l'app ? 🐾<br />
+                Dis-moi ce que tu cherches ou ce que tu ne comprends pas : je t'explique comment ça marche. <span style={{ color: "#8BA5C0" }}>(Pour tes questions sur ton métier, c'est plutôt « Parle à Totor ».)</span>
+              </div>
+            </div>
+            {aideMessages.length === 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6, marginLeft: 32 }}>
+                {aideSuggestions.map(s => (
+                  <button key={s} type="button" onClick={() => envoyerAide(s)}
+                    style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#B5D4F4", borderRadius: 10, padding: "9px 12px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
+            {aideMessages.map((m, i) => (
+              m.role === "user" ? (
+                <div key={i} style={{ alignSelf: "flex-end", maxWidth: "85%", background: "#378ADD", color: "white", borderRadius: "12px 4px 12px 12px", padding: "9px 12px", fontSize: 13, lineHeight: 1.5 }}>{m.content}</div>
+              ) : (
+                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", maxWidth: "92%" }}>
+                  <HectorTete size={24} />
+                  <div style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "4px 12px 12px 12px", padding: "9px 12px", fontSize: 13, color: "#DCE8F5", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{m.content}</div>
+                </div>
+              )
+            ))}
+            {aideLoading && (
+              <div style={{ display: "flex", gap: 8, alignItems: "center", marginLeft: 32 }}>
+                {[0, 1, 2].map(i => (
+                  <span key={i} style={{ fontSize: 13, animation: "aidePatte 1.2s ease-in-out infinite", animationDelay: `${i * 0.25}s` }}>🐾</span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Saisie (ou formulaire bug : deux intentions distinctes, jamais mélangées) */}
+          <div style={{ padding: "10px 12px", borderTop: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+            {aideBugOuvert ? (
+              <div>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>🐞 Un truc qui bug ?</div>
+                <textarea
+                  value={aideBugDesc} onChange={e => setAideBugDesc(e.target.value)} autoFocus rows={3}
+                  placeholder="Décris ce qui s'est passé (ce que tu faisais, ce qui a coincé)…"
+                  style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 9, padding: "9px 11px", fontSize: 12.5, color: "white", outline: "none", fontFamily: "inherit", resize: "vertical", marginBottom: 6 }}
+                />
+                <input
+                  type="email" value={aideBugEmail} onChange={e => setAideBugEmail(e.target.value)}
+                  placeholder="Ton email, si tu veux que Camille te réponde (optionnel)"
+                  style={{ width: "100%", boxSizing: "border-box", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 9, padding: "9px 11px", fontSize: 12.5, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 8 }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button type="button" onClick={envoyerBug} disabled={aideBugEnvoi || !aideBugDesc.trim()}
+                    style={{ flex: 1, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 12px", fontSize: 13, fontWeight: 700, cursor: aideBugEnvoi || !aideBugDesc.trim() ? "default" : "pointer", fontFamily: "inherit", opacity: aideBugEnvoi || !aideBugDesc.trim() ? 0.5 : 1 }}>
+                    {aideBugEnvoi ? "J'envoie…" : "Envoyer à Camille"}
+                  </button>
+                  <button type="button" onClick={() => setAideBugOuvert(false)}
+                    style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 9, padding: "10px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="text" value={aideInput} onChange={e => setAideInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") envoyerAide(); }}
+                    placeholder={profile?.statut === "intermittent" ? "Ex : comment scanner une AEM ?" : "Ex : où je mets mon argent de côté ?"}
+                    style={{ flex: 1, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 9, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", minWidth: 0 }}
+                  />
+                  <button type="button" onClick={() => envoyerAide()} disabled={aideLoading || !aideInput.trim()}
+                    style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "0 14px", fontSize: 15, fontWeight: 800, cursor: aideLoading || !aideInput.trim() ? "default" : "pointer", fontFamily: "inherit", opacity: aideLoading || !aideInput.trim() ? 0.5 : 1, minHeight: 40 }}
+                    aria-label="Envoyer">→</button>
+                </div>
+                <button type="button" onClick={() => setAideBugOuvert(true)}
+                  style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0, marginTop: 8 }}>
+                  🐞 Un truc qui bug ? Dis-le-moi →
+                </button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
+                  <a href="mailto:bonjour@montotor.fr" style={{ fontSize: 11.5, color: "#5DCAA5", textDecoration: "underline" }}>Pas trouvé ? Écris à Camille →</a>
+                  <button type="button" onClick={masquerAide}
+                    style={{ background: "none", border: "none", color: "#4A6280", fontSize: 10.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
+                    masquer l'aide
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+      {/* La pastille : petite, sereine, jamais de badge ni de rebond. */}
+      <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
+        title="Totor · aide & mode d'emploi"
+        style={{ position: "fixed", bottom: isMobile ? 16 : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
+        <HectorTete size={38} />
+        <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
+      </button>
+    </>
+  ) : null;
 
   // Modal plein écran du mini-jeu. Le jeu garde son propre record en localStorage.
   const gameOverlay = showGame ? (
@@ -6737,6 +6960,7 @@ function AppInner() {
         {billingSuccessOverlay}
         {updateOverlay}
         {gameOverlay}
+        {aideVivanteUI}
 
         {/* ═══ CÉLÉBRATION DE PALIER ═══ */}
         {celebPalier && (
@@ -13914,6 +14138,7 @@ function AppInner() {
       {billingSuccessOverlay}
       {updateOverlay}
       {gameOverlay}
+      {aideVivanteUI}
       {activiteModalUI}
       {soldeProposalUI}
       {/* ===== WALKTHROUGH ONBOARDING / AIDE ===== */}
