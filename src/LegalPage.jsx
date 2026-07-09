@@ -221,7 +221,10 @@ function renderLegalMarkdown(md) {
 
   for (const rawLine of lines) {
     const line = rawLine.trim();
-    if (line.startsWith("## ")) {
+    if (line.startsWith("### ")) {
+      flushList();
+      blocks.push({ type: "h3", text: line.slice(4) });
+    } else if (line.startsWith("## ")) {
       flushList();
       blocks.push({ type: "h2", text: line.slice(3) });
     } else if (line.startsWith("# ")) {
@@ -248,6 +251,7 @@ function renderLegalMarkdown(md) {
   return blocks.map((b, i) => {
     if (b.type === "h1") return <h1 key={i} style={{ fontSize: 22, fontWeight: 600, color: INK, margin: "0 0 16px" }}>{renderInline(b.text)}</h1>;
     if (b.type === "h2") return <h2 key={i} style={{ fontSize: 16, fontWeight: 600, color: INK, margin: "24px 0 10px" }}>{renderInline(b.text)}</h2>;
+    if (b.type === "h3") return <h3 key={i} style={{ fontSize: 14, fontWeight: 600, color: INK, margin: "16px 0 6px" }}>{renderInline(b.text)}</h3>;
     if (b.type === "ul") return <ul key={i} style={{ margin: "8px 0", paddingLeft: 22 }}>{b.items.map((it, j) => <li key={j} style={{ fontSize: 13, color: "#3D4452", lineHeight: 1.7 }}>{renderInline(it)}</li>)}</ul>;
     if (b.type === "table") {
       const [header, ...rows] = b.rows;
