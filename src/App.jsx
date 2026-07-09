@@ -10711,7 +10711,7 @@ function AppInner() {
         {argentOpen && (isMobile || sidebarOpen) && [
           { id: "revenus", icon: "ti-chart-bar", label: "Mes encaissements" },
           { id: "frais", icon: "ti-receipt-2", label: "Mes dépenses" },
-          { id: "salaire", icon: "ti-cash", label: "Mode Salaire" },
+          { id: "salaire", icon: "ti-pig-money", label: "Ma paie" },
           { id: "achat", icon: "ti-shopping-cart", label: "Mode Achat" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, paddingLeft: 28, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
@@ -10901,10 +10901,12 @@ function AppInner() {
             {/* ═══ LA PAIE D'HECTOR — le rendez-vous mensuel du salaire lissé. ═══
                 Recommandation seulement (Loi X : badge estimation, base visible) ;
                 « versée » = cru sur parole (Loi VIII). */}
-            {paieData?.disponible && !paieData?.historique_suffisant && (paieData?.nb_mois_actifs || 0) >= 1 && (
-              <div style={{ fontSize: 12, color: "#6B8299", padding: "2px 6px" }}>
-                🐾 La Paie de Totor arrive : encore {3 - (paieData.nb_mois_actifs || 0)} mois d'encaissements et je pourrai te proposer un salaire lissé.
-              </div>
+            {paieData?.disponible && !paieData?.historique_suffisant && (
+              <button type="button" onClick={() => setNav("salaire")}
+                style={{ display: "flex", alignItems: "center", gap: 8, background: "none", border: "none", fontSize: 12, color: "#6B8299", padding: "2px 6px", cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                <span style={{ flex: 1 }}>🐾 La Paie de Totor arrive : {(paieData?.nb_mois_actifs || 0) > 0 ? <>encore {3 - (paieData.nb_mois_actifs || 0)} mois d'encaissements et je te proposerai un salaire lissé.</> : <>dès 3 mois d'encaissements, je te proposerai un salaire lissé.</>}</span>
+                <span style={{ color: "#5DCAA5", flexShrink: 0 }}>Comment ça marche →</span>
+              </button>
             )}
             {paieDuMois && paieVerseeEntree && !paieOuverte && (
               <button type="button" onClick={() => setPaieOuverte(true)}
@@ -12100,7 +12102,28 @@ function AppInner() {
 
         {nav === "salaire" && (
           <div>
-            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Combien puis-je me verser ?</h1><p style={S.pageSub}>Trois niveaux, selon ta tolérance au risque</p></div></div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💸 Ma paie</h1><p style={S.pageSub}>Ton salaire lissé chaque mois, et ce que ton solde permet aujourd'hui</p></div></div>
+
+            {/* ── LA PAIE DE TOTOR : l'explication + le renvoi vers la fiche du cockpit. ── */}
+            <div style={{ ...S.card, marginBottom: 14 }}>
+              <div style={{ fontSize: 14.5, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>🐾 La Paie de Totor</div>
+              <p style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 10px" }}>
+                Le 1ᵉʳ de chaque mois, je te propose <strong style={{ color: "#E6EDF5" }}>ton salaire</strong> : un montant stable à te verser, lissé sur tes 6 derniers mois d'encaissements, après la part de l'URSSAF. Les bons mois nourrissent les mois creux : tu retrouves une vraie paie, avec trois curseurs (prudent, recommandé, maximum). C'est une recommandation : c'est toi qui décides et toi qui fais le virement.
+              </p>
+              {paieDuMois ? (
+                <button type="button" onClick={() => { setPaieOuverte(true); setNav("dashboard"); }}
+                  style={{ ...S.btnPrimarySmall, display: "inline-flex", alignItems: "center", gap: 7 }}>
+                  <i className="ti ti-pig-money" aria-hidden="true" style={{ fontSize: 15 }} />
+                  {paieVerseeEntree ? `Paie de ${paieVerseeEntree.mois} versée : revoir la fiche` : `Voir ma paie de ${paieDuMois.mois_label} →`}
+                </button>
+              ) : paieData?.disponible ? (
+                <div style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", borderRadius: 8, padding: "8px 12px", display: "inline-block" }}>
+                  ⏳ Il me faut 3 mois d'encaissements pour te proposer une paie fiable{(paieData?.nb_mois_actifs || 0) > 0 ? ` : encore ${3 - (paieData.nb_mois_actifs || 0)} et c'est parti.` : "."}
+                </div>
+              ) : null}
+            </div>
+
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#8BA5C0", margin: "18px 0 10px" }}>Et là, tout de suite ? Ce que ton solde permet :</div>
             {panique.solde === "" ? (
               <div style={S.card}><p style={S.empty}>Renseigne d'abord ton solde dans <button style={S.linkBtn} onClick={() => setNav("dashboard")}>Dashboard</button> pour voir ce calcul.</p></div>
             ) : (
@@ -13227,11 +13250,12 @@ function AppInner() {
               <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
                 <div><h1 style={S.pageTitle}>Mes dépenses</h1><p style={S.pageSub}>Ce qui sort. Je le compte dans ton disponible.</p></div>
                 <div style={{ display: "flex", gap: 8 }}>
-                  <label style={{ ...S.btnSecondary, cursor: "pointer", display: "inline-flex", alignItems: "center" }}>
+                  <label style={{ ...S.btnPrimarySmall, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 6 }}>
                     <input type="file" accept="application/pdf,image/jpeg,image/png" onChange={e => e.target.files[0] && handleUploadExpenseInvoice(e.target.files[0])} style={{ display: "none" }} />
-                    {uploadingExpenseFile ? "Je lis ta facture…" : "📸 Scanner une facture — je remplis tout"}
+                    <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 15 }} />
+                    {uploadingExpenseFile ? "Je lis ta facture…" : "Scanner une facture : je remplis tout"}
                   </label>
-                  <button style={S.btnPrimarySmall} onClick={() => setShowAddExpense(!showAddExpense)}>+ Ajouter un frais</button>
+                  <button style={S.btnSecondary} onClick={() => setShowAddExpense(!showAddExpense)}>+ Ajouter un frais</button>
                 </div>
               </div>
 
