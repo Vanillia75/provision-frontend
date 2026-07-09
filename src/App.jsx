@@ -13638,7 +13638,7 @@ function AppInner() {
               </div>
 
               {/* ── Statut du compte (bascule auto-entrepreneur / intermittent) ── */}
-              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Ton statut</div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Change le cockpit affiché par TOTOR. Réversible à tout moment.</div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -13655,9 +13655,9 @@ function AppInner() {
                         onClick={() => handleChangeStatut(opt.id)}
                         style={{
                           flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 6,
-                          background: actif ? "#5DCAA5" : "white",
-                          color: actif ? "#04342C" : INK,
-                          border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`,
+                          background: actif ? "#5DCAA5" : "rgba(255,255,255,0.04)",
+                          color: actif ? "#04342C" : "#B5D4F4",
+                          border: `1.5px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.18)"}`,
                           borderRadius: 8, padding: "12px 10px", fontSize: 12.5, fontWeight: 600,
                           cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit",
                           opacity: statutSaving ? 0.6 : 1,
@@ -13673,7 +13673,7 @@ function AppInner() {
               </div>
 
               {/* ── Mode d'imposition : versement libératoire ou impôt classique ── */}
-              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Comment tu paies ton impôt ?</div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>Ça change ce que je mets de côté pour toi. Réversible à tout moment.</div>
                 <div style={{ display: "flex", gap: 8 }}>
@@ -13686,8 +13686,8 @@ function AppInner() {
                       <button key={String(opt.v)} type="button" disabled={liberatoireSaving} onClick={() => handleChangeLiberatoire(opt.v)}
                         style={{
                           flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4, textAlign: "center",
-                          background: actif ? "#5DCAA5" : "white", color: actif ? "#04342C" : INK,
-                          border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`, borderRadius: 8, padding: "12px 10px",
+                          background: actif ? "#5DCAA5" : "rgba(255,255,255,0.04)", color: actif ? "#04342C" : "#B5D4F4",
+                          border: `1.5px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.18)"}`, borderRadius: 8, padding: "12px 10px",
                           fontSize: 12.5, fontWeight: 600, cursor: liberatoireSaving ? "default" : "pointer", fontFamily: "inherit",
                           opacity: liberatoireSaving ? 0.6 : 1,
                         }}>
@@ -13701,10 +13701,10 @@ function AppInner() {
               </div>
 
               {/* ── TVA de facturation : franchise (défaut) ou assujetti ── */}
-              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
                 <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Je facture la TVA</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Je facture la TVA</div>
                     <div style={{ fontSize: 12, color: "#8BA5C0" }}>Active-le seulement si tu es assujetti à la TVA. Par défaut : franchise en base (art. 293 B).</div>
                   </div>
                   <button type="button" disabled={tvaSaving} aria-label="Activer la TVA"
@@ -13712,7 +13712,7 @@ function AppInner() {
                     style={{
                       position: "relative", width: 46, height: 26, borderRadius: 13, border: "none", padding: 0, flexShrink: 0,
                       cursor: tvaSaving ? "default" : "pointer", opacity: tvaSaving ? 0.6 : 1,
-                      background: profile?.fiscal_settings?.vat_mode === "assujetti" ? "#5DCAA5" : "#CBD5E1", transition: "background 0.2s",
+                      background: profile?.fiscal_settings?.vat_mode === "assujetti" ? "#5DCAA5" : "#3A4A5E", transition: "background 0.2s",
                     }}>
                     <span style={{ position: "absolute", top: 3, left: profile?.fiscal_settings?.vat_mode === "assujetti" ? 23 : 3, width: 20, height: 20, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
                   </button>
@@ -13731,8 +13731,8 @@ function AppInner() {
                             return (
                               <button key={r} type="button" disabled={tvaSaving} onClick={() => saveFiscal({ vat_rate: r })}
                                 style={{
-                                  background: actif ? "#5DCAA5" : "white", color: actif ? "#04342C" : INK,
-                                  border: `1.5px solid ${actif ? "#5DCAA5" : "#E2E9F0"}`, borderRadius: 8, padding: "8px 12px",
+                                  background: actif ? "#5DCAA5" : "rgba(255,255,255,0.04)", color: actif ? "#04342C" : "#B5D4F4",
+                                  border: `1.5px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.18)"}`, borderRadius: 8, padding: "8px 12px",
                                   fontSize: 12.5, fontWeight: 600, cursor: tvaSaving ? "default" : "pointer", fontFamily: "inherit",
                                 }}>{formatVatRate(r)} %</button>
                             );
@@ -13751,8 +13751,8 @@ function AppInner() {
               </div>
 
               {/* ── Reprise de numérotation des factures (plancher, jamais d'édition libre) ── */}
-              <div style={{ background: "#F7FAFC", border: "1px solid #E2E9F0", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: INK, marginBottom: 4 }}>Reprendre ma numérotation de factures</div>
+              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", marginBottom: 18 }}>
+                <div style={{ fontSize: 13, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>Reprendre ma numérotation de factures</div>
                 <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Tu factures déjà ailleurs ? Indique le numéro de ta prochaine facture : TOTOR continuera ta série à partir de là, sans trou ni doublon.</div>
                 <label style={{ ...S.label, marginBottom: 0 }}>Prochain numéro de facture
                   <input style={S.input} type="text" value={factureNumeroDepart}
