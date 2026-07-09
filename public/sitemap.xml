@@ -36,9 +36,39 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.montotor.fr/guides/date-anniversaire-intermittent.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.montotor.fr/guides/cachet-heures-intermittent.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.montotor.fr/guides/allocation-journaliere-intermittent-are.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.montotor.fr/guides/auto-entrepreneur.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.montotor.fr/guides/acre-auto-entrepreneur.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.montotor.fr/guides/bic-bnc-choisir-activite-auto-entrepreneur.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.montotor.fr/guides/cfe-auto-entrepreneur.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
   </url>
   <url>
     <loc>https://www.montotor.fr/guides/declarer-chiffre-affaires-urssaf-auto-entrepreneur.html</loc>
