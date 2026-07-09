@@ -5445,7 +5445,8 @@ function AppInner() {
               ].map(l => (
                 <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
               ))}
-              <a href="/guides/" style={{ color: "#4A6280", fontSize: 12, textDecoration: "none", fontFamily: "inherit" }}>Guides</a>
+              {/* Pas de lien « Guides » côté AE : les guides existants sont 100 % intermittents.
+                  À rétablir le jour où des guides auto-entrepreneur seront écrits. */}
               <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}>Une question ? bonjour@montotor.fr</a>
             </div>
             <div style={{ fontSize: 11, color: "#4A6280" }}>Fait pour les auto-entrepreneurs.</div>
