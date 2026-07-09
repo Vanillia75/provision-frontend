@@ -4155,6 +4155,38 @@ function AppInner() {
     return Math.max(0, Math.round((new Date(todayISO) - new Date(inv.date_echeance)) / 86400000));
   }
 
+  // ── Radar acompte : ce client paie-t-il en retard ? (factuel, jamais « client dangereux ») ──
+  // On regarde SES factures déjà PAYÉES (date de paiement vs échéance). À partir de 2 factures
+  // et d'un retard moyen notable, on suggère un acompte. Basé uniquement sur ce que l'app a vu.
+  function radarAcompteClient(nom) {
+    const cible = (nom || "").trim().toLowerCase();
+    if (cible.length < 2) return null;
+    const payees = (invoicesList || []).filter(inv =>
+      (inv.client_nom || "").trim().toLowerCase() === cible &&
+      inv.statut === "payee" && inv.date_paiement && inv.date_echeance
+    );
+    if (payees.length < 2) return null;
+    const retards = payees.map(inv => Math.round((new Date(inv.date_paiement) - new Date(inv.date_echeance)) / 86400000));
+    const retardMoyen = Math.round(retards.reduce((s, r) => s + r, 0) / retards.length);
+    const nbEnRetard = retards.filter(r => r > 3).length;
+    // On n'alerte que si le retard moyen est réel (> 7 j) ET récurrent (au moins la moitié).
+    if (retardMoyen <= 7 || nbEnRetard < Math.ceil(payees.length / 2)) return null;
+    return { nb: payees.length, retardMoyen, nbEnRetard };
+  }
+
+  function renderRadarAcompte(nom) {
+    const r = radarAcompteClient(nom);
+    if (!r) return null;
+    return (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.1)", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 10, padding: "10px 13px", marginBottom: 10 }}>
+        <span style={{ fontSize: 16, flexShrink: 0 }}>🐾</span>
+        <span style={{ fontSize: 12.5, color: "#E8D3A8", lineHeight: 1.55 }}>
+          Ce client t'a payé en moyenne <strong>{r.retardMoyen} jours après l'échéance</strong> sur {r.nb} factures. Pour cette mission, tu peux demander <strong>un acompte à la commande</strong> : c'est une pratique normale qui te protège.
+        </span>
+      </div>
+    );
+  }
+
   // Relance d'impayé pré-rédigée avec les vraies données de la facture.
   // Destinée au CLIENT du testeur → vouvoiement (Loi IX, client-facing).
   // Signature des mails envoyés aux clients : « Prénom Nom — ENTREPRISE »
@@ -13022,6 +13054,7 @@ function AppInner() {
                   <input style={S.input} placeholder="Nom du client" value={factureForm.client_nom} onChange={e => setFactureForm({ ...factureForm, client_nom: e.target.value })} />
                   <input style={S.input} placeholder="Email du client" type="email" value={factureForm.client_email} onChange={e => setFactureForm({ ...factureForm, client_email: e.target.value })} />
                 </div>
+                {renderRadarAcompte(factureForm.client_nom)}
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={factureForm.client_adresse} onChange={e => setFactureForm({ ...factureForm, client_adresse: e.target.value })} />
                 {renderClientType(factureForm, p => setFactureForm({ ...factureForm, ...p }))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
@@ -13265,6 +13298,7 @@ function AppInner() {
                   <input style={S.input} placeholder="Nom du client" value={quoteForm.client_nom} onChange={e => setQuoteForm({ ...quoteForm, client_nom: e.target.value })} />
                   <input style={S.input} placeholder="Email du client" type="email" value={quoteForm.client_email} onChange={e => setQuoteForm({ ...quoteForm, client_email: e.target.value })} />
                 </div>
+                {renderRadarAcompte(quoteForm.client_nom)}
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={quoteForm.client_adresse} onChange={e => setQuoteForm({ ...quoteForm, client_adresse: e.target.value })} />
                 {renderClientType(quoteForm, p => setQuoteForm({ ...quoteForm, ...p }))}
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
