@@ -5,6 +5,8 @@
   "rewrites": [
     { "source": "/guides", "destination": "/guides/index.html" },
     { "source": "/guides/", "destination": "/guides/index.html" },
+    { "source": "/intermittent", "destination": "/intermittent.html" },
+    { "source": "/auto-entrepreneur", "destination": "/auto-entrepreneur.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [

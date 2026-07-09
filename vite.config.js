@@ -52,7 +52,19 @@ export default defineConfig(() => {
     ],
     // "hidden" = sourcemaps générées (pour l'upload) mais SANS commentaire
     // //# sourceMappingURL dans les bundles servis → non exposées publiquement.
-    build: { sourcemap: uploadSentry ? "hidden" : false },
+    build: {
+      sourcemap: uploadSentry ? "hidden" : false,
+      // Multi-pages : chaque landing a son propre HTML (titre/description/texte
+      // propres, lisibles par Google avant React). Les 3 chargent la MÊME app,
+      // qui affiche la bonne page selon l'URL.
+      rollupOptions: {
+        input: {
+          main: path.resolve(process.cwd(), "index.html"),
+          intermittent: path.resolve(process.cwd(), "intermittent.html"),
+          "auto-entrepreneur": path.resolve(process.cwd(), "auto-entrepreneur.html"),
+        },
+      },
+    },
     define: {
       __BUILD_ID__: JSON.stringify(BUILD_ID),
     },
