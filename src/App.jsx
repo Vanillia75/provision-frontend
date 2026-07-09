@@ -11313,7 +11313,7 @@ function AppInner() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 14 }}>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
-                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> TOTOR lit ton solde, jamais bouger ton argent (règle européenne DSP2).</span>
+                      <span style={{ fontSize: 12.5, color: "#C2D4E6", lineHeight: 1.5 }}><strong style={{ color: "#FFFFFF" }}>Lecture seule.</strong> TOTOR lit ton solde, mais ne peut jamais toucher à ton argent (règle européenne DSP2).</span>
                     </div>
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
                       <i className="ti ti-shield-lock" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5", flexShrink: 0, marginTop: 1 }} />
