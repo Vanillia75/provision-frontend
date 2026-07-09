@@ -138,11 +138,18 @@ const STATUTS = [
   { id: "sas", label: "SAS / SASU", disponible: false },
 ];
 
+// Petit formateur de pourcentage (0.212 -> "21,2%").
+const _pctFr = (dec) => `${(dec * 100).toFixed(1).replace(".", ",")}%`;
+// ⚠️ SOURCE UNIQUE : les chiffres (taux, abattement, seuil TVA) viennent de fiscalite.js.
+// On ne les re-tape JAMAIS ici — seuls les libellés d'affichage sont locaux.
 const ACTIVITES = [
-  { id: "vente", label: "Vente de marchandises", taux: "12,3%", abattement: 0.71, seuilTva: 85000 },
-  { id: "services", label: "Prestations de services", taux: "21,2%", abattement: 0.50, seuilTva: 37500 },
-  { id: "bnc", label: "Profession libérale (BNC)", taux: "25,6%", abattement: 0.34, seuilTva: 37500 },
-];
+  { id: "vente", label: "Vente de marchandises" },
+  { id: "services", label: "Prestations de services" },
+  { id: "bnc", label: "Profession libérale (BNC)" },
+].map(a => {
+  const r = getRegime(a.id);
+  return { ...a, taux: _pctFr(r.tauxCotisations), abattement: r.abattementFiscal, seuilTva: r.seuilTVA };
+});
 
 const TMI_OPTIONS = [
   { id: "0", label: "0% — je ne paie pas d'impôt actuellement" },
@@ -829,7 +836,7 @@ function AppInner() {
   const [factureNumeroDepart, setFactureNumeroDepart] = useState(""); // reprise de numérotation (sauvé au blur)
   const [vatNumber, setVatNumber] = useState(""); // brouillon du n° TVA (sauvé au blur)
   const [simCaLanding, setSimCaLanding] = useState("3000");
-  const [simActLanding, setSimActLanding] = useState("0.212");
+  const [simActLanding, setSimActLanding] = useState(String(getRegime("services").tauxCotisations));
   // Simulateur cachets→heures de la landing intermittent
   const [simCachetsLanding, setSimCachetsLanding] = useState("5");
   const [simModeLanding, setSimModeLanding] = useState("cachets"); // "heures" ou "cachets" (1 cachet = 12h)
@@ -5232,7 +5239,7 @@ function AppInner() {
     // ═══════════════ LANDING AUTO-ENTREPRENEUR (sœur jumelle, même DA) ═══════════════
     if (landingStatut === "auto_entrepreneur") {
       const caNum = Math.max(0, parseFloat(simCaLanding) || 0);
-      const tauxSim = parseFloat(simActLanding) || 0.212;
+      const tauxSim = parseFloat(simActLanding) || getRegime("services").tauxCotisations;
       const urssafSim = Math.round(caNum * tauxSim);
       const dispoSim = Math.max(0, Math.round(caNum * (1 - tauxSim)));
       const fmtSim = n => n.toLocaleString("fr-FR") + " €";
@@ -5330,9 +5337,10 @@ function AppInner() {
                       </div>
                       <select value={simActLanding} onChange={e => setSimActLanding(e.target.value)}
                         style={{ flex: 1, background: "rgba(4,14,28,0.7)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 8, padding: "10px 8px", fontSize: 11, color: "white", outline: "none", boxSizing: "border-box" }}>
-                        <option value="0.212">Services (21,2 %)</option>
-                        <option value="0.256">Libéral BNC (25,6 %)</option>
-                        <option value="0.123">Vente (12,3 %)</option>
+                        {[{ id: "services", court: "Services" }, { id: "bnc", court: "Libéral BNC" }, { id: "vente", court: "Vente" }].map(o => {
+                          const r = getRegime(o.id);
+                          return <option key={o.id} value={r.tauxCotisations}>{o.court} ({_pctFr(r.tauxCotisations).replace("%", " %")})</option>;
+                        })}
                       </select>
                     </div>
                     <div style={{ display: "flex", gap: 8 }}>
@@ -12653,13 +12661,13 @@ function AppInner() {
               <div style={{ display: "flex", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
                 <MontantInput decimales style={{ ...S.input, flex: "1 1 160px" }} placeholder="Exemple : 3000€" value={simCa} onChange={e => setSimCa(e)} />
                 <select style={{ ...S.input, flex: "1 1 200px" }} value={simActivite} onChange={e => setSimActivite(e.target.value)}>
-                  <option value="vente">Vente de marchandises (12,3%)</option>
-                  <option value="services">Prestations de services (21,2%)</option>
-                  <option value="bnc">Profession libérale (25,6%)</option>
+                  {[{ id: "vente", court: "Vente de marchandises" }, { id: "services", court: "Prestations de services" }, { id: "bnc", court: "Profession libérale" }].map(o => (
+                    <option key={o.id} value={o.id}>{o.court} ({_pctFr(getRegime(o.id).tauxCotisations)})</option>
+                  ))}
                 </select>
               </div>
               {(() => {
-                const tauxSim = { vente: 0.123, services: 0.212, bnc: 0.256 }[simActivite];
+                const tauxSim = getRegime(simActivite).tauxCotisations;
                 const caSim = parseFloat(simCa) || 0;
                 const urssafSim = Math.round(caSim * tauxSim * 100) / 100;
                 const netSim = Math.round((caSim - urssafSim) * 100) / 100;
