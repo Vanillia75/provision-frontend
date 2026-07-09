@@ -4584,6 +4584,11 @@ function AppInner() {
   // --- Simulateur de vie : combien gagner pour vivre comme je veux ---
   const revenuViseNum = parseFloat(revenuViseMensuel) || 0;
   const tauxGlobalDec = estimateData ? (estimateData.taux_global_pct || 0) / 100 : 0;
+  // Le VRAI taux horaire : ce qu'il reste par heure APRÈS les cotisations URSSAF (déclaré ICI,
+  // après tauxGlobalDec, pour éviter le TDZ). On ne déduit PAS l'impôt (personnel, variable).
+  const tauxHoraireNetCoach = tauxHoraireReel !== null && tauxGlobalDec > 0
+    ? Math.round(tauxHoraireReel * (1 - tauxGlobalDec) * 100) / 100
+    : null;
   const caMensuelNecessaire = (revenuViseNum > 0 && tauxGlobalDec < 1) ? Math.round(revenuViseNum / (1 - tauxGlobalDec)) : null;
   const caAnnuelNecessaire = caMensuelNecessaire !== null ? caMensuelNecessaire * 12 : null;
   const urssafAnnuelleVie = caAnnuelNecessaire !== null ? Math.round(caAnnuelNecessaire * tauxGlobalDec) : null;
@@ -12595,14 +12600,23 @@ function AppInner() {
 
             {tauxHoraireReel !== null && (
               <>
-                <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "32px 24px" }}>
-                  <div style={S.paniqueResultLabel}>Ton vrai revenu horaire</div>
-                  <div style={{ ...S.paniqueResultValue, fontSize: 48, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 20 }}>/h</span></div>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75", marginTop: 8 }}>
+                <div style={{ ...S.card, marginTop: 14, textAlign: "center", padding: "28px 24px" }}>
+                  <div style={S.paniqueResultLabel}>Ce que tu factures, par heure</div>
+                  <div style={{ ...S.paniqueResultValue, fontSize: 40, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75" }}>{formatEUR(tauxHoraireReel)}<span style={{ fontSize: 18 }}>/h</span></div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: niveauTarif === "rouge" ? "#A32D2D" : niveauTarif === "jaune" ? "#854F0B" : "#1D9E75", marginTop: 6 }}>
                     {niveauTarif === "rouge" && "🔴 Tu es sous-facturé"}
                     {niveauTarif === "jaune" && "🟡 Tarif dans la moyenne"}
                     {niveauTarif === "vert" && "🟢 Bien facturé, au-dessus de la moyenne"}
                   </div>
+                  {tauxHoraireNetCoach !== null && (
+                    <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid rgba(255,255,255,0.1)" }}>
+                      <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 4 }}>🐾 Ce que tu te paies vraiment, après l'URSSAF ({String(estimateData?.taux_global_pct).replace(".", ",")} %)</div>
+                      <div style={{ fontSize: 44, fontWeight: 800, color: "#5DCAA5", lineHeight: 1.1 }}>{formatEUR(tauxHoraireNetCoach)}<span style={{ fontSize: 18 }}>/h</span></div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5, maxWidth: 420, margin: "8px auto 0" }}>
+                        C'est ce qui te reste une fois tes cotisations mises de côté. L'impôt sur le revenu, lui, dépend de ta situation personnelle, je ne l'estime pas.
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ ...S.card, marginTop: 14 }}>
