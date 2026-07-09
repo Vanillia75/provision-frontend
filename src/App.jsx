@@ -573,6 +573,8 @@ function AppInner() {
   const [bankChoixOuvert, setBankChoixOuvert] = useState(false);
   const [bankRecherche, setBankRecherche] = useState("");
   const [bankUsage, setBankUsage] = useState("personal");  // "personal" | "business"
+  const [bankComptes, setBankComptes] = useState([]);      // comptes de la connexion (choix du compte suivi)
+  const [bankComptesOuvert, setBankComptesOuvert] = useState(false);
   const [emailVerified, setEmailVerified] = useState(true);
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
@@ -1281,6 +1283,41 @@ function AppInner() {
       }
     } catch (err) {
       addHectorMessage(err.message || "Connexion bancaire indisponible pour le moment.", "#F0C36D");
+      setBankLoading(false);
+    }
+  }
+
+  // Liste les comptes de la connexion pour choisir LE compte suivi.
+  async function handleBankListerComptes() {
+    setBankComptesOuvert(true);
+    setBankLoading(true);
+    try {
+      const data = await apiFetch("/bank/comptes");
+      setBankComptes((data && data.comptes) || []);
+    } catch (err) {
+      addHectorMessage(err.message || "Impossible de lister les comptes pour le moment.", "#F0C36D");
+      setBankComptesOuvert(false);
+    } finally {
+      setBankLoading(false);
+    }
+  }
+
+  // Change le compte suivi et resynchronise le solde.
+  async function handleBankChoisirCompte(uid) {
+    setBankLoading(true);
+    try {
+      const data = await apiFetch("/bank/compte", { method: "POST", body: JSON.stringify({ uid }) });
+      setBankComptesOuvert(false);
+      if (data && data.solde != null) {
+        setBankSolde(data.solde);
+        setPanique(prev => ({ ...prev, solde: String(data.solde) }));
+        safeStorage.setItem("soldeUpdatedAt", new Date().toISOString());
+      }
+      showToast("Compte suivi mis à jour ✓", "ti-building-bank");
+      loadBankStatus();
+    } catch (err) {
+      addHectorMessage(err.message || "Impossible de changer de compte pour le moment.", "#F0C36D");
+    } finally {
       setBankLoading(false);
     }
   }
@@ -11236,11 +11273,35 @@ function AppInner() {
                       style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(55,138,221,0.15)", border: "1px solid rgba(55,138,221,0.4)", color: "#9FD0FF", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 600, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
                       <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 15 }} /> Rafraîchir le solde
                     </button>
+                    <button type="button" onClick={handleBankListerComptes} disabled={bankLoading}
+                      style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(55,138,221,0.4)", color: "#9FD0FF", borderRadius: 8, padding: "9px 16px", fontSize: 13, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
+                      <i className="ti ti-switch-horizontal" aria-hidden="true" style={{ fontSize: 15 }} /> Changer de compte
+                    </button>
                     <button type="button" onClick={handleBankDisconnect} disabled={bankLoading}
                       style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "9px 16px", fontSize: 13, cursor: bankLoading ? "default" : "pointer", fontFamily: "inherit", opacity: bankLoading ? 0.6 : 1 }}>
                       <i className="ti ti-unlink" aria-hidden="true" style={{ fontSize: 15 }} /> Débrancher
                     </button>
                   </div>
+                  {bankComptesOuvert && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 6 }}>Choisis le compte dont je dois suivre le solde :</div>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 4, maxHeight: 200, overflowY: "auto" }}>
+                        {bankLoading && bankComptes.length === 0 && <span style={{ fontSize: 12.5, color: "#8BA5C0", padding: 6 }}>Je regarde tes comptes…</span>}
+                        {bankComptes.map(c => (
+                          <button key={c.uid} type="button" onClick={() => handleBankChoisirCompte(c.uid)} disabled={bankLoading || c.suivi}
+                            style={{ display: "flex", alignItems: "center", gap: 10, background: c.suivi ? "rgba(93,202,165,0.1)" : "rgba(255,255,255,0.04)", border: `1px solid ${c.suivi ? "rgba(93,202,165,0.4)" : "rgba(255,255,255,0.08)"}`, color: "#DCE8F5", borderRadius: 8, padding: "10px 12px", fontSize: 13, cursor: c.suivi ? "default" : "pointer", fontFamily: "inherit", textAlign: "left", minHeight: 44 }}>
+                            <i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 15, color: "#5DA9F0", flexShrink: 0 }} />
+                            <span style={{ flex: 1 }}>{c.nom || "Compte"}{c.iban_fin ? <span style={{ color: "#8BA5C0" }}> · …{c.iban_fin}</span> : null}</span>
+                            {c.suivi && <span style={{ fontSize: 10.5, fontWeight: 700, color: "#5DCAA5" }}>✓ suivi</span>}
+                          </button>
+                        ))}
+                      </div>
+                      <button type="button" onClick={() => setBankComptesOuvert(false)}
+                        style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 6, padding: 0, textDecoration: "underline" }}>
+                        Fermer
+                      </button>
+                    </div>
+                  )}
                 </>
               ) : (
                 <>
