@@ -841,6 +841,14 @@ function AppInner() {
   const [declarationCotisations, setDeclarationCotisations] = useState("");
   const [editingDeclarationCa, setEditingDeclarationCa] = useState(false);
   const [editingDeclarationCotisations, setEditingDeclarationCotisations] = useState(false);
+  // ─── La Paie d'Hector (salaire lissé AE) ───
+  const [paieData, setPaieData] = useState(null);          // GET /paie (prudent/recommandé/maximum)
+  const [paieOuverte, setPaieOuverte] = useState(false);   // fiche de paie dépliée
+  const [paieChoix, setPaieChoix] = useState("recommande"); // "prudent" | "recommande" | "maximum" | "libre"
+  const [paieMontantLibre, setPaieMontantLibre] = useState("");
+  const [historiquePaies, setHistoriquePaies] = useState(() => {
+    try { return JSON.parse(safeStorage.getItem("historiquePaies") || "[]"); } catch { return []; }
+  });
   const [historiqueDeclarations, setHistoriqueDeclarations] = useState(() => {
     try { return JSON.parse(safeStorage.getItem("historiqueDeclarations") || "[]"); } catch { return []; }
   });
@@ -954,13 +962,14 @@ function AppInner() {
       if (p.reserve_securite != null) setObjectifSecurite(String(p.reserve_securite));
       if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
-        const [est, inc, expSummary, proj] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary"), apiFetch("/projection").catch(() => null)])
+        const [est, inc, expSummary, proj, paie] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary"), apiFetch("/projection").catch(() => null), apiFetch("/paie").catch(() => null)])
           .catch(e => { console.error("chargement des données:", e); throw new Error("Je n'arrive pas à charger tes chiffres pour l'instant. Vérifie ta connexion et recharge la page — je garde tout au chaud. 🐾"); });
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
         setProjectionData(proj);
-        // État de la connexion bancaire (Powens) — best effort, n'interrompt rien.
+        setPaieData(paie);
+        // État de la connexion bancaire — best effort, n'interrompt rien.
         loadBankStatus();
         // Ouvrir le walkthrough au premier accès de CE compte uniquement
         if (!walkthroughDejaVu(p.email)) {
@@ -4215,6 +4224,29 @@ function AppInner() {
     safeStorage.setItem("historiqueDeclarations", JSON.stringify(next));
     showToast(`Bien noté — déclaration de ${periodeUrssafADeclarer.label} faite ✓`, "ti-check");
   };
+  // ── La Paie d'Hector : le rendez-vous mensuel du salaire lissé. ──
+  // « Versée » = cru sur parole (Loi VIII), persisté localement comme les déclarations.
+  const paieDuMois = paieData?.disponible && paieData?.historique_suffisant ? paieData : null;
+  const paieVerseeEntree = paieDuMois ? historiquePaies.find(h => h.cle === paieDuMois.cle_mois) : null;
+  const confirmerPaieVersee = (montant) => {
+    if (!paieDuMois || !(montant > 0)) return;
+    const next = [{ cle: paieDuMois.cle_mois, mois: paieDuMois.mois_label, montant, date: new Date().toISOString() }, ...historiquePaies].slice(0, 24);
+    setHistoriquePaies(next);
+    safeStorage.setItem("historiquePaies", JSON.stringify(next));
+    setPaieOuverte(false);
+    showToast(`Paie de ${paieDuMois.mois_label} versée : ${formatEUR(montant)} ✓`, "ti-pig-money");
+  };
+  // La phrase du mois (2 lignes, ton compagnon) : déterministe selon la tendance et le mois.
+  const phraseDePaie = (() => {
+    if (!paieDuMois) return "";
+    const net = paieDuMois.dernier_mois?.net || 0;
+    const reco = paieDuMois.recommande || 0;
+    const bons = ["Beau mois. Tu as bien bossé, on en profite sans tout dépenser.", "Joli mois. J'ai gardé un peu plus de côté pour les suivants.", "Tu avances fort, et ta réserve aussi."];
+    const calmes = ["Mois plus calme : c'est exactement pour ça qu'on lisse ta paie.", "Ce mois-ci, tu peux souffler : ta paie tient grâce aux mois précédents.", "Un creux ne change pas ta paie. C'est le principe."];
+    const stables = ["Régulier comme une horloge. Ta paie aussi.", "Tout est stable : verse-toi ta paie l'esprit tranquille.", "Un mois solide de plus. Ta paie est prête."];
+    const pool = net > reco * 1.2 ? bons : net < reco * 0.8 ? calmes : stables;
+    return pool[new Date().getMonth() % pool.length];
+  })();
   const totalRegularisations = Math.round(regularisationsList.reduce((s, r) => s + (r.cotisations || 0), 0) * 100) / 100;
   const activiteInfo = ACTIVITES.find(a => a.id === profile?.activite);
   const revenuImposableAnnuel = activiteInfo ? (estimateData?.ca_annuel || 0) * (1 - activiteInfo.abattement) : 0;
@@ -10851,7 +10883,7 @@ function AppInner() {
               <div style={{ display: "flex", alignItems: "center", gap: 12, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "12px 16px", flexWrap: "wrap" }}>
                 <HectorTete size={30} />
                 <span style={{ flex: 1, minWidth: 220, fontSize: 13.5, color: "#B5D4F4", lineHeight: 1.5 }}>
-                  🐾 Ta déclaration URSSAF de <strong>{periodeUrssafADeclarer.label}</strong> est à faire avant le <strong>{formatDate(periodeUrssafADeclarer.date_limite_declaration)}</strong> — je te l'ai préparée.
+                  🐾 Ta déclaration URSSAF de <strong>{periodeUrssafADeclarer.label}</strong> est à faire avant le <strong>{formatDate(periodeUrssafADeclarer.date_limite_declaration)}</strong> : je te l'ai préparée.
                 </span>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button type="button" onClick={() => setNav("declaration")}
@@ -10865,6 +10897,118 @@ function AppInner() {
                 </div>
               </div>
             )}
+
+            {/* ═══ LA PAIE D'HECTOR — le rendez-vous mensuel du salaire lissé. ═══
+                Recommandation seulement (Loi X : badge estimation, base visible) ;
+                « versée » = cru sur parole (Loi VIII). */}
+            {paieData?.disponible && !paieData?.historique_suffisant && (paieData?.nb_mois_actifs || 0) >= 1 && (
+              <div style={{ fontSize: 12, color: "#6B8299", padding: "2px 6px" }}>
+                🐾 La Paie d'Hector arrive : encore {3 - (paieData.nb_mois_actifs || 0)} mois d'encaissements et je pourrai te proposer un salaire lissé.
+              </div>
+            )}
+            {paieDuMois && paieVerseeEntree && !paieOuverte && (
+              <button type="button" onClick={() => setPaieOuverte(true)}
+                style={{ display: "flex", alignItems: "center", gap: 10, background: "#0a1322", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "10px 16px", cursor: "pointer", textAlign: "left", width: "100%", fontFamily: "inherit" }}>
+                <span style={{ fontSize: 13, color: "#8BA5C0", flex: 1 }}>🐾 Paie de {paieVerseeEntree.mois} : <strong style={{ color: "#5DCAA5" }}>{formatEUR(paieVerseeEntree.montant)}</strong> versés ✓</span>
+                <span style={{ fontSize: 12, color: "#5DCAA5" }}>Revoir →</span>
+              </button>
+            )}
+            {paieDuMois && !paieVerseeEntree && !paieOuverte && (
+              <div style={{ display: "flex", alignItems: "center", gap: 12, background: "linear-gradient(135deg, rgba(93,202,165,0.12), rgba(55,138,221,0.08))", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 12, padding: "14px 18px", flexWrap: "wrap" }}>
+                <HectorTete size={34} />
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>🐾 Ta paie de {paieDuMois.mois_label} est prête.</div>
+                  <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>Ton salaire lissé, calculé sur tes 6 derniers mois.</div>
+                </div>
+                <button type="button" onClick={() => setPaieOuverte(true)}
+                  style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "10px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>
+                  Voir ma paie →
+                </button>
+              </div>
+            )}
+            {paieDuMois && paieOuverte && (() => {
+              const options = [
+                { id: "prudent", label: "Prudent", montant: paieDuMois.prudent },
+                { id: "recommande", label: "Recommandé", montant: paieDuMois.recommande },
+                { id: "maximum", label: "Maximum", montant: paieDuMois.maximum },
+              ];
+              const montantChoisi = paieChoix === "libre"
+                ? (parseFloat(paieMontantLibre) || 0)
+                : (options.find(o => o.id === paieChoix)?.montant || 0);
+              return (
+                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 14, padding: "20px 22px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
+                    <HectorTete size={30} />
+                    <div style={{ fontSize: 16, fontWeight: 800, color: "white", flex: 1 }}>Ta paie de {paieDuMois.mois_label}</div>
+                    <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 10px" }}>Estimation</span>
+                    <button type="button" onClick={() => setPaieOuverte(false)} style={{ background: "none", border: "none", color: "#6B8299", fontSize: 18, cursor: "pointer", fontFamily: "inherit", padding: 0 }} aria-label="Fermer">×</button>
+                  </div>
+
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, fontSize: 13, color: "#B5D4F4", marginBottom: 14 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Encaissé en {paieDuMois.dernier_mois?.label}</span><strong style={{ color: "white" }}>{formatEUR(paieDuMois.dernier_mois?.encaisse || 0)}</strong></div>
+                    <div style={{ display: "flex", justifyContent: "space-between" }}><span>Mis de côté pour l'URSSAF ({String(paieDuMois.taux_global_pct).replace(".", ",")} %{paieDuMois.versement_liberatoire ? ", impôt compris" : ""})</span><span style={{ color: "#FAC775" }}>−{formatEUR(paieDuMois.dernier_mois?.provision || 0)}</span></div>
+                    {!paieDuMois.versement_liberatoire && (
+                      <div style={{ fontSize: 11, color: "#6B8299" }}>Montants avant impôt sur le revenu (il dépend de ta situation personnelle).</div>
+                    )}
+                  </div>
+
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 8 }}>👉 Je te recommande de te verser :</div>
+                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+                    {options.map(o => (
+                      <button key={o.id} type="button" onClick={() => setPaieChoix(o.id)}
+                        style={{ background: paieChoix === o.id ? "rgba(93,202,165,0.15)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${paieChoix === o.id ? "#5DCAA5" : "rgba(255,255,255,0.1)"}`, borderRadius: 10, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", minHeight: 44 }}>
+                        <div style={{ fontSize: 11, color: paieChoix === o.id ? "#5DCAA5" : "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{o.label}</div>
+                        <div style={{ fontSize: o.id === "recommande" ? 22 : 17, fontWeight: 800, color: "white", marginTop: 2 }}>{formatEUR(o.montant)}</div>
+                      </button>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+                    <button type="button" onClick={() => setPaieChoix("libre")}
+                      style={{ background: "none", border: "none", color: paieChoix === "libre" ? "#5DCAA5" : "#6B8299", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+                      autre montant
+                    </button>
+                    {paieChoix === "libre" && (
+                      <div style={{ position: "relative", width: 140 }}>
+                        <MontantInput autoFocus value={paieMontantLibre} onChange={setPaieMontantLibre}
+                          style={{ width: "100%", background: "rgba(255,255,255,0.06)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 7, padding: "7px 26px 7px 10px", fontSize: 14, fontWeight: 700, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }} />
+                        <span style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", fontSize: 12, color: "#5DCAA5" }}>€</span>
+                      </div>
+                    )}
+                  </div>
+
+                  {phraseDePaie && (
+                    <div style={{ fontSize: 13, color: "#B5D4F4", fontStyle: "italic", background: "rgba(93,202,165,0.06)", borderLeft: "3px solid #5DCAA5", borderRadius: "0 8px 8px 0", padding: "10px 14px", marginBottom: 14, lineHeight: 1.5 }}>
+                      🐾 {phraseDePaie}
+                    </div>
+                  )}
+
+                  <details style={{ marginBottom: 14 }}>
+                    <summary style={{ fontSize: 12, color: "#6B8299", cursor: "pointer" }}>Comment je calcule ta paie</summary>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.6, marginTop: 8 }}>
+                      Je regarde tes 6 derniers mois complets, après provision URSSAF :
+                      <div style={{ marginTop: 6 }}>
+                        {(paieDuMois.historique || []).map(h => (
+                          <div key={h.mois} style={{ display: "flex", justifyContent: "space-between" }}><span>{h.mois}</span><span style={{ color: "#B5D4F4" }}>{formatEUR(h.net)}</span></div>
+                        ))}
+                      </div>
+                      <div style={{ marginTop: 8 }}>
+                        <strong style={{ color: "#B5D4F4" }}>Recommandé</strong> = le salaire que ces 6 mois peuvent soutenir durablement (la médiane).
+                        {" "}<strong style={{ color: "#B5D4F4" }}>Prudent</strong> = tenable même si tes 3 mois les plus faibles se répètent.
+                        {" "}<strong style={{ color: "#B5D4F4" }}>Maximum</strong> = ce que ton dernier mois a réellement laissé.
+                      </div>
+                    </div>
+                  </details>
+
+                  <button type="button" disabled={!(montantChoisi > 0)} onClick={() => confirmerPaieVersee(montantChoisi)}
+                    style={{ width: "100%", background: montantChoisi > 0 ? "#5DCAA5" : "rgba(255,255,255,0.08)", color: montantChoisi > 0 ? "#04342C" : "#6B8299", border: "none", borderRadius: 10, padding: "13px 18px", fontSize: 14.5, fontWeight: 800, cursor: montantChoisi > 0 ? "pointer" : "default", fontFamily: "inherit", minHeight: 48 }}>
+                    ✓ Je me suis versé {montantChoisi > 0 ? formatEUR(montantChoisi) : "…"}
+                  </button>
+                  <p style={{ fontSize: 11, color: "#6B8299", margin: "10px 0 0", lineHeight: 1.5, textAlign: "center" }}>
+                    Recommandation basée sur ce que tu m'as confié. C'est toi qui décides, et c'est toi qui fais le virement. Je ne touche jamais à ton argent.
+                  </p>
+                </div>
+              );
+            })()}
 
             {/* ── MINI-STATS 2 COLONNES (téléphone) ── */}
             {isMobile && (
@@ -11265,7 +11409,7 @@ function AppInner() {
                   </p>
                   {bankExpiree && (
                     <p style={{ fontSize: 12.5, color: "#FAC775", lineHeight: 1.5, margin: "0 0 6px" }}>
-                      ⚠️ Le consentement donné à ta banque semble expiré ou révoqué — relie-la à nouveau pour relancer la synchronisation.
+                      ⚠️ Le consentement donné à ta banque semble expiré ou révoqué : relie-la à nouveau pour relancer la synchronisation.
                     </p>
                   )}
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginTop: 12 }}>
@@ -11720,7 +11864,7 @@ function AppInner() {
                 <span style={{ fontSize: 16 }}>🐾</span>
                 <span style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.55 }}>
                   Ce chiffre repose sur <strong style={{ color: "#B5D4F4" }}>{nbEncaissementsPeriode} encaissement{nbEncaissementsPeriode > 1 ? "s" : ""}</strong> que tu m'as confié{nbEncaissementsPeriode > 1 ? "s" : ""} pour {pDecl?.label}.
-                  S'il te manque un règlement, <button style={{ ...S.linkBtn, padding: 0, fontSize: 12.5 }} onClick={() => setNav("revenus")}>ajoute-le d'abord</button> — sinon tu déclarerais un montant incomplet.
+                  S'il te manque un règlement, <button style={{ ...S.linkBtn, padding: 0, fontSize: 12.5 }} onClick={() => setNav("revenus")}>ajoute-le d'abord</button>, sinon tu déclarerais un montant incomplet.
                 </span>
               </div>
 
