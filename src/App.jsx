@@ -464,6 +464,8 @@ function AppInner() {
   const [interCockpitError, setInterCockpitError] = useState("");
   // Brique 5.2 : saisie et liste des activités intermittent
   const [interActivites, setInterActivites] = useState([]);
+  const [quotaInputs, setQuotaInputs] = useState({});   // saisie des quotas jours/employeur (clé = nom normalisé)
+  const [quotasCardOpen, setQuotasCardOpen] = useState(true); // carte quotas employeurs (accordéon, ouvert par défaut)
   const [interShowAdd, setInterShowAdd] = useState(true);
   // Formulaire d'ajout replié par défaut dès qu'il existe au moins une activité :
   // l'utilisateur récurrent consulte plus qu'il ne saisit (liste d'abord). Un compte
@@ -1449,6 +1451,17 @@ function AppInner() {
       setError(err.message);
     } finally {
       setRappelUrssafSaving(false);
+    }
+  }
+
+  // Quota de jours pour un employeur (intermittent). quota=null/0 → on retire le quota.
+  async function saveQuotaEmployeur(nom, quota) {
+    try {
+      const data = await apiFetch("/profile/quota-employeur", { method: "POST", body: JSON.stringify({ nom, quota: quota || null }) });
+      setProfile(prev => (prev ? { ...prev, quotas_employeurs: (data && data.quotas_employeurs) || [] } : prev));
+      showToast(quota ? `Quota enregistré pour ${nom} 🐾` : `Quota retiré pour ${nom}`, "ti-calendar-stats");
+    } catch (err) {
+      setError(err.message);
     }
   }
 
@@ -9893,6 +9906,107 @@ function AppInner() {
                     </button>
                   </div>
                 )}
+
+                {/* ── Mes jours par employeur (quotas internes des boîtes) ── */}
+                {interActivites.length > 0 && (() => {
+                  const anneeCourante = new Date().getFullYear();
+                  const TYPES_TRAVAIL = ["heures", "cachet_isole", "cachet_groupe"];
+                  const parEmp = {};                 // clé normalisée -> { nom, jours: Set }
+                  const joursSansEmp = new Set();
+                  (interActivites || []).forEach(a => {
+                    if (!TYPES_TRAVAIL.includes(a.type_activite) || !a.date) return;
+                    const debut = new Date(a.date + "T00:00:00");
+                    if (isNaN(debut)) return;
+                    const fin = (a.date_fin && a.date_fin >= a.date) ? new Date(a.date_fin + "T00:00:00") : new Date(debut);
+                    const nom = (a.employeur && a.employeur.trim()) || "";
+                    const cle = nom.toLowerCase();
+                    let garde = 0; // garde-fou anti-boucle sur une date_fin aberrante
+                    for (let d = new Date(debut); d <= fin && garde < 400; d.setDate(d.getDate() + 1), garde++) {
+                      if (d.getFullYear() !== anneeCourante) continue;
+                      const iso = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+                      if (!nom) { joursSansEmp.add(iso); }
+                      else { if (!parEmp[cle]) parEmp[cle] = { nom, jours: new Set() }; parEmp[cle].jours.add(iso); }
+                    }
+                  });
+                  const quotas = profile?.quotas_employeurs || [];
+                  const cles = new Set([...Object.keys(parEmp), ...quotas.map(e => (e.nom || "").toLowerCase())]);
+                  if (cles.size === 0 && joursSansEmp.size === 0) return null;
+                  const lignes = [...cles].map(cle => {
+                    const q = quotas.find(e => (e.nom || "").toLowerCase() === cle);
+                    return { cle, nom: parEmp[cle]?.nom || q?.nom || cle, jours: parEmp[cle]?.jours.size || 0, quota: q ? q.quota : null };
+                  }).sort((a, b) => b.jours - a.jours);
+                  const etatQuota = (jours, quota) => {
+                    if (!quota) return null;
+                    const r = jours / quota;
+                    if (r < 0.7) return { txt: "encore large", col: "#5DCAA5" };
+                    if (r < 0.9) return { txt: "tu avances tranquillement", col: "#5DCAA5" };
+                    if (r < 1) return { txt: "tu approches du plafond", col: "#FAC775" };
+                    return { txt: "plafond atteint, d'après tes saisies", col: "#EF9F27" };
+                  };
+                  return (
+                    <div style={{ background: "#0a1322", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+                      <div onClick={() => setQuotasCardOpen(o => !o)} role="button" tabIndex={0} style={{ display: "flex", alignItems: "center", gap: 10, cursor: "pointer" }}>
+                        <i className="ti ti-calendar-stats" aria-hidden="true" style={{ fontSize: 19, color: "#5DA9F0", flexShrink: 0 }} />
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Mes jours par employeur · {anneeCourante}</div>
+                          <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 1 }}>Pour ne pas dépasser le quota interne de chaque boîte.</div>
+                        </div>
+                        <span style={{ fontSize: 9.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase", color: "#9FD0FF", background: "rgba(55,138,221,0.2)", border: "1px solid rgba(55,138,221,0.45)", borderRadius: 999, padding: "3px 9px", flexShrink: 0 }}>Estimation</span>
+                        <i className={`ti ti-chevron-${quotasCardOpen ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 18, color: "#6B8299", flexShrink: 0 }} />
+                      </div>
+                      {quotasCardOpen && (
+                        <div style={{ marginTop: 14, display: "flex", flexDirection: "column", gap: 14 }}>
+                          {lignes.map(l => {
+                            const etat = etatQuota(l.jours, l.quota);
+                            const pct = l.quota ? Math.min(100, Math.round((l.jours / l.quota) * 100)) : 0;
+                            const enEdition = quotaInputs[l.cle] !== undefined;
+                            return (
+                              <div key={l.cle}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: 8 }}>
+                                  <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>🎬 {l.nom}</span>
+                                  <span style={{ fontSize: 13.5, fontWeight: 700, color: etat ? etat.col : "#B5D4F4" }}>{l.quota ? `${l.jours} / ${l.quota} jours` : `${l.jours} jour${l.jours > 1 ? "s" : ""}`}</span>
+                                </div>
+                                {l.quota != null && etat && (
+                                  <>
+                                    <div style={{ height: 7, background: "rgba(255,255,255,0.08)", borderRadius: 999, overflow: "hidden", marginTop: 6 }}>
+                                      <div style={{ height: "100%", width: pct + "%", background: etat.col, borderRadius: 999, transition: "width .3s" }} />
+                                    </div>
+                                    <div style={{ fontSize: 11.5, color: etat.col, marginTop: 4 }}>{etat.txt}</div>
+                                  </>
+                                )}
+                                <div style={{ marginTop: 6 }}>
+                                  {enEdition ? (
+                                    <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+                                      <input type="number" min="0" max="366" autoFocus value={quotaInputs[l.cle]} onChange={e => setQuotaInputs({ ...quotaInputs, [l.cle]: e.target.value })} placeholder="Quota (ex : 59)"
+                                        style={{ width: 130, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 7, padding: "7px 10px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit" }} />
+                                      <button type="button" onClick={() => { saveQuotaEmployeur(l.nom, parseInt(quotaInputs[l.cle], 10) || null); const c = { ...quotaInputs }; delete c[l.cle]; setQuotaInputs(c); }}
+                                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 7, padding: "7px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>OK</button>
+                                      <button type="button" onClick={() => { const c = { ...quotaInputs }; delete c[l.cle]; setQuotaInputs(c); }}
+                                        style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Annuler</button>
+                                    </div>
+                                  ) : (
+                                    <button type="button" onClick={() => setQuotaInputs({ ...quotaInputs, [l.cle]: l.quota ? String(l.quota) : "" })}
+                                      style={{ background: "none", border: "none", color: "#5DA9F0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
+                                      {l.quota ? "Modifier le quota" : "+ Définir le quota de cette boîte"}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {joursSansEmp.size > 0 && (
+                            <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5, borderTop: "1px solid rgba(255,255,255,0.08)", paddingTop: 10 }}>
+                              🐾 {joursSansEmp.size} jour{joursSansEmp.size > 1 ? "s" : ""} sans employeur renseigné : ajoute le nom de la boîte sur ces activités pour qu'ils comptent ici.
+                            </div>
+                          )}
+                          <div style={{ fontSize: 11, color: "#6B8299", lineHeight: 1.5 }}>
+                            Estimation d'après ce que tu as saisi (chaque jour de tes plages est compté). Le décompte de ton employeur peut différer : vérifie avec lui.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {/* Liste des activités */}
                 {interActivites.length === 0 && !interShowAdd && (
