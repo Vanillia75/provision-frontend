@@ -162,7 +162,9 @@ VANILLIA ne vend ni ne loue vos données personnelles à des tiers à des fins c
 
 ## 5. Durée de conservation
 
-Vos données sont conservées pendant toute la durée d'utilisation active de votre compte. En cas de suppression de votre compte, vos données sont supprimées ou anonymisées dans un délai raisonnable, sauf obligation légale de conservation plus longue (par exemple, en matière comptable).
+Vos données sont conservées pendant toute la durée d'utilisation active de votre compte. En cas de suppression de votre compte, vos données sont supprimées immédiatement de la base active, sauf obligation légale de conservation plus longue (par exemple, en matière comptable).
+
+Par mesure de sécurité, des sauvegardes chiffrées de la base sont réalisées quotidiennement. Les données d'un compte supprimé peuvent subsister dans ces sauvegardes pendant un maximum de 30 jours après la suppression, avant d'en disparaître définitivement. Ces sauvegardes sont chiffrées, ne sont jamais accessibles publiquement, et ne servent qu'à restaurer le service en cas d'incident.
 
 ## 6. Sécurité
 
