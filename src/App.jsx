@@ -392,7 +392,21 @@ function AppInner() {
   const [pwaPrompt, setPwaPrompt] = useState(null);     // event Android "beforeinstallprompt"
   const [showInstallHelp, setShowInstallHelp] = useState(false); // affiche les instructions iOS
   const [pwaDismissed, setPwaDismissed] = useState(() => safeStorage.getItem("pwa_dismissed") === "1");
-  const [legalPage, setLegalPage] = useState(null);
+  // Pages légales accessibles par une VRAIE adresse (ex : montotor.fr/confidentialite),
+  // utile pour les liens demandés par les stores, Enable Banking, etc. Le vercel.json
+  // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
+  const [legalPage, setLegalPage] = useState(() => {
+    const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
+    return ["confidentialite", "cgu", "mentions"].includes(p) ? p : null;
+  });
+  // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
+  const fermerLegal = () => {
+    setLegalPage(null);
+    const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
+    if (["confidentialite", "cgu", "mentions"].includes(p)) {
+      window.history.replaceState({}, "", "/");
+    }
+  };
   const [authMode, setAuthMode] = useState("login");
   // Statut AFFICHÉ (avant connexion), piloté par l'URL :
   //   "/" (et inconnu) → "choix" (page de choix pure) · "/intermittent" → landing intermittent
@@ -4894,7 +4908,7 @@ function AppInner() {
     return <PourquoiHector onBack={() => setLegalPage(null)} />;
   }
   if (legalPage) {
-    return <LegalPageView page={legalPage} onBack={() => setLegalPage(null)} />;
+    return <LegalPageView page={legalPage} onBack={fermerLegal} />;
   }
 
   if (resetToken) {
