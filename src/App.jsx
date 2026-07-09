@@ -841,7 +841,7 @@ function AppInner() {
   const [declarationCotisations, setDeclarationCotisations] = useState("");
   const [editingDeclarationCa, setEditingDeclarationCa] = useState(false);
   const [editingDeclarationCotisations, setEditingDeclarationCotisations] = useState(false);
-  // ─── La Paie d'Hector (salaire lissé AE) ───
+  // ─── La Paie de Totor (salaire lissé AE) ───
   const [paieData, setPaieData] = useState(null);          // GET /paie (prudent/recommandé/maximum)
   const [paieOuverte, setPaieOuverte] = useState(false);   // fiche de paie dépliée
   const [paieChoix, setPaieChoix] = useState("recommande"); // "prudent" | "recommande" | "maximum" | "libre"
@@ -4224,7 +4224,7 @@ function AppInner() {
     safeStorage.setItem("historiqueDeclarations", JSON.stringify(next));
     showToast(`Bien noté — déclaration de ${periodeUrssafADeclarer.label} faite ✓`, "ti-check");
   };
-  // ── La Paie d'Hector : le rendez-vous mensuel du salaire lissé. ──
+  // ── La Paie de Totor : le rendez-vous mensuel du salaire lissé. ──
   // « Versée » = cru sur parole (Loi VIII), persisté localement comme les déclarations.
   const paieDuMois = paieData?.disponible && paieData?.historique_suffisant ? paieData : null;
   const paieVerseeEntree = paieDuMois ? historiquePaies.find(h => h.cle === paieDuMois.cle_mois) : null;
@@ -10903,7 +10903,7 @@ function AppInner() {
                 « versée » = cru sur parole (Loi VIII). */}
             {paieData?.disponible && !paieData?.historique_suffisant && (paieData?.nb_mois_actifs || 0) >= 1 && (
               <div style={{ fontSize: 12, color: "#6B8299", padding: "2px 6px" }}>
-                🐾 La Paie d'Hector arrive : encore {3 - (paieData.nb_mois_actifs || 0)} mois d'encaissements et je pourrai te proposer un salaire lissé.
+                🐾 La Paie de Totor arrive : encore {3 - (paieData.nb_mois_actifs || 0)} mois d'encaissements et je pourrai te proposer un salaire lissé.
               </div>
             )}
             {paieDuMois && paieVerseeEntree && !paieOuverte && (
