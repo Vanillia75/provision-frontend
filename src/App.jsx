@@ -3485,9 +3485,8 @@ function AppInner() {
 
   // ─── Import attestation ARE : Totor LIT (date anniversaire + montant journalier),
   // il ne calcule rien. On affiche ce que France Travail a déjà décidé. ───
-  // BACKEND À FAIRE — endpoint POST /intermittent/are/extract (multipart "file"),
-  // qui doit renvoyer un JSON : { date_anniversaire: "AAAA-MM-JJ"|null,
-  //   montant_journalier: number|null, filename: string }.
+  // Backend en place : POST /intermittent/are/extract (multipart "file") renvoie
+  // { date_anniversaire, montant_journalier, filename }.
   async function handleImportARE(file) {
     setAreUploading(true);
     setAreError("");
@@ -4210,11 +4209,11 @@ function AppInner() {
   // Relance d'impayé pré-rédigée avec les vraies données de la facture.
   // Destinée au CLIENT du testeur → vouvoiement (Loi IX, client-facing).
   // Signature des mails envoyés aux clients : « Prénom Nom — ENTREPRISE »
-  // (jumeau de _signature_relance côté backend — même format dans les deux circuits).
+  // (jumeau de _signature_relance côté backend, même format « Nom, Entreprise »).
   function signatureEmetteur() {
     const nomPersonne = `${profilPrenom || ""} ${profilNom || ""}`.trim();
     const entreprise = (profilEntreprise || "").trim();
-    if (nomPersonne && entreprise) return `${nomPersonne} — ${entreprise}`;
+    if (nomPersonne && entreprise) return `${nomPersonne}, ${entreprise}`;
     return nomPersonne || entreprise || "";
   }
 
@@ -5409,7 +5408,7 @@ function AppInner() {
                   Je me permets de revenir vers vous concernant la facture 2024-042 d'un montant de 900 €, arrivée à échéance le 15 septembre.<br /><br />
                   Pourriez-vous me confirmer la date de règlement prévue ? Si le paiement a déjà été effectué, merci d'ignorer ce message.<br /><br />
                   Bien à vous,<br />
-                  <span style={{ color: "#B5D4F4", fontWeight: 600 }}>Marie Dupont — Studio Marie</span>
+                  <span style={{ color: "#B5D4F4", fontWeight: 600 }}>Marie Dupont, Studio Marie</span>
                 </div>
               </div>
             </div>
