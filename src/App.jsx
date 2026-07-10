@@ -998,7 +998,7 @@ function AppInner() {
       if (p.tmi != null) setTmi(p.tmi);
       if (p.onboarding_complete) {
         const [est, inc, expSummary, proj, paie] = await Promise.all([apiFetch("/estimate"), apiFetch("/income"), apiFetch("/expenses/summary"), apiFetch("/projection").catch(() => null), apiFetch("/paie").catch(() => null)])
-          .catch(e => { console.error("chargement des données:", e); throw new Error("Je n'arrive pas à charger tes chiffres pour l'instant. Vérifie ta connexion et recharge la page — je garde tout au chaud. 🐾"); });
+          .catch(e => { console.error("chargement des données:", e); throw new Error("Je n'arrive pas à charger tes chiffres pour l'instant. Vérifie ta connexion et recharge la page, je garde tout au chaud. 🐾"); });
         setEstimateData(est);
         setIncomeList(inc);
         setExpensesSummary(expSummary);
@@ -1419,7 +1419,7 @@ function AppInner() {
           setPanique(prev => ({ ...prev, solde: String(data.solde) }));
           safeStorage.setItem("soldeUpdatedAt", new Date().toISOString());
         }
-        showToast("Banque connectée — ton solde se met à jour tout seul 🐾", "ti-building-bank");
+        showToast("Banque connectée. Ton solde se met à jour tout seul 🐾", "ti-building-bank");
         loadBankStatus();
       })
       .catch(err => {
@@ -1438,7 +1438,7 @@ function AppInner() {
     try {
       await apiFetch("/profile/rappel-actu", { method: "POST", body: JSON.stringify({ active }) });
       setProfile(prev => (prev ? { ...prev, rappel_actu_active: active } : prev));
-      showToast(active ? "Rappel d'actualisation activé 🐾" : "Rappel désactivé — je ne t'écrirai plus le 28.", "ti-bell");
+      showToast(active ? "Rappel d'actualisation activé 🐾" : "Rappel désactivé. Je ne t'écrirai plus le 28.", "ti-bell");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1453,7 +1453,7 @@ function AppInner() {
     try {
       await apiFetch("/profile/rappel-urssaf", { method: "POST", body: JSON.stringify({ active }) });
       setProfile(prev => (prev ? { ...prev, rappel_urssaf_active: active } : prev));
-      showToast(active ? "Rappel URSSAF activé 🐾" : "Rappel désactivé — je ne t'écrirai plus avant tes échéances.", "ti-bell");
+      showToast(active ? "Rappel URSSAF activé 🐾" : "Rappel désactivé. Je ne t'écrirai plus avant tes échéances.", "ti-bell");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -1559,7 +1559,7 @@ function AppInner() {
         setPromoStatus({ ok: true, msg: "🐶 C'est tout bon, tu as maintenant accès à tout ❤️" });
       } else if (r.kind === "influencer") {
         // Code de réduction → on enchaîne sur le paiement avec le coupon attaché.
-        setPromoStatus({ ok: true, msg: "Code appliqué — direction le paiement…" });
+        setPromoStatus({ ok: true, msg: "Code appliqué, direction le paiement…" });
         startCheckout(code);
       }
     } catch (e) {
@@ -1655,7 +1655,7 @@ function AppInner() {
         <div style={{ fontSize: 40, marginBottom: 10 }}>🐶</div>
         <div style={{ fontSize: 14.5, color: "#E6EDF5", lineHeight: 1.55, marginBottom: 18 }}>
           {({
-            aem_scan: "Tu as utilisé tes scans gratuits du mois — je n'ai pas encore lu celle-ci. Laisse-moi lire toutes tes AEM, autant de fois que tu veux. 🔓",
+            aem_scan: "Tu as utilisé tes scans gratuits du mois. Je n'ai pas encore lu celle-ci. Laisse-moi lire toutes tes AEM, autant de fois que tu veux. 🔓",
             chat: "Je reste là quand tu as besoin de moi. On a utilisé nos messages du mois. Laisse-moi rester dispo non-stop. 🔓",
             doc_scan: "Laisse-moi le faire. Tu as utilisé tes scans gratuits du mois. Je peux m'occuper de toute ta paperasse. 🔓",
             relance_auto: "Laisse-moi réclamer tes impayés à ta place : je relance tes clients automatiquement, au bon moment, sans que tu aies à t'en occuper. 🔓",
@@ -1784,7 +1784,7 @@ function AppInner() {
       setAideBugDesc("");
       setAideBugEmail("");
     } catch (err) {
-      setAideMessages(m => [...m, { role: "assistant", content: (err && err.message) || "L'envoi n'a pas marché — écris directement à bonjour@montotor.fr." }]);
+      setAideMessages(m => [...m, { role: "assistant", content: (err && err.message) || "L'envoi n'a pas marché. Écris directement à bonjour@montotor.fr." }]);
     } finally {
       setAideBugEnvoi(false);
     }
@@ -2285,7 +2285,7 @@ function AppInner() {
       return (
         <div style={carte}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>⭐ Ton avis compte</div>
-          <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 600, lineHeight: 1.5 }}>Merci ! 🐾 Ton avis est bien parti — Camille le lit en personne.</div>
+          <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 600, lineHeight: 1.5 }}>Merci ! 🐾 Ton avis est bien parti. Camille le lit en personne.</div>
         </div>
       );
     }
@@ -3735,7 +3735,7 @@ function AppInner() {
       }
       const blob = await res.blob();
       ouvrirOuTelechargerPdf(blob, `facture-${inv.numero || "hector"}.pdf`,
-        "Ta facture est téléchargée — regarde tes notifications 🐾");
+        "Ta facture est téléchargée, regarde tes notifications 🐾");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -3756,7 +3756,7 @@ function AppInner() {
       }
       const blob = await res.blob();
       ouvrirOuTelechargerPdf(blob, `devis-${q.numero || "hector"}.pdf`,
-        "Ton devis est téléchargé — regarde tes notifications 🐾");
+        "Ton devis est téléchargé, regarde tes notifications 🐾");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -4287,7 +4287,7 @@ function AppInner() {
           description: expenseForm.description || null,
         }),
       });
-      if (montant > 0) addHectorMessage(`Frais de ${formatEUR(montant)} enregistré. Je l'ai déduit de ton disponible — chaque euro que je connais, c'est un euro que tu ne perdras pas.`, "#8BA5C0");
+      if (montant > 0) addHectorMessage(`Frais de ${formatEUR(montant)} enregistré. Je l'ai déduit de ton disponible. Chaque euro que je connais, c'est un euro que tu ne perdras pas.`, "#8BA5C0");
       setExpenseForm({ date: "", montant: "", categorie: "autre", description: "" });
       setShowAddExpense(false);
       await loadExpenses();
@@ -4511,7 +4511,7 @@ function AppInner() {
     const next = [entry, ...historiqueDeclarations].slice(0, 12);
     setHistoriqueDeclarations(next);
     safeStorage.setItem("historiqueDeclarations", JSON.stringify(next));
-    showToast(`Bien noté — déclaration de ${periodeUrssafADeclarer.label} faite ✓`, "ti-check");
+    showToast(`Bien noté, déclaration de ${periodeUrssafADeclarer.label} faite ✓`, "ti-check");
   };
   // ── La Paie de Totor : le rendez-vous mensuel du salaire lissé. ──
   // « Versée » = cru sur parole (Loi VIII), persisté localement comme les déclarations.
