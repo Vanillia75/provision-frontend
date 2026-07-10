@@ -41,7 +41,7 @@ const MOCK_OFFERS = [
   },
   {
     id: "mock-2",
-    title: "Régisseur·se lumière — festival d'été",
+    title: "Régisseur·se lumière, festival d'été",
     roleType: "technicien",
     contractType: "CDDU",
     location: "Avignon",
@@ -53,7 +53,7 @@ const MOCK_OFFERS = [
   },
   {
     id: "mock-3",
-    title: "Technicien·ne son — captation concert",
+    title: "Technicien·ne son, captation concert",
     roleType: "technicien",
     contractType: "heures",
     location: "Lyon",
@@ -65,7 +65,7 @@ const MOCK_OFFERS = [
   },
   {
     id: "mock-4",
-    title: "Danseur·se contemporain·e — création",
+    title: "Danseur·se contemporain·e, création",
     roleType: "artiste",
     contractType: "cachet",
     location: "Nantes",
@@ -77,7 +77,7 @@ const MOCK_OFFERS = [
   },
   {
     id: "mock-5",
-    title: "Chargé·e de production — compagnie théâtrale",
+    title: "Chargé·e de production, compagnie théâtrale",
     roleType: "admin",
     contractType: "mission",
     location: "Bordeaux",
@@ -89,7 +89,7 @@ const MOCK_OFFERS = [
   },
   {
     id: "mock-6",
-    title: "Machiniste·plateau — opéra",
+    title: "Machiniste·plateau, opéra",
     roleType: "technicien",
     contractType: "CDDU",
     location: "Paris 9e",
@@ -101,7 +101,7 @@ const MOCK_OFFERS = [
   },
   {
     id: "mock-7",
-    title: "Musicien·ne intermittent·e — bal / événementiel",
+    title: "Musicien·ne intermittent·e, bal / événementiel",
     roleType: "artiste",
     contractType: "cachet",
     location: "Toulouse",
