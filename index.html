@@ -46,8 +46,12 @@
     </script>
   </head>
   <body style="background:#07192E">
-    <!-- Écran d'attente avant React : évite le flash blanc au lancement (PWA/TWA). Remplacé au montage. -->
-    <div id="root"><div style="min-height:100vh;background:#07192E;display:flex;align-items:center;justify-content:center;color:#8BA5C0;font-family:system-ui,sans-serif;font-size:15px">🐾 Totor arrive…</div></div>
+    <!-- Contenu lisible par Google avant React (page de choix). Remplacé au montage. -->
+    <div id="root"><div style="min-height:100vh;background:#07192E;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#8BA5C0;font-family:system-ui,sans-serif">
+      <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,5vw,38px);font-weight:800;color:#F8FAFC;max-width:660px;line-height:1.2;margin-bottom:16px">TOTOR, le compagnon des intermittents et des auto-entrepreneurs</h1>
+      <p style="font-size:16px;max-width:600px;line-height:1.6">Intermittent du spectacle ou auto-entrepreneur ? Totor compte tes chiffres, met de côté ce qu'il faut et t'explique chaque euro. Choisis ton profil, il s'en charge.</p>
+      <p style="margin-top:20px;font-size:14px;color:#5A7088">🐾 Totor arrive…</p>
+    </div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
