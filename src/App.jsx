@@ -152,7 +152,7 @@ const ACTIVITES = [
 });
 
 const TMI_OPTIONS = [
-  { id: "0", label: "0% — je ne paie pas d'impôt actuellement" },
+  { id: "0", label: "0% : je ne paie pas d'impôt actuellement" },
   { id: "11", label: "11%" },
   { id: "30", label: "30%" },
   { id: "41", label: "41%" },
@@ -160,7 +160,7 @@ const TMI_OPTIONS = [
 ];
 
 const CONSEILS = [
-  { emoji: "⭐", titre: "ACRE — économise 50% la 1ère année", texte: "Si tu as créé ton activité après juillet 2025, tes cotisations sont divisées par 2 pendant 12 mois. Pense à faire la demande dans les 60 jours." },
+  { emoji: "⭐", titre: "ACRE : économise 50% la 1ère année", texte: "Si tu as créé ton activité après juillet 2025, tes cotisations sont divisées par 2 pendant 12 mois. Pense à faire la demande dans les 60 jours." },
   { emoji: "📊", titre: "Versement libératoire", texte: "Paie ton impôt sur le revenu en même temps que tes cotisations, à 1,7% de ton CA. Simple et prévisible." },
   { emoji: "🗓️", titre: "Mensuel vs trimestriel", texte: "En mensuel, tu paies de petites sommes régulières. En trimestriel, tu as plus de trésorerie mais attention aux gros versements." },
   { emoji: "⚠️", titre: "Surveille le plafond", texte: "Au-delà de 83 600€ deux années consécutives, tu bascules en régime réel. Anticipe ce changement avec ton comptable." },
@@ -793,7 +793,7 @@ function AppInner() {
         body: JSON.stringify({ siret: data.siret, raison_sociale: data.raison_sociale, adresse: adresseComplete || null }),
       });
       setOnboardingSiretStatus("success");
-      setOnboardingSiretMessage(data.raison_sociale ? `${data.raison_sociale} — synchronisé avec ton profil` : "Établissement trouvé et synchronisé");
+      setOnboardingSiretMessage(data.raison_sociale ? `${data.raison_sociale} : synchronisé avec ton profil` : "Établissement trouvé et synchronisé");
     } catch (err) {
       setOnboardingSiretStatus("error");
       setOnboardingSiretMessage(err.message);
@@ -1937,7 +1937,7 @@ function AppInner() {
             </button>
           ))}
         </div>
-        <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14, lineHeight: 1.5 }}>C'est juste ce que tu fais — tu pourras le changer dans tes Réglages.</div>
+        <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14, lineHeight: 1.5 }}>C'est juste ce que tu fais, tu pourras le changer dans tes Réglages.</div>
       </div>
     </div>
   ) : null;
@@ -2004,7 +2004,7 @@ function AppInner() {
             {!estStripe
               ? "Tu fais partie des tout premiers à m'avoir fait confiance. Ton Premium est à toi, à vie. Merci. ❤️"
               : (enEssai
-                  ? "Tu profites de tout, sans limite. À la fin de l'essai, ton abonnement démarre — tu peux l'annuler avant, sans être prélevé."
+                  ? "Tu profites de tout, sans limite. À la fin de l'essai, ton abonnement démarre, tu peux l'annuler avant, sans être prélevé."
                   : "Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️")}
           </div>
           {estStripe ? (
@@ -2015,7 +2015,7 @@ function AppInner() {
               <div style={{ fontSize: 11, color: "#6B8299", marginTop: 10 }}>Changer de carte ou résilier, en 2 clics (via Stripe).</div>
             </>
           ) : (
-            <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 600 }}>🐾 Rien à gérer, rien à payer — profite à fond !</div>
+            <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 600 }}>🐾 Rien à gérer, rien à payer, profite à fond !</div>
           )}
         </div>
         );
@@ -2061,8 +2061,8 @@ function AppInner() {
               )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
-                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités — je lis tes attestations pour toi", "Échanges avec Totor illimités", "Je vérifie ta décision face à France Travail"]
-                : ["Tout ce qui est gratuit, sans limite", "Scans illimités — je m'occupe de ta paperasse", "Échanges avec Totor illimités", "Je relance tes impayés automatiquement"]
+                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités, je lis tes attestations pour toi", "Échanges avec Totor illimités", "Je vérifie ta décision face à France Travail"]
+                : ["Tout ce qui est gratuit, sans limite", "Scans illimités, je m'occupe de ta paperasse", "Échanges avec Totor illimités", "Je relance tes impayés automatiquement"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -2072,7 +2072,7 @@ function AppInner() {
                 {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
               </button>
               <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 8, textAlign: "center" }}>🎁 14 jours gratuits{planChoisi === "annuel" ? ", puis 79 €/an" : ", puis 9,99 €/mois"}</div>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 4, textAlign: "center" }}>Annule quand tu veux avant la fin — sans être prélevé.</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 4, textAlign: "center" }}>Annule quand tu veux avant la fin, sans être prélevé.</div>
             </div>
           </div>
 
@@ -2210,7 +2210,7 @@ function AppInner() {
             : `🐶 Tu as fait le plein de ${nomSingulier}s ce mois-ci 👏`}
         </div>
         <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 3 }}>
-          🐶 Je pourrais m'en occuper autant de fois que tu veux —{" "}
+          🐶 Je pourrais m'en occuper autant de fois que tu veux :{" "}
           <button type="button" onClick={() => (profile?.statut === "intermittent" ? setInterNav("abonnement") : setNav("abonnement"))}
             style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
             voir l'offre illimitée →
@@ -2908,7 +2908,7 @@ function AppInner() {
       }
       if (echecs.length > 0) {
         // Lecture partielle : on garde ce qu'on a lu, mais on prévient honnêtement pour les fichiers ratés.
-        setAemError(`Je n'ai pas réussi à lire ${echecs.length} fichier${echecs.length > 1 ? "s" : ""} (${echecs.map(e => e.name).join(", ")}). J'ai gardé les autres — valide-les ci-dessous, puis rescanne ceux-là.`);
+        setAemError(`Je n'ai pas réussi à lire ${echecs.length} fichier${echecs.length > 1 ? "s" : ""} (${echecs.map(e => e.name).join(", ")}). J'ai gardé les autres, valide-les ci-dessous, puis rescanne ceux-là.`);
       }
       setAemTotal(tousLesForms.length);
       setAemExtrait(tousLesForms[0]);        // la 1ère à valider
@@ -3082,7 +3082,7 @@ function AppInner() {
       if (data && data.url) {
         setDocViewer({ url: data.url, filename: filename || "Document", loading: false });
       } else {
-        setDocViewer({ url: null, filename: filename || "Document", loading: false, error: "Je ne retrouve pas ce document. Il a peut-être été supprimé — réessaie de scanner l'AEM si tu l'as encore." });
+        setDocViewer({ url: null, filename: filename || "Document", loading: false, error: "Je ne retrouve pas ce document. Il a peut-être été supprimé, réessaie de scanner l'AEM si tu l'as encore." });
       }
     } catch (err) {
       setDocViewer({ url: null, filename: filename || "Document", loading: false, error: "Je n'arrive pas à ouvrir ce document pour l'instant. Réessaie dans un moment." });
@@ -3138,7 +3138,7 @@ function AppInner() {
       const secu = apres >= seuil;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h — tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
       };
     }
     // ─ Scénario 2 : accepter des heures ─
@@ -3148,7 +3148,7 @@ function AppInner() {
       const secu = apres >= seuil;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h — c'est sécurisé.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
+        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h, c'est sécurisé.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
       };
     }
     // ─ Scénario 3 : refuser / annuler un contrat ─
@@ -3164,7 +3164,7 @@ function AppInner() {
       }
       return {
         ouv: "Regardons.",
-        text: `Aujourd'hui tu es à ${fmtH(heuresActuelles)}h, il te manque ${fmtH(manque)}h. Refuser un contrat te laisse à ce niveau — dis-moi combien de cachets il représentait et je te dis précisément ce que tu perdrais.`,
+        text: `Aujourd'hui tu es à ${fmtH(heuresActuelles)}h, il te manque ${fmtH(manque)}h. Refuser un contrat te laisse à ce niveau, dis-moi combien de cachets il représentait et je te dis précisément ce que tu perdrais.`,
       };
     }
     // ─ Scénario 4 : pause / vacances / ne pas travailler un mois ─
@@ -3172,15 +3172,15 @@ function AppInner() {
       return {
         ouv: manque > 0 ? "Je préfère te prévenir." : "On peut souffler.",
         text: manque > 0
-          ? `Si tu fais une pause, ton compteur reste à ${fmtH(heuresActuelles)}h — il ne baisse pas tout de suite, mais il n'avance pas non plus. Or il te manque ${fmtH(manque)}h${joursAnniv ? ` et il te reste ${joursAnniv} jours avant ton renouvellement` : ""}. Une pause courte, ça va ; un mois entier, je garderais un œil sur le calendrier.`
-          : `Tu as déjà tes ${seuil}h, donc une pause ne met pas tes droits en danger dans l'immédiat. Profite — je veille.`,
+          ? `Si tu fais une pause, ton compteur reste à ${fmtH(heuresActuelles)}h, il ne baisse pas tout de suite, mais il n'avance pas non plus. Or il te manque ${fmtH(manque)}h${joursAnniv ? ` et il te reste ${joursAnniv} jours avant ton renouvellement` : ""}. Une pause courte, ça va ; un mois entier, je garderais un œil sur le calendrier.`
+          : `Tu as déjà tes ${seuil}h, donc une pause ne met pas tes droits en danger dans l'immédiat. Profite, je veille.`,
       };
     }
     // ─ Scénario 5 : maladie / maternité ─
     if (/(maladie|malade|maternit|accident|arrêt)/.test(q)) {
       return {
         ouv: "Celui-là mérite qu'on s'y attarde.",
-        text: `Les arrêts maladie et congés maternité ont des règles spéciales (neutralisation de période, parfois assimilation d'heures) que je ne calcule pas encore précisément — je ne veux pas te donner un chiffre à l'aveugle. Pour ce cas, je te conseille de vérifier avec France Travail ou un conseiller. Ce que je peux te dire de sûr : tu es à ${fmtH(heuresActuelles)}h aujourd'hui.`,
+        text: `Les arrêts maladie et congés maternité ont des règles spéciales (neutralisation de période, parfois assimilation d'heures) que je ne calcule pas encore précisément, je ne veux pas te donner un chiffre à l'aveugle. Pour ce cas, je te conseille de vérifier avec France Travail ou un conseiller. Ce que je peux te dire de sûr : tu es à ${fmtH(heuresActuelles)}h aujourd'hui.`,
         prudent: true,
       };
     }
@@ -3190,14 +3190,14 @@ function AppInner() {
         const ajout = num * 8; // une tournée ~ heures (estimation prudente : on demande à préciser)
         return {
           ouv: "Regardons ensemble.",
-          text: `Une tournée, ça dépend du nombre de cachets ou d'heures déclarés — dis-moi ça précisément (ex : "tournée de 10 cachets") et je te calcule l'impact exact. Pour l'instant tu es à ${fmtH(heuresActuelles)}h, il te manque ${fmtH(manque)}h.`,
+          text: `Une tournée, ça dépend du nombre de cachets ou d'heures déclarés, dis-moi ça précisément (ex : "tournée de 10 cachets") et je te calcule l'impact exact. Pour l'instant tu es à ${fmtH(heuresActuelles)}h, il te manque ${fmtH(manque)}h.`,
         };
       }
       return {
         ouv: manque > 0 ? "Voyons ça." : "On peut souffler.",
         text: manque > 0
           ? `Pour atteindre tes ${seuil}h, il te manque ${fmtH(manque)}h ≈ ${Math.ceil(manque / 12)} cachets${joursAnniv ? `, et il te reste ${joursAnniv} jours avant ton renouvellement` : ""}. ${joursAnniv && joursAnniv > 0 ? `Ça fait environ ${(Math.ceil(manque / 12) / (joursAnniv / 7)).toFixed(1)} cachets par semaine à tenir.` : "Renseigne ta date anniversaire et je te dirai à quel rythme aller."}`
-          : `Tu as déjà tes ${seuil}h — l'objectif est atteint. 🎉`,
+          : `Tu as déjà tes ${seuil}h, l'objectif est atteint. 🎉`,
       };
     }
     // Aucun scénario reconnu → on signale qu'on passe la main à l'IA (avec contexte chiffré)
@@ -4715,7 +4715,7 @@ function AppInner() {
     { seuil: 90, emoji: "🏡", titre: "Niche améliorée", mot: "90 jours de fidélité. Totor a maintenant une belle niche, confortable et sûre. Il se sent chez lui." },
     { seuil: 30, emoji: "🧸", titre: "Totor reçoit un jouet", mot: "30 jours d'affilée ! Totor est heureux, il a même reçu un jouet. Continue, il adore ce rituel." },
     { seuil: 14, emoji: "🌱", titre: "Totor grandit", mot: "14 jours ensemble. Totor grandit grâce à toi. Tu prends soin de ta tranquillité, et ça se voit." },
-    { seuil: 7, emoji: "🛏️", titre: "Totor dort dans son panier", mot: "7 jours d'affilée. Totor dort paisiblement dans son panier — il se sent en sécurité avec toi." },
+    { seuil: 7, emoji: "🛏️", titre: "Totor dort dans son panier", mot: "7 jours d'affilée. Totor dort paisiblement dans son panier, il se sent en sécurité avec toi." },
   ];
   const palierStreakActuel = PALIERS_STREAK.find(p => streakCount >= p.seuil) || null;
   const prochainPalierStreak = [...PALIERS_STREAK].reverse().find(p => streakCount < p.seuil) || null;
@@ -4781,7 +4781,7 @@ function AppInner() {
       const seed = [...today].reduce((a, c) => a + c.charCodeAt(0), 0);
       if (seed % 5 !== 2) return null;
     }
-    return "🐾 Dis donc… tu sais que pas mal d'indépendants ont droit à la Prime d'activité sans le savoir ? C'est la CAF qui complète quand les revenus sont modestes. Ça vaut peut-être le coup de faire une simu sur caf.fr — c'est gratuit et ça prend 5 minutes. Je dis ça, je dis rien.";
+    return "🐾 Dis donc… tu sais que pas mal d'indépendants ont droit à la Prime d'activité sans le savoir ? C'est la CAF qui complète quand les revenus sont modestes. Ça vaut peut-être le coup de faire une simu sur caf.fr, c'est gratuit et ça prend 5 minutes. Je dis ça, je dis rien.";
   })();
 
   // ─── LES PENSÉES DE TOTOR : rares, contextuelles, jamais forcées ───
@@ -4993,7 +4993,7 @@ function AppInner() {
                 <PasswordField label="Nouveau mot de passe" value={resetPassword1} onChange={e => setResetPassword1(e.target.value)} autoComplete="new-password" />
                 <PasswordField label="Confirmer le mot de passe" value={resetPassword2} onChange={e => setResetPassword2(e.target.value)} autoComplete="new-password" />
                 {resetPassword2.length > 0 && resetPassword1 !== resetPassword2 && (
-                  <p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas — revérifie</p>
+                  <p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas, revérifie</p>
                 )}
                 <button style={{ ...S.btnPrimary, opacity: (resetStatus === "loading" || resetPassword1.length < 8 || resetPassword1 !== resetPassword2) ? 0.55 : 1 }} type="submit" disabled={resetStatus === "loading" || resetPassword1.length < 8 || resetPassword1 !== resetPassword2}>{resetStatus === "loading" ? "…" : "Valider le nouveau mot de passe"}</button>
               </form>
@@ -5091,7 +5091,7 @@ function AppInner() {
                   <PasswordField label={authMode === "register" ? "Mot de passe (8 caractères min.)" : "Mot de passe"} value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
                   {authMode === "register" && (<>
                     <PasswordField label="Confirme ton mot de passe" value={authPasswordConfirm} onChange={e => setAuthPasswordConfirm(e.target.value)} autoComplete="new-password" />
-                    {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas — revérifie</p>)}
+                    {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas, revérifie</p>)}
                   </>)}
                   {authMode === "login" && (<p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}><button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button></p>)}
                   <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
@@ -5371,7 +5371,7 @@ function AppInner() {
                 {[
                   { t: "Déclaration URSSAF", d: "avant le 31 oct.", v: "à déclarer", estim: false, icon: "ti-file-text" },
                   { t: "Cotisation URSSAF (21,2 %)", d: "prélevée le 5 nov.", v: "678 €", estim: true, icon: "ti-cash" },
-                  { t: "CFE — cotisation foncière", d: "avant le 15 déc.", v: "~150 €", estim: true, icon: "ti-building" },
+                  { t: "CFE (cotisation foncière)", d: "avant le 15 déc.", v: "~150 €", estim: true, icon: "ti-building" },
                 ].map((r, i) => (
                   <div key={r.t} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, padding: "13px 2px", borderBottom: i < 2 ? "1px solid rgba(255,255,255,0.06)" : "none" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -5397,12 +5397,12 @@ function AppInner() {
               <div>
                 <div style={numFantome}>03</div>
                 <h2 style={titreSec}>TOTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>impayés</span>.</h2>
-                <p style={texteSec}>Une facture en retard ? Il relance ton client à ta place — un email pro, signé de ton nom, jamais de spam.</p>
+                <p style={texteSec}>Une facture en retard ? Il relance ton client à ta place, un email pro, signé de ton nom, jamais de spam.</p>
               </div>
               <div style={demoFondu}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 14 }}>
                   <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
-                  <span style={{ fontSize: 12.5, color: "#8BA5C0" }}>À : ton client · Objet : Facture 2024-042 — relance</span>
+                  <span style={{ fontSize: 12.5, color: "#8BA5C0" }}>À : ton client · Objet : Facture 2024-042, relance</span>
                 </div>
                 <div style={{ fontSize: 13.5, color: "#EAF2FB", lineHeight: 1.65 }}>
                   Bonjour,<br /><br />
@@ -5643,7 +5643,7 @@ function AppInner() {
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.09)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "13px 14px" }}>
                 <span style={{ color: "#5DCAA5", fontSize: 16 }}>✓</span>
-                <span style={{ fontSize: 13.5, color: "#EAF2FB", fontWeight: 600 }}>Cohérent — on tombe pareil</span>
+                <span style={{ fontSize: 13.5, color: "#EAF2FB", fontWeight: 600 }}>Cohérent, on tombe pareil</span>
               </div>
             </div>
           </div>
@@ -5698,8 +5698,8 @@ function AppInner() {
               {/* Offres d'exemple (fictives mais réalistes — pas de vraies offres, elles expirent) */}
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {[
-                  { titre: "Régisseur·se lumière — festival d'été", metier: "Technicien", contrat: "CDDU" },
-                  { titre: "Comédien·ne — création jeune public", metier: "Artiste", contrat: "Cachet" },
+                  { titre: "Régisseur·se lumière, festival d'été", metier: "Technicien", contrat: "CDDU" },
+                  { titre: "Comédien·ne, création jeune public", metier: "Artiste", contrat: "Cachet" },
                 ].map((o) => (
                   <div key={o.titre} style={sousPanel}>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: "white", lineHeight: 1.35 }}>{o.titre}</div>
@@ -5964,7 +5964,7 @@ function AppInner() {
                 <div style={{ fontSize: 13, fontWeight: 600, color: "#6B7A8D", marginBottom: 8 }}>💰 Ce que tu peux dépenser aujourd'hui</div>
                 <div style={{ fontSize: 44, fontWeight: 700, color: "#1D9E75", lineHeight: 1.1 }}>{formatEUR(onbSoldeNum)}</div>
                 <p style={{ fontSize: 12, color: "#8BA5C0", margin: "14px auto 0", maxWidth: 320, lineHeight: 1.6 }}>
-                  Pour l'instant, tu n'as encore enregistré aucun revenu — donc rien n'est dû à l'URSSAF ni aux impôts. Dès que tu ajoutes une rentrée d'argent, TOTOR met automatiquement de côté ce que tu devras, et ce chiffre devient ton <strong>vrai</strong> disponible.
+                  Pour l'instant, tu n'as encore enregistré aucun revenu, donc rien n'est dû à l'URSSAF ni aux impôts. Dès que tu ajoutes une rentrée d'argent, TOTOR met automatiquement de côté ce que tu devras, et ce chiffre devient ton <strong>vrai</strong> disponible.
                 </p>
               </div>
 
@@ -6006,7 +6006,7 @@ function AppInner() {
               <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
             </div>
             <h1 style={{ fontSize: 23, fontWeight: 800, color: "white", margin: "0 0 8px", lineHeight: 1.3 }}>Bonjour, moi c'est Totor. À partir d'ici, je m'occupe de toi.</h1>
-            <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti — ensuite, c'est moi qui compte pour toi.</p>
+            <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti, ensuite c'est moi qui compte pour toi.</p>
             {error && <div style={S.errorBanner}>{error}</div>}
 
             <p style={{ ...S.sectionLabel, textAlign: "left" }}>📅 Ta date anniversaire</p>
@@ -6018,7 +6018,7 @@ function AppInner() {
               <input type="file" accept="image/*,application/pdf" disabled={areUploading} style={{ display: "none" }}
                 onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }} />
             </label>
-            <p style={{ fontSize: 11.5, color: "#8BA5C0", margin: 0, textAlign: "center", lineHeight: 1.5 }}>C'est le courrier « notification de droits » de France Travail. Je lis la date (et ton montant journalier) tout seul — le plus simple.</p>
+            <p style={{ fontSize: 11.5, color: "#8BA5C0", margin: 0, textAlign: "center", lineHeight: 1.5 }}>C'est le courrier « notification de droits » de France Travail. Je lis la date (et ton montant journalier) tout seul, le plus simple.</p>
             <p style={{ fontSize: 11, color: "#6B8299", margin: "6px 0 0", textAlign: "center", lineHeight: 1.5 }}>🔒 Ton document reste privé : conservé en sécurité, jamais partagé, supprimable à tout moment.</p>
             {areError && <p style={{ color: "#E8927C", fontSize: 12, margin: "6px 0 0", textAlign: "center" }}>{areError}</p>}
             {areExtrait && (
