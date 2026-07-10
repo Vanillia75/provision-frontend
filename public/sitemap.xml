@@ -56,6 +56,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.montotor.fr/guides/inscription-france-travail-intermittent.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.montotor.fr/guides/auto-entrepreneur.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.7</priority>
@@ -77,6 +82,11 @@
   </url>
   <url>
     <loc>https://www.montotor.fr/guides/declaration-revenus-auto-entrepreneur-impot.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.montotor.fr/guides/creer-son-auto-entreprise-etapes.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
   </url>
