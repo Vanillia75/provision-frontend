@@ -3,7 +3,7 @@
 //  Extrait de App.jsx (refactorisation) : contenu identique, simplement déplacé.
 //  Seul LegalPageView est exporté ; le reste est interne à ce fichier.
 // ─────────────────────────────────────────────────────────────────────────────
-import { INK, PAPER, CSS, S } from "./theme";
+import { CSS } from "./theme";
 
 const MENTIONS_LEGALES_MD = `# Mentions légales
 
@@ -216,7 +216,7 @@ function renderLegalMarkdown(md) {
 
   function renderInline(text) {
     const parts = text.split(/\*\*(.*?)\*\*/g);
-    return parts.map((part, i) => (i % 2 === 1 ? <strong key={i}>{part}</strong> : part));
+    return parts.map((part, i) => (i % 2 === 1 ? <strong key={i} style={{ color: "#FFFFFF" }}>{part}</strong> : part));
   }
 
   for (const rawLine of lines) {
@@ -248,34 +248,35 @@ function renderLegalMarkdown(md) {
   }
   flushList();
 
+  const SERIF = "'Playfair Display', Georgia, serif";
   return blocks.map((b, i) => {
-    if (b.type === "h1") return <h1 key={i} style={{ fontSize: 22, fontWeight: 600, color: INK, margin: "0 0 16px" }}>{renderInline(b.text)}</h1>;
-    if (b.type === "h2") return <h2 key={i} style={{ fontSize: 16, fontWeight: 600, color: INK, margin: "24px 0 10px" }}>{renderInline(b.text)}</h2>;
-    if (b.type === "h3") return <h3 key={i} style={{ fontSize: 14, fontWeight: 600, color: INK, margin: "16px 0 6px" }}>{renderInline(b.text)}</h3>;
-    if (b.type === "ul") return <ul key={i} style={{ margin: "8px 0", paddingLeft: 22 }}>{b.items.map((it, j) => <li key={j} style={{ fontSize: 13, color: "#3D4452", lineHeight: 1.7 }}>{renderInline(it)}</li>)}</ul>;
+    if (b.type === "h1") return <h1 key={i} style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 18px" }}>{renderInline(b.text)}</h1>;
+    if (b.type === "h2") return <h2 key={i} style={{ fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: "white", margin: "28px 0 10px" }}>{renderInline(b.text)}</h2>;
+    if (b.type === "h3") return <h3 key={i} style={{ fontSize: 14.5, fontWeight: 700, color: "#E8F4FF", margin: "18px 0 6px" }}>{renderInline(b.text)}</h3>;
+    if (b.type === "ul") return <ul key={i} style={{ margin: "8px 0", paddingLeft: 22 }}>{b.items.map((it, j) => <li key={j} style={{ fontSize: 13.5, color: "#C5D4E3", lineHeight: 1.75 }}>{renderInline(it)}</li>)}</ul>;
     if (b.type === "table") {
       const [header, ...rows] = b.rows;
       return (
-        <table key={i} style={{ width: "100%", borderCollapse: "collapse", margin: "12px 0", fontSize: 13 }}>
-          <thead><tr>{header.map((h, j) => <th key={j} style={{ textAlign: "left", padding: "6px 10px", borderBottom: "1.5px solid #DDE5EE", color: INK }}>{h}</th>)}</tr></thead>
-          <tbody>{rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} style={{ padding: "6px 10px", borderBottom: "0.5px solid #EEF2F7", color: "#3D4452" }}>{c}</td>)}</tr>)}</tbody>
+        <table key={i} style={{ width: "100%", borderCollapse: "collapse", margin: "12px 0", fontSize: 13.5 }}>
+          <thead><tr>{header.map((h, j) => <th key={j} style={{ textAlign: "left", padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.16)", color: "#8BA5C0", fontSize: 12, textTransform: "uppercase", letterSpacing: "0.5px" }}>{h}</th>)}</tr></thead>
+          <tbody>{rows.map((r, j) => <tr key={j}>{r.map((c, k) => <td key={k} style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.08)", color: "#E8F4FF" }}>{c}</td>)}</tr>)}</tbody>
         </table>
       );
     }
-    return <p key={i} style={{ fontSize: 13, color: "#3D4452", lineHeight: 1.7, margin: "8px 0" }}>{renderInline(b.text)}</p>;
+    return <p key={i} style={{ fontSize: 13.5, color: "#C5D4E3", lineHeight: 1.75, margin: "8px 0" }}>{renderInline(b.text)}</p>;
   });
 }
 
 export function LegalPageView({ page, onBack }) {
   const content = page === "mentions" ? MENTIONS_LEGALES_MD : page === "cgu" ? CGU_MD : CONFIDENTIALITE_MD;
   return (
-    <div style={{ minHeight: "100vh", background: PAPER, padding: "32px 20px" }}>
+    <div style={{ minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
       <style>{CSS}</style>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <button onClick={onBack} style={{ ...S.linkBtn, marginBottom: 20, display: "flex", alignItems: "center", gap: 6 }}>
+        <button onClick={onBack} style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 20, padding: "6px 2px", display: "flex", alignItems: "center", gap: 6 }}>
           <i className="ti ti-arrow-left" aria-hidden="true" style={{ fontSize: 16 }} /> Retour
         </button>
-        <div style={{ background: "white", borderRadius: 16, border: "0.5px solid #DDE5EE", padding: "32px 36px" }}>
+        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.09)", padding: "32px 36px" }}>
           {renderLegalMarkdown(content)}
         </div>
       </div>
