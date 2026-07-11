@@ -127,7 +127,7 @@ Contact pour toute question relative à vos données : **bonjour@montotor.fr**
 - Données de profil : prénom, nom, téléphone, nom d'entreprise, SIRET, statut juridique, activité
 - Données financières : revenus encaissés, factures clients (montants, dates, noms de clients), frais professionnels, solde bancaire déclaratif, objectifs financiers
 - Contenu des échanges avec l'assistant conversationnel (IA)
-- Documents importés : factures (PDF, images) téléversées pour extraction automatique de données
+- Documents importés : factures, attestations employeur mensuelles (AEM), attestations France Travail et justificatifs (PDF, images ou photos) téléversés pour extraction automatique de données
 
 ### 2.2 Données collectées automatiquement
 
