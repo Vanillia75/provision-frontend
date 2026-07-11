@@ -5053,7 +5053,7 @@ function AppInner() {
     // ── ÉCRAN D'AUTH (plein écran, hors récit) — réutilise le formulaire existant ──
     if (interShowAuth) {
       return (
-        <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", padding: isMobile ? "20px 16px" : "40px 20px" }}>
+        <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex", flexDirection: "column", alignItems: "center", padding: isMobile ? "calc(20px + env(safe-area-inset-top, 0px)) 16px 20px" : "calc(40px + env(safe-area-inset-top, 0px)) 20px 40px" }}>
           <style>{CSS}</style>
           <div style={{ width: "100%", maxWidth: 440 }}>
             <button type="button" onClick={() => setInterShowAuth(false)} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 14, cursor: "pointer", fontFamily: "inherit", padding: "8px 0", display: "inline-flex", alignItems: "center", gap: 6, minHeight: 44 }}>
@@ -5247,7 +5247,7 @@ function AppInner() {
           <style>{CSS}</style>
 
           {/* ===== NAVBAR ===== */}
-          <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "env(safe-area-inset-top, 0px) 20px 0", height: "calc(56px + env(safe-area-inset-top, 0px))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <Logo size={32} dark />
               <button onClick={() => navLanding("intermittent")} title="Passer en mode intermittent" style={{ display: isMobile ? "none" : "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 12px", color: "#8BA5C0", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
@@ -5494,7 +5494,7 @@ function AppInner() {
 
           {/* ===== FOOTER ===== */}
           <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ display: "flex", gap: 16 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
               {[
                 { page: "mentions", label: "Mentions légales" },
                 { page: "cgu", label: "CGU" },
@@ -5516,7 +5516,7 @@ function AppInner() {
         <style>{CSS}</style>
 
         {/* ===== NAVBAR ===== */}
-        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 20px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "env(safe-area-inset-top, 0px) 20px 0", height: "calc(56px + env(safe-area-inset-top, 0px))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <Logo size={32} dark />
             <button onClick={() => navLanding("auto_entrepreneur")} title="Passer en mode auto-entrepreneur" style={{ display: isMobile ? "none" : "inline-flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 20, padding: "5px 12px", color: "#8BA5C0", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit" }}>
@@ -5801,7 +5801,7 @@ function AppInner() {
 
         {/* ===== FOOTER ===== */}
         <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 16 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             {[
               { page: "mentions", label: "Mentions légales" },
               { page: "cgu", label: "CGU" },
