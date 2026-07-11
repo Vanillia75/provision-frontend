@@ -43,7 +43,9 @@ function formatDateFr(iso) {
 
 // `sansTitre` : posé sur la landing publique, le module laisse la section porter
 // son propre titre (un seul h1 par page). Dans l'appli connectée, rien ne change.
-export default function TrouverDesHeures({ sansTitre = false } = {}) {
+// `compact` : vitrine landing — 3 offres affichées, le reste derrière « Voir plus ».
+export default function TrouverDesHeures({ sansTitre = false, compact = false } = {}) {
+  const pageOffres = compact ? 3 : 10;
   const [roleType, setRoleType] = useState("");
   const [contractType, setContractType] = useState("");
   const [lieu, setLieu] = useState(() => {
@@ -66,7 +68,7 @@ export default function TrouverDesHeures({ sansTitre = false } = {}) {
   const [offreOuverte, setOffreOuverte] = useState(null);
   // Nombre d'offres affichées : 10 d’abord, « Voir plus » pour la suite (la page
   // reste courte même quand la recherche renvoie 20+ offres). Affichage pur.
-  const [nbVisibles, setNbVisibles] = useState(10);
+  const [nbVisibles, setNbVisibles] = useState(pageOffres);
   // Rayon RÉELLEMENT utilisé (le rayon choisi peut être auto-élargi une fois s'il ne donne rien).
   const [rayonEffectif, setRayonEffectif] = useState(() => {
     try { return Number(localStorage.getItem("th_rayon")) || 20; } catch { return 20; }
@@ -98,7 +100,7 @@ export default function TrouverDesHeures({ sansTitre = false } = {}) {
       }
       setRayonEffectif(r);
       setOffres(data);
-      setNbVisibles(10);     // nouvelle recherche → on repart sur une page courte
+      setNbVisibles(pageOffres);     // nouvelle recherche → on repart sur une page courte
       setOffreOuverte(null); // et aucune description dépliée
       setStatut("ok");
     } catch (e) {
@@ -327,7 +329,7 @@ export default function TrouverDesHeures({ sansTitre = false } = {}) {
             </div>
           ))}
           {offres.length > nbVisibles && (
-            <button type="button" onClick={() => setNbVisibles((n) => n + 10)}
+            <button type="button" onClick={() => setNbVisibles((n) => n + pageOffres)}
               style={{ width: "100%", background: "rgba(93,202,165,0.10)", border: `1px solid rgba(93,202,165,0.35)`, color: VERT, borderRadius: 12, padding: "13px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
               <i className="ti ti-chevron-down" aria-hidden="true" style={{ fontSize: 16 }} />
               Voir plus d'offres ({offres.length - nbVisibles} restante{offres.length - nbVisibles > 1 ? "s" : ""})

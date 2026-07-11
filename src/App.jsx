@@ -5694,7 +5694,7 @@ function AppInner() {
             <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel, filtrés selon ton métier et ta ville. Consulte-les librement, sans créer de compte.</p>
           </div>
           <div style={{ maxWidth: 720, margin: isMobile ? "26px auto 0" : "36px auto 0", background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: isMobile ? "18px 14px" : "26px 26px" }}>
-            <TrouverDesHeures sansTitre />
+            <TrouverDesHeures sansTitre compact />
             <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 11.5, color: "#8BA5C0", textAlign: "center" }}>
               Source : France Travail. Offres consultables librement et gratuitement, sans compte.
             </div>
