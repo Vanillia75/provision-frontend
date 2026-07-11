@@ -5815,7 +5815,10 @@ function AppInner() {
       // Si l'utilisateur a déjà choisi son statut sur la landing, on n'affiche pas
       // le choix une 2e fois : on montre un court écran de transition pendant que
       // le useEffect applique le choix automatiquement.
-      if (landingStatut) {
+      // ⚠️ "choix" = PAS de choix fait (inscription depuis la page d'accueil ou l'app
+      // mobile) : il faut afficher les cartes ci-dessous, sinon l'effet ne se déclenche
+      // jamais et l'utilisateur reste bloqué à vie sur « Je prépare ton espace ».
+      if (landingStatut && landingStatut !== "choix") {
         return (
           <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
             <div style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} className="hector-breathe">
