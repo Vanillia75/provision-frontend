@@ -404,13 +404,13 @@ function AppInner() {
   // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
   const [legalPage, setLegalPage] = useState(() => {
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    return ["confidentialite", "cgu", "mentions"].includes(p) ? p : null;
+    return ["confidentialite", "cgu", "mentions", "contact"].includes(p) ? p : null;
   });
   // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
   const fermerLegal = () => {
     setLegalPage(null);
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (["confidentialite", "cgu", "mentions"].includes(p)) {
+    if (["confidentialite", "cgu", "mentions", "contact"].includes(p)) {
       window.history.replaceState({}, "", "/");
     }
   };
@@ -5502,6 +5502,7 @@ function AppInner() {
                 { page: "mentions", label: "Mentions légales" },
                 { page: "cgu", label: "CGU" },
                 { page: "confidentialite", label: "Confidentialité" },
+                { page: "contact", label: "Contact" },
               ].map(l => (
                 <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
               ))}
@@ -5788,6 +5789,7 @@ function AppInner() {
               { page: "mentions", label: "Mentions légales" },
               { page: "cgu", label: "CGU" },
               { page: "confidentialite", label: "Confidentialité" },
+              { page: "contact", label: "Contact" },
             ].map(l => (
               <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
             ))}

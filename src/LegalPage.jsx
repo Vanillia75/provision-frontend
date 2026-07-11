@@ -267,6 +267,28 @@ function renderLegalMarkdown(md) {
   });
 }
 
+// Page contact : même écrin que les pages légales, contenu dédié (email cliquable,
+// que le rendu markdown des pages légales ne sait pas faire).
+function ContactContent() {
+  const SERIF = "'Playfair Display', Georgia, serif";
+  return (
+    <>
+      <h1 style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 18px" }}>Contacte-nous</h1>
+      <p style={{ fontSize: 13.5, color: "#C5D4E3", lineHeight: 1.75, margin: "8px 0 22px" }}>
+        Une question, un souci, une idée ? Écris-nous, on te répond avec plaisir. On est une petite équipe, on lit tout.
+      </p>
+      <a href="mailto:bonjour@montotor.fr"
+        style={{ display: "inline-flex", alignItems: "center", gap: 9, background: "#5DCAA5", color: "#04342C", borderRadius: 11, padding: "13px 22px", fontSize: 14.5, fontWeight: 700, textDecoration: "none" }}>
+        <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 17 }} />
+        bonjour@montotor.fr
+      </a>
+      <p style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, margin: "18px 0 0" }}>
+        On répond en général sous 48 heures.
+      </p>
+    </>
+  );
+}
+
 export function LegalPageView({ page, onBack }) {
   const content = page === "mentions" ? MENTIONS_LEGALES_MD : page === "cgu" ? CGU_MD : CONFIDENTIALITE_MD;
   return (
@@ -277,7 +299,7 @@ export function LegalPageView({ page, onBack }) {
           <i className="ti ti-arrow-left" aria-hidden="true" style={{ fontSize: 16 }} /> Retour
         </button>
         <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.09)", padding: "32px 36px" }}>
-          {renderLegalMarkdown(content)}
+          {page === "contact" ? <ContactContent /> : renderLegalMarkdown(content)}
         </div>
       </div>
     </div>
