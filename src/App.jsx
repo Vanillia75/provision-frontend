@@ -80,6 +80,14 @@ function isIOSDevice() {
       || (/macintosh/i.test(ua) && "ontouchend" in document);
   } catch { return false; }
 }
+// ─── Détection appli native (Capacitor/iOS) : conformité App Store 3.1.1 ───
+// Dans l'appli publiée sur l'App Store, on ne montre NI prix, NI abonnement,
+// NI paiement (l'abonnement se gère sur le web). Le web reste inchangé :
+// window.Capacitor n'existe que dans l'appli native.
+function isNativeApp() {
+  try { return window.Capacitor?.isNativePlatform?.() === true; } catch { return false; }
+}
+const IS_NATIVE_APP = isNativeApp();
 
 // Bannière d'installation réutilisable (s'affiche avant ET après connexion).
 // Props : pwaPrompt (event Android), onInstall, onDismiss, showHelp, compact.
@@ -1662,6 +1670,8 @@ function AppInner() {
             conformite: "Laisse-moi vérifier ta décision : je compare ce que tu as reconstitué avec France Travail et je t'explique chaque écart, pour repérer un problème avant qu'il te coûte des droits. 🔓",
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
+        {/* Appli native : ni paiement ni code (App Store 3.1.1) — le message reste, sans CTA. */}
+        {!IS_NATIVE_APP && (<>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
           {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
         </button>
@@ -1679,6 +1689,7 @@ function AppInner() {
         {promoStatus && (
           <div style={{ fontSize: 12, marginTop: 8, color: promoStatus.ok === true ? "#5DCAA5" : promoStatus.ok === false ? "#F0997F" : "#8BA5C0" }}>{promoStatus.msg}</div>
         )}
+        </>)}
       </div>
     </div>
   ) : null;
@@ -2209,13 +2220,14 @@ function AppInner() {
             ? `🐶 Offre gratuite : il te reste ${reste} ${nomSingulier}${reste > 1 ? "s" : ""} ce mois-ci`
             : `🐶 Tu as fait le plein de ${nomSingulier}s ce mois-ci 👏`}
         </div>
-        <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 3 }}>
+        {/* Appli native : pas d'incitation à l'abonnement (App Store 3.1.1). */}
+        {!IS_NATIVE_APP && <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 3 }}>
           🐶 Je pourrais m'en occuper autant de fois que tu veux :{" "}
           <button type="button" onClick={() => (profile?.statut === "intermittent" ? setInterNav("abonnement") : setNav("abonnement"))}
             style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
             voir l'offre illimitée →
           </button>
-        </div>
+        </div>}
       </div>
     );
   };
@@ -5488,7 +5500,7 @@ function AppInner() {
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
-              <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
+              {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
             </div>
           </section>
 
@@ -5795,7 +5807,7 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
-            <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
+            {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
           </div>
         </section>
 
@@ -6974,7 +6986,8 @@ function AppInner() {
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
-      { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
+      // Masqué dans l'appli native (App Store 3.1.1) : l'abonnement se gère sur le web.
+      ...(IS_NATIVE_APP ? [] : [{ id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true }]),
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
@@ -11165,7 +11178,8 @@ function AppInner() {
         {[
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
-          { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
+          // Masqué dans l'appli native (App Store 3.1.1) : l'abonnement se gère sur le web.
+          ...(IS_NATIVE_APP ? [] : [{ id: "abonnement", icon: "ti-crown", label: "Abonnement" }]),
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
