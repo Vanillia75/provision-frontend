@@ -92,6 +92,7 @@ const IS_NATIVE_APP = isNativeApp();
 // Bannière d'installation réutilisable (s'affiche avant ET après connexion).
 // Props : pwaPrompt (event Android), onInstall, onDismiss, showHelp, compact.
 function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
+  if (IS_NATIVE_APP) return null; // appli native : déjà « installée », l'invite PWA n'a pas de sens
   if (isStandalonePWA()) return null;
   if (!pwaPrompt && !isIOSDevice()) return null; // rien à proposer sur desktop classique
   return (
@@ -5190,13 +5191,13 @@ function AppInner() {
         <div style={{ minHeight: "100vh", background: "#07192E", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "26px 22px" : "40px 48px", boxSizing: "border-box", position: "relative" }}>
           {/* Enseigne discrète en haut à gauche : la marque vit dans son coin,
               la question « Qui es-tu ? » vit seule (sinon on lit « TOTOR, qui es-tu ? »). */}
-          <div style={{ position: "absolute", top: isMobile ? 16 : 22, left: isMobile ? 18 : 26 }}>
+          <div style={{ position: "absolute", top: isMobile ? "calc(16px + env(safe-area-inset-top, 0px))" : "calc(22px + env(safe-area-inset-top, 0px))", left: isMobile ? 18 : 26 }}>
             <Logo size={isMobile ? 24 : 28} dark />
           </div>
           {/* Connexion pour les utilisateurs existants : sobre, sans troisième carte
               (le choix binaire reste pur). L'auth garde sa logique intacte. */}
           <button type="button" className="hx-login" onClick={() => ouvrirAuth("login")}
-            style={{ position: "absolute", top: isMobile ? 18 : 26, right: isMobile ? 18 : 28, background: "none", border: "none", color: "#B5D4F4", fontSize: isMobile ? 13 : 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 2px" }}>
+            style={{ position: "absolute", top: isMobile ? "calc(18px + env(safe-area-inset-top, 0px))" : "calc(26px + env(safe-area-inset-top, 0px))", right: isMobile ? 18 : 28, background: "none", border: "none", color: "#B5D4F4", fontSize: isMobile ? 13 : 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 2px" }}>
             Se connecter
           </button>
           <style>{`
@@ -6991,7 +6992,7 @@ function AppInner() {
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
-      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
+      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "calc(16px + env(safe-area-inset-top, 0px)) 12px 16px", minHeight: isMobile ? "100%" : "100vh" }}>
         <div style={{ padding: "4px 8px 16px" }}><Logo size={30} dark /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {interMenuItems.map(item => {
@@ -7121,7 +7122,7 @@ function AppInner() {
         )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
-        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "env(safe-area-inset-top, 0px) 24px 0", height: "calc(56px + env(safe-area-inset-top, 0px))", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             {isMobile && (
               <button type="button" onClick={() => setInterMenuOpen(true)} aria-label="Menu" style={{ background: "transparent", border: "none", color: "white", fontSize: 22, cursor: "pointer", padding: 0 }}>
@@ -11044,7 +11045,7 @@ function AppInner() {
       <style>{CSS}</style>
 
       {isMobile && (
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 16px", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: 56, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "env(safe-area-inset-top, 0px) 16px 0", background: INK, position: "fixed", top: 0, left: 0, right: 0, zIndex: 90, height: "calc(56px + env(safe-area-inset-top, 0px))", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <button
             onClick={() => setMobileMenuOpen(true)}
             style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 8, width: 40, height: 40, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0 }}
@@ -11071,7 +11072,7 @@ function AppInner() {
       <aside
         style={{
           ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch" }
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingTop: "calc(20px + env(safe-area-inset-top, 0px))" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
           background: "#07192E",
         }}
@@ -11216,7 +11217,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: "#07192E" }}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "calc(72px + env(safe-area-inset-top, 0px)) 14px 16px" } : S.mainContent), background: "#07192E" }}>
         {/* Barre du haut (desktop) — miroir de celle du mode intermittent : badge + bascule. */}
         {!isMobile && (
           <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "-28px -32px 24px" }}>
