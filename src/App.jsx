@@ -5066,13 +5066,16 @@ function AppInner() {
                   <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
                   {forgotStatus === "sent" ? (
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
-                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.</p>
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#07192E", border: "2px solid #5DCAA5", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                        <i className="ti ti-mail-check" aria-hidden="true" style={{ fontSize: 30, color: "#5DCAA5" }} />
+                      </div>
+                      <p style={{ fontSize: 14, color: "#0A2540", fontWeight: 600, marginBottom: 6, lineHeight: 1.5 }}>C'est parti, va voir ta boîte mail.</p>
+                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>Si un compte existe avec <strong>{forgotEmail}</strong>, tu recevras un lien pour choisir ton mot de passe. Il est valable 1 heure.</p>
                       <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
                     </div>
                   ) : (
                     <form onSubmit={handleForgotPassword}>
-                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entre ton email : tu recevras un lien pour choisir un nouveau mot de passe. Ça marche aussi si tu t'es inscrit·e avec Google et que tu n'en as jamais eu.</p>
                       <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
                       <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
                       <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
