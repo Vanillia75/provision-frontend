@@ -5680,41 +5680,20 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 05 — TOTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) ===== */}
+        {/* ===== 05 — TOTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) =====
+             VRAIES offres France Travail, consultables librement SANS compte (exigence de la
+             licence FT : l'accès aux offres ne doit jamais être conditionné à une inscription).
+             Même module que dans l'appli (TrouverDesHeures, isolé, endpoint public). */}
         <section style={secShell}>
-          <div style={secGrid}>
-            <div>
-              <div style={numFantome}>05</div>
-              <h2 style={titreSec}>TOTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
-              <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel. Les offres France Travail directement dans TOTOR, filtrées selon ton métier et ta ville.</p>
-            </div>
-            <div style={demoFondu}>
-              {/* Filtres visibles — on montre le produit sans le décrire */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, color: "#B5D4F4" }}>🎭 Comédien·ne</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, color: "#B5D4F4" }}>📍 Paris + 30 km</span>
-              </div>
-              {/* Offres d'exemple (fictives mais réalistes — pas de vraies offres, elles expirent) */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { titre: "Régisseur·se lumière, festival d'été", metier: "Technicien", contrat: "CDDU" },
-                  { titre: "Comédien·ne, création jeune public", metier: "Artiste", contrat: "Cachet" },
-                ].map((o) => (
-                  <div key={o.titre} style={sousPanel}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "white", lineHeight: 1.35 }}>{o.titre}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 6, padding: "2px 8px" }}>{o.metier}</span>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 6, padding: "2px 8px" }}>{o.contrat}</span>
-                      <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#7FB8F0", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>Voir l'offre sur France Travail <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 12 }} /></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Mention obligatoire — l'honnêteté fait partie de la promesse */}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 14, fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
-                <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, color: "#FAC775", flexShrink: 0, marginTop: 1 }} />
-                Vérifie toujours que le contrat est bien éligible à ton annexe.
-              </div>
+          <div style={{ maxWidth: 720, margin: "0 auto" }}>
+            <div style={numFantome}>05</div>
+            <h2 style={titreSec}>TOTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
+            <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel, filtrés selon ton métier et ta ville. Consulte-les librement, sans créer de compte.</p>
+          </div>
+          <div style={{ maxWidth: 720, margin: isMobile ? "26px auto 0" : "36px auto 0", background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: isMobile ? "18px 14px" : "26px 26px" }}>
+            <TrouverDesHeures sansTitre />
+            <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 11.5, color: "#8BA5C0", textAlign: "center" }}>
+              Source : France Travail. Offres consultables librement et gratuitement, sans compte.
             </div>
           </div>
           {/* Clôture de section */}

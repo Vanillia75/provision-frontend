@@ -41,7 +41,9 @@ function formatDateFr(iso) {
   }
 }
 
-export default function TrouverDesHeures() {
+// `sansTitre` : posé sur la landing publique, le module laisse la section porter
+// son propre titre (un seul h1 par page). Dans l'appli connectée, rien ne change.
+export default function TrouverDesHeures({ sansTitre = false } = {}) {
   const [roleType, setRoleType] = useState("");
   const [contractType, setContractType] = useState("");
   const [lieu, setLieu] = useState(() => {
@@ -150,16 +152,18 @@ export default function TrouverDesHeures() {
 
   return (
     <>
-      {/* En-tête */}
-      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
-        <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: `1.5px solid rgba(55,138,221,0.4)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-          <i className="ti ti-briefcase" aria-hidden="true" style={{ color: BLEU_CLAIR, fontSize: 20 }} />
+      {/* En-tête (masqué sur la landing publique : la section a déjà son titre) */}
+      {!sansTitre && (
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 6 }}>
+          <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: `1.5px solid rgba(55,138,221,0.4)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <i className="ti ti-briefcase" aria-hidden="true" style={{ color: BLEU_CLAIR, fontSize: 20 }} />
+          </div>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Trouver des cachets & des heures</h1>
+            <p style={{ fontSize: 13.5, color: TEXTE_DOUX, margin: "2px 0 0" }}>Des missions qui peuvent t'aider à te rapprocher des 507h.</p>
+          </div>
         </div>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Trouver des cachets & des heures</h1>
-          <p style={{ fontSize: 13.5, color: TEXTE_DOUX, margin: "2px 0 0" }}>Des missions qui peuvent t'aider à te rapprocher des 507h.</p>
-        </div>
-      </div>
+      )}
 
       {/* Mention obligatoire — toujours visible */}
       <div style={{ margin: "16px 0", display: "flex", alignItems: "flex-start", gap: 8, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 10, padding: "11px 14px" }}>
