@@ -933,6 +933,95 @@ function AppInner() {
   // Abonnement : quand un quota gratuit mensuel est atteint, le backend renvoie un 402.
   // On stocke le détail ici pour afficher l'écran « passe en Premium » (montre puis débloque).
   const [premiumGate, setPremiumGate] = useState(null);
+  // ── Murmure Veille : petite invitation discrète pour les comptes gratuits.
+  //    Fermable d'un tap, ne revient pas avant 14 jours (jamais de harcèlement).
+  const [murmureVeilleVisible, setMurmureVeilleVisible] = useState(() => {
+    const vu = safeStorage.getItem("veille_murmure_ferme_le");
+    return !vu || (Date.now() - Number(vu)) > 14 * 86400000;
+  });
+  const fermerMurmureVeille = () => {
+    setMurmureVeilleVisible(false);
+    safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
+  };
+  // ── L'écran Veille : la vitrine plein écran qui s'affiche de temps en temps
+  //    chez les gratuits (1 fois / 10 jours max, jamais pendant l'onboarding).
+  //    « Plus tard » referme et cale aussi le murmure (jamais deux sollicitations
+  //    dans la même période).
+  const [ecranVeilleOuvert, setEcranVeilleOuvert] = useState(false);
+  useEffect(() => {
+    if (!profile || profile.is_premium || !profile.onboarding_complete) return;
+    // Cadence demandée par Camille : 1 fois toutes les 4 connexions (compteur de sessions).
+    const n = Number(safeStorage.getItem("veille_ecran_sessions") || "0") + 1;
+    safeStorage.setItem("veille_ecran_sessions", String(n));
+    if (n < 4) return;
+    const t = setTimeout(() => setEcranVeilleOuvert(true), 1500);
+    return () => clearTimeout(t);
+  }, [profile?.is_premium, profile?.onboarding_complete]);
+  const fermerEcranVeille = (versAbonnement) => {
+    setEcranVeilleOuvert(false);
+    safeStorage.setItem("veille_ecran_sessions", "0");
+    safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
+    setMurmureVeilleVisible(false);
+    if (versAbonnement) {
+      if (profile?.statut === "intermittent") setInterNav("abonnement"); else setNav("abonnement");
+    }
+  };
+  const ecranVeilleModal = ecranVeilleOuvert ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => fermerEcranVeille(false)}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "linear-gradient(170deg, #0d2038, #07192E)", border: "1.5px solid rgba(93,202,165,0.45)", borderRadius: 22, padding: "28px 26px 24px", maxWidth: 400, width: "100%", textAlign: "center", position: "relative", boxShadow: "0 24px 70px rgba(0,0,0,0.6), 0 0 50px rgba(93,202,165,0.12)" }}>
+        <img src="/logo-tete.webp" alt="" style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", border: "2.5px solid #5DCAA5", marginBottom: 10, boxShadow: "0 6px 26px rgba(93,202,165,0.32)" }} />
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ display: "inline-block", background: "#5DCAA5", color: "#04342C", fontWeight: 800, borderRadius: 999, padding: "4px 14px", fontSize: 11.5, letterSpacing: 0.6, textTransform: "uppercase" }}>🐾 TOTOR Veille</span>
+        </div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#E6EDF5", lineHeight: 1.18, marginBottom: 3 }}>Respire.</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#5DCAA5", lineHeight: 1.18, marginBottom: 8 }}>TOTOR s'en charge.</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 16 }}>
+          {profile?.statut === "intermittent"
+            ? "Pendant que tu es sur scène, moi je surveille ton dossier."
+            : "Pendant que tu bosses, moi je surveille ta tréso."}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
+          {(profile?.statut === "intermittent"
+            ? ["Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            : ["Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
+          ).map((b, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+              <span style={{ color: "#5DCAA5", fontWeight: 800, flexShrink: 0 }}>✓</span>
+              <span style={{ fontSize: 13, color: "#DDE8F2", lineHeight: 1.45, fontWeight: 600 }}>{b}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 16 }}>
+          Un seul abonnement, tes deux espaces. Annulable à tout moment.
+        </div>
+        <button type="button" onClick={() => fermerEcranVeille(true)}
+          style={{ width: "100%", background: "linear-gradient(95deg, #5DCAA5, #6FDDB8)", color: "#04342C", border: "none", borderRadius: 13, padding: "15px", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 24px rgba(93,202,165,0.35)" }}>
+          🐾 Je le laisse veiller
+        </button>
+        <button type="button" onClick={() => fermerEcranVeille(false)}
+          style={{ background: "none", border: "none", color: "#6B8299", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginTop: 12, textDecoration: "underline" }}>
+          Plus tard
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  const renderMurmureVeille = (ouvrirAbonnement) => (
+    !profile?.is_premium && murmureVeilleVisible ? (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 16 }}>
+        <span style={{ fontSize: 16, flexShrink: 0 }} aria-hidden="true">🐾</span>
+        <span style={{ flex: 1, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+          Pendant que tu gères tout ça, je pourrais veiller pour toi.{" "}
+          <button type="button" onClick={ouvrirAbonnement}
+            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+            Découvrir TOTOR Veille
+          </button>
+        </span>
+        <button type="button" onClick={fermerMurmureVeille} aria-label="Plus tard"
+          style={{ background: "none", border: "none", color: "#4A6280", fontSize: 18, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, padding: "2px 4px", flexShrink: 0 }}>×</button>
+      </div>
+    ) : null
+  );
 
   async function apiFetch(path, options = {}) {
     // Timeout de sécurité : si le backend ne répond pas (ex : serveur qui se réveille
@@ -7152,6 +7241,9 @@ function AppInner() {
           )}
 
           {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ─── */}
+          {interNav !== "abonnement" && ecranVeilleModal}
+          {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
+
           {!emailVerified && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 12, padding: "11px 16px", marginBottom: 16 }}>
               <span style={{ fontSize: 13, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 8, lineHeight: 1.4 }}>
@@ -11245,6 +11337,9 @@ function AppInner() {
             ← Retour au cockpit
           </button>
         )}
+
+        {nav !== "abonnement" && ecranVeilleModal}
+        {nav === "dashboard" && renderMurmureVeille(() => setNav("abonnement"))}
 
         {!emailVerified && profile?.onboarding_complete && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
