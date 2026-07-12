@@ -892,6 +892,25 @@ function AppInner() {
   const [autresRevenus, setAutresRevenus] = useState(() => safeStorage.getItem("autresRevenus") || "");
   const [inclureAutresRevenus, setInclureAutresRevenus] = useState(() => safeStorage.getItem("inclureAutresRevenus") === "true");
   const [achatMontant, setAchatMontant] = useState("");
+  // Freemium 1.0.1 — Mode Achat : 5 simulations/mois en gratuit. Une VISITE de
+  // l'écran avec un montant valide = une simulation (retaper le montant dans la
+  // même visite ne consomme rien). "libre" = pas encore comptée, "ok" = comptée,
+  // "bloque" = quota gratuit épuisé (le verdict se masque, l'invitation s'affiche).
+  const [achatQuotaEtat, setAchatQuotaEtat] = useState("libre");
+  useEffect(() => { if (nav === "achat") setAchatQuotaEtat("libre"); }, [nav]);
+  useEffect(() => {
+    if (nav !== "achat" || achatQuotaEtat !== "libre") return;
+    if (!(parseFloat(achatMontant) > 0)) return;
+    const t = setTimeout(async () => {
+      try {
+        await apiFetch("/quota/achat-simulation", { method: "POST" });
+        setAchatQuotaEtat("ok");
+      } catch {
+        setAchatQuotaEtat("bloque"); // apiFetch a déjà ouvert l'invitation TOTOR Veille
+      }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [nav, achatMontant, achatQuotaEtat]);
   const [tarifMontant, setTarifMontant] = useState("");
   const [tarifUnite, setTarifUnite] = useState("heure");
   const [heuresParJour, setHeuresParJourCoach] = useState("7");
@@ -1671,10 +1690,14 @@ function AppInner() {
         <div style={{ fontSize: 14.5, color: "#E6EDF5", lineHeight: 1.55, marginBottom: 18 }}>
           {({
             aem_scan: "Tu as utilisé tes scans gratuits du mois. Je n'ai pas encore lu celle-ci. Laisse-moi lire toutes tes AEM, autant de fois que tu veux. 🔓",
-            chat: "Je reste là quand tu as besoin de moi. On a utilisé nos messages du mois. Laisse-moi rester dispo non-stop. 🔓",
+            chat: "On a bien discuté ce mois-ci ! Nos conversations gratuites sont épuisées. Laisse-moi rester dispo non-stop, sans compter. 🔓",
             doc_scan: "Laisse-moi le faire. Tu as utilisé tes scans gratuits du mois. Je peux m'occuper de toute ta paperasse. 🔓",
             relance_auto: "Laisse-moi réclamer tes impayés à ta place : je relance tes clients automatiquement, au bon moment, sans que tu aies à t'en occuper. 🔓",
             conformite: "Laisse-moi vérifier ta décision : je compare ce que tu as reconstitué avec France Travail et je t'explique chaque écart, pour repérer un problème avant qu'il te coûte des droits. 🔓",
+            facture_quota: "Tu as créé tes 5 factures gratuites du mois, joli rythme ! Laisse-moi m'occuper de ta facturation sans limite. 🔓",
+            devis_quota: "Tu as créé tes 5 devis gratuits du mois. Laisse-moi m'occuper de tes devis sans limite. 🔓",
+            achat_simu: "Tu as fait tes 5 simulations gratuites du mois. Laisse-moi répondre à « puis-je l'acheter ? » autant que tu veux. 🔓",
+            paie_complete: "Le montant recommandé est à toi, pour toujours. Les trois montants (prudent, recommandé, maximum) et la surveillance de ta paie font partie de TOTOR Veille. 🔓",
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
@@ -2042,8 +2065,8 @@ function AppInner() {
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je t'accompagne</div>
               <div style={{ marginBottom: 16 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>Gratuit</span></div>
               {(profile?.statut === "intermittent"
-                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "2 scans d'AEM par mois", "3 échanges avec Totor par mois"]
-                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "3 scans de factures/frais par mois", "3 échanges avec Totor par mois", "Factures et devis illimités"]
+                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "5 scans d'AEM par mois", "3 conversations avec Totor par mois (6 le premier mois)"]
+                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "5 scans de factures/frais par mois", "3 conversations avec Totor par mois (6 le premier mois)", "5 factures et 5 devis par mois"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -11375,13 +11398,27 @@ function AppInner() {
 
                   <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 8 }}>👉 Je te recommande de te verser :</div>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-                    {options.map(o => (
+                    {options.map(o => {
+                      // Freemium 1.0.1 : le gratuit reçoit le montant recommandé ; prudent
+                      // et maximum (la DÉCISION affinée) font partie de TOTOR Veille.
+                      const verrouille = paieDuMois.paie_verrouillee && o.montant == null;
+                      if (verrouille) {
+                        return (
+                          <button key={o.id} type="button" onClick={() => setPremiumGate({ code: "premium_requis", fonction: "paie_complete" })}
+                            style={{ background: "rgba(255,255,255,0.02)", border: "1.5px dashed rgba(93,202,165,0.35)", borderRadius: 10, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", minHeight: 44 }}>
+                            <div style={{ fontSize: 11, color: "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{o.label}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#5DCAA5", marginTop: 4 }}>🐾 TOTOR Veille</div>
+                          </button>
+                        );
+                      }
+                      return (
                       <button key={o.id} type="button" onClick={() => setPaieChoix(o.id)}
                         style={{ background: paieChoix === o.id ? "rgba(93,202,165,0.15)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${paieChoix === o.id ? "#5DCAA5" : "rgba(255,255,255,0.1)"}`, borderRadius: 10, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", minHeight: 44 }}>
                         <div style={{ fontSize: 11, color: paieChoix === o.id ? "#5DCAA5" : "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{o.label}</div>
                         <div style={{ fontSize: o.id === "recommande" ? 22 : 17, fontWeight: 800, color: "white", marginTop: 2 }}>{formatEUR(o.montant)}</div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <button type="button" onClick={() => setPaieChoix("libre")}
@@ -12444,7 +12481,12 @@ function AppInner() {
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                       <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tape 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
                     </div>
-                    {achatMontant && parseFloat(achatMontant) > 0 && (() => {
+                    {achatQuotaEtat === "bloque" && (
+                      <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "14px 16px", fontSize: 13, color: "#C2E6D8", lineHeight: 1.55 }}>
+                        🐾 Tu as fait tes 5 simulations gratuites du mois. Laisse-moi répondre à « puis-je l'acheter ? » autant que tu veux, avec TOTOR Veille.
+                      </div>
+                    )}
+                    {achatMontant && parseFloat(achatMontant) > 0 && achatQuotaEtat !== "bloque" && (() => {
                       const montant = parseFloat(achatMontant);
                       const tresorerieApres = solde - montant;
                       const resteApres = apresReserve - montant;
