@@ -1508,6 +1508,7 @@ function AppInner() {
   // ─── Caisse in-app (RevenueCat, appli native uniquement) ───
   const [veilleProduits, setVeilleProduits] = useState(null);        // { mensuel, annuel } avec prix des stores
   const [veillePlanNatif, setVeillePlanNatif] = useState("annuel");
+  const [veilleAutreMetierOuvert, setVeilleAutreMetierOuvert] = useState(false); // section de l'autre métier repliée par défaut
   const [veilleAchatEtat, setVeilleAchatEtat] = useState("");        // "" | "achat" | "activation" | "restauration"
   const [veilleMsgNatif, setVeilleMsgNatif] = useState("");
   const rechargerProduitsVeille = async () => {
@@ -2084,21 +2085,40 @@ function AppInner() {
   // du tarif web (anti-steering). Le backend reste le juge unique du premium.
   const renderDecouverteVeille = () => {
     const produitChoisi = veillePlanNatif === "mensuel" ? veilleProduits?.mensuel : veilleProduits?.annuel;
-    const lignesComparatif = profile?.statut === "intermittent"
-      ? [
-          ["Tes 507h comptées, ton cockpit", "✓", "✓"],
-          ["Scans d'AEM", "Quelques-uns par mois", "Illimités"],
-          ["Échanges avec Totor", "Quelques-uns par mois", "Illimités"],
-          ["Je vérifie ta décision face à France Travail", "🔒", "✓"],
-          ["Je veille et je te préviens au bon moment", "🔒", "✓"],
-        ]
-      : [
-          ["Ton cockpit, ta paie, tes factures", "✓", "✓"],
-          ["Scans de factures et reçus", "Quelques-uns par mois", "Illimités"],
-          ["Échanges avec Totor", "Quelques-uns par mois", "Illimités"],
-          ["Je relance tes impayés à ta place", "🔒", "✓"],
-          ["Je veille et je te préviens au bon moment", "🔒", "✓"],
-        ];
+    // LE grand comparatif : tout ce qui existe, avec sa vraie colonne Gratuit.
+    // Un seul abonnement débloque les DEUX espaces : on montre tout.
+    const sectionIntermittent = ["🎭 Côté intermittent", [
+      ["L'essentiel : 507h comptées, disponible du jour, allocation expliquée", "✓", "✓"],
+      ["Scans d'AEM et de tes documents France Travail : tu photographies, je remplis", "Limités", "Illimités"],
+      ["Le vrai mode Veille : je surveille ton dossier en continu", "🔒", "✓"],
+      ["Rappels d'actualisation au bon moment : impossible d'oublier", "🔒", "✓"],
+      ["Je vérifie ta décision face à France Travail", "🔒", "✓"],
+      ["Je repère les écarts qui te coûteraient des droits", "🔒", "✓"],
+      ["Je recalcule ton allocation après chaque AEM", "🔒", "✓"],
+      ["Je regarde ton mois prochain : ce qui va tomber, ce qui va manquer", "🔒", "✓"],
+      ["Je surveille tes jours par employeur avant que ça coince", "🔒", "✓"],
+      ["Ta date anniversaire préparée en avance, sans mauvaise surprise", "🔒", "✓"],
+    ]];
+    const sectionAE = ["💼 Côté auto-entrepreneur", [
+      ["L'essentiel : cockpit, chiffre d'affaires, URSSAF", "✓", "✓"],
+      ["Ta paie calculée chaque mois (prudent, recommandé, maximum)", "🔒", "✓"],
+      ["Je relance tes impayés à ta place, sans relâche", "🔒", "✓"],
+      ["Je surveille tes échéances URSSAF et je te rappelle à temps", "🔒", "✓"],
+      ["Le radar acompte : je repère les mauvais payeurs avant le devis", "🔒", "✓"],
+      ["Ton taux horaire réel calculé : tu sais enfin ce que tu vaux", "🔒", "✓"],
+      ["Je regarde ton mois prochain : ce qui rentre, ce qui va manquer", "🔒", "✓"],
+      ["Factures et devis pro, aux mentions impeccables", "Limités", "Illimités"],
+      ["Scans de factures et reçus : je lis tout", "Limités", "Illimités"],
+    ]];
+    const sectionPartout = ["🐾 Et partout", [
+      ["Conversations avec Totor, il connaît ton dossier", "Limitées", "Illimitées"],
+      ["Le Mode Achat : « puis-je me le permettre ? »", "Limité", "Illimité"],
+      ["Toutes les prochaines fonctionnalités, incluses d'office", "🔒", "✓"],
+    ]];
+    // Ton métier d'abord et complet ; l'autre métier replié derrière une ligne cliquable.
+    const sectionsComparatif = profile?.statut === "intermittent"
+      ? [[...sectionIntermittent, false], [...sectionAE, true], [...sectionPartout, false]]
+      : [[...sectionAE, false], [...sectionIntermittent, true], [...sectionPartout, false]];
     return (
     <div>
       <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
@@ -2121,26 +2141,51 @@ function AppInner() {
         </div>
       ) : (
         <div style={{ ...S.card, maxWidth: 520, margin: "0 auto" }}>
-          <div style={{ fontSize: 14.5, color: "#C4D2E0", lineHeight: 1.6, marginBottom: 16 }}>
+          {/* L'accroche : une phrase forte pour ceux qui ne scrollent pas. */}
+          <div style={{ fontSize: 22, fontWeight: 800, color: "#E6EDF5", lineHeight: 1.25, marginBottom: 8 }}>
+            Arrête de vérifier.<br /><span style={{ color: "#5DCAA5" }}>Je m'en occupe.</span>
+          </div>
+          <div style={{ fontSize: 14, color: "#C4D2E0", lineHeight: 1.6, marginBottom: 16 }}>
             Le TOTOR gratuit t'aide à reprendre le contrôle de ta situation. <strong style={{ color: "#E6EDF5" }}>TOTOR Veille</strong> fait en sorte que tu n'aies plus à t'en préoccuper.
           </div>
 
-          {/* Tableau comparatif vendeur : gratuit (je te montre) vs Veille (je m'en occupe) */}
+          {/* LE grand comparatif vendeur : gratuit (je te montre) vs Veille (je m'en occupe) */}
+          <div style={{ fontSize: 11.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 8 }}>Un seul abonnement, les deux espaces : intermittent ET auto-entrepreneur.</div>
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 12 }}>
             <thead>
               <tr>
                 <th style={{ textAlign: "left", padding: "6px 4px", color: "#8BA5C0", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.1)" }}></th>
                 <th style={{ padding: "6px 4px", color: "#8BA5C0", fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>Gratuit</th>
-                <th style={{ padding: "6px 4px", color: "#5DCAA5", fontWeight: 800, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>🐾 Veille</th>
+                <th style={{ padding: "6px 4px", borderBottom: "1px solid rgba(255,255,255,0.1)" }}>
+                  <span style={{ display: "inline-block", background: "#5DCAA5", color: "#04342C", fontWeight: 800, borderRadius: 999, padding: "3px 10px", fontSize: 11 }}>🐾 Veille</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {lignesComparatif.map(([fonction, gratuit, veille], i) => (
-                <tr key={i}>
-                  <td style={{ padding: "7px 4px", color: "#C4D2E0", lineHeight: 1.4, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>{fonction}</td>
-                  <td style={{ padding: "7px 4px", color: "#8BA5C0", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 11.5 }}>{gratuit}</td>
-                  <td style={{ padding: "7px 4px", color: "#5DCAA5", textAlign: "center", fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 11.5 }}>{veille}</td>
-                </tr>
+              {sectionsComparatif.map(([titre, lignes, repliable], gi) => (
+                repliable && !veilleAutreMetierOuvert ? (
+                  <tr key={"t" + gi}>
+                    <td colSpan={3} style={{ padding: "12px 4px" }}>
+                      <button type="button" onClick={() => setVeilleAutreMetierOuvert(true)}
+                        style={{ width: "100%", background: "rgba(255,255,255,0.04)", border: "1px dashed rgba(255,255,255,0.18)", borderRadius: 10, padding: "10px 12px", color: "#8BA5C0", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+                        {titre} : {lignes.length} avantages aussi ▸ appuie pour voir
+                      </button>
+                    </td>
+                  </tr>
+                ) : [
+                  <tr key={"t" + gi}>
+                    <td style={{ padding: "12px 4px 5px", color: "#8BA5C0", fontWeight: 800, fontSize: 10.5, textTransform: "uppercase", letterSpacing: 0.6 }}>{titre}</td>
+                    <td style={{ padding: 0 }}></td>
+                    <td style={{ padding: 0, background: "rgba(93,202,165,0.08)" }}></td>
+                  </tr>,
+                  ...lignes.map(([fonction, gratuit, veille], i) => (
+                    <tr key={gi + "-" + i}>
+                      <td style={{ padding: "7px 4px", color: "#C4D2E0", lineHeight: 1.4, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>{fonction}</td>
+                      <td style={{ padding: "7px 4px", color: "#8BA5C0", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 11.5 }}>{gratuit}</td>
+                      <td style={{ padding: "7px 4px", color: "#5DCAA5", textAlign: "center", fontWeight: 800, borderBottom: "1px solid rgba(93,202,165,0.15)", fontSize: veille === "✓" ? 14 : 11.5, background: "rgba(93,202,165,0.08)" }}>{veille}</td>
+                    </tr>
+                  )),
+                ]
               ))}
             </tbody>
           </table>
@@ -2149,14 +2194,33 @@ function AppInner() {
             <>
               {/* Choix du plan : prix LUS chez Apple/Google (source de vérité des stores) */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-                {[["annuel", veilleProduits.annuel, "⭐ Annuel"], ["mensuel", veilleProduits.mensuel, "Mensuel"]].map(([id, prod, label]) => prod && (
+                {[["annuel", veilleProduits.annuel, "⭐ Annuel"], ["mensuel", veilleProduits.mensuel, "Mensuel"]].map(([id, prod, label]) => {
+                  if (!prod) return null;
+                  // Economie de l'annuel, calculee depuis les PRIX REELS des stores (jamais un chiffre en dur).
+                  let sousTexte = id === "annuel" ? "par an" : "par mois";
+                  let badgeEco = null;
+                  if (id === "annuel" && veilleProduits.mensuel?.price > 0 && prod.price > 0) {
+                    const pct = Math.round((1 - prod.price / (veilleProduits.mensuel.price * 12)) * 100);
+                    if (pct >= 5) {
+                      badgeEco = `−${pct} %`;
+                      try {
+                        const parMois = new Intl.NumberFormat(undefined, { style: "currency", currency: prod.currencyCode || "EUR" }).format(prod.price / 12);
+                        sousTexte = `soit ${parMois}/mois`;
+                      } catch { /* devise inconnue : on garde "par an" */ }
+                    }
+                  }
+                  return (
                   <button key={id} type="button" onClick={() => setVeillePlanNatif(id)}
-                    style={{ background: veillePlanNatif === id ? "rgba(93,202,165,0.14)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${veillePlanNatif === id ? "#5DCAA5" : "rgba(255,255,255,0.12)"}`, borderRadius: 12, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
+                    style={{ position: "relative", background: veillePlanNatif === id ? "rgba(93,202,165,0.14)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${veillePlanNatif === id ? "#5DCAA5" : "rgba(255,255,255,0.12)"}`, borderRadius: 12, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
+                    {badgeEco && (
+                      <span style={{ position: "absolute", top: -9, right: 8, background: "#FAC775", color: "#412402", fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "2px 8px" }}>{badgeEco}</span>
+                    )}
                     <div style={{ fontSize: 11, color: veillePlanNatif === id ? "#5DCAA5" : "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
                     <div style={{ fontSize: 19, fontWeight: 800, color: "white", marginTop: 3 }}>{prod.priceString}</div>
-                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 1 }}>{id === "annuel" ? "par an" : "par mois"}</div>
+                    <div style={{ fontSize: 10.5, color: badgeEco ? "#5DCAA5" : "#6B8299", marginTop: 1, fontWeight: badgeEco ? 700 : 400 }}>{sousTexte}</div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
               <button type="button" disabled={veilleAchatEtat === "achat" || !produitChoisi} onClick={() => acheterVeilleNatif(produitChoisi)}
                 style={{ ...S.btnPrimary, width: "100%", background: "#5DCAA5", color: "#04342C", opacity: veilleAchatEtat === "achat" ? 0.6 : 1 }}>
@@ -7354,8 +7418,9 @@ function AppInner() {
             <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
           )}
 
-          {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ─── */}
-          {!emailVerified && (
+          {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ───
+               Masquée sur l'écran TOTOR Veille : c'est la vitrine de vente, pas l'onboarding. */}
+          {!emailVerified && interNav !== "abonnement" && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 12, padding: "11px 16px", marginBottom: 16 }}>
               <span style={{ fontSize: 13, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 8, lineHeight: 1.4 }}>
                 <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
@@ -11450,7 +11515,7 @@ function AppInner() {
           </button>
         )}
 
-        {!emailVerified && profile?.onboarding_complete && (
+        {!emailVerified && profile?.onboarding_complete && nav !== "abonnement" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
             <span style={{ fontSize: 13, color: "#0C447C", display: "flex", alignItems: "center", gap: 8 }}>
               <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16 }} />
