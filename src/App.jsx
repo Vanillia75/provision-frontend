@@ -2094,9 +2094,7 @@ function AppInner() {
       ["Je vérifie ta décision face à France Travail", "🔒", "✓"],
       ["Je repère les écarts qui te coûteraient des droits", "🔒", "✓"],
       ["Je recalcule ton allocation après chaque AEM", "🔒", "✓"],
-      ["Je regarde ton mois prochain : ce qui va tomber, ce qui va manquer", "🔒", "✓"],
       ["Je surveille tes jours par employeur avant que ça coince", "🔒", "✓"],
-      ["Ta date anniversaire préparée en avance, sans mauvaise surprise", "🔒", "✓"],
     ]];
     const sectionAE = ["💼 Côté auto-entrepreneur", [
       ["L'essentiel : cockpit, chiffre d'affaires, déclaration URSSAF et son rappel", "✓", "✓"],
