@@ -1698,6 +1698,10 @@ function AppInner() {
             devis_quota: "Tu as créé tes 5 devis gratuits du mois. Laisse-moi m'occuper de tes devis sans limite. 🔓",
             achat_simu: "Tu as fait tes 5 simulations gratuites du mois. Laisse-moi répondre à « puis-je l'acheter ? » autant que tu veux. 🔓",
             paie_complete: "Le montant recommandé est à toi, pour toujours. Les trois montants (prudent, recommandé, maximum) et la surveillance de ta paie font partie de TOTOR Veille. 🔓",
+            projection: "Laisse-moi regarder ton mois prochain : je projette ton solde à partir de tes factures, devis et train de vie, et je te dis ce qui va rentrer et ce qui va manquer. 🔓",
+            quotas_employeur: "Laisse-moi surveiller tes jours par employeur : je compte, je compare au plafond de chaque boîte, et je te préviens avant que ça coince. 🔓",
+            radar_acompte: "Laisse-moi repérer les mauvais payeurs : quand un client paie systématiquement en retard, je te suggère un acompte avant d'accepter la mission. 🔓",
+            taux_horaire: "Laisse-moi calculer ton vrai taux horaire, après cotisations, et te dire si tu te sous-vends. 🔓",
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
@@ -4253,6 +4257,21 @@ function AppInner() {
   function renderRadarAcompte(nom) {
     const r = radarAcompteClient(nom);
     if (!r) return null;
+    // Fonction TOTOR Veille : le gratuit sait que Totor a repéré quelque chose, sans le détail.
+    if (!profile?.is_premium) {
+      return (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "10px 13px", marginBottom: 10 }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
+          <span style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+            J'ai repéré quelque chose sur l'historique de paiement de ce client.{" "}
+            <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "radar_acompte" })}
+              style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+              Débloquer le radar acompte
+            </button>
+          </span>
+        </div>
+      );
+    }
     return (
       <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.1)", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 10, padding: "10px 13px", marginBottom: 10 }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>🐾</span>
@@ -10025,7 +10044,14 @@ function AppInner() {
                                   </>
                                 )}
                                 <div style={{ marginTop: 6 }}>
-                                  {enEdition ? (
+                                  {/* La SURVEILLANCE (quota + alerte plafond) est TOTOR Veille ; les jours comptés
+                                       au-dessus restent visibles pour tous (la donnée, jamais verrouillée). */}
+                                  {!profile?.is_premium ? (
+                                    <button type="button" onClick={() => setPremiumGate({ code: "premium_requis", fonction: "quotas_employeur" })}
+                                      style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
+                                      🔒 Surveiller le plafond de cette boîte
+                                    </button>
+                                  ) : enEdition ? (
                                     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                                       <input type="number" min="0" max="366" autoFocus value={quotaInputs[l.cle]} onChange={e => setQuotaInputs({ ...quotaInputs, [l.cle]: e.target.value })} placeholder="Quota (ex : 59)"
                                         style={{ width: 130, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 7, padding: "7px 10px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit" }} />
@@ -11611,6 +11637,23 @@ function AppInner() {
             })()}
 
             {/* ── PROJECTION TRÉSORERIE : « Totor regarde ton mois prochain » ── */}
+            {/* Fonction TOTOR Veille : les comptes gratuits voient un teaser verrouillé (drapeau backend). */}
+            {projectionData?.verrouille && (
+              <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                  <span style={{ fontSize: 18 }}>🔒</span>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Totor regarde ton mois prochain</div>
+                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
+                  À partir de tes factures, devis et train de vie, je projette ton solde du mois prochain : <strong style={{ color: "#E8F4FF" }}>ce qui va rentrer, ce qui va manquer</strong>, et les leviers si ça coince.
+                </div>
+                <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "projection" })}
+                  style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  🔓 Débloquer avec Premium
+                </button>
+              </div>
+            )}
             {projectionData?.disponible && (() => {
               const pr = projectionData;
               const accent = pr.ton === "alerte" ? "#F09595" : pr.ton === "vigilant" ? "#FAC775" : "#5DCAA5";
@@ -12752,7 +12795,27 @@ function AppInner() {
           );
         })()}
 
-        {nav === "coach" && (
+        {nav === "coach" && !profile?.is_premium && (
+          <div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Est-ce que je facture assez ?</h1><p style={S.pageSub}>Ton vrai taux horaire, et si tu te sous-vends</p></div></div>
+            {/* Fonction TOTOR Veille : teaser verrouillé pour le gratuit. */}
+            <div style={{ ...S.card, background: "linear-gradient(160deg, rgba(93,202,165,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                <span style={{ fontSize: 18 }}>🔒</span>
+                <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton vrai taux horaire</div>
+                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
+                Je calcule ce qu'il te reste <strong style={{ color: "#E8F4FF" }}>par heure réellement travaillée, après cotisations</strong>, je te dis si tu te sous-vends, et ce que changerait une hausse de tarif.
+              </div>
+              <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "taux_horaire" })}
+                style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                🔓 Débloquer avec Premium
+              </button>
+            </div>
+          </div>
+        )}
+        {nav === "coach" && profile?.is_premium && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Est-ce que je facture assez ?</h1><p style={S.pageSub}>Ton vrai taux horaire, et si tu te sous-vends</p></div></div>
 
