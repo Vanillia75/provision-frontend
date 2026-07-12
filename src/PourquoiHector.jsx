@@ -35,7 +35,7 @@ export function PourquoiHector({ onBack }) {
           <div style={{ position: "absolute", inset: 0, boxShadow: "inset 0 0 64px 32px #07192E", pointerEvents: "none" }} />
           <div style={{ position: "absolute", left: 0, right: 0, bottom: 0, height: 150, background: "linear-gradient(to bottom, rgba(7,25,46,0), #07192E)", pointerEvents: "none" }} />
           <button type="button" onClick={retour} aria-label="Retour"
-            style={{ position: "absolute", top: 14, left: 14, background: "rgba(7,25,46,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.15)", color: "#B5D4F4", borderRadius: 10, padding: "8px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
+            style={{ position: "absolute", top: "calc(14px + env(safe-area-inset-top, 0px))", left: 14, background: "rgba(7,25,46,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(255,255,255,0.15)", color: "#B5D4F4", borderRadius: 10, padding: "8px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6 }}>
             <i className="ti ti-arrow-left" aria-hidden="true" style={{ fontSize: 15 }} /> Retour
           </button>
         </div>
