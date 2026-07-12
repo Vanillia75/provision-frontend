@@ -1686,7 +1686,19 @@ function AppInner() {
             conformite: "Laisse-moi vérifier ta décision : je compare ce que tu as reconstitué avec France Travail et je t'explique chaque écart, pour repérer un problème avant qu'il te coûte des droits. 🔓",
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
-        {/* Appli native : ni paiement ni code (App Store 3.1.1) — le message reste, sans CTA. */}
+        {/* Appli native (App Store 3.1.1) : ni paiement, ni prix, ni code. Un libellé doux
+            + un lien vers l'écran de DÉCOUVERTE (purement informatif, aucune vente). */}
+        {IS_NATIVE_APP && (
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontSize: 12.5, color: "#9FD9C2", fontWeight: 600, marginBottom: 10 }}>
+              🐾 Cette fonction fait partie de TOTOR Veille.
+            </div>
+            <button type="button" style={{ ...S.btnSecondary }}
+              onClick={() => { setPremiumGate(null); (profile?.statut === "intermittent" ? setInterNav("abonnement") : setNav("abonnement")); }}>
+              Découvrir TOTOR Veille
+            </button>
+          </div>
+        )}
         {!IS_NATIVE_APP && (<>
         <button style={{ ...S.btnPrimary, width: "100%" }} disabled={billingBusy} onClick={() => startCheckout()}>
           {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
@@ -2002,8 +2014,59 @@ function AppInner() {
     );
   })() : null;
 
+  // ─── Appli native : écran « Découvre TOTOR Veille » (App Store 3.1.1) ───
+  // On MONTRE ce que TOTOR Veille apporte, dans la voix TOTOR, mais on ne vend RIEN :
+  // aucun prix, aucun bouton d'achat, aucun lien de paiement. Le paiement vit sur le web.
+  // Note (évolution possible) : l'External Purchase Link Entitlement d'Apple permettrait
+  // d'ajouter un lien vers la page d'abonnement web, avec les disclosures requises.
+  const renderDecouverteVeille = () => (
+    <div>
+      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
+        <div><h1 style={S.pageTitle}>TOTOR Veille</h1><p style={S.pageSub}>🐾 Je te montre déjà où tu en es. Avec TOTOR Veille, je m'en occupe.</p></div>
+      </div>
+      {profile?.is_premium ? (
+        <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: "2px solid #5DCAA5" }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🐾</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>TOTOR Veille est actif</div>
+          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.5 }}>Je vérifie, je relance, je veille. Tu n'as plus besoin d'y penser. ❤️</div>
+        </div>
+      ) : (
+        <div style={{ ...S.card, maxWidth: 520, margin: "0 auto" }}>
+          <div style={{ fontSize: 14.5, color: "#C4D2E0", lineHeight: 1.6, marginBottom: 16 }}>
+            Le TOTOR gratuit t'aide à reprendre le contrôle de ta situation. <strong style={{ color: "#E6EDF5" }}>TOTOR Veille</strong> fait en sorte que tu n'aies plus à t'en préoccuper.
+          </div>
+          {(profile?.statut === "intermittent"
+            ? [
+                ["🛡️", "Je vérifie ta décision face à France Travail", "Je compare tes heures reconstituées avec les leurs et je t'explique chaque écart."],
+                ["💬", "Tu me parles autant que tu veux", "Nos échanges deviennent illimités, je connais ton dossier par cœur."],
+                ["📸", "Je lis toutes tes attestations", "Scans d'AEM illimités : tu photographies, je remplis."],
+                ["👀", "Je veille, même quand l'appli est fermée", "Je continue de surveiller ta situation et je te préviens au bon moment."],
+              ]
+            : [
+                ["💸", "Je relance tes impayés à ta place", "Automatiquement, au bon moment, sans que tu aies à jouer les gêneurs."],
+                ["💬", "Tu me parles autant que tu veux", "Nos échanges deviennent illimités, je connais ton activité par cœur."],
+                ["📸", "Je m'occupe de toute ta paperasse", "Scans de factures et de reçus illimités."],
+                ["👀", "Je veille, même quand l'appli est fermée", "Je continue de surveiller ta situation et je te préviens au bon moment."],
+              ]
+          ).map(([emo, titre, texte], i) => (
+            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
+              <div style={{ fontSize: 20, flexShrink: 0 }}>{emo}</div>
+              <div>
+                <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5", marginBottom: 2 }}>{titre}</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>{texte}</div>
+              </div>
+            </div>
+          ))}
+          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 4, paddingTop: 14, fontSize: 12, color: "#6B8299", textAlign: "center", lineHeight: 1.5 }}>
+            TOTOR Veille n'est pas disponible à l'achat dans cette application.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
-  const renderAbonnement = (onBack) => (
+  const renderAbonnement = (onBack) => IS_NATIVE_APP ? renderDecouverteVeille() : (
     <div>
       <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
 
@@ -7008,8 +7071,9 @@ function AppInner() {
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
-      // Masqué dans l'appli native (App Store 3.1.1) : l'abonnement se gère sur le web.
-      ...(IS_NATIVE_APP ? [] : [{ id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true }]),
+      // Appli native (App Store 3.1.1) : l'écran devient une DÉCOUVERTE de TOTOR Veille,
+      // sans prix ni achat (le paiement vit sur le web). Sur le web : abonnement normal.
+      { id: "abonnement", icon: IS_NATIVE_APP ? "ti-paw" : "ti-crown", label: IS_NATIVE_APP ? "TOTOR Veille" : "Abonnement", dispo: true },
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
@@ -11200,8 +11264,8 @@ function AppInner() {
         {[
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
-          // Masqué dans l'appli native (App Store 3.1.1) : l'abonnement se gère sur le web.
-          ...(IS_NATIVE_APP ? [] : [{ id: "abonnement", icon: "ti-crown", label: "Abonnement" }]),
+          // Appli native (App Store 3.1.1) : découverte de TOTOR Veille, sans prix ni achat.
+          { id: "abonnement", icon: IS_NATIVE_APP ? "ti-paw" : "ti-crown", label: IS_NATIVE_APP ? "TOTOR Veille" : "Abonnement" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
