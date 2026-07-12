@@ -64,7 +64,9 @@ export async function chargerProduitsVeille() {
   const Purchases = await purchases();
   const { products } = await Purchases.getProducts({ productIdentifiers: PRODUITS_VEILLE });
   const parId = {};
-  for (const prod of products || []) parId[prod.identifier] = prod;
+  // Android nomme ses produits "abonnement:forfait" (ex. veille_mensuel:mensuel) :
+  // on indexe par la partie AVANT les deux-points pour rester commun iOS/Android.
+  for (const prod of products || []) parId[String(prod.identifier).split(":")[0]] = prod;
   return {
     mensuel: parId["veille_mensuel"] || null,
     annuel: parId["veille_annuel"] || null,
