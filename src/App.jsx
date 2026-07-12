@@ -10,6 +10,7 @@ import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
+import { initCaisse, chargerProduitsVeille, acheterVeille, restaurerAchats } from "./revenuecatClient";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -1504,6 +1505,63 @@ function AppInner() {
   }
 
   // ── Abonnement Stripe (Premium) ──
+  // ─── Caisse in-app (RevenueCat, appli native uniquement) ───
+  const [veilleProduits, setVeilleProduits] = useState(null);        // { mensuel, annuel } avec prix des stores
+  const [veillePlanNatif, setVeillePlanNatif] = useState("annuel");
+  const [veilleAchatEtat, setVeilleAchatEtat] = useState("");        // "" | "achat" | "activation" | "restauration"
+  const [veilleMsgNatif, setVeilleMsgNatif] = useState("");
+  const rechargerProduitsVeille = async () => {
+    try { setVeilleProduits(await chargerProduitsVeille()); setVeilleMsgNatif(""); }
+    catch { setVeilleProduits(null); }
+  };
+  // Connexion de la caisse au COMPTE (identite = notre user.id, lu dans le jeton).
+  useEffect(() => {
+    if (!IS_NATIVE_APP || !token) return;
+    initCaisse(token).then(ok => { if (ok) rechargerProduitsVeille(); });
+  }, [token]);
+  // Apres un paiement confirme par le store, le webhook active le compte cote serveur :
+  // on interroge le profil jusqu'a voir le premium (quelques secondes).
+  const attendreActivationVeille = async (essais = 20) => {
+    for (let i = 0; i < essais; i++) {
+      try {
+        const p = await apiFetch("/profile");
+        if (p?.is_premium) { await loadEverything(); return true; }
+      } catch { /* transitoire */ }
+      await new Promise(r => setTimeout(r, 2000));
+    }
+    await loadEverything();
+    return false;
+  };
+  async function acheterVeilleNatif(produit) {
+    if (!produit) return;
+    setVeilleMsgNatif("");
+    setVeilleAchatEtat("achat");
+    try {
+      const achete = await acheterVeille(produit);
+      if (!achete) { setVeilleAchatEtat(""); return; }   // annule par l'utilisateur
+      setVeilleAchatEtat("activation");
+      const ok = await attendreActivationVeille();
+      if (!ok) setVeilleMsgNatif("Ton paiement est bien passe, l'activation prend un peu plus de temps que prevu. Ferme et rouvre l'app dans une minute, tout sera la.");
+      setVeilleAchatEtat("");
+    } catch (e) {
+      setVeilleAchatEtat("");
+      setVeilleMsgNatif("Le paiement n'a pas abouti. Rien n'a ete debite, tu peux reessayer.");
+    }
+  }
+  async function restaurerAchatsNatif() {
+    setVeilleMsgNatif("");
+    setVeilleAchatEtat("restauration");
+    try {
+      await restaurerAchats();
+      const ok = await attendreActivationVeille(5);
+      if (!ok) setVeilleMsgNatif("Je n'ai pas trouve d'abonnement a restaurer sur ce compte " + (window.Capacitor?.getPlatform?.() === "ios" ? "App Store" : "Google Play") + ".");
+    } catch {
+      setVeilleMsgNatif("La restauration n'a pas abouti. Reessaie dans un instant.");
+    } finally {
+      setVeilleAchatEtat("");
+    }
+  }
+
   const [billingBusy, setBillingBusy] = useState(false);
   const [planChoisi, setPlanChoisi] = useState("annuel");   // "pionnier" | "annuel" (recommandé) | "mensuel"
   // Offre Pionnier : compteur RÉEL lu au backend (places restantes sur 100).
@@ -2019,7 +2077,29 @@ function AppInner() {
   // aucun prix, aucun bouton d'achat, aucun lien de paiement. Le paiement vit sur le web.
   // Note (évolution possible) : l'External Purchase Link Entitlement d'Apple permettrait
   // d'ajouter un lien vers la page d'abonnement web, avec les disclosures requises.
-  const renderDecouverteVeille = () => (
+  // ─── Écran natif « TOTOR Veille » : la page de VENTE in-app (App Store 3.1.1 conforme :
+  // l'achat passe par StoreKit/Play Billing via RevenueCat). Prix lus chez les stores,
+  // tableau comparatif vendeur gratuit/Veille, bouton d'achat natif, et « Restaurer mes
+  // achats » (obligation Apple). Jamais de Pionnier ici (exclu web), jamais de mention
+  // du tarif web (anti-steering). Le backend reste le juge unique du premium.
+  const renderDecouverteVeille = () => {
+    const produitChoisi = veillePlanNatif === "mensuel" ? veilleProduits?.mensuel : veilleProduits?.annuel;
+    const lignesComparatif = profile?.statut === "intermittent"
+      ? [
+          ["Tes 507h comptées, ton cockpit", "✓", "✓"],
+          ["Scans d'AEM", "Quelques-uns par mois", "Illimités"],
+          ["Échanges avec Totor", "Quelques-uns par mois", "Illimités"],
+          ["Je vérifie ta décision face à France Travail", "🔒", "✓"],
+          ["Je veille et je te préviens au bon moment", "🔒", "✓"],
+        ]
+      : [
+          ["Ton cockpit, ta paie, tes factures", "✓", "✓"],
+          ["Scans de factures et reçus", "Quelques-uns par mois", "Illimités"],
+          ["Échanges avec Totor", "Quelques-uns par mois", "Illimités"],
+          ["Je relance tes impayés à ta place", "🔒", "✓"],
+          ["Je veille et je te préviens au bon moment", "🔒", "✓"],
+        ];
+    return (
     <div>
       <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
         <div><h1 style={S.pageTitle}>TOTOR Veille</h1><p style={S.pageSub}>🐾 Je te montre déjà où tu en es. Avec TOTOR Veille, je m'en occupe.</p></div>
@@ -2029,44 +2109,86 @@ function AppInner() {
           <div style={{ fontSize: 40, marginBottom: 8 }}>🐾</div>
           <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>TOTOR Veille est actif</div>
           <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.5 }}>Je vérifie, je relance, je veille. Tu n'as plus besoin d'y penser. ❤️</div>
+          <div style={{ fontSize: 11.5, color: "#6B8299", marginTop: 12, lineHeight: 1.5 }}>
+            Ton abonnement se gère dans les réglages de ton téléphone (Abonnements), ou sur ton espace web si tu t'es abonné·e là-bas.
+          </div>
+        </div>
+      ) : veilleAchatEtat === "activation" ? (
+        <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: "2px solid #5DCAA5" }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🐾</div>
+          <div style={{ fontSize: 17, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>Merci ! J'active TOTOR Veille...</div>
+          <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.5 }}>Ton paiement est confirmé, quelques secondes et tout se débloque.</div>
         </div>
       ) : (
         <div style={{ ...S.card, maxWidth: 520, margin: "0 auto" }}>
           <div style={{ fontSize: 14.5, color: "#C4D2E0", lineHeight: 1.6, marginBottom: 16 }}>
             Le TOTOR gratuit t'aide à reprendre le contrôle de ta situation. <strong style={{ color: "#E6EDF5" }}>TOTOR Veille</strong> fait en sorte que tu n'aies plus à t'en préoccuper.
           </div>
-          {(profile?.statut === "intermittent"
-            ? [
-                ["🛡️", "Je vérifie ta décision face à France Travail", "Je compare tes heures reconstituées avec les leurs et je t'explique chaque écart."],
-                ["💬", "Tu me parles autant que tu veux", "Nos échanges deviennent illimités, je connais ton dossier par cœur."],
-                ["📸", "Je lis toutes tes attestations", "Scans d'AEM illimités : tu photographies, je remplis."],
-                ["👀", "Je veille, même quand l'appli est fermée", "Je continue de surveiller ta situation et je te préviens au bon moment."],
-              ]
-            : [
-                ["💸", "Je relance tes impayés à ta place", "Automatiquement, au bon moment, sans que tu aies à jouer les gêneurs."],
-                ["💬", "Tu me parles autant que tu veux", "Nos échanges deviennent illimités, je connais ton activité par cœur."],
-                ["📸", "Je m'occupe de toute ta paperasse", "Scans de factures et de reçus illimités."],
-                ["👀", "Je veille, même quand l'appli est fermée", "Je continue de surveiller ta situation et je te préviens au bon moment."],
-              ]
-          ).map(([emo, titre, texte], i) => (
-            <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", marginBottom: 14 }}>
-              <div style={{ fontSize: 20, flexShrink: 0 }}>{emo}</div>
-              <div>
-                <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5", marginBottom: 2 }}>{titre}</div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>{texte}</div>
+
+          {/* Tableau comparatif vendeur : gratuit (je te montre) vs Veille (je m'en occupe) */}
+          <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 12 }}>
+            <thead>
+              <tr>
+                <th style={{ textAlign: "left", padding: "6px 4px", color: "#8BA5C0", fontWeight: 600, borderBottom: "1px solid rgba(255,255,255,0.1)" }}></th>
+                <th style={{ padding: "6px 4px", color: "#8BA5C0", fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>Gratuit</th>
+                <th style={{ padding: "6px 4px", color: "#5DCAA5", fontWeight: 800, borderBottom: "1px solid rgba(255,255,255,0.1)" }}>🐾 Veille</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lignesComparatif.map(([fonction, gratuit, veille], i) => (
+                <tr key={i}>
+                  <td style={{ padding: "7px 4px", color: "#C4D2E0", lineHeight: 1.4, borderBottom: "1px solid rgba(255,255,255,0.05)" }}>{fonction}</td>
+                  <td style={{ padding: "7px 4px", color: "#8BA5C0", textAlign: "center", borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 11.5 }}>{gratuit}</td>
+                  <td style={{ padding: "7px 4px", color: "#5DCAA5", textAlign: "center", fontWeight: 700, borderBottom: "1px solid rgba(255,255,255,0.05)", fontSize: 11.5 }}>{veille}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          {veilleProduits && (veilleProduits.mensuel || veilleProduits.annuel) ? (
+            <>
+              {/* Choix du plan : prix LUS chez Apple/Google (source de vérité des stores) */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+                {[["annuel", veilleProduits.annuel, "⭐ Annuel"], ["mensuel", veilleProduits.mensuel, "Mensuel"]].map(([id, prod, label]) => prod && (
+                  <button key={id} type="button" onClick={() => setVeillePlanNatif(id)}
+                    style={{ background: veillePlanNatif === id ? "rgba(93,202,165,0.14)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${veillePlanNatif === id ? "#5DCAA5" : "rgba(255,255,255,0.12)"}`, borderRadius: 12, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
+                    <div style={{ fontSize: 11, color: veillePlanNatif === id ? "#5DCAA5" : "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", marginTop: 3 }}>{prod.priceString}</div>
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 1 }}>{id === "annuel" ? "par an" : "par mois"}</div>
+                  </button>
+                ))}
               </div>
+              <button type="button" disabled={veilleAchatEtat === "achat" || !produitChoisi} onClick={() => acheterVeilleNatif(produitChoisi)}
+                style={{ ...S.btnPrimary, width: "100%", background: "#5DCAA5", color: "#04342C", opacity: veilleAchatEtat === "achat" ? 0.6 : 1 }}>
+                {veilleAchatEtat === "achat" ? "…" : "🐾 Passer à TOTOR Veille"}
+              </button>
+              <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 8, textAlign: "center", lineHeight: 1.5 }}>
+                Abonnement à renouvellement automatique, débité via ton compte {window.Capacitor?.getPlatform?.() === "ios" ? "App Store" : "Google Play"}. Annulable à tout moment dans les réglages d'abonnement de ton téléphone.
+              </div>
+            </>
+          ) : (
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "14px 16px", fontSize: 12.5, color: "#8BA5C0", textAlign: "center", lineHeight: 1.5 }}>
+              La boutique ne répond pas pour le moment. Réessaie dans un instant.
+              <div><button type="button" onClick={rechargerProduitsVeille} style={{ ...S.linkBtn, marginTop: 6 }}>Réessayer</button></div>
             </div>
-          ))}
-          <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 4, paddingTop: 14, fontSize: 12, color: "#6B8299", textAlign: "center", lineHeight: 1.5 }}>
-            TOTOR Veille n'est pas disponible à l'achat dans cette application.
-            {/* Info « gestion de compte » (assouplissement Apple 2025) : texte simple,
-                sans lien cliquable, sans prix, sans incitation à l'achat. */}
-            <div style={{ marginTop: 6 }}>Ton abonnement TOTOR Veille se gère sur ton espace web&nbsp;: montotor.fr</div>
+          )}
+
+          {veilleMsgNatif && (
+            <div style={{ fontSize: 12, color: "#F0997F", marginTop: 10, textAlign: "center", lineHeight: 1.5 }}>{veilleMsgNatif}</div>
+          )}
+
+          {/* Restaurer mes achats : obligation Apple, et service rendu (changement de téléphone) */}
+          <div style={{ textAlign: "center", marginTop: 12 }}>
+            <button type="button" disabled={veilleAchatEtat === "restauration"} onClick={restaurerAchatsNatif}
+              style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+              {veilleAchatEtat === "restauration" ? "Restauration…" : "Restaurer mes achats"}
+            </button>
           </div>
         </div>
       )}
     </div>
-  );
+    );
+  };
 
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
   const renderAbonnement = (onBack) => IS_NATIVE_APP ? renderDecouverteVeille() : (
