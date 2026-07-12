@@ -2088,10 +2088,9 @@ function AppInner() {
     // LE grand comparatif : tout ce qui existe, avec sa vraie colonne Gratuit.
     // Un seul abonnement débloque les DEUX espaces : on montre tout.
     const sectionIntermittent = ["🎭 Côté intermittent", [
-      ["L'essentiel : 507h comptées, disponible du jour, allocation expliquée", "✓", "✓"],
+      ["L'essentiel : 507h comptées, disponible du jour, allocation expliquée, rappels d'actualisation", "✓", "✓"],
       ["Scans d'AEM et de tes documents France Travail : tu photographies, je remplis", "Limités", "Illimités"],
-      ["Le vrai mode Veille : je surveille ton dossier en continu", "🔒", "✓"],
-      ["Rappels d'actualisation au bon moment : impossible d'oublier", "🔒", "✓"],
+      ["Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche", "🔒", "✓"],
       ["Je vérifie ta décision face à France Travail", "🔒", "✓"],
       ["Je repère les écarts qui te coûteraient des droits", "🔒", "✓"],
       ["Je recalcule ton allocation après chaque AEM", "🔒", "✓"],
@@ -2100,10 +2099,9 @@ function AppInner() {
       ["Ta date anniversaire préparée en avance, sans mauvaise surprise", "🔒", "✓"],
     ]];
     const sectionAE = ["💼 Côté auto-entrepreneur", [
-      ["L'essentiel : cockpit, chiffre d'affaires, URSSAF", "✓", "✓"],
-      ["Ta paie calculée chaque mois (prudent, recommandé, maximum)", "🔒", "✓"],
+      ["L'essentiel : cockpit, chiffre d'affaires, déclaration URSSAF et son rappel", "✓", "✓"],
+      ["Ta paie calculée chaque mois", "1 scénario", "3 scénarios"],
       ["Je relance tes impayés à ta place, sans relâche", "🔒", "✓"],
-      ["Je surveille tes échéances URSSAF et je te rappelle à temps", "🔒", "✓"],
       ["Le radar acompte : je repère les mauvais payeurs avant le devis", "🔒", "✓"],
       ["Ton taux horaire réel calculé : tu sais enfin ce que tu vaux", "🔒", "✓"],
       ["Je regarde ton mois prochain : ce qui rentre, ce qui va manquer", "🔒", "✓"],
@@ -2113,7 +2111,7 @@ function AppInner() {
     const sectionPartout = ["🐾 Et partout", [
       ["Conversations avec Totor, il connaît ton dossier", "Limitées", "Illimitées"],
       ["Le Mode Achat : « puis-je me le permettre ? »", "Limité", "Illimité"],
-      ["Toutes les prochaines fonctionnalités, incluses d'office", "🔒", "✓"],
+      ["Toutes les prochaines fonctionnalités, incluses d'office", "", "✓"],
     ]];
     // Ton métier d'abord et complet ; l'autre métier replié derrière une ligne cliquable.
     const sectionsComparatif = profile?.statut === "intermittent"
