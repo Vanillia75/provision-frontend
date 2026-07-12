@@ -7,6 +7,15 @@
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/hector-icon-180.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <script>
+      // Appli native iOS : bloque le zoom automatique au focus des champs
+      // (la page restait zoomée et débordait de l'écran). Sans effet sur le web :
+      // window.Capacitor n'existe que dans l'appli.
+      if (window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) {
+        var vpMeta = document.querySelector('meta[name="viewport"]');
+        if (vpMeta) vpMeta.setAttribute('content', vpMeta.getAttribute('content') + ', maximum-scale=1.0');
+      }
+    </script>
     <meta name="theme-color" content="#07192E" />
     <title>TOTOR — Le compagnon des intermittents et des auto-entrepreneurs</title>
     <meta name="description" content="TOTOR, ton compagnon au quotidien : intermittent du spectacle ou auto-entrepreneur, il compte, provisionne et t'explique chaque chiffre. Choisis ton profil, il s'occupe du reste." />
