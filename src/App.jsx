@@ -1508,6 +1508,32 @@ function AppInner() {
   // ─── Caisse in-app (RevenueCat, appli native uniquement) ───
   const [veilleProduits, setVeilleProduits] = useState(null);        // { mensuel, annuel } avec prix des stores
   const [veillePlanNatif, setVeillePlanNatif] = useState("annuel");
+  // ── Murmure Veille : petite invitation discrète pour les comptes gratuits.
+  //    Fermable d'un tap, ne revient pas avant 14 jours (jamais de harcèlement).
+  const [murmureVeilleVisible, setMurmureVeilleVisible] = useState(() => {
+    const vu = safeStorage.getItem("veille_murmure_ferme_le");
+    return !vu || (Date.now() - Number(vu)) > 14 * 86400000;
+  });
+  const fermerMurmureVeille = () => {
+    setMurmureVeilleVisible(false);
+    safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
+  };
+  const renderMurmureVeille = (ouvrirAbonnement) => (
+    !profile?.is_premium && murmureVeilleVisible ? (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 16 }}>
+        <span style={{ fontSize: 16, flexShrink: 0 }} aria-hidden="true">🐾</span>
+        <span style={{ flex: 1, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+          Pendant que tu gères tout ça, je pourrais veiller pour toi.{" "}
+          <button type="button" onClick={ouvrirAbonnement}
+            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+            Découvrir TOTOR Veille
+          </button>
+        </span>
+        <button type="button" onClick={fermerMurmureVeille} aria-label="Plus tard"
+          style={{ background: "none", border: "none", color: "#4A6280", fontSize: 18, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, padding: "2px 4px", flexShrink: 0 }}>×</button>
+      </div>
+    ) : null
+  );
   const [veilleAutreMetierOuvert, setVeilleAutreMetierOuvert] = useState(false); // section de l'autre métier repliée par défaut
   const [veilleAchatEtat, setVeilleAchatEtat] = useState("");        // "" | "achat" | "activation" | "restauration"
   const [veilleMsgNatif, setVeilleMsgNatif] = useState("");
@@ -7414,6 +7440,9 @@ function AppInner() {
             <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
           )}
 
+          {/* Murmure Veille (gratuits, cockpit seulement, 1 fois / 14 jours) */}
+          {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
+
           {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ───
                Masquée sur l'écran TOTOR Veille : c'est la vitrine de vente, pas l'onboarding. */}
           {!emailVerified && interNav !== "abonnement" && (
@@ -11510,6 +11539,9 @@ function AppInner() {
             ← Retour au cockpit
           </button>
         )}
+
+        {/* Murmure Veille (gratuits, tableau de bord seulement, 1 fois / 14 jours) */}
+        {nav === "dashboard" && renderMurmureVeille(() => setNav("abonnement"))}
 
         {!emailVerified && profile?.onboarding_complete && nav !== "abonnement" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
