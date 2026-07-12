@@ -2059,6 +2059,9 @@ function AppInner() {
           ))}
           <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", marginTop: 4, paddingTop: 14, fontSize: 12, color: "#6B8299", textAlign: "center", lineHeight: 1.5 }}>
             TOTOR Veille n'est pas disponible à l'achat dans cette application.
+            {/* Info « gestion de compte » (assouplissement Apple 2025) : texte simple,
+                sans lien cliquable, sans prix, sans incitation à l'achat. */}
+            <div style={{ marginTop: 6 }}>Ton abonnement TOTOR Veille se gère sur ton espace web&nbsp;: montotor.fr</div>
           </div>
         </div>
       )}
