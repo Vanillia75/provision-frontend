@@ -1518,6 +1518,56 @@ function AppInner() {
     setMurmureVeilleVisible(false);
     safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
   };
+  // ── L'écran Veille : la vitrine plein écran qui s'affiche de temps en temps
+  //    chez les gratuits (1 fois / 10 jours max, jamais pendant l'onboarding).
+  //    « Plus tard » referme et cale aussi le murmure (jamais deux sollicitations
+  //    dans la même période).
+  const [ecranVeilleOuvert, setEcranVeilleOuvert] = useState(false);
+  useEffect(() => {
+    if (!profile || profile.is_premium || !profile.onboarding_complete) return;
+    const vu = safeStorage.getItem("veille_ecran_vu_le");
+    if (vu && (Date.now() - Number(vu)) < 10 * 86400000) return;
+    const t = setTimeout(() => setEcranVeilleOuvert(true), 1500);
+    return () => clearTimeout(t);
+  }, [profile?.is_premium, profile?.onboarding_complete]);
+  const fermerEcranVeille = (versAbonnement) => {
+    setEcranVeilleOuvert(false);
+    safeStorage.setItem("veille_ecran_vu_le", String(Date.now()));
+    safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
+    setMurmureVeilleVisible(false);
+    if (versAbonnement) {
+      if (profile?.statut === "intermittent") setInterNav("abonnement"); else setNav("abonnement");
+    }
+  };
+  const ecranVeilleModal = ecranVeilleOuvert ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => fermerEcranVeille(false)}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "linear-gradient(170deg, #0d2038, #07192E)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 22, padding: "30px 26px", maxWidth: 400, width: "100%", textAlign: "center", position: "relative", boxShadow: "0 24px 70px rgba(0,0,0,0.55)" }}>
+        <div style={{ fontSize: 44, marginBottom: 10 }}>🐾</div>
+        <div style={{ fontSize: 24, fontWeight: 800, color: "#E6EDF5", lineHeight: 1.2, marginBottom: 4 }}>Arrête de vérifier.</div>
+        <div style={{ fontSize: 24, fontWeight: 800, color: "#5DCAA5", lineHeight: 1.2, marginBottom: 16 }}>Je m'en occupe.</div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 9, textAlign: "left", margin: "0 auto 20px", maxWidth: 300 }}>
+          {(profile?.statut === "intermittent"
+            ? ["Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Scans d'AEM et conversations illimités"]
+            : ["Je relance tes impayés à ta place, sans relâche", "Ta paie complète, chaque mois", "Factures, devis et scans illimités"]
+          ).map((b, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+              <span style={{ color: "#5DCAA5", fontWeight: 800, flexShrink: 0 }}>✓</span>
+              <span style={{ fontSize: 13.5, color: "#C4D2E0", lineHeight: 1.45 }}>{b}</span>
+            </div>
+          ))}
+        </div>
+        <button type="button" onClick={() => fermerEcranVeille(true)}
+          style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: "14px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit" }}>
+          🐾 Découvrir TOTOR Veille
+        </button>
+        <button type="button" onClick={() => fermerEcranVeille(false)}
+          style={{ background: "none", border: "none", color: "#6B8299", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginTop: 12, textDecoration: "underline" }}>
+          Plus tard
+        </button>
+      </div>
+    </div>
+  ) : null;
+
   const renderMurmureVeille = (ouvrirAbonnement) => (
     !profile?.is_premium && murmureVeilleVisible ? (
       <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 16 }}>
@@ -7440,7 +7490,8 @@ function AppInner() {
             <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} />
           )}
 
-          {/* Murmure Veille (gratuits, cockpit seulement, 1 fois / 14 jours) */}
+          {/* L'écran Veille (vitrine plein écran occasionnelle) + murmure (gratuits) */}
+          {interNav !== "abonnement" && ecranVeilleModal}
           {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
 
           {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ───
@@ -11540,7 +11591,8 @@ function AppInner() {
           </button>
         )}
 
-        {/* Murmure Veille (gratuits, tableau de bord seulement, 1 fois / 14 jours) */}
+        {/* L'écran Veille (vitrine plein écran occasionnelle) + murmure (gratuits) */}
+        {nav !== "abonnement" && ecranVeilleModal}
         {nav === "dashboard" && renderMurmureVeille(() => setNav("abonnement"))}
 
         {!emailVerified && profile?.onboarding_complete && nav !== "abonnement" && (
