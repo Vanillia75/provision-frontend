@@ -289,6 +289,46 @@ function ContactContent() {
   );
 }
 
+// Page « Suppression de compte » : exigée par Google Play (et utile à tous).
+// Accessible sans connexion, même écrin sombre que les pages légales.
+function SuppressionCompteContent() {
+  const SERIF = "'Playfair Display', Georgia, serif";
+  const pStyle = { fontSize: 13.5, color: "#C5D4E3", lineHeight: 1.75, margin: "8px 0" };
+  const h2Style = { fontFamily: SERIF, fontSize: 19, fontWeight: 700, color: "white", margin: "28px 0 10px" };
+  return (
+    <>
+      <h1 style={{ fontFamily: SERIF, fontSize: 28, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 18px" }}>Supprimer ton compte TOTOR</h1>
+      <p style={pStyle}>
+        Ton compte t'appartient, et le supprimer est simple et définitif. Cette page explique comment faire, et ce que deviennent tes données. Pour toute question : <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontWeight: 700 }}>bonjour@montotor.fr</a>.
+      </p>
+
+      <h2 style={h2Style}>Depuis l'application (recommandé)</h2>
+      <p style={pStyle}>
+        Connecte-toi à TOTOR, ouvre <strong style={{ color: "white" }}>Réglages</strong>, puis descends jusqu'au bouton <strong style={{ color: "white" }}>« Supprimer mon compte »</strong>. Une confirmation t'est demandée (tu tapes le mot SUPPRIMER pour éviter toute fausse manipulation), et la suppression est immédiate.
+      </p>
+
+      <h2 style={h2Style}>Par email, si tu préfères</h2>
+      <p style={pStyle}>
+        Écris-nous à <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontWeight: 700 }}>bonjour@montotor.fr</a> depuis l'adresse de ton compte, en demandant sa suppression. On s'en occupe et on te confirme, en général sous 48 heures et au plus tard sous un mois.
+      </p>
+
+      <h2 style={h2Style}>Ce qui est supprimé</h2>
+      <p style={pStyle}>
+        Tout ce qui te concerne : ton compte et ton email, ton profil, les données financières que tu as saisies (revenus, dépenses, factures, activités, montants), les documents et photos que tu as importés (AEM, attestations, justificatifs), tes échanges avec l'assistant et tes traces de connexion. La suppression de la base active est immédiate.
+      </p>
+
+      <h2 style={h2Style}>Ce qui peut être conservé, et combien de temps</h2>
+      <p style={pStyle}>
+        Par sécurité, des sauvegardes chiffrées de la base sont réalisées régulièrement : les données d'un compte supprimé peuvent y subsister au maximum <strong style={{ color: "white" }}>30 jours</strong> avant d'en disparaître définitivement. Ces sauvegardes ne sont jamais accessibles publiquement et ne servent qu'à restaurer le service en cas d'incident. Enfin, si la loi nous impose de conserver certains éléments plus longtemps (par exemple des pièces comptables liées à un abonnement payant), ils sont gardés uniquement le temps légal, puis supprimés.
+      </p>
+
+      <p style={{ ...pStyle, marginTop: 22, color: "#8BA5C0", fontSize: 12.5 }}>
+        Application concernée : TOTOR (montotor.fr). Détails complets dans notre politique de confidentialité, accessible depuis le pied de page du site.
+      </p>
+    </>
+  );
+}
+
 export function LegalPageView({ page, onBack }) {
   const content = page === "mentions" ? MENTIONS_LEGALES_MD : page === "cgu" ? CGU_MD : CONFIDENTIALITE_MD;
   return (
@@ -299,7 +339,7 @@ export function LegalPageView({ page, onBack }) {
           <i className="ti ti-arrow-left" aria-hidden="true" style={{ fontSize: 16 }} /> Retour
         </button>
         <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 16, border: "1px solid rgba(255,255,255,0.09)", padding: "32px 36px" }}>
-          {page === "contact" ? <ContactContent /> : renderLegalMarkdown(content)}
+          {page === "contact" ? <ContactContent /> : page === "suppression-compte" ? <SuppressionCompteContent /> : renderLegalMarkdown(content)}
         </div>
       </div>
     </div>

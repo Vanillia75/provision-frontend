@@ -404,13 +404,13 @@ function AppInner() {
   // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
   const [legalPage, setLegalPage] = useState(() => {
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    return ["confidentialite", "cgu", "mentions", "contact"].includes(p) ? p : null;
+    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p) ? p : null;
   });
   // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
   const fermerLegal = () => {
     setLegalPage(null);
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (["confidentialite", "cgu", "mentions", "contact"].includes(p)) {
+    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p)) {
       window.history.replaceState({}, "", "/");
     }
   };
