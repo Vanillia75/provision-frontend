@@ -1496,7 +1496,13 @@ function AppInner() {
 
   // ── Abonnement Stripe (Premium) ──
   const [billingBusy, setBillingBusy] = useState(false);
-  const [planChoisi, setPlanChoisi] = useState("annuel");   // "annuel" (recommandé) | "mensuel"
+  const [planChoisi, setPlanChoisi] = useState("annuel");   // "pionnier" | "annuel" (recommandé) | "mensuel"
+  // Offre Pionnier : compteur RÉEL lu au backend (places restantes sur 100).
+  // null = pas encore chargé -> la page n'affiche pas l'offre tant qu'on ne sait pas.
+  const [offresBilling, setOffresBilling] = useState(null);
+  const chargerOffresBilling = async () => {
+    try { setOffresBilling(await apiFetch("/billing/offres")); } catch { /* silencieux : la page retombe sur mensuel/annuel */ }
+  };
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
@@ -1526,8 +1532,17 @@ function AppInner() {
     } catch (e) {
       setBillingBusy(false);
       setError(e.message || "Impossible d'ouvrir le paiement.");
+      // Offre Pionnier fermée entre-temps (100e place prise) : on rafraîchit le compteur
+      // pour que la page ferme l'offre d'elle-même.
+      chargerOffresBilling();
+      if (planChoisi === "pionnier") setPlanChoisi("annuel");
     }
   }
+
+  // La page d'abonnement charge l'état réel de l'offre Pionnier à chaque ouverture.
+  useEffect(() => {
+    if (token && (interNav === "abonnement" || nav === "abonnement")) chargerOffresBilling();
+  }, [token, interNav, nav]);
 
   async function openBillingPortal() {
     setBillingBusy(true);
@@ -2042,6 +2057,21 @@ function AppInner() {
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐶 Je prends le relais</div>
+              {/* Pionnier : 44,99 €/an À VIE, 100 premiers. Compteur RÉEL lu au backend,
+                  l'offre disparaît d'elle-même à la 100e place prise (jamais de fausse rareté). */}
+              {offresBilling?.pionnier_ouvert && (
+                <button type="button" onClick={() => setPlanChoisi("pionnier")}
+                  style={{ width: "100%", textAlign: "left", background: planChoisi === "pionnier" ? "rgba(93,202,165,0.14)" : "rgba(93,202,165,0.06)", border: `1.5px solid ${planChoisi === "pionnier" ? "#5DCAA5" : "rgba(93,202,165,0.35)"}`, borderRadius: 12, padding: "10px 13px", marginBottom: 10, cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: "#04342C", background: "#5DCAA5", borderRadius: 6, padding: "2px 8px" }}>PIONNIER</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>44,99 €/an, à vie</span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "#9FD9C2", marginTop: 5, lineHeight: 1.45 }}>
+                    Réservé aux 100 premiers. Ce prix ne bougera jamais tant que tu restes abonné·e, même quand le tarif public augmentera.
+                    <span style={{ fontWeight: 700, color: "#5DCAA5" }}> Il reste {offresBilling.pionnier_restantes} place{offresBilling.pionnier_restantes > 1 ? "s" : ""} sur {offresBilling.pionnier_limite}.</span>
+                  </div>
+                </button>
+              )}
               {/* Choix mensuel / annuel — annuel recommandé par défaut */}
               <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: 3, marginBottom: 10 }}>
                 {[["annuel", "Annuel"], ["mensuel", "Mensuel"]].map(([v, lab]) => (
@@ -2051,7 +2081,12 @@ function AppInner() {
                   </button>
                 ))}
               </div>
-              {planChoisi === "annuel" ? (
+              {planChoisi === "pionnier" && offresBilling?.pionnier_ouvert ? (
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>44,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/an</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 3,75 €/mois, verrouillé à vie · 🐾 Pionnier</div>
+                </div>
+              ) : planChoisi === "annuel" ? (
                 <div style={{ marginBottom: 4 }}>
                   <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>6,58 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
                   <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 79 € facturé une fois par an · ⭐ Recommandé</div>
@@ -2071,8 +2106,7 @@ function AppInner() {
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
                 {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
               </button>
-              <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 8, textAlign: "center" }}>🎁 14 jours gratuits{planChoisi === "annuel" ? ", puis 79 €/an" : ", puis 9,99 €/mois"}</div>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 4, textAlign: "center" }}>Annule quand tu veux avant la fin, sans être prélevé.</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>Sans engagement : tu annules quand tu veux, en 2 clics.</div>
             </div>
           </div>
 
