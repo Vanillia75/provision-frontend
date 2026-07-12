@@ -413,13 +413,13 @@ function AppInner() {
   // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
   const [legalPage, setLegalPage] = useState(() => {
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    return ["confidentialite", "cgu", "mentions"].includes(p) ? p : null;
+    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p) ? p : null;
   });
   // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
   const fermerLegal = () => {
     setLegalPage(null);
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (["confidentialite", "cgu", "mentions"].includes(p)) {
+    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p)) {
       window.history.replaceState({}, "", "/");
     }
   };
@@ -1505,7 +1505,13 @@ function AppInner() {
 
   // ── Abonnement Stripe (Premium) ──
   const [billingBusy, setBillingBusy] = useState(false);
-  const [planChoisi, setPlanChoisi] = useState("annuel");   // "annuel" (recommandé) | "mensuel"
+  const [planChoisi, setPlanChoisi] = useState("annuel");   // "pionnier" | "annuel" (recommandé) | "mensuel"
+  // Offre Pionnier : compteur RÉEL lu au backend (places restantes sur 100).
+  // null = pas encore chargé -> la page n'affiche pas l'offre tant qu'on ne sait pas.
+  const [offresBilling, setOffresBilling] = useState(null);
+  const chargerOffresBilling = async () => {
+    try { setOffresBilling(await apiFetch("/billing/offres")); } catch { /* silencieux : la page retombe sur mensuel/annuel */ }
+  };
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
@@ -1535,8 +1541,17 @@ function AppInner() {
     } catch (e) {
       setBillingBusy(false);
       setError(e.message || "Impossible d'ouvrir le paiement.");
+      // Offre Pionnier fermée entre-temps (100e place prise) : on rafraîchit le compteur
+      // pour que la page ferme l'offre d'elle-même.
+      chargerOffresBilling();
+      if (planChoisi === "pionnier") setPlanChoisi("annuel");
     }
   }
+
+  // La page d'abonnement charge l'état réel de l'offre Pionnier à chaque ouverture.
+  useEffect(() => {
+    if (token && (interNav === "abonnement" || nav === "abonnement")) chargerOffresBilling();
+  }, [token, interNav, nav]);
 
   async function openBillingPortal() {
     setBillingBusy(true);
@@ -2054,6 +2069,21 @@ function AppInner() {
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐶 Je prends le relais</div>
+              {/* Pionnier : 44,99 €/an À VIE, 100 premiers. Compteur RÉEL lu au backend,
+                  l'offre disparaît d'elle-même à la 100e place prise (jamais de fausse rareté). */}
+              {offresBilling?.pionnier_ouvert && (
+                <button type="button" onClick={() => setPlanChoisi("pionnier")}
+                  style={{ width: "100%", textAlign: "left", background: planChoisi === "pionnier" ? "rgba(93,202,165,0.14)" : "rgba(93,202,165,0.06)", border: `1.5px solid ${planChoisi === "pionnier" ? "#5DCAA5" : "rgba(93,202,165,0.35)"}`, borderRadius: 12, padding: "10px 13px", marginBottom: 10, cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: "#04342C", background: "#5DCAA5", borderRadius: 6, padding: "2px 8px" }}>PIONNIER</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>44,99 €/an, à vie</span>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "#9FD9C2", marginTop: 5, lineHeight: 1.45 }}>
+                    Réservé aux 100 premiers. Ce prix ne bougera jamais tant que tu restes abonné·e, même quand le tarif public augmentera.
+                    <span style={{ fontWeight: 700, color: "#5DCAA5" }}> Il reste {offresBilling.pionnier_restantes} place{offresBilling.pionnier_restantes > 1 ? "s" : ""} sur {offresBilling.pionnier_limite}.</span>
+                  </div>
+                </button>
+              )}
               {/* Choix mensuel / annuel — annuel recommandé par défaut */}
               <div style={{ display: "flex", gap: 4, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 999, padding: 3, marginBottom: 10 }}>
                 {[["annuel", "Annuel"], ["mensuel", "Mensuel"]].map(([v, lab]) => (
@@ -2063,7 +2093,12 @@ function AppInner() {
                   </button>
                 ))}
               </div>
-              {planChoisi === "annuel" ? (
+              {planChoisi === "pionnier" && offresBilling?.pionnier_ouvert ? (
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>44,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/an</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 3,75 €/mois, verrouillé à vie · 🐾 Pionnier</div>
+                </div>
+              ) : planChoisi === "annuel" ? (
                 <div style={{ marginBottom: 4 }}>
                   <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>6,58 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
                   <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 79 € facturé une fois par an · ⭐ Recommandé</div>
@@ -2083,8 +2118,7 @@ function AppInner() {
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
                 {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
               </button>
-              <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 8, textAlign: "center" }}>🎁 14 jours gratuits{planChoisi === "annuel" ? ", puis 79 €/an" : ", puis 9,99 €/mois"}</div>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 4, textAlign: "center" }}>Annule quand tu veux avant la fin, sans être prélevé.</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>Sans engagement : tu annules quand tu veux, en 2 clics.</div>
             </div>
           </div>
 
@@ -5079,13 +5113,16 @@ function AppInner() {
                   <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
                   {forgotStatus === "sent" ? (
                     <div style={{ textAlign: "center" }}>
-                      <div style={{ fontSize: 36, marginBottom: 12 }}>📧</div>
-                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>Si un compte existe avec <strong>{forgotEmail}</strong>, vous recevrez un lien de réinitialisation.</p>
+                      <div style={{ width: 64, height: 64, borderRadius: "50%", background: "#07192E", border: "2px solid #5DCAA5", display: "inline-flex", alignItems: "center", justifyContent: "center", marginBottom: 14 }}>
+                        <i className="ti ti-mail-check" aria-hidden="true" style={{ fontSize: 30, color: "#5DCAA5" }} />
+                      </div>
+                      <p style={{ fontSize: 14, color: "#0A2540", fontWeight: 600, marginBottom: 6, lineHeight: 1.5 }}>C'est parti, va voir ta boîte mail.</p>
+                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 20, lineHeight: 1.6 }}>Si un compte existe avec <strong>{forgotEmail}</strong>, tu recevras un lien pour choisir ton mot de passe. Il est valable 1 heure.</p>
                       <button type="button" style={S.btnSecondary} onClick={() => { setForgotMode(false); setForgotStatus(""); setForgotEmail(""); }}>Retour à la connexion</button>
                     </div>
                   ) : (
                     <form onSubmit={handleForgotPassword}>
-                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entrez votre email pour recevoir un lien de réinitialisation.</p>
+                      <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16 }}>Entre ton email : tu recevras un lien pour choisir un nouveau mot de passe. Ça marche aussi si tu t'es inscrit·e avec Google et que tu n'en as jamais eu.</p>
                       <label style={S.label}>Email<input style={S.input} type="email" value={forgotEmail} onChange={e => setForgotEmail(e.target.value)} required /></label>
                       <button style={S.btnPrimary} type="submit" disabled={forgotStatus === "loading"}>{forgotStatus === "loading" ? "…" : "Envoyer le lien"}</button>
                       <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => setForgotMode(false)}>← Retour à la connexion</button></p>
@@ -5512,6 +5549,7 @@ function AppInner() {
                 { page: "mentions", label: "Mentions légales" },
                 { page: "cgu", label: "CGU" },
                 { page: "confidentialite", label: "Confidentialité" },
+                { page: "contact", label: "Contact" },
               ].map(l => (
                 <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
               ))}
@@ -5693,41 +5731,20 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== 05 — TOTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) ===== */}
+        {/* ===== 05 — TOTOR t'aide aussi à trouver tes prochaines heures (offres spectacle) =====
+             VRAIES offres France Travail, consultables librement SANS compte (exigence de la
+             licence FT : l'accès aux offres ne doit jamais être conditionné à une inscription).
+             Même module que dans l'appli (TrouverDesHeures, isolé, endpoint public). */}
         <section style={secShell}>
-          <div style={secGrid}>
-            <div>
-              <div style={numFantome}>05</div>
-              <h2 style={titreSec}>TOTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
-              <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel. Les offres France Travail directement dans TOTOR, filtrées selon ton métier et ta ville.</p>
-            </div>
-            <div style={demoFondu}>
-              {/* Filtres visibles — on montre le produit sans le décrire */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, color: "#B5D4F4" }}>🎭 Comédien·ne</span>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 8, padding: "7px 11px", fontSize: 12.5, color: "#B5D4F4" }}>📍 Paris + 30 km</span>
-              </div>
-              {/* Offres d'exemple (fictives mais réalistes — pas de vraies offres, elles expirent) */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {[
-                  { titre: "Régisseur·se lumière, festival d'été", metier: "Technicien", contrat: "CDDU" },
-                  { titre: "Comédien·ne, création jeune public", metier: "Artiste", contrat: "Cachet" },
-                ].map((o) => (
-                  <div key={o.titre} style={sousPanel}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "white", lineHeight: 1.35 }}>{o.titre}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 9, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 6, padding: "2px 8px" }}>{o.metier}</span>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 6, padding: "2px 8px" }}>{o.contrat}</span>
-                      <span style={{ marginLeft: "auto", fontSize: 11.5, fontWeight: 700, color: "#7FB8F0", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}>Voir l'offre sur France Travail <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 12 }} /></span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              {/* Mention obligatoire — l'honnêteté fait partie de la promesse */}
-              <div style={{ display: "flex", alignItems: "flex-start", gap: 7, marginTop: 14, fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
-                <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 13, color: "#FAC775", flexShrink: 0, marginTop: 1 }} />
-                Vérifie toujours que le contrat est bien éligible à ton annexe.
-              </div>
+          <div style={{ maxWidth: 720, margin: "0 auto" }}>
+            <div style={numFantome}>05</div>
+            <h2 style={titreSec}>TOTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines heures</span>.</h2>
+            <p style={texteSec}>Cachets, CDDU, missions spectacle et audiovisuel, filtrés selon ton métier et ta ville. Consulte-les librement, sans créer de compte.</p>
+          </div>
+          <div style={{ maxWidth: 720, margin: isMobile ? "26px auto 0" : "36px auto 0", background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: isMobile ? "18px 14px" : "26px 26px" }}>
+            <TrouverDesHeures sansTitre compact />
+            <div style={{ marginTop: 16, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 11.5, color: "#8BA5C0", textAlign: "center" }}>
+              Source : France Travail. Offres consultables librement et gratuitement, sans compte.
             </div>
           </div>
           {/* Clôture de section */}
@@ -5819,6 +5836,7 @@ function AppInner() {
               { page: "mentions", label: "Mentions légales" },
               { page: "cgu", label: "CGU" },
               { page: "confidentialite", label: "Confidentialité" },
+              { page: "contact", label: "Contact" },
             ].map(l => (
               <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
             ))}
@@ -5844,7 +5862,10 @@ function AppInner() {
       // Si l'utilisateur a déjà choisi son statut sur la landing, on n'affiche pas
       // le choix une 2e fois : on montre un court écran de transition pendant que
       // le useEffect applique le choix automatiquement.
-      if (landingStatut) {
+      // ⚠️ "choix" = PAS de choix fait (inscription depuis la page d'accueil ou l'app
+      // mobile) : il faut afficher les cartes ci-dessous, sinon l'effet ne se déclenche
+      // jamais et l'utilisateur reste bloqué à vie sur « Je prépare ton espace ».
+      if (landingStatut && landingStatut !== "choix") {
         return (
           <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
             <div style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} className="hector-breathe">

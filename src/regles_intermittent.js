@@ -107,45 +107,49 @@ export const REGLES = {
     version: "2026.07",
     dateAppli: "en vigueur",
     verifie: true,
-    commentaire: "Les heures de formation SUIVIE comptent comme des heures de travail dans la limite des 2/3 du seuil requis : 2/3 × 507 = 338h. Plafond GLOBAL sur la fenêtre de 12 mois (pas par formation). Conséquence : la formation seule ne peut jamais ouvrir des droits (338 < 507). NB : l'enseignement DISPENSÉ (70h, 120h si ≥50 ans) est une règle distincte, volontairement NON codée pour l'instant.",
+    commentaire: "Les heures de formation SUIVIE comptent comme des heures de travail dans la limite des 2/3 du seuil requis : 2/3 × 507 = 338h. Plafond GLOBAL sur la fenêtre de 12 mois (pas par formation). Conséquence : la formation seule ne peut jamais ouvrir des droits (338 < 507). Le plafond de 338h est PARTAGÉ avec l'enseignement dispensé (cf. enseignementPlafond) : formation + enseignement ≤ 338h.",
   },
 
   enseignementPlafond: {
     valeur: 70,
     libelle: "Plafond d'heures d'enseignement dispensé assimilées",
-    source: "Guide France Travail Intermittents p.8-9 (enseignement limité à 70h, 120h si ≥50 ans ; total formation + enseignement ≤ 338h). Sourcé le 2026-07-03.",
+    source: "Guide France Travail Intermittents p.8-9 (heures d'enseignement artistique/technique limitées à 70h, 120h si ≥50 ans ; total formation + enseignement ≤ 338h). Sourcé le 2026-07-03.",
     version: "2026.07",
     dateAppli: "en vigueur",
     verifie: true,
-    commentaire: "Heures d'enseignement dispensé comptées heure pour heure, plafonnées à 70h, ET plafond partagé de 338h avec la formation. Cas 120h (≥50 ans) HORS V1 (pas de date de naissance). Estimation (conditions FT non vérifiables).",
+    commentaire: "Les heures d'enseignement DISPENSÉ (artiste/technicien enseignant dans un établissement agréé) comptent heure pour heure, plafonnées à 70h. Le cas 120h (≥50 ans à la fin de contrat) est HORS V1 : Totor n'a pas la date de naissance. Sous-plafond de 70h ET plafond partagé de 338h avec la formation (le total des deux ne peut dépasser 338h). Conditions FT (contrat + fiches de paie) non vérifiables → estimation.",
   },
+
   congesSpectaclesTaux: {
-    valeur: 0.10,
+    valeur: 0.1,
     libelle: "Taux de l'indemnité Congés Spectacles (ICP) — % des bruts de l'exercice",
-    source: "Audiens ; backtesté sur 2 bordereaux réels (2023-2024, 2024-2025) : ICP brut = 10 % des bruts au centime. Cf. CONGES_SPECTACLES_ETUDE.md.",
+    source: "Audiens Congés Spectacles ; backtesté sur 2 bordereaux réels (exercices 2023-2024 et 2024-2025) : ICP brut = 10 % des bruts au centime. Cf. CONGES_SPECTACLES_ETUDE.md.",
     version: "2026.07",
     dateAppli: "en vigueur",
     verifie: true,
-    commentaire: "ICP = 10 % des salaires bruts cumulés sur l'exercice (1er avril → 31 mars). Validé au centime sur 2 années. Estimation à l'écran (dépend de la complétude des bruts saisis).",
+    commentaire: "L'indemnité de congés payés (ICP) versée par Audiens = 10 % des salaires BRUTS cumulés sur l'exercice (1er avril → 31 mars). Validé au centime sur 2 années réelles (7 381 € → 738,10 € ; 10 055 € → 1 005,50 €). Reste une estimation à l'écran car dépend de la complétude des bruts saisis (montant = € → Loi X).",
   },
+
   congesSpectaclesRatioNetSocial: {
     valeur: 0.7695,
     libelle: "Ratio net social / brut de l'ICP Congés Spectacles",
-    source: "Bordereaux Audiens 2023-2024 et 2024-2025 : net/brut = 76,95 % (identique les 2 années). Cf. CONGES_SPECTACLES_ETUDE.md.",
+    source: "Bordereaux Audiens réels 2023-2024 et 2024-2025 : net/brut = 76,95 % (cotisations salariales ≈ 23,05 %) — identique sur les 2 années. Cf. CONGES_SPECTACLES_ETUDE.md.",
     version: "2026.07",
     dateAppli: "2025",
     verifie: true,
-    commentaire: "Net social (avant impôts) ≈ 76,95 % de l'ICP brute. PÉREMPTION ANNUELLE (les taux peuvent bouger). Net-net (après PAS) jamais estimé. Prudence : afficher « ~ ».",
+    commentaire: "Le net social (AVANT impôts) ≈ 76,95 % de l'ICP brute. PÉREMPTION ANNUELLE : les taux de cotisation peuvent évoluer → re-valider ce ratio sur un bordereau frais chaque avril (Loi X, clause de péremption). Le net-net (après PAS) dépend du taux d'imposition personnel → jamais estimé. Prudence renforcée : afficher « ~ », pas au centime.",
   },
+
   assimilationArretParJour: {
     valeur: 5,
     libelle: "Heures assimilées par jour d'arrêt (maternité, adoption, AT/MP, ALD, suspension de contrat)",
-    source: "Guide France Travail Intermittents p.8 et p.9 ; matermittentes.com. Sourcé le 2026-07-03 — cf. MOTEUR_ARRETS_SOURCES.md.",
+    source: "Guide France Travail Intermittents p.8 (suspension de contrat) et p.9 (maternité/adoption/AT/ALD hors contrat) ; matermittentes.com. Sourcé le 2026-07-03 — cf. MOTEUR_ARRETS_SOURCES.md.",
     version: "2026.07",
     dateAppli: "en vigueur",
     verifie: true,
-    commentaire: "5h par jour calendaire (week-ends inclus), SANS plafond, pour les arrêts INDEMNISÉS assimilés. Maladie ordinaire hors contrat et paternité : hors périmètre V1 (neutralisation). Conditions non vérifiables par le moteur → apport marqué ESTIMATION.",
+    commentaire: "Certains arrêts INDEMNISÉS comptent comme du travail à raison de 5h par jour calendaire (week-ends inclus), SANS plafond. Concerne : maternité/adoption (hors contrat, Sécu ou Audiens), AT/MP, ALD (hors contrat, + ouverture antérieure), et tout arrêt PENDANT un contrat. La maladie ordinaire HORS contrat n'assimile PAS d'heures (elle neutralise/allonge la période — hors périmètre V1). Paternité : hors V1 (guide = neutralisation, sources divergentes). Conditions (indemnisation, retravailler après) non vérifiables par le moteur → l'apport d'arrêt est marqué ESTIMATION tant qu'un dossier réel ne l'a pas validé.",
   },
+
   ajMinimale: {
     valeur: 31.96,
     libelle: "Allocation journalière minimale (paramètre de calcul)",
@@ -156,16 +160,8 @@ export const REGLES = {
     commentaire: "Paramètre fixe des formules A, B, C de l'AJ. Évolue avec le SMIC : à réviser à chaque revalorisation (dernier contrôle 2026-07-03). Validé par backtest réel à 0,00 € d'écart (cf. MOTEUR_AJ_SOURCES.md §6).",
   },
 
-  // ── MOTEUR ALLOCATION JOURNALIÈRE (chantier AJ — cf. MOTEUR_AJ_SOURCES.md backend) ──
-  // Jumeau des règles Python. Source : Guide officiel France Travail Intermittents
-  // p.11/12/16-17 ; Unédic Paramètres utiles avril 2025. Backtest réel n°1 : 0,00 € d'écart.
   allocationParametresAnnexe8: {
-    valeur: {
-      coefSR: 0.42, plafondSR: 14400, coefSRAuDela: 0.05, diviseurA: 5000,
-      coefNHT: 0.26, seuilNHT: 720, coefNHTAuDela: 0.08, diviseurB: 507,
-      coefC: 0.40, plancherAJ: 38.0, diviseurSJM: 8,
-      seuilJoursMois: 26, coefDecalage: 1.4,
-    },
+    valeur: { coefSR: 0.42, plafondSR: 14400, coefSRAuDela: 0.05, diviseurA: 5000, coefNHT: 0.26, seuilNHT: 720, coefNHTAuDela: 0.08, diviseurB: 507, coefC: 0.4, plancherAJ: 38.0, diviseurSJM: 8, seuilJoursMois: 26, coefDecalage: 1.4 },
     libelle: "Paramètres de l'allocation journalière — annexe 8 (techniciens)",
     source: "Guide France Travail Intermittents p.11, 12, 16-17 (exemples 6 et 12 vérifiés)",
     version: "2026.07",
@@ -173,13 +169,9 @@ export const REGLES = {
     verifie: true,
     commentaire: "A = AJmin×[0,42×SR(≤14400)+0,05×au-delà]/5000 ; B = AJmin×[0,26×NHT(≤720h)+0,08×au-delà]/507 ; C = AJmin×0,40. Plancher 38 €. SJM = SR/(NHT/8). Mois : jours travaillés = heures/8, seuil 26 j, décalage ×1,4.",
   },
+
   allocationParametresAnnexe10: {
-    valeur: {
-      coefSR: 0.36, plafondSR: 13700, coefSRAuDela: 0.05, diviseurA: 5000,
-      coefNHT: 0.26, seuilNHT: 690, coefNHTAuDela: 0.08, diviseurB: 507,
-      coefC: 0.70, plancherAJ: 44.0, diviseurSJM: 10,
-      seuilJoursMois: 27, coefDecalage: 1.3,
-    },
+    valeur: { coefSR: 0.36, plafondSR: 13700, coefSRAuDela: 0.05, diviseurA: 5000, coefNHT: 0.26, seuilNHT: 690, coefNHTAuDela: 0.08, diviseurB: 507, coefC: 0.7, plancherAJ: 44.0, diviseurSJM: 10, seuilJoursMois: 27, coefDecalage: 1.3 },
     libelle: "Paramètres de l'allocation journalière — annexe 10 (artistes)",
     source: "Guide France Travail Intermittents p.11, 12, 16-17 ; backtest réel 0,00 € d'écart (2026-07-03)",
     version: "2026.07",
@@ -187,8 +179,9 @@ export const REGLES = {
     verifie: true,
     commentaire: "A = AJmin×[0,36×SR(≤13700)+0,05×au-delà]/5000 ; B = AJmin×[0,26×NHT(≤690h)+0,08×au-delà]/507 ; C = AJmin×0,70. Plancher 44 €. SJM = SR/(NHT/10). Mois : jours travaillés = heures/10, seuil 27 j, décalage ×1,3.",
   },
+
   allocationPlafondAJ: {
-    valeur: 174.80,
+    valeur: 174.8,
     libelle: "Plafond de l'allocation journalière (annexes 8 et 10)",
     source: "Guide France Travail Intermittents p.11 (depuis le 01/01/2024)",
     version: "2026.07",
@@ -196,6 +189,7 @@ export const REGLES = {
     verifie: true,
     commentaire: "L'AJ calculée ne peut dépasser ce montant. Revalorisé périodiquement : à réviser.",
   },
+
   allocationRetenueRetraiteComp: {
     valeur: { taux: 0.0093, seuilExoneration: 31.96, seuilCsg: 60.0 },
     libelle: "Retenue retraite complémentaire sur l'AJ (0,93 % du SJM)",
@@ -205,6 +199,7 @@ export const REGLES = {
     verifie: true,
     commentaire: "AJ ≤ 31,96 € : aucune retenue. 31,96 < AJ ≤ 60 € : retenue 0,93 % × SJM. AJ > 60 € : s'ajoutent CSG et CRDS (cf. allocationCsgCrds).",
   },
+
   allocationCsgCrds: {
     valeur: { csgPlein: 0.062, csgReduit: 0.038, crds: 0.005, assiette: 0.9825 },
     libelle: "CSG/CRDS sur l'AJ au-delà de 60 €",
@@ -214,6 +209,7 @@ export const REGLES = {
     verifie: false,
     commentaire: "Taux sourcés (6,2 % ou 3,8 % selon revenu fiscal, CRDS 0,5 %) mais l'assiette exacte et les arrondis ne sont pas confirmés par un cas réel : le moteur doit marquer le net comme ESTIMATION quand l'AJ dépasse 60 €, tant qu'un backtest réel n'a pas validé cette branche.",
   },
+
   pmssMensuel: {
     valeur: { montant: 3925.0, annee: 2025, coefPlafondCumul: 1.18 },
     libelle: "Plafond mensuel de la sécurité sociale (pour le plafond de cumul ARE + salaires)",
