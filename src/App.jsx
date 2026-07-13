@@ -1602,7 +1602,7 @@ function AppInner() {
   const [veilleMsgNatif, setVeilleMsgNatif] = useState("");
   const rechargerProduitsVeille = async () => {
     try { setVeilleProduits(await chargerProduitsVeille()); setVeilleMsgNatif(""); }
-    catch { setVeilleProduits(null); }
+    catch (e) { setVeilleProduits(null); setVeilleMsgNatif("La boutique n'a pas pu démarrer (" + String(e?.message || e) + "). Réessaie dans un instant."); }
   };
   // Connexion de la caisse au COMPTE (identite = notre user.id, lu dans le jeton).
   useEffect(() => {
