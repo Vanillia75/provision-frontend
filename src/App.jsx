@@ -5553,6 +5553,13 @@ function AppInner() {
                     {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas, revérifie</p>)}
                   </>)}
                   {authMode === "login" && (<p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}><button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button></p>)}
+                  {/* Appli native (iOS + Android) : la connexion Google n'y est pas dispo (WebView).
+                      On aiguille les inscrits Google du web vers « Mot de passe oublié ». Invisible sur le web. */}
+                  {IS_NATIVE_APP && authMode === "login" && (
+                    <p style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.5, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 10, padding: "10px 12px", marginTop: -4, marginBottom: 14 }}>
+                      🐾 Inscrit avec Google sur le site ? Touche « Mot de passe oublié » ci-dessus pour créer ton mot de passe, puis connecte-toi avec ton email.
+                    </p>
+                  )}
                   <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
                   {authMode === "register" && (
                     <p style={{ fontSize: 11, color: "#8595a8", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
