@@ -623,7 +623,15 @@ function AppInner() {
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, _setErrorBrut] = useState("");
+  // Un mur premium a sa modale d'invitation : son message ne doit JAMAIS finir
+  // dans le bandeau rouge d'erreur (mur froid). On memorise le dernier message
+  // de mur et setError l'ignore.
+  const dernierMurPremium = useRef("");
+  const setError = (msg) => {
+    if (typeof msg === "string" && msg && msg === dernierMurPremium.current) return;
+    _setErrorBrut(msg);
+  };
   const [nav, setNav] = useState(() => safeStorage.getItem("nav") || "dashboard");
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
@@ -982,6 +990,7 @@ function AppInner() {
       // Quota gratuit atteint OU fonction premium → on déclenche l'écran « passe en Premium ».
       if (isObj && (body.detail.code === "quota_gratuit_atteint" || body.detail.code === "premium_requis")) {
         setPremiumGate(body.detail);
+        dernierMurPremium.current = body.detail.message || "";
       }
       const err = new Error(isObj ? (body.detail.message || "Erreur") : (body.detail || `Erreur (code ${res.status})`));
       if (isObj) err.detail = body.detail;
@@ -4427,7 +4436,8 @@ function AppInner() {
       });
       setAiMessages(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
-      setAiMessages(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
+      if (err.detail?.code !== "premium_requis" && err.detail?.code !== "quota_gratuit_atteint")
+        setAiMessages(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setAiLoading(false);
     }
@@ -4449,7 +4459,8 @@ function AppInner() {
       });
       setInterChat(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
-      setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
+      if (err.detail?.code !== "premium_requis" && err.detail?.code !== "quota_gratuit_atteint")
+        setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setInterChatLoading(false);
     }
@@ -7041,7 +7052,7 @@ function AppInner() {
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
-      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
+      <div style={{ width: 220, flexShrink: 0, background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
         <div style={{ padding: "4px 8px 16px" }}><Logo size={30} dark /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {interMenuItems.map(item => {
@@ -8087,14 +8098,14 @@ function AppInner() {
                       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
                         <span style={{ fontSize: 18 }}>🔒</span>
                         <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
-                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
                       </div>
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
                         Je compare ce que tu as reconstitué avec ce que France Travail a retenu, et je t'explique chaque écart, pour repérer une AEM manquante ou une erreur <strong style={{ color: "#E8F4FF" }}>avant qu'elle te coûte des droits</strong>.
                       </div>
                       <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "conformite" })}
                         style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        🔓 Débloquer avec Premium
+                        🐾 Je laisse Totor s'en occuper
                       </button>
                     </div>
                   );
@@ -9504,7 +9515,7 @@ function AppInner() {
                 </div>
               </div>
 
-              {renderQuotaJauge("chat", "message")}
+              {renderQuotaJauge("chat", "conversation")}
 
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 {/* Fil de discussion */}
@@ -11643,14 +11654,14 @@ function AppInner() {
                 <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
                   <span style={{ fontSize: 18 }}>🔒</span>
                   <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Totor regarde ton mois prochain</div>
-                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
                 </div>
                 <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
                   À partir de tes factures, devis et train de vie, je projette ton solde du mois prochain : <strong style={{ color: "#E8F4FF" }}>ce qui va rentrer, ce qui va manquer</strong>, et les leviers si ça coince.
                 </div>
                 <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "projection" })}
                   style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                  🔓 Débloquer avec Premium
+                  🐾 Je laisse Totor s'en occuper
                 </button>
               </div>
             )}
@@ -12803,14 +12814,14 @@ function AppInner() {
               <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
                 <span style={{ fontSize: 18 }}>🔒</span>
                 <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton vrai taux horaire</div>
-                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
               </div>
               <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
                 Je calcule ce qu'il te reste <strong style={{ color: "#E8F4FF" }}>par heure réellement travaillée, après cotisations</strong>, je te dis si tu te sous-vends, et ce que changerait une hausse de tarif.
               </div>
               <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "taux_horaire" })}
                 style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                🔓 Débloquer avec Premium
+                🐾 Je laisse Totor s'en occuper
               </button>
             </div>
           </div>
@@ -14359,7 +14370,7 @@ function AppInner() {
                 </div>
               </div>
             </div>
-            <div style={{ maxWidth: 460 }}>{renderQuotaJauge("chat", "message")}</div>
+            <div style={{ maxWidth: 460 }}>{renderQuotaJauge("chat", "conversation")}</div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
