@@ -2221,8 +2221,26 @@ function AppInner() {
               )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
-                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités, je lis tes attestations pour toi", "Échanges avec Totor illimités", "Je vérifie ta décision face à France Travail"]
-                : ["Tout ce qui est gratuit, sans limite", "Scans illimités, je m'occupe de ta paperasse", "Échanges avec Totor illimités", "Je relance tes impayés automatiquement"]
+                ? [
+                    "Tout le gratuit SANS LIMITE : scans d'AEM, conversations, Mode Achat",
+                    "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
+                    "Je vérifie ta décision face à France Travail",
+                    "Je repère les écarts qui te coûteraient des droits",
+                    "Je recalcule ton allocation après chaque AEM",
+                    "Je surveille tes jours par employeur avant que ça coince",
+                    "Ton espace auto-entrepreneur complet inclus : paie 3 scénarios, relances d'impayés, radar acompte, taux horaire",
+                    "Toutes les prochaines fonctionnalités, incluses d'office",
+                  ]
+                : [
+                    "Tout le gratuit SANS LIMITE : scans, conversations, factures, devis, Mode Achat",
+                    "Ta paie complète : les 3 scénarios (prudent, recommandé, maximum)",
+                    "Je relance tes impayés à ta place, sans relâche",
+                    "Le radar acompte : je repère les mauvais payeurs avant le devis",
+                    "Ton taux horaire réel calculé : tu sais enfin ce que tu vaux",
+                    "Je regarde ton mois prochain : ce qui rentre, ce qui va manquer",
+                    "Ton espace intermittent complet inclus, s'il te sert un jour",
+                    "Toutes les prochaines fonctionnalités, incluses d'office",
+                  ]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
