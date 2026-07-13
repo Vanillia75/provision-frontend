@@ -5557,7 +5557,7 @@ function AppInner() {
                       On aiguille les inscrits Google du web vers « Mot de passe oublié ». Invisible sur le web. */}
                   {IS_NATIVE_APP && authMode === "login" && (
                     <p style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.5, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 10, padding: "10px 12px", marginTop: -4, marginBottom: 14 }}>
-                      🐾 Inscrit avec Google sur le site ? Touche « Mot de passe oublié » ci-dessus pour créer ton mot de passe, puis connecte-toi avec ton email.
+                      🐾 Inscrit avec Google sur le site ? Touche « Mot de passe oublié » pour créer ton mot de passe, puis connecte-toi avec ton email et ce mot de passe.
                     </p>
                   )}
                   <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
