@@ -5931,7 +5931,7 @@ function AppInner() {
             <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
               {TEMOIGNAGES.map((t, i) => (
                 <div key={i} style={{ textAlign: "center" }}>
-                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 19 : 24, color: "#EAF2FB", lineHeight: 1.5, fontStyle: "italic", margin: "0 0 12px" }}>« {t.texte} »</p>
+                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15.5 : 18, color: "#C9D8E8", lineHeight: 1.65, fontStyle: "italic", margin: "0 auto 12px", maxWidth: 560 }}>« {t.texte} »</p>
                   <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>— {t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
                 </div>
               ))}
