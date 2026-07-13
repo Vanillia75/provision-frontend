@@ -633,7 +633,15 @@ function AppInner() {
   const [authPassword, setAuthPassword] = useState("");
   const [authPasswordConfirm, setAuthPasswordConfirm] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [error, _setErrorBrut] = useState("");
+  // Un mur premium a sa modale d'invitation : son message ne doit JAMAIS finir
+  // dans le bandeau rouge d'erreur (mur froid). On memorise le dernier message
+  // de mur et setError l'ignore.
+  const dernierMurPremium = useRef("");
+  const setError = (msg) => {
+    if (typeof msg === "string" && msg && msg === dernierMurPremium.current) return;
+    _setErrorBrut(msg);
+  };
   const [nav, setNav] = useState(() => safeStorage.getItem("nav") || "dashboard");
   const [profile, setProfile] = useState(null);
   const [profileForm, setProfileForm] = useState({ statut: "auto_entrepreneur", activite: "services", periodicite: "mensuelle", acre: false, versement_liberatoire: false });
@@ -902,6 +910,25 @@ function AppInner() {
   const [autresRevenus, setAutresRevenus] = useState(() => safeStorage.getItem("autresRevenus") || "");
   const [inclureAutresRevenus, setInclureAutresRevenus] = useState(() => safeStorage.getItem("inclureAutresRevenus") === "true");
   const [achatMontant, setAchatMontant] = useState("");
+  // Freemium 1.0.1 — Mode Achat : 5 simulations/mois en gratuit. Une VISITE de
+  // l'écran avec un montant valide = une simulation (retaper le montant dans la
+  // même visite ne consomme rien). "libre" = pas encore comptée, "ok" = comptée,
+  // "bloque" = quota gratuit épuisé (le verdict se masque, l'invitation s'affiche).
+  const [achatQuotaEtat, setAchatQuotaEtat] = useState("libre");
+  useEffect(() => { if (nav === "achat") setAchatQuotaEtat("libre"); }, [nav]);
+  useEffect(() => {
+    if (nav !== "achat" || achatQuotaEtat !== "libre") return;
+    if (!(parseFloat(achatMontant) > 0)) return;
+    const t = setTimeout(async () => {
+      try {
+        await apiFetch("/quota/achat-simulation", { method: "POST" });
+        setAchatQuotaEtat("ok");
+      } catch {
+        setAchatQuotaEtat("bloque"); // apiFetch a déjà ouvert l'invitation TOTOR Veille
+      }
+    }, 900);
+    return () => clearTimeout(t);
+  }, [nav, achatMontant, achatQuotaEtat]);
   const [tarifMontant, setTarifMontant] = useState("");
   const [tarifUnite, setTarifUnite] = useState("heure");
   const [heuresParJour, setHeuresParJourCoach] = useState("7");
@@ -943,6 +970,95 @@ function AppInner() {
   // Abonnement : quand un quota gratuit mensuel est atteint, le backend renvoie un 402.
   // On stocke le détail ici pour afficher l'écran « passe en Premium » (montre puis débloque).
   const [premiumGate, setPremiumGate] = useState(null);
+  // ── Murmure Veille : petite invitation discrète pour les comptes gratuits.
+  //    Fermable d'un tap, ne revient pas avant 14 jours (jamais de harcèlement).
+  const [murmureVeilleVisible, setMurmureVeilleVisible] = useState(() => {
+    const vu = safeStorage.getItem("veille_murmure_ferme_le");
+    return !vu || (Date.now() - Number(vu)) > 14 * 86400000;
+  });
+  const fermerMurmureVeille = () => {
+    setMurmureVeilleVisible(false);
+    safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
+  };
+  // ── L'écran Veille : la vitrine plein écran qui s'affiche de temps en temps
+  //    chez les gratuits (1 fois / 10 jours max, jamais pendant l'onboarding).
+  //    « Plus tard » referme et cale aussi le murmure (jamais deux sollicitations
+  //    dans la même période).
+  const [ecranVeilleOuvert, setEcranVeilleOuvert] = useState(false);
+  useEffect(() => {
+    if (!profile || profile.is_premium || !profile.onboarding_complete) return;
+    // Cadence demandée par Camille : 1 fois toutes les 4 connexions (compteur de sessions).
+    const n = Number(safeStorage.getItem("veille_ecran_sessions") || "0") + 1;
+    safeStorage.setItem("veille_ecran_sessions", String(n));
+    if (n < 4) return;
+    const t = setTimeout(() => setEcranVeilleOuvert(true), 1500);
+    return () => clearTimeout(t);
+  }, [profile?.is_premium, profile?.onboarding_complete]);
+  const fermerEcranVeille = (versAbonnement) => {
+    setEcranVeilleOuvert(false);
+    safeStorage.setItem("veille_ecran_sessions", "0");
+    safeStorage.setItem("veille_murmure_ferme_le", String(Date.now()));
+    setMurmureVeilleVisible(false);
+    if (versAbonnement) {
+      if (profile?.statut === "intermittent") setInterNav("abonnement"); else setNav("abonnement");
+    }
+  };
+  const ecranVeilleModal = ecranVeilleOuvert ? (
+    <div style={{ position: "fixed", inset: 0, background: "rgba(4,12,24,0.85)", backdropFilter: "blur(4px)", zIndex: 600, display: "flex", alignItems: "center", justifyContent: "center", padding: 20 }} onClick={() => fermerEcranVeille(false)}>
+      <div onClick={e => e.stopPropagation()} style={{ background: "linear-gradient(170deg, #0d2038, #07192E)", border: "1.5px solid rgba(93,202,165,0.45)", borderRadius: 22, padding: "28px 26px 24px", maxWidth: 400, width: "100%", textAlign: "center", position: "relative", boxShadow: "0 24px 70px rgba(0,0,0,0.6), 0 0 50px rgba(93,202,165,0.12)" }}>
+        <img src="/logo-tete.webp" alt="" style={{ width: 84, height: 84, borderRadius: "50%", objectFit: "cover", border: "2.5px solid #5DCAA5", marginBottom: 10, boxShadow: "0 6px 26px rgba(93,202,165,0.32)" }} />
+        <div style={{ marginBottom: 12 }}>
+          <span style={{ display: "inline-block", background: "#5DCAA5", color: "#04342C", fontWeight: 800, borderRadius: 999, padding: "4px 14px", fontSize: 11.5, letterSpacing: 0.6, textTransform: "uppercase" }}>🐾 TOTOR Veille</span>
+        </div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#E6EDF5", lineHeight: 1.18, marginBottom: 3 }}>Respire.</div>
+        <div style={{ fontSize: 26, fontWeight: 800, color: "#5DCAA5", lineHeight: 1.18, marginBottom: 8 }}>TOTOR s'en charge.</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 16 }}>
+          {profile?.statut === "intermittent"
+            ? "Pendant que tu es sur scène, moi je surveille ton dossier."
+            : "Pendant que tu bosses, moi je surveille ta tréso."}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
+          {(profile?.statut === "intermittent"
+            ? ["Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            : ["Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
+          ).map((b, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+              <span style={{ color: "#5DCAA5", fontWeight: 800, flexShrink: 0 }}>✓</span>
+              <span style={{ fontSize: 13, color: "#DDE8F2", lineHeight: 1.45, fontWeight: 600 }}>{b}</span>
+            </div>
+          ))}
+        </div>
+        <div style={{ fontSize: 11.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 16 }}>
+          Un seul abonnement, tes deux espaces. Annulable à tout moment.
+        </div>
+        <button type="button" onClick={() => fermerEcranVeille(true)}
+          style={{ width: "100%", background: "linear-gradient(95deg, #5DCAA5, #6FDDB8)", color: "#04342C", border: "none", borderRadius: 13, padding: "15px", fontSize: 15.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", boxShadow: "0 8px 24px rgba(93,202,165,0.35)" }}>
+          🐾 Je le laisse veiller
+        </button>
+        <button type="button" onClick={() => fermerEcranVeille(false)}
+          style={{ background: "none", border: "none", color: "#6B8299", fontSize: 13, cursor: "pointer", fontFamily: "inherit", marginTop: 12, textDecoration: "underline" }}>
+          Plus tard
+        </button>
+      </div>
+    </div>
+  ) : null;
+
+  const renderMurmureVeille = (ouvrirAbonnement) => (
+    !profile?.is_premium && murmureVeilleVisible ? (
+      <div style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "10px 14px", marginBottom: 16 }}>
+        <span style={{ fontSize: 16, flexShrink: 0 }} aria-hidden="true">🐾</span>
+        <span style={{ flex: 1, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+          Pendant que tu gères tout ça, je pourrais veiller pour toi.{" "}
+          <button type="button" onClick={ouvrirAbonnement}
+            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+            Découvrir TOTOR Veille
+          </button>
+        </span>
+        <button type="button" onClick={fermerMurmureVeille} aria-label="Plus tard"
+          style={{ background: "none", border: "none", color: "#4A6280", fontSize: 18, cursor: "pointer", fontFamily: "inherit", lineHeight: 1, padding: "2px 4px", flexShrink: 0 }}>×</button>
+      </div>
+    ) : null
+  );
 
   async function apiFetch(path, options = {}) {
     // Timeout de sécurité : si le backend ne répond pas (ex : serveur qui se réveille
@@ -973,6 +1089,7 @@ function AppInner() {
       // Quota gratuit atteint OU fonction premium → on déclenche l'écran « passe en Premium ».
       if (isObj && (body.detail.code === "quota_gratuit_atteint" || body.detail.code === "premium_requis")) {
         setPremiumGate(body.detail);
+        dernierMurPremium.current = body.detail.message || "";
       }
       const err = new Error(isObj ? (body.detail.message || "Erreur") : (body.detail || `Erreur (code ${res.status})`));
       if (isObj) err.detail = body.detail;
@@ -1828,10 +1945,18 @@ function AppInner() {
         <div style={{ fontSize: 14.5, color: "#E6EDF5", lineHeight: 1.55, marginBottom: 18 }}>
           {({
             aem_scan: "Tu as utilisé tes scans gratuits du mois. Je n'ai pas encore lu celle-ci. Laisse-moi lire toutes tes AEM, autant de fois que tu veux. 🔓",
-            chat: "Je reste là quand tu as besoin de moi. On a utilisé nos messages du mois. Laisse-moi rester dispo non-stop. 🔓",
+            chat: "On a bien discuté ce mois-ci ! Nos conversations gratuites sont épuisées. Laisse-moi rester dispo non-stop, sans compter. 🔓",
             doc_scan: "Laisse-moi le faire. Tu as utilisé tes scans gratuits du mois. Je peux m'occuper de toute ta paperasse. 🔓",
             relance_auto: "Laisse-moi réclamer tes impayés à ta place : je relance tes clients automatiquement, au bon moment, sans que tu aies à t'en occuper. 🔓",
             conformite: "Laisse-moi vérifier ta décision : je compare ce que tu as reconstitué avec France Travail et je t'explique chaque écart, pour repérer un problème avant qu'il te coûte des droits. 🔓",
+            facture_quota: "Tu as créé tes 5 factures gratuites du mois, joli rythme ! Laisse-moi m'occuper de ta facturation sans limite. 🔓",
+            devis_quota: "Tu as créé tes 5 devis gratuits du mois. Laisse-moi m'occuper de tes devis sans limite. 🔓",
+            achat_simu: "Tu as fait tes 5 simulations gratuites du mois. Laisse-moi répondre à « puis-je l'acheter ? » autant que tu veux. 🔓",
+            paie_complete: "Le montant recommandé est à toi, pour toujours. Les trois montants (prudent, recommandé, maximum) et la surveillance de ta paie font partie de TOTOR Veille. 🔓",
+            projection: "Laisse-moi regarder ton mois prochain : je projette ton solde à partir de tes factures, devis et train de vie, et je te dis ce qui va rentrer et ce qui va manquer. 🔓",
+            quotas_employeur: "Laisse-moi surveiller tes jours par employeur : je compte, je compare au plafond de chaque boîte, et je te préviens avant que ça coince. 🔓",
+            radar_acompte: "Laisse-moi repérer les mauvais payeurs : quand un client paie systématiquement en retard, je te suggère un acompte avant d'accepter la mission. 🔓",
+            taux_horaire: "Laisse-moi calculer ton vrai taux horaire, après cotisations, et te dire si tu te sous-vends. 🔓",
           })[premiumGate.fonction] || "Laisse-moi continuer à m'occuper de tout pour toi. 🔓"}
         </div>
         {/* Appli native (App Store 3.1.1) : ni paiement, ni prix, ni code. Un libellé doux
@@ -2391,8 +2516,8 @@ function AppInner() {
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je t'accompagne</div>
               <div style={{ marginBottom: 16 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>Gratuit</span></div>
               {(profile?.statut === "intermittent"
-                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "2 scans d'AEM par mois", "3 échanges avec Totor par mois"]
-                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "3 scans de factures/frais par mois", "3 échanges avec Totor par mois", "Factures et devis illimités"]
+                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "5 scans d'AEM par mois", "3 conversations avec Totor par mois (6 le premier mois)"]
+                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "5 scans de factures/frais par mois", "3 conversations avec Totor par mois (6 le premier mois)", "5 factures et 5 devis par mois"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -2445,8 +2570,26 @@ function AppInner() {
               )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
-                ? ["Tout ce qui est gratuit, sans limite", "Scans d'AEM illimités, je lis tes attestations pour toi", "Échanges avec Totor illimités", "Je vérifie ta décision face à France Travail"]
-                : ["Tout ce qui est gratuit, sans limite", "Scans illimités, je m'occupe de ta paperasse", "Échanges avec Totor illimités", "Je relance tes impayés automatiquement"]
+                ? [
+                    "Tout le gratuit SANS LIMITE : scans d'AEM, conversations, Mode Achat",
+                    "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
+                    "Je vérifie ta décision face à France Travail",
+                    "Je repère les écarts qui te coûteraient des droits",
+                    "Je recalcule ton allocation après chaque AEM",
+                    "Je surveille tes jours par employeur avant que ça coince",
+                    "Ton espace auto-entrepreneur complet inclus : paie 3 scénarios, relances d'impayés, radar acompte, taux horaire",
+                    "Toutes les prochaines fonctionnalités, incluses d'office",
+                  ]
+                : [
+                    "Tout le gratuit SANS LIMITE : scans, conversations, factures, devis, Mode Achat",
+                    "Ta paie complète : les 3 scénarios (prudent, recommandé, maximum)",
+                    "Je relance tes impayés à ta place, sans relâche",
+                    "Le radar acompte : je repère les mauvais payeurs avant le devis",
+                    "Ton taux horaire réel calculé : tu sais enfin ce que tu vaux",
+                    "Je regarde ton mois prochain : ce qui rentre, ce qui va manquer",
+                    "Ton espace intermittent complet inclus, s'il te sert un jour",
+                    "Toutes les prochaines fonctionnalités, incluses d'office",
+                  ]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -4580,6 +4723,21 @@ function AppInner() {
   function renderRadarAcompte(nom) {
     const r = radarAcompteClient(nom);
     if (!r) return null;
+    // Fonction TOTOR Veille : le gratuit sait que Totor a repéré quelque chose, sans le détail.
+    if (!profile?.is_premium) {
+      return (
+        <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "10px 13px", marginBottom: 10 }}>
+          <span style={{ fontSize: 16, flexShrink: 0 }}>🔒</span>
+          <span style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+            J'ai repéré quelque chose sur l'historique de paiement de ce client.{" "}
+            <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "radar_acompte" })}
+              style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+              Débloquer le radar acompte
+            </button>
+          </span>
+        </div>
+      );
+    }
     return (
       <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.1)", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 10, padding: "10px 13px", marginBottom: 10 }}>
         <span style={{ fontSize: 16, flexShrink: 0 }}>🐾</span>
@@ -4735,7 +4893,8 @@ function AppInner() {
       });
       setAiMessages(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
-      setAiMessages(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
+      if (err.detail?.code !== "premium_requis" && err.detail?.code !== "quota_gratuit_atteint")
+        setAiMessages(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setAiLoading(false);
     }
@@ -4757,7 +4916,8 @@ function AppInner() {
       });
       setInterChat(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
-      setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
+      if (err.detail?.code !== "premium_requis" && err.detail?.code !== "quota_gratuit_atteint")
+        setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setInterChatLoading(false);
     }
@@ -7351,7 +7511,8 @@ function AppInner() {
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
-      <div style={{ width: 220, flexShrink: 0, background: "rgba(7,25,46,0.6)", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "calc(16px + env(safe-area-inset-top, 0px)) 12px 16px", minHeight: isMobile ? "100%" : "100vh" }}>
+      // Fond OPAQUE (correction revue) + safe-area du natif : les deux réunis.
+      <div style={{ width: 220, flexShrink: 0, background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "calc(16px + env(safe-area-inset-top, 0px)) 12px 16px", minHeight: isMobile ? "100%" : "100vh" }}>
         <div style={{ padding: "4px 8px 16px" }}><Logo size={30} dark /></div>
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {interMenuItems.map(item => {
@@ -7507,8 +7668,7 @@ function AppInner() {
           {interNav !== "abonnement" && ecranVeilleModal}
           {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
 
-          {/* ─── Vérification d'email (les rappels d'actualisation en dépendent) ───
-               Masquée sur l'écran TOTOR Veille : c'est la vitrine de vente, pas l'onboarding. */}
+          {/* ─── Vérification d'email : masquée sur la vitrine de vente ─── */}
           {!emailVerified && interNav !== "abonnement" && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 12, padding: "11px 16px", marginBottom: 16 }}>
               <span style={{ fontSize: 13, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 8, lineHeight: 1.4 }}>
@@ -8402,14 +8562,14 @@ function AppInner() {
                       <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
                         <span style={{ fontSize: 18 }}>🔒</span>
                         <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
-                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>PREMIUM</span>
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
                       </div>
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
                         Je compare ce que tu as reconstitué avec ce que France Travail a retenu, et je t'explique chaque écart, pour repérer une AEM manquante ou une erreur <strong style={{ color: "#E8F4FF" }}>avant qu'elle te coûte des droits</strong>.
                       </div>
                       <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "conformite" })}
                         style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        🔓 Débloquer avec Premium
+                        🐾 Je laisse Totor s'en occuper
                       </button>
                     </div>
                   );
@@ -9819,7 +9979,7 @@ function AppInner() {
                 </div>
               </div>
 
-              {renderQuotaJauge("chat", "message")}
+              {renderQuotaJauge("chat", "conversation")}
 
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 {/* Fil de discussion */}
@@ -10359,7 +10519,14 @@ function AppInner() {
                                   </>
                                 )}
                                 <div style={{ marginTop: 6 }}>
-                                  {enEdition ? (
+                                  {/* La SURVEILLANCE (quota + alerte plafond) est TOTOR Veille ; les jours comptés
+                                       au-dessus restent visibles pour tous (la donnée, jamais verrouillée). */}
+                                  {!profile?.is_premium ? (
+                                    <button type="button" onClick={() => setPremiumGate({ code: "premium_requis", fonction: "quotas_employeur" })}
+                                      style={{ background: "none", border: "none", color: "#5DCAA5", fontSize: 12, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
+                                      🔒 Surveiller le plafond de cette boîte
+                                    </button>
+                                  ) : enEdition ? (
                                     <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
                                       <input type="number" min="0" max="366" autoFocus value={quotaInputs[l.cle]} onChange={e => setQuotaInputs({ ...quotaInputs, [l.cle]: e.target.value })} placeholder="Quota (ex : 59)"
                                         style={{ width: 130, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.15)", borderRadius: 7, padding: "7px 10px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit" }} />
@@ -11737,13 +11904,27 @@ function AppInner() {
 
                   <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 8 }}>👉 Je te recommande de te verser :</div>
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
-                    {options.map(o => (
+                    {options.map(o => {
+                      // Freemium 1.0.1 : le gratuit reçoit le montant recommandé ; prudent
+                      // et maximum (la DÉCISION affinée) font partie de TOTOR Veille.
+                      const verrouille = paieDuMois.paie_verrouillee && o.montant == null;
+                      if (verrouille) {
+                        return (
+                          <button key={o.id} type="button" onClick={() => setPremiumGate({ code: "premium_requis", fonction: "paie_complete" })}
+                            style={{ background: "rgba(255,255,255,0.02)", border: "1.5px dashed rgba(93,202,165,0.35)", borderRadius: 10, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", minHeight: 44 }}>
+                            <div style={{ fontSize: 11, color: "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{o.label}</div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#5DCAA5", marginTop: 4 }}>🐾 TOTOR Veille</div>
+                          </button>
+                        );
+                      }
+                      return (
                       <button key={o.id} type="button" onClick={() => setPaieChoix(o.id)}
                         style={{ background: paieChoix === o.id ? "rgba(93,202,165,0.15)" : "rgba(255,255,255,0.03)", border: `1.5px solid ${paieChoix === o.id ? "#5DCAA5" : "rgba(255,255,255,0.1)"}`, borderRadius: 10, padding: "12px 10px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", minHeight: 44 }}>
                         <div style={{ fontSize: 11, color: paieChoix === o.id ? "#5DCAA5" : "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{o.label}</div>
                         <div style={{ fontSize: o.id === "recommande" ? 22 : 17, fontWeight: 800, color: "white", marginTop: 2 }}>{formatEUR(o.montant)}</div>
                       </button>
-                    ))}
+                      );
+                    })}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
                     <button type="button" onClick={() => setPaieChoix("libre")}
@@ -11936,6 +12117,23 @@ function AppInner() {
             })()}
 
             {/* ── PROJECTION TRÉSORERIE : « Totor regarde ton mois prochain » ── */}
+            {/* Fonction TOTOR Veille : les comptes gratuits voient un teaser verrouillé (drapeau backend). */}
+            {projectionData?.verrouille && (
+              <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                  <span style={{ fontSize: 18 }}>🔒</span>
+                  <div style={{ fontSize: 14.5, fontWeight: 800, color: "white" }}>Totor regarde ton mois prochain</div>
+                  <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
+                </div>
+                <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
+                  À partir de tes factures, devis et train de vie, je projette ton solde du mois prochain : <strong style={{ color: "#E8F4FF" }}>ce qui va rentrer, ce qui va manquer</strong>, et les leviers si ça coince.
+                </div>
+                <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "projection" })}
+                  style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                  🐾 Je laisse Totor s'en occuper
+                </button>
+              </div>
+            )}
             {projectionData?.disponible && (() => {
               const pr = projectionData;
               const accent = pr.ton === "alerte" ? "#F09595" : pr.ton === "vigilant" ? "#FAC775" : "#5DCAA5";
@@ -12806,7 +13004,12 @@ function AppInner() {
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
                       <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tape 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
                     </div>
-                    {achatMontant && parseFloat(achatMontant) > 0 && (() => {
+                    {achatQuotaEtat === "bloque" && (
+                      <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "14px 16px", fontSize: 13, color: "#C2E6D8", lineHeight: 1.55 }}>
+                        🐾 Tu as fait tes 5 simulations gratuites du mois. Laisse-moi répondre à « puis-je l'acheter ? » autant que tu veux, avec TOTOR Veille.
+                      </div>
+                    )}
+                    {achatMontant && parseFloat(achatMontant) > 0 && achatQuotaEtat !== "bloque" && (() => {
                       const montant = parseFloat(achatMontant);
                       const tresorerieApres = solde - montant;
                       const resteApres = apresReserve - montant;
@@ -13072,7 +13275,27 @@ function AppInner() {
           );
         })()}
 
-        {nav === "coach" && (
+        {nav === "coach" && !profile?.is_premium && (
+          <div>
+            <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Est-ce que je facture assez ?</h1><p style={S.pageSub}>Ton vrai taux horaire, et si tu te sous-vends</p></div></div>
+            {/* Fonction TOTOR Veille : teaser verrouillé pour le gratuit. */}
+            <div style={{ ...S.card, background: "linear-gradient(160deg, rgba(93,202,165,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                <span style={{ fontSize: 18 }}>🔒</span>
+                <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton vrai taux horaire</div>
+                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
+              </div>
+              <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
+                Je calcule ce qu'il te reste <strong style={{ color: "#E8F4FF" }}>par heure réellement travaillée, après cotisations</strong>, je te dis si tu te sous-vends, et ce que changerait une hausse de tarif.
+              </div>
+              <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "taux_horaire" })}
+                style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                🐾 Je laisse Totor s'en occuper
+              </button>
+            </div>
+          </div>
+        )}
+        {nav === "coach" && profile?.is_premium && (
           <div>
             <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>💪 Est-ce que je facture assez ?</h1><p style={S.pageSub}>Ton vrai taux horaire, et si tu te sous-vends</p></div></div>
 
@@ -14616,7 +14839,7 @@ function AppInner() {
                 </div>
               </div>
             </div>
-            <div style={{ maxWidth: 460 }}>{renderQuotaJauge("chat", "message")}</div>
+            <div style={{ maxWidth: 460 }}>{renderQuotaJauge("chat", "conversation")}</div>
             {aiMessages.length <= 1 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
                 {quickAskQuestions.map(q => (
