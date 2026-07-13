@@ -2318,16 +2318,20 @@ function AppInner() {
                 {[["annuel", veilleProduits.annuel, "⭐ Annuel"], ["mensuel", veilleProduits.mensuel, "Mensuel"]].map(([id, prod, label]) => {
                   if (!prod) return null;
                   // Economie de l'annuel, calculee depuis les PRIX REELS des stores (jamais un chiffre en dur).
-                  let sousTexte = id === "annuel" ? "par an" : "par mois";
+                  // L'annuel s'affiche PAR MOIS en grand (plus digeste), le total annuel reel en petit
+                  // (transparence : le montant reellement debite reste visible, regle stores).
+                  let grandPrix = prod.priceString;
+                  let sousTexte = id === "annuel" ? `${prod.priceString} par an` : "par mois";
                   let badgeEco = null;
-                  if (id === "annuel" && veilleProduits.mensuel?.price > 0 && prod.price > 0) {
-                    const pct = Math.round((1 - prod.price / (veilleProduits.mensuel.price * 12)) * 100);
-                    if (pct >= 5) {
-                      badgeEco = `−${pct} %`;
-                      try {
-                        const parMois = new Intl.NumberFormat(undefined, { style: "currency", currency: prod.currencyCode || "EUR" }).format(prod.price / 12);
-                        sousTexte = `soit ${parMois}/mois`;
-                      } catch { /* devise inconnue : on garde "par an" */ }
+                  if (id === "annuel" && prod.price > 0) {
+                    try {
+                      const parMois = new Intl.NumberFormat(undefined, { style: "currency", currency: prod.currencyCode || "EUR" }).format(prod.price / 12);
+                      grandPrix = `${parMois}/mois`;
+                      sousTexte = `soit ${prod.priceString} facturé une fois par an`;
+                    } catch { /* devise inconnue : on garde l'affichage annuel classique */ }
+                    if (veilleProduits.mensuel?.price > 0) {
+                      const pct = Math.round((1 - prod.price / (veilleProduits.mensuel.price * 12)) * 100);
+                      if (pct >= 5) badgeEco = `−${pct} %`;
                     }
                   }
                   return (
@@ -2337,8 +2341,8 @@ function AppInner() {
                       <span style={{ position: "absolute", top: -9, right: 8, background: "#FAC775", color: "#412402", fontSize: 10, fontWeight: 800, borderRadius: 999, padding: "2px 8px" }}>{badgeEco}</span>
                     )}
                     <div style={{ fontSize: 11, color: veillePlanNatif === id ? "#5DCAA5" : "#8BA5C0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{label}</div>
-                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", marginTop: 3 }}>{prod.priceString}</div>
-                    <div style={{ fontSize: 10.5, color: badgeEco ? "#5DCAA5" : "#6B8299", marginTop: 1, fontWeight: badgeEco ? 700 : 400 }}>{sousTexte}</div>
+                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", marginTop: 3 }}>{grandPrix}</div>
+                    <div style={{ fontSize: 10.5, color: badgeEco ? "#5DCAA5" : "#6B8299", marginTop: 1, fontWeight: badgeEco ? 700 : 400, lineHeight: 1.35 }}>{sousTexte}</div>
                   </button>
                   );
                 })}
