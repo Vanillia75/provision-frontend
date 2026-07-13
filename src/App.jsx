@@ -5319,7 +5319,15 @@ function AppInner() {
     // Témoignages de testeurs — À REMPLIR UNIQUEMENT avec de vraies citations
     // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
     // Format : { texte: "…", prenom: "…", metier: "…" }
-    const TEMOIGNAGES = [];
+    const TEMOIGNAGES = [
+      // Héloïse — avis reçu le 13/07/2026 par le circuit /avis, consentement
+      // publication OUI (prénom + métier). Citation VERBATIM, jamais retouchée.
+      {
+        texte: "C'est la première fois que je ne stresse plus pour le calcul de mes heures. Je comprends enfin mes cotisations et, surtout, je sens que je suis vraiment accompagné au quotidien. Une vraie tranquillité d'esprit. Merci TOTOR ! 🐾",
+        prenom: "Héloïse",
+        metier: "intermittente du spectacle",
+      },
+    ];
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
     const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
