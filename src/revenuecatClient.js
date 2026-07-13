@@ -28,6 +28,11 @@ let _initArgs = null;      // { apiKey, appUserID } mémorisés au premier init
 let _demarrage = null;     // promesse unique de démarrage en cours ou abouti
 export let etatCaisse = "pas encore démarrée";
 
+// Journal de diagnostic (affiché discrètement sous le fallback si la boutique est muette).
+const _journal = [];
+function _note(msg) { _journal.push(msg); if (_journal.length > 12) _journal.shift(); }
+export function journalCaisse() { return [..._journal]; }
+
 function plateforme() {
   try { return window.Capacitor?.getPlatform?.() || "web"; } catch { return "web"; }
 }
@@ -56,9 +61,15 @@ function demarrerCaisse() {
   if (_demarrage) return _demarrage;
   _demarrage = (async () => {
     const Purchases = await purchases();
+    try { await Purchases.setLogLevel({ level: "DEBUG" }); } catch {}
     etatCaisse = "configuration…";
     await chrono(Purchases.configure(_initArgs), "configure caisse");
     etatCaisse = "ok";
+    _note("configure OK (" + plateforme() + (_initArgs.appUserID ? ", identité liée" : ", anonyme") + ")");
+    try {
+      const r = await chrono(Purchases.canMakePayments(), "canMakePayments", 6000);
+      _note("canMakePayments=" + r.canMakePayments);
+    } catch (e) { _note("canMakePayments err: " + (e?.message || e)); }
     return Purchases;
   })().catch(e => {
     etatCaisse = "échec : " + String(e?.message || e);
@@ -96,6 +107,8 @@ export async function initCaisse(token) {
 export async function chargerProduitsVeille() {
   const Purchases = await caissePrete();
   const { products } = await chrono(Purchases.getProducts({ productIdentifiers: PRODUITS_VEILLE }), "lecture des produits");
+  _note("getProducts -> " + (products ? products.length : "null") + " produit(s)" +
+    (products && products.length ? " [" + products.map(x => x.identifier).join(", ") + "]" : ""));
   const parId = {};
   // Android nomme ses produits "abonnement:forfait" (ex. veille_mensuel:mensuel) :
   // on indexe par la partie AVANT les deux-points pour rester commun iOS/Android.

@@ -10,7 +10,7 @@ import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
-import { initCaisse, chargerProduitsVeille, acheterVeille, restaurerAchats } from "./revenuecatClient";
+import { etatCaisse, journalCaisse, initCaisse, chargerProduitsVeille, acheterVeille, restaurerAchats } from "./revenuecatClient";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -2355,6 +2355,8 @@ function AppInner() {
             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "14px 16px", fontSize: 12.5, color: "#8BA5C0", textAlign: "center", lineHeight: 1.5 }}>
               La boutique ne répond pas pour le moment. Réessaie dans un instant.
               <div><button type="button" onClick={rechargerProduitsVeille} style={{ ...S.linkBtn, marginTop: 6 }}>Réessayer</button></div>
+              {/* Journal technique (diagnostic sandbox, discret) */}
+              <div style={{ fontSize: 10, color: "#4A6280", marginTop: 10, lineHeight: 1.5, wordBreak: "break-word" }}>état : {etatCaisse} · {journalCaisse().join(" · ")}</div>
             </div>
           )}
 
