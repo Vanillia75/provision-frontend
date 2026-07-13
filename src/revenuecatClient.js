@@ -53,14 +53,17 @@ export function lireUserIdDuToken(token) {
 
 async function purchases() {
   const mod = await chrono(import("@revenuecat/purchases-capacitor"), "chargement du module caisse");
-  return mod.Purchases;
+  // ⚠️ JAMAIS renvoyer le proxy Purchases nu depuis une fonction async : `await`
+  // verrait son `.then` (piege du proxy Capacitor : methode native inexistante,
+  // callbacks ignores) et la promesse resterait PENDUE A VIE. On l'emballe.
+  return { Purchases: mod.Purchases };
 }
 
 function demarrerCaisse() {
   // Single-flight : si un démarrage est en cours ou abouti, on s'y accroche.
   if (_demarrage) return _demarrage;
   _demarrage = (async () => {
-    const Purchases = await purchases();
+    const { Purchases } = await purchases();
     try { await Purchases.setLogLevel({ level: "DEBUG" }); } catch {}
     etatCaisse = "configuration…";
     await chrono(Purchases.configure(_initArgs), "configure caisse");
@@ -70,7 +73,7 @@ function demarrerCaisse() {
       const r = await chrono(Purchases.canMakePayments(), "canMakePayments", 6000);
       _note("canMakePayments=" + r.canMakePayments);
     } catch (e) { _note("canMakePayments err: " + (e?.message || e)); }
-    return Purchases;
+    return { Purchases };  // meme piege au retour : toujours emballe
   })().catch(e => {
     etatCaisse = "échec : " + String(e?.message || e);
     _demarrage = null; // un prochain appel retentera
@@ -93,7 +96,7 @@ export async function initCaisse(token) {
   const userId = lireUserIdDuToken(token);
   try {
     _initArgs = { apiKey: p === "ios" ? CLE_IOS : CLE_ANDROID, ...(userId ? { appUserID: userId } : {}) };
-    const Purchases = await demarrerCaisse();
+    const { Purchases } = await demarrerCaisse();
     // Si la caisse avait démarré sans identité (secours), on rattache le compte.
     if (userId) { try { await chrono(Purchases.logIn({ appUserID: userId }), "logIn caisse", 8000); } catch { /* déjà loggé ou identique */ } }
     return true;
@@ -105,7 +108,7 @@ export async function initCaisse(token) {
 
 /** Les 2 produits avec leurs PRIX LOCALISÉS lus chez Apple/Google (source de vérité). */
 export async function chargerProduitsVeille() {
-  const Purchases = await caissePrete();
+  const { Purchases } = await caissePrete();
   const { products } = await chrono(Purchases.getProducts({ productIdentifiers: PRODUITS_VEILLE }), "lecture des produits");
   _note("getProducts -> " + (products ? products.length : "null") + " produit(s)" +
     (products && products.length ? " [" + products.map(x => x.identifier).join(", ") + "]" : ""));
@@ -121,7 +124,7 @@ export async function chargerProduitsVeille() {
 
 /** Lance l'achat natif (Face ID / Google Pay). Renvoie true si l'achat aboutit. */
 export async function acheterVeille(produit) {
-  const Purchases = await caissePrete();
+  const { Purchases } = await caissePrete();
   try {
     await Purchases.purchaseStoreProduct({ product: produit });
     return true;
@@ -133,7 +136,7 @@ export async function acheterVeille(produit) {
 
 /** Restaurer mes achats (obligation Apple) : resynchronise les reçus du store. */
 export async function restaurerAchats() {
-  const Purchases = await caissePrete();
+  const { Purchases } = await caissePrete();
   await Purchases.restorePurchases();
   return true;
 }
