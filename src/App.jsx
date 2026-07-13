@@ -2131,8 +2131,8 @@ function AppInner() {
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 4 }}>🐶 Je t'accompagne</div>
               <div style={{ marginBottom: 16 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>Gratuit</span></div>
               {(profile?.statut === "intermittent"
-                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "2 scans d'AEM par mois", "3 échanges avec Totor par mois"]
-                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "3 scans de factures/frais par mois", "3 échanges avec Totor par mois", "Factures et devis illimités"]
+                ? ["Ton cockpit : tes 507h et tes droits, toujours à jour", "La progression de Totor", "5 scans d'AEM par mois", "3 conversations avec Totor par mois (6 le premier mois)"]
+                : ["Ton cockpit : ce que tu peux dépenser + ta trésorerie", "La progression de Totor", "5 scans de factures/frais par mois", "3 conversations avec Totor par mois (6 le premier mois)", "5 factures et 5 devis par mois"]
               ).map((f, j) => (
                 <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 8, lineHeight: 1.4 }}>
                   <span style={{ color: ACCENT, flexShrink: 0, marginTop: 1 }}>✓</span>{f}
@@ -7244,7 +7244,8 @@ function AppInner() {
           {interNav !== "abonnement" && ecranVeilleModal}
           {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
 
-          {!emailVerified && (
+          {/* Bandeau email masqué sur l'écran d'abonnement : vitrine de vente, pas onboarding. */}
+          {!emailVerified && interNav !== "abonnement" && (
             <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 12, padding: "11px 16px", marginBottom: 16 }}>
               <span style={{ fontSize: 13, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 8, lineHeight: 1.4 }}>
                 <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
@@ -11341,7 +11342,7 @@ function AppInner() {
         {nav !== "abonnement" && ecranVeilleModal}
         {nav === "dashboard" && renderMurmureVeille(() => setNav("abonnement"))}
 
-        {!emailVerified && profile?.onboarding_complete && (
+        {!emailVerified && profile?.onboarding_complete && nav !== "abonnement" && (
           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "#E6F1FB", border: "1px solid #B5D4F4", borderRadius: 10, padding: "10px 16px", marginBottom: 16 }}>
             <span style={{ fontSize: 13, color: "#0C447C", display: "flex", alignItems: "center", gap: 8 }}>
               <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16 }} />
