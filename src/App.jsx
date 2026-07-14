@@ -2308,9 +2308,10 @@ function AppInner() {
           <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14 }}>
             Paiement sécurisé par Stripe · Sans engagement · Résiliable en 1 clic.
           </div>
-          <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
         </>
       )}
+      {/* Badges mobiles : visibles pour TOUS (gratuit ET abonnés VIP/Stripe) */}
+      <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
     </div>
   );
 
