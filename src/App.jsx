@@ -5471,6 +5471,7 @@ function AppInner() {
                   <i className="ti ti-paw" style={{ marginRight: 6, fontStyle: "normal" }} />Pourquoi un chien ? →
                 </button>
               </div>
+              <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
             </div>
           </div>
         </div>
