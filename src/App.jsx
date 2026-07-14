@@ -2375,6 +2375,18 @@ function AppInner() {
               {veilleAchatEtat === "restauration" ? "Restauration…" : "Restaurer mes achats"}
             </button>
           </div>
+
+          {/* Liens légaux DANS l'app : exigence Apple pour les abonnements (3.1.2). */}
+          <div style={{ textAlign: "center", marginTop: 14, display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <button type="button" onClick={() => setLegalPage("confidentialite")}
+              style={{ background: "none", border: "none", color: "#6B8299", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+              Politique de confidentialité
+            </button>
+            <button type="button" onClick={() => setLegalPage("cgu")}
+              style={{ background: "none", border: "none", color: "#6B8299", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }}>
+              Conditions d'utilisation
+            </button>
+          </div>
         </div>
       )}
     </div>
