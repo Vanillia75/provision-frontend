@@ -5548,8 +5548,12 @@ function AppInner() {
                   <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte"}</h2>
                   {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
                   {error && <div style={S.errorBanner}>{error}</div>}
-                  <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
-                  <p style={S.orDivider}>ou avec un email</p>
+                  {/* Connexion Google : WEB uniquement. En natif (WebView), Google refuse l'auth :
+                      on masque le bouton ET le séparateur pour un écran de connexion propre. */}
+                  {!IS_NATIVE_APP && (<>
+                    <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                    <p style={S.orDivider}>ou avec un email</p>
+                  </>)}
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
                   <PasswordField label={authMode === "register" ? "Mot de passe (8 caractères min.)" : "Mot de passe"} value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
                   {authMode === "register" && (<>
