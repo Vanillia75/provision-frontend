@@ -2238,8 +2238,8 @@ function AppInner() {
               </div>
               {planChoisi === "pionnier" && offresBilling?.pionnier_ouvert ? (
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>44,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/an</span>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 3,75 €/mois, verrouillé à vie · 🐾 Pionnier</div>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>3,75 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 44,99 € par an, verrouillé à vie · 🐾 Pionnier</div>
                 </div>
               ) : planChoisi === "annuel" ? (
                 <div style={{ marginBottom: 4 }}>
