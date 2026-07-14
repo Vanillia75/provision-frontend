@@ -83,6 +83,36 @@ function isIOSDevice() {
 
 // Bannière d'installation réutilisable (s'affiche avant ET après connexion).
 // Props : pwaPrompt (event Android), onInstall, onDismiss, showHelp, compact.
+// Badges « bientôt sur les stores » — HONNÊTE : apps pas encore publiées (iOS en examen,
+// Android en test interne). Annonce sans prétendre. À transformer en vrais liens de
+// téléchargement au lancement (1er octobre). Réutilisable : landings + page abonnement.
+function BadgesBientot({ centre }) {
+  // Jamais dans une app native (absurde d'annoncer les stores DANS l'app). Web uniquement.
+  try { if (window.Capacitor?.isNativePlatform?.()) return null; } catch {}
+  const pill = { display: "inline-flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 11, padding: "9px 15px" };
+  return (
+    <div style={{ marginTop: 20, textAlign: centre ? "center" : "left" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#5A7088", marginBottom: 9 }}>🐾 Bientôt sur mobile</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: centre ? "center" : "flex-start" }}>
+        <div style={pill}>
+          <i className="ti ti-brand-apple" aria-hidden="true" style={{ fontSize: 22, color: "#E6EDF5" }} />
+          <div style={{ lineHeight: 1.15, textAlign: "left" }}>
+            <div style={{ fontSize: 9.5, color: "#8BA5C0" }}>Bientôt sur</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>l'App Store</div>
+          </div>
+        </div>
+        <div style={pill}>
+          <i className="ti ti-brand-google-play" aria-hidden="true" style={{ fontSize: 21, color: "#E6EDF5" }} />
+          <div style={{ lineHeight: 1.15, textAlign: "left" }}>
+            <div style={{ fontSize: 9.5, color: "#8BA5C0" }}>Bientôt sur</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>Google Play</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
   if (isStandalonePWA()) return null;
   if (!pwaPrompt && !isIOSDevice()) return null; // rien à proposer sur desktop classique
@@ -2278,6 +2308,7 @@ function AppInner() {
           <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14 }}>
             Paiement sécurisé par Stripe · Sans engagement · Résiliable en 1 clic.
           </div>
+          <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
         </>
       )}
     </div>
@@ -5335,6 +5366,10 @@ function AppInner() {
     const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
     const badgeEstim = { display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.32)", color: "#F0C070", borderRadius: 20, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" };
     const lienDiscret = { display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#5DCAA5", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 14 };
+    // Badges « bientôt sur les stores » — HONNÊTE : les apps ne sont pas encore publiées
+    // (iOS en examen, Android en test interne). On annonce, on ne prétend pas. À remplacer
+    // par de vrais liens de téléchargement au lancement (1er octobre).
+    const badgesBientot = <BadgesBientot />;
 
     // Compteur circulaire 444h/507h (hero + scroll 01) — même chiffre partout (Loi X).
     const compteurCirculaire = (ring) => {
@@ -5506,6 +5541,7 @@ function AppInner() {
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
+              {badgesBientot}
             </div>
           </section>
 
@@ -5695,6 +5731,7 @@ function AppInner() {
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
+              {badgesBientot}
               <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
             </div>
           </section>
@@ -5764,6 +5801,7 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
+              {badgesBientot}
           </div>
         </section>
 
@@ -5988,6 +6026,7 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
+              {badgesBientot}
             <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
           </div>
         </section>
