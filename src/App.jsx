@@ -2017,7 +2017,7 @@ function AppInner() {
     <>
       <style>{`@keyframes aidePatte { 0%,100% { opacity: 0.15; } 50% { opacity: 1; } }`}</style>
       {aideOuverte && (
-        <div style={{ position: "fixed", bottom: isMobile ? 84 : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
+        <div style={{ position: "fixed", bottom: isMobile ? "calc(84px + env(safe-area-inset-bottom, 0px))" : "calc(88px + env(safe-area-inset-bottom, 0px))", right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
           {/* En-tête : la vocation lisible sans cliquer */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
             <HectorTete size={28} />
@@ -2124,7 +2124,7 @@ function AppInner() {
       {/* La pastille : petite, sereine, jamais de badge ni de rebond. */}
       <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
         title="Totor · aide & mode d'emploi"
-        style={{ position: "fixed", bottom: isMobile ? 16 : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
+        style={{ position: "fixed", bottom: isMobile ? "calc(16px + env(safe-area-inset-bottom, 0px))" : "calc(22px + env(safe-area-inset-bottom, 0px))", right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
         <HectorTete size={38} />
         <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
       </button>
@@ -7572,7 +7572,7 @@ function AppInner() {
         {/* Sidebar mobile (drawer) */}
         {isMobile && interMenuOpen && (
           <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.5)" }} onClick={() => setInterMenuOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>{interSidebar}</div>
+            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>{interSidebar}</div>
           </div>
         )}
 
@@ -11538,7 +11538,7 @@ function AppInner() {
       <aside
         style={{
           ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingTop: "calc(20px + env(safe-area-inset-top, 0px))" }
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingTop: "calc(20px + env(safe-area-inset-top, 0px))", paddingBottom: "env(safe-area-inset-bottom, 0px)" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
           background: "#07192E",
         }}
@@ -11683,7 +11683,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "calc(72px + env(safe-area-inset-top, 0px)) 14px 16px" } : S.mainContent), background: "#07192E" }}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "calc(72px + env(safe-area-inset-top, 0px)) 14px calc(16px + env(safe-area-inset-bottom, 0px))" } : S.mainContent), background: "#07192E" }}>
         {/* Barre du haut (desktop) — miroir de celle du mode intermittent : badge + bascule. */}
         {!isMobile && (
           <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "-28px -32px 24px" }}>
