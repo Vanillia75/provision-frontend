@@ -110,7 +110,7 @@ Pour toute question relative aux présentes CGU : bonjour@montotor.fr
 
 const CONFIDENTIALITE_MD = `# Politique de confidentialité
 
-**Dernière mise à jour : 20 juin 2026**
+**Dernière mise à jour : 16 juillet 2026**
 
 La présente politique explique comment VANILLIA (SARL), éditrice de TOTOR, collecte, utilise et protège les données personnelles des utilisateurs, conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés.
 
@@ -153,7 +153,7 @@ Vos données peuvent être transmises aux prestataires techniques suivants, stri
 - **Railway** : hébergement de la base de données et du serveur applicatif (États-Unis).
 - **Vercel** : hébergement de l'interface de l'application (États-Unis).
 - **Cloudflare** : stockage sécurisé des documents que vous importez (attestations, justificatifs) et des sauvegardes chiffrées de la base.
-- **Anthropic** : modèle d'intelligence artificielle qui répond à l'assistant conversationnel ET qui lit automatiquement les documents et photos que vous importez (factures, attestations) pour en extraire les informations. Les messages échangés et le contenu des documents importés lui sont transmis (États-Unis).
+- **Anthropic** : modèle d'intelligence artificielle qui répond à l'assistant conversationnel ET qui lit automatiquement les documents et photos que vous importez (factures, attestations) pour en extraire les informations. Les messages échangés et le contenu des documents importés lui sont transmis (États-Unis). Ces contenus sont transmis à Anthropic dans le seul but de produire la réponse ou l'extraction que vous demandez : ils ne sont **pas utilisés pour entraîner ses modèles**, et leur usage est strictement limité à la fourniture du service (usage limité). L'IA n'intervient que lorsque vous choisissez d'utiliser l'assistant ou d'importer un document : vous gardez le contrôle de ce qui lui est envoyé.
 - **Resend** : envoi des emails du service (vérification d'adresse, rappels d'échéance, relances de factures) (États-Unis).
 - **Stripe** : traitement des paiements de l'abonnement. Vos coordonnées bancaires de paiement sont saisies directement chez Stripe et ne transitent jamais par nos serveurs (États-Unis et Irlande).
 - **Enable Banking** : connexion bancaire optionnelle, en lecture seule, uniquement si vous l'activez, pour synchroniser votre solde. Prestataire agréé dans l'Union européenne (Finlande). Vos identifiants bancaires ne transitent jamais par nos serveurs.
