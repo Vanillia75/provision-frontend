@@ -2,6 +2,7 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
 import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate } from "./legalMentions";
+import { connexionApple, AppleAnnule, STYLE_BOUTON_APPLE } from "./appleAuthWeb";
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
@@ -1199,6 +1200,28 @@ function AppInner() {
       .then(data => { clearLocalAccountData(); safeStorage.setItem("token", data.token); setToken(data.token); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+  }
+
+  // « Se connecter avec Apple » sur le web : même fin de parcours que Google.
+  // Sert surtout aux gens venus de l'app iPhone, qui n'ont PAS de mot de passe.
+  async function handleAppleSignIn() {
+    setError("");
+    setLoading(true);
+    try {
+      const { identity_token, nonce } = await connexionApple();
+      const data = await apiFetch("/auth/apple", {
+        method: "POST",
+        body: JSON.stringify({ identity_token, nonce }),
+      });
+      clearLocalAccountData();
+      safeStorage.setItem("token", data.token);
+      setToken(data.token);
+    } catch (err) {
+      // Fermer la fenêtre Apple n'est pas une erreur : on ne dit rien.
+      if (!(err instanceof AppleAnnule)) setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => { safeStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
@@ -5314,6 +5337,17 @@ function AppInner() {
                   {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
                   {error && <div style={S.errorBanner}>{error}</div>}
                   <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                  {/* Apple sur le web : indispensable pour qui a créé son compte
+                      depuis l'iPhone avec Apple (ces gens n'ont pas de mot de passe). */}
+                  <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                    <button type="button" onClick={handleAppleSignIn} disabled={loading}
+                            style={{ ...STYLE_BOUTON_APPLE, opacity: loading ? 0.55 : 1 }}>
+                      <svg width="16" height="19" viewBox="0 0 14 17" fill="currentColor" aria-hidden="true">
+                        <path d="M11.7 8.9c0-2 1.6-2.9 1.7-3-.9-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.5.8-3.2 2C.3 8.7 1.3 12.3 2.6 14.3c.6 1 1.4 2.1 2.4 2 1-.1 1.3-.6 2.5-.6s1.5.6 2.6.6c1.1 0 1.7-1 2.4-2 .8-1.1 1.1-2.2 1.1-2.3-.1 0-2.1-.8-2.1-3.1zM9.8 3c.5-.7.9-1.6.8-2.5-.8 0-1.8.5-2.4 1.2-.5.6-1 1.6-.8 2.5.9.1 1.8-.4 2.4-1.2z" />
+                      </svg>
+                      {authMode === "login" ? "Se connecter avec Apple" : "Continuer avec Apple"}
+                    </button>
+                  </div>
                   <p style={S.orDivider}>ou avec un email</p>
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
                   <PasswordField label={authMode === "register" ? "Mot de passe (8 caractères min.)" : "Mot de passe"} value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
