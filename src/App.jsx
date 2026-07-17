@@ -11,6 +11,7 @@ import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
 import { etatCaisse, journalCaisse, initCaisse, chargerProduitsVeille, acheterVeille, restaurerAchats } from "./revenuecatClient";
+import { appleDisponible, connexionApple } from "./appleAuth";
 
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
@@ -1170,6 +1171,26 @@ function AppInner() {
     soldeMounted.current = false;
     reserveMounted.current = false;
     tmiMounted.current = false;
+  }
+
+  // « Se connecter avec Apple » (iOS natif). Même fin de parcours que Google :
+  // le backend renvoie { token } qu'on stocke comme jeton de session.
+  async function handleAppleSignIn() {
+    setError("");
+    setLoading(true);
+    try {
+      const identifiants = await connexionApple();   // { identity_token, nonce } — nonce BRUT
+      if (!identifiants) return;                      // annulé par la personne : silence
+      const data = await apiFetch("/auth/apple", { method: "POST", body: JSON.stringify(identifiants) });
+      clearLocalAccountData();
+      safeStorage.setItem("token", data.token);
+      setToken(data.token);
+    } catch (err) {
+      // Le backend renvoie parfois un mode d'emploi prêt à afficher (compte Apple sans email).
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function handleGoogleCredential(response) {
@@ -5564,6 +5585,15 @@ function AppInner() {
                       on masque le bouton ET le séparateur pour un écran de connexion propre. */}
                   {!IS_NATIVE_APP && (<>
                     <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                    <p style={S.orDivider}>ou avec un email</p>
+                  </>)}
+                  {/* « Se connecter avec Apple » : appli iOS uniquement (remplace Google, indispo en WebView).
+                      Fond noir + logo  : présentation imposée par les règles d'Apple. */}
+                  {appleDisponible() && (<>
+                    <button type="button" onClick={handleAppleSignIn} disabled={loading}
+                      style={{ width: "100%", height: 44, borderRadius: 8, background: "#000", color: "#fff", border: "none", cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif", fontSize: 17, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: loading ? 0.55 : 1 }}>
+                      <span style={{ fontSize: 19, lineHeight: 1, marginTop: -2 }}></span> Se connecter avec Apple
+                    </button>
                     <p style={S.orDivider}>ou avec un email</p>
                   </>)}
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
