@@ -87,21 +87,27 @@ function isIOSDevice() {
 // Badges « bientôt sur les stores » — HONNÊTE : apps pas encore publiées (iOS en examen,
 // Android en test interne). Annonce sans prétendre. À transformer en vrais liens de
 // téléchargement au lancement (1er octobre). Réutilisable : landings + page abonnement.
+// Lien réel vers la fiche App Store (app publiée le 15/07/2026, bundle fr.montotor.ios).
+const URL_APP_STORE = "https://apps.apple.com/fr/app/totor/id6789915732";
+
 function BadgesBientot({ centre }) {
   // Jamais dans une app native (absurde d'annoncer les stores DANS l'app). Web uniquement.
   try { if (window.Capacitor?.isNativePlatform?.()) return null; } catch {}
   const pill = { display: "inline-flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 11, padding: "9px 15px" };
+  // iOS est EN LIGNE, Android encore en examen : un seul badge est cliquable.
+  // Ne pas repasser Google en « disponible » avant sa publication réelle.
+  const pillLive = { ...pill, background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.45)", textDecoration: "none", cursor: "pointer" };
   return (
     <div style={{ marginTop: 20, textAlign: centre ? "center" : "left" }}>
-      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#5A7088", marginBottom: 9 }}>🐾 Bientôt sur mobile</div>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#5A7088", marginBottom: 9 }}>🐾 TOTOR sur mobile</div>
       <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: centre ? "center" : "flex-start" }}>
-        <div style={pill}>
-          <i className="ti ti-brand-apple" aria-hidden="true" style={{ fontSize: 22, color: "#E6EDF5" }} />
+        <a href={URL_APP_STORE} target="_blank" rel="noopener noreferrer" style={pillLive}>
+          <i className="ti ti-brand-apple" aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5" }} />
           <div style={{ lineHeight: 1.15, textAlign: "left" }}>
-            <div style={{ fontSize: 9.5, color: "#8BA5C0" }}>Bientôt sur</div>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>l'App Store</div>
+            <div style={{ fontSize: 9.5, color: "#5DCAA5", fontWeight: 600 }}>Télécharger dans</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FFFFFF" }}>l'App Store</div>
           </div>
-        </div>
+        </a>
         <div style={pill}>
           <i className="ti ti-brand-google-play" aria-hidden="true" style={{ fontSize: 21, color: "#E6EDF5" }} />
           <div style={{ lineHeight: 1.15, textAlign: "left" }}>
