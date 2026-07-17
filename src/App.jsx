@@ -5697,19 +5697,20 @@ function AppInner() {
         <div style={{ minHeight: "100vh", background: "#07192E", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "26px 22px" : "40px 48px", boxSizing: "border-box", position: "relative" }}>
           {/* Enseigne discrète en haut à gauche : la marque vit dans son coin,
               la question « Qui es-tu ? » vit seule (sinon on lit « TOTOR, qui es-tu ? »). */}
-          {/* width EXPLICITE, et surtout pas max-content : sans largeur, un élément
-              absolu se dimensionne sur la mesure intrinsèque du texte, or c'est
-              justement elle que la WebView iOS calcule trop court pour Playfair
-              (le R déborde puis se fait rogner). Toute solution basée sur une
-              mesure (max-content, min-width) rejoue donc le bug. 120/140 sont
-              généreux, le contenu reste calé à gauche. */}
-          <div style={{ position: "absolute", top: isMobile ? "calc(16px + env(safe-area-inset-top, 0px))" : "calc(22px + env(safe-area-inset-top, 0px))", left: isMobile ? 18 : 26, width: isMobile ? 120 : 140 }}>
+          {/* zIndex : la VRAIE cause du « R rogné » — sur les écrans étroits (iPhone Pro,
+              pas Pro Max), le contenu centré remonte jusqu'à ce que le bloc photo
+              (positionné, plus tard dans le DOM, fond nuit) RECOUVRE l'enseigne :
+              bleu nuit sur bleu nuit, illusion parfaite de texte coupé. Vérifié en
+              posant une image à la place du texte : « rognée » pareil. L'enseigne
+              passe devant. La width explicite (ceinture) évite en plus tout
+              shrink-to-fit hasardeux d'un bloc absolu. */}
+          <div style={{ position: "absolute", top: isMobile ? "calc(16px + env(safe-area-inset-top, 0px))" : "calc(22px + env(safe-area-inset-top, 0px))", left: isMobile ? 18 : 26, width: isMobile ? 120 : 140, zIndex: 2 }}>
             <Logo size={isMobile ? 24 : 28} dark />
           </div>
           {/* Connexion pour les utilisateurs existants : sobre, sans troisième carte
               (le choix binaire reste pur). L'auth garde sa logique intacte. */}
           <button type="button" className="hx-login" onClick={() => ouvrirAuth("login")}
-            style={{ position: "absolute", top: isMobile ? "calc(18px + env(safe-area-inset-top, 0px))" : "calc(26px + env(safe-area-inset-top, 0px))", right: isMobile ? 18 : 28, background: "none", border: "none", color: "#B5D4F4", fontSize: isMobile ? 13 : 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 2px" }}>
+            style={{ position: "absolute", top: isMobile ? "calc(18px + env(safe-area-inset-top, 0px))" : "calc(26px + env(safe-area-inset-top, 0px))", right: isMobile ? 18 : 28, zIndex: 2, background: "none", border: "none", color: "#B5D4F4", fontSize: isMobile ? 13 : 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: "6px 2px" }}>
             Se connecter
           </button>
           <style>{`
