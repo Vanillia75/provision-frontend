@@ -315,7 +315,9 @@ function Logo({ size = 28, dark = false }) {
     <div style={{ display: "flex", alignItems: "center", gap: size * 0.18, lineHeight: 1 }}>
       <img src="/logo-tete.webp" alt="" height={headSize} width={headSize}
            style={{ height: headSize, width: headSize, objectFit: "cover", borderRadius: "50%", display: "block", flexShrink: 0, marginTop: -size * 0.2, marginBottom: -size * 0.2 }} />
-      <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.02 }}>
+      {/* nowrap + flexShrink 0 : la tête est déjà protégée de l'écrasement, le
+          wordmark ne l'était pas. Sans ça, un parent étroit rogne le R. */}
+      <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: textSize, fontWeight: 700, color: textColor, letterSpacing: size * 0.02, whiteSpace: "nowrap", flexShrink: 0 }}>
         T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R
       </span>
     </div>
@@ -5695,7 +5697,13 @@ function AppInner() {
         <div style={{ minHeight: "100vh", background: "#07192E", color: "white", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? "26px 22px" : "40px 48px", boxSizing: "border-box", position: "relative" }}>
           {/* Enseigne discrète en haut à gauche : la marque vit dans son coin,
               la question « Qui es-tu ? » vit seule (sinon on lit « TOTOR, qui es-tu ? »). */}
-          <div style={{ position: "absolute", top: isMobile ? "calc(16px + env(safe-area-inset-top, 0px))" : "calc(22px + env(safe-area-inset-top, 0px))", left: isMobile ? 18 : 26 }}>
+          {/* width EXPLICITE, et surtout pas max-content : sans largeur, un élément
+              absolu se dimensionne sur la mesure intrinsèque du texte, or c'est
+              justement elle que la WebView iOS calcule trop court pour Playfair
+              (le R déborde puis se fait rogner). Toute solution basée sur une
+              mesure (max-content, min-width) rejoue donc le bug. 120/140 sont
+              généreux, le contenu reste calé à gauche. */}
+          <div style={{ position: "absolute", top: isMobile ? "calc(16px + env(safe-area-inset-top, 0px))" : "calc(22px + env(safe-area-inset-top, 0px))", left: isMobile ? 18 : 26, width: isMobile ? 120 : 140 }}>
             <Logo size={isMobile ? 24 : 28} dark />
           </div>
           {/* Connexion pour les utilisateurs existants : sobre, sans troisième carte
