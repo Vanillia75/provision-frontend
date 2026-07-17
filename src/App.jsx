@@ -851,7 +851,11 @@ function AppInner() {
   // `email` optionnel : au premier chargement, l'état `profile` n'est pas encore
   // posé dans la closure (setProfile asynchrone) — le site d'appel passe le sien.
   const walkthroughDoneKey = (email) => "hector_walkthrough_done:" + (email || (profile && profile.email) || "anon");
-  const walkthroughDejaVu = (email) => !!(safeStorage.getItem(walkthroughDoneKey(email)) || safeStorage.getItem("hector_walkthrough_done"));
+  // Le serveur fait foi (profile.walkthrough_vu) : le navigateur, lui, oublie a
+  // chaque reinstallation de l'app ou changement de telephone, et la visite
+  // repartait a zero. Le marqueur local reste en secours (OU) : il couvre les
+  // gens deja marques localement, et le cas ou le profil n'est pas encore charge.
+  const walkthroughDejaVu = (email, profileVu) => !!(profileVu || safeStorage.getItem(walkthroughDoneKey(email)) || safeStorage.getItem("hector_walkthrough_done"));
   const [soldeSaveStatus, setSoldeSaveStatus] = useState(""); // "", "saving", "saved", "error"
   const [tvaSaving, setTvaSaving] = useState(false);
   const [factureNumeroDepart, setFactureNumeroDepart] = useState(""); // reprise de numérotation (sauvé au blur)
@@ -1137,7 +1141,7 @@ function AppInner() {
         // État de la connexion bancaire — best effort, n'interrompt rien.
         loadBankStatus();
         // Ouvrir le walkthrough au premier accès de CE compte uniquement
-        if (!walkthroughDejaVu(p.email)) {
+        if (!walkthroughDejaVu(p.email, p.walkthrough_vu)) {
           setShowWalkthrough(true);
         }
       }
@@ -4027,7 +4031,7 @@ function AppInner() {
       loadIntermittentCockpit();
       // Walkthrough intermittent au premier accès (indépendant de loadEverything,
       // qui appelle des endpoints AE pouvant échouer pour un intermittent).
-      if (profile.onboarding_complete && !walkthroughDejaVu(profile.email)) {
+      if (profile.onboarding_complete && !walkthroughDejaVu(profile.email, profile.walkthrough_vu)) {
         setShowWalkthrough(true);
       }
     }
@@ -11169,6 +11173,10 @@ function AppInner() {
           const s = wtSteps[wtStep];
           const closeWalkthrough = () => {
             safeStorage.setItem(walkthroughDoneKey(), "1");
+            // On le retient AUSSI sur le serveur : le local part à la première
+            // réinstallation. Best effort, ne bloque jamais la fermeture.
+            apiFetch("/profile/walkthrough-vu", { method: "POST" }).catch(() => {});
+            setProfile(prev => (prev ? { ...prev, walkthrough_vu: true } : prev));
             setShowWalkthrough(false);
           };
           return (
@@ -15138,6 +15146,10 @@ function AppInner() {
           const s = wtSteps[wtStep];
           const closeWalkthrough = () => {
             safeStorage.setItem(walkthroughDoneKey(), "1");
+            // On le retient AUSSI sur le serveur : le local part à la première
+            // réinstallation. Best effort, ne bloque jamais la fermeture.
+            apiFetch("/profile/walkthrough-vu", { method: "POST" }).catch(() => {});
+            setProfile(prev => (prev ? { ...prev, walkthrough_vu: true } : prev));
             setShowWalkthrough(false);
           };
           return (
