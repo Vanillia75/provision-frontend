@@ -518,7 +518,7 @@ function AppInner() {
   const aDejaDesActivites = (interActivites || []).length > 0;
   useEffect(() => { if (aDejaDesActivites) setInterShowAdd(false); }, [aDejaDesActivites]);
   const [interSaving, setInterSaving] = useState(false);
-  const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+  const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", pas_montant: "", estime: false });
   // Autocomplétion du champ employeur : menu maison des employeurs déjà saisis par l'utilisateur.
   const [empSugOpen, setEmpSugOpen] = useState(false);   // le menu est-il ouvert ?
   const [empSugHover, setEmpSugHover] = useState(-1);     // ligne survolée (surlignage)
@@ -3034,6 +3034,7 @@ function AppInner() {
             nombre,
             employeur: interForm.employeur || null,
             salaire_brut: interForm.salaire_brut !== "" ? parseFloat(String(interForm.salaire_brut).replace(",", ".")) : null,
+            pas_montant: interForm.pas_montant !== "" ? parseFloat(String(interForm.pas_montant).replace(",", ".")) : null,
             estime: !!interForm.estime,
             // Cachet = toujours artiste ; heures = choix de l'utilisateur (ou null) ; autres types = null.
             metier: interForm.type_activite === "cachet_isole" ? "artiste" : (interForm.type_activite === "heures" ? (interMetier || null) : null),
@@ -3044,7 +3045,7 @@ function AppInner() {
       const heuresAjoutees = Math.round(heuresDe({ type_activite: interForm.type_activite, nombre }) * envois.length);
       setInterRepartition("parjour");
       setInterMetier("");
-      setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+      setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", pas_montant: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
       setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
@@ -7944,6 +7945,18 @@ function AppInner() {
                   </div>
                 );
                 })();
+                // PAS prélevé cette année : SOMME des montants réels recopiés des
+                // bulletins (backend). Rien si l'utilisateur n'a rien saisi. Jamais une estimation.
+                const blocPAS = c.pas_preleve && (
+                  <div style={{ background: "linear-gradient(160deg, rgba(159,203,245,0.06), rgba(10,19,34,0.5))", border: "1px solid rgba(159,203,245,0.24)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+                      <span style={{ fontSize: 18 }}>🧾</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>PAS prélevé en {c.pas_preleve.annee}</div>
+                    </div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#9FCBF5", lineHeight: 1.1 }}>{formatEUR(c.pas_preleve.montant)}</div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>D'après tes bulletins de paie. C'est la somme des montants que tu as recopiés, pas une estimation.</div>
+                  </div>
+                );
                 return (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
@@ -8044,6 +8057,7 @@ function AppInner() {
                 </div>
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
+                {!isMobile && blocPAS}
                 </div>
 
 
@@ -8429,6 +8443,7 @@ function AppInner() {
               )}
               {isMobile && blocFrise}
               {isMobile && blocConges}
+              {isMobile && blocPAS}
 
                 </div>{/* ── fin colonne droite ── */}
               </div>
@@ -10143,6 +10158,11 @@ function AppInner() {
                     {/* Salaire brut : seulement pour le travail (sert aux Congés Spectacles + revenus) */}
                     {(interForm.type_activite === "cachet_isole" || interForm.type_activite === "cachet_groupe" || interForm.type_activite === "heures") && (
                       <MontantInput decimales value={interForm.salaire_brut} onChange={v => setInterForm({ ...interForm, salaire_brut: v })} placeholder="Salaire brut € (optionnel, pour tes Congés Spectacles)"
+                        style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    )}
+                    {/* PAS prélevé : donnée réelle recopiée du bulletin, jamais calculée (Loi X). */}
+                    {(interForm.type_activite === "cachet_isole" || interForm.type_activite === "cachet_groupe" || interForm.type_activite === "heures") && (
+                      <MontantInput decimales value={interForm.pas_montant} onChange={v => setInterForm({ ...interForm, pas_montant: v })} placeholder="PAS prélevé € (optionnel, recopie ton bulletin de paie)"
                         style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                     )}
                     {(interForm.type_activite === "arret_maladie_ordinaire" || interForm.type_activite === "arret_paternite") ? (
