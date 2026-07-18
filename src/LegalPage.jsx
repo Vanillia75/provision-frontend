@@ -110,7 +110,7 @@ Pour toute question relative aux présentes CGU : bonjour@montotor.fr
 
 const CONFIDENTIALITE_MD = `# Politique de confidentialité
 
-**Dernière mise à jour : 16 juillet 2026**
+**Dernière mise à jour : 19 juillet 2026**
 
 La présente politique explique comment VANILLIA (SARL), éditrice de TOTOR, collecte, utilise et protège les données personnelles des utilisateurs, conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés.
 
@@ -145,6 +145,7 @@ TOTOR n'utilise pas de cookies publicitaires ni de traceurs tiers à des fins de
 | Réponses de l'assistant conversationnel IA | Exécution du contrat |
 | Sécurité, prévention de la fraude | Intérêt légitime |
 | Amélioration du service | Intérêt légitime |
+| Mesure de l'efficacité de nos propres publicités (le cas échéant) | Intérêt légitime |
 
 ## 4. Destinataires des données et sous-traitants
 
@@ -159,6 +160,7 @@ Vos données peuvent être transmises aux prestataires techniques suivants, stri
 - **Enable Banking** : connexion bancaire optionnelle, en lecture seule, uniquement si vous l'activez, pour synchroniser votre solde. Prestataire agréé dans l'Union européenne (Finlande). Vos identifiants bancaires ne transitent jamais par nos serveurs.
 - **Sentry** : diagnostic technique des erreurs de l'application, sans vos données financières ni votre identité (hébergé dans l'Union européenne).
 - **Google** : authentification, uniquement si vous choisissez la connexion via Google (États-Unis).
+- **Google Ads** : mesure de l'efficacité de nos propres publicités. Si vous arrivez sur le site via une de nos publicités, un identifiant de clic (« gclid ») est enregistré au moment de votre inscription et transmis à Google **uniquement** pour cette mesure. Cette mesure se fait **côté serveur, sans cookie ni traceur publicitaire**. Elle ne sert à aucun profilage ni suivi entre sites (États-Unis).
 - **INSEE** : répertoire Sirene, uniquement pour les recherches de SIRET que vous initiez (France).
 
 Certains de ces prestataires sont situés hors de l'Union européenne. Ces transferts sont encadrés par les clauses contractuelles types de la Commission européenne ou des mécanismes équivalents proposés par ces prestataires.
