@@ -463,6 +463,14 @@ function AppInner() {
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
 
+  // Capture du gclid (clic Google Ads) dès l'arrivée sur le site. On le garde en
+  // local jusqu'à l'inscription, où il part en base — mesure de conversion cote
+  // SERVEUR, SANS cookie ni traceur (Chemin B).
+  useEffect(() => {
+    const g = new URLSearchParams(window.location.search).get("gclid");
+    if (g) safeStorage.setItem("gclid", g);
+  }, []);
+
   // L'URL est la source de vérité. On mémorise le DERNIER choix RÉEL (jamais "choix")
   // pour proposer un « Reprendre → » sur la page de choix — mais JAMAIS de redirection auto.
   useEffect(() => {
@@ -1208,7 +1216,7 @@ function AppInner() {
   function handleGoogleCredential(response) {
     setError("");
     setLoading(true);
-    apiFetch("/auth/google", { method: "POST", body: JSON.stringify({ credential: response.credential }) })
+    apiFetch("/auth/google", { method: "POST", body: JSON.stringify({ credential: response.credential, gclid: safeStorage.getItem("gclid") || null }) })
       .then(data => { clearLocalAccountData(); safeStorage.setItem("token", data.token); setToken(data.token); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -1223,7 +1231,7 @@ function AppInner() {
       const { identity_token, nonce } = await connexionApple();
       const data = await apiFetch("/auth/apple", {
         method: "POST",
-        body: JSON.stringify({ identity_token, nonce }),
+        body: JSON.stringify({ identity_token, nonce, gclid: safeStorage.getItem("gclid") || null }),
       });
       clearLocalAccountData();
       safeStorage.setItem("token", data.token);
@@ -1414,7 +1422,11 @@ function AppInner() {
     try {
       const data = await apiFetch(`/auth/${authMode === "login" ? "login" : "register"}`, {
         method: "POST",
-        body: JSON.stringify({ email: authEmail, password: authPassword }),
+        body: JSON.stringify({
+          email: authEmail, password: authPassword,
+          // gclid capturé à l'arrivée, envoyé UNIQUEMENT à l'inscription (pas au login).
+          ...(authMode === "register" ? { gclid: safeStorage.getItem("gclid") || null } : {}),
+        }),
       });
       clearLocalAccountData();
       safeStorage.setItem("token", data.token);
