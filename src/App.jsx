@@ -5420,6 +5420,14 @@ function AppInner() {
         metier: "intermittente du spectacle",
         note: 5,
       },
+      // JlGlut — avis PUBLIC 5/5 laissé sur l'App Store, récupéré via le flux RSS
+      // Apple le 19/07/2026. Citation VERBATIM, sourcée « App Store », jamais retouchée.
+      {
+        texte: "Grâce à Totor, j'ai enfin compris que mon intermittence était une vraie source de stress. Aujourd'hui, c'est devenu un outil indispensable",
+        prenom: "JlGlut",
+        metier: "sur l'App Store",
+        note: 5,
+      },
     ];
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
