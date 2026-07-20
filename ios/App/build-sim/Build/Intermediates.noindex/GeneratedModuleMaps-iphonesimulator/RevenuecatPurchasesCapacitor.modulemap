@@ -1,4 +1,0 @@
-module RevenuecatPurchasesCapacitor {
-header "RevenuecatPurchasesCapacitor-Swift.h"
-export *
-}

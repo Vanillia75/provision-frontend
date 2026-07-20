@@ -1,9 +1,0 @@
-{
-	"appId": "fr.montotor.ios",
-	"appName": "TOTOR",
-	"webDir": "dist",
-	"packageClassList": [
-		"SignInWithApple",
-		"PurchasesPlugin"
-	]
-}
