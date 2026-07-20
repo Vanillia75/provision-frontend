@@ -29,6 +29,14 @@ if (typeof window !== "undefined") {
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 
+// Vrai UNIQUEMENT dans l'app native (Capacitor iOS/Android), faux sur le web.
+// Sert à n'afficher l'essai gratuit 7 jours QUE dans les stores (l'essai est
+// configuré côté Apple/Google ; le web/Stripe n'a pas d'essai). Sur `main` (web)
+// window.Capacitor n'existe pas → toujours faux, donc le web ne change pas.
+function estNatif() {
+  try { return !!(window.Capacitor?.isNativePlatform?.()); } catch { return false; }
+}
+
 // Collecteur léger des dernières erreurs JS (pour les signalements de bug de l'Aide
 // vivante) : 5 messages max, jamais envoyés sans action explicite de l'utilisateur.
 const dernieresErreursConsole = [];
@@ -93,6 +101,42 @@ const IS_NATIVE_APP = isNativeApp();
 
 // Bannière d'installation réutilisable (s'affiche avant ET après connexion).
 // Props : pwaPrompt (event Android), onInstall, onDismiss, showHelp, compact.
+// Badges « bientôt sur les stores » — HONNÊTE : apps pas encore publiées (iOS en examen,
+// Android en test interne). Annonce sans prétendre. À transformer en vrais liens de
+// téléchargement au lancement (1er octobre). Réutilisable : landings + page abonnement.
+// Lien réel vers la fiche App Store (app publiée le 15/07/2026, bundle fr.montotor.ios).
+const URL_APP_STORE = "https://apps.apple.com/fr/app/totor/id6789915732";
+
+function BadgesBientot({ centre }) {
+  // Jamais dans une app native (absurde d'annoncer les stores DANS l'app). Web uniquement.
+  try { if (window.Capacitor?.isNativePlatform?.()) return null; } catch {}
+  const pill = { display: "inline-flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 11, padding: "9px 15px" };
+  // iOS est EN LIGNE, Android encore en examen : un seul badge est cliquable.
+  // Ne pas repasser Google en « disponible » avant sa publication réelle.
+  const pillLive = { ...pill, background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.45)", textDecoration: "none", cursor: "pointer" };
+  return (
+    <div style={{ marginTop: 20, textAlign: centre ? "center" : "left" }}>
+      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#5A7088", marginBottom: 9 }}>🐾 TOTOR sur mobile</div>
+      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", justifyContent: centre ? "center" : "flex-start" }}>
+        <a href={URL_APP_STORE} target="_blank" rel="noopener noreferrer" style={pillLive}>
+          <i className="ti ti-brand-apple" aria-hidden="true" style={{ fontSize: 22, color: "#5DCAA5" }} />
+          <div style={{ lineHeight: 1.15, textAlign: "left" }}>
+            <div style={{ fontSize: 9.5, color: "#5DCAA5", fontWeight: 600 }}>Télécharger dans</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FFFFFF" }}>l'App Store</div>
+          </div>
+        </a>
+        <div style={pill}>
+          <i className="ti ti-brand-google-play" aria-hidden="true" style={{ fontSize: 21, color: "#E6EDF5" }} />
+          <div style={{ lineHeight: 1.15, textAlign: "left" }}>
+            <div style={{ fontSize: 9.5, color: "#8BA5C0" }}>Bientôt sur</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>Google Play</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
   if (IS_NATIVE_APP) return null; // appli native : déjà « installée », l'invite PWA n'a pas de sens
   if (isStandalonePWA()) return null;
@@ -439,6 +483,14 @@ function AppInner() {
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
 
+  // Capture du gclid (clic Google Ads) dès l'arrivée sur le site. On le garde en
+  // local jusqu'à l'inscription, où il part en base — mesure de conversion cote
+  // SERVEUR, SANS cookie ni traceur (Chemin B).
+  useEffect(() => {
+    const g = new URLSearchParams(window.location.search).get("gclid");
+    if (g) safeStorage.setItem("gclid", g);
+  }, []);
+
   // L'URL est la source de vérité. On mémorise le DERNIER choix RÉEL (jamais "choix")
   // pour proposer un « Reprendre → » sur la page de choix — mais JAMAIS de redirection auto.
   useEffect(() => {
@@ -494,7 +546,7 @@ function AppInner() {
   const aDejaDesActivites = (interActivites || []).length > 0;
   useEffect(() => { if (aDejaDesActivites) setInterShowAdd(false); }, [aDejaDesActivites]);
   const [interSaving, setInterSaving] = useState(false);
-  const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+  const [interForm, setInterForm] = useState({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", pas_montant: "", estime: false });
   // Autocomplétion du champ employeur : menu maison des employeurs déjà saisis par l'utilisateur.
   const [empSugOpen, setEmpSugOpen] = useState(false);   // le menu est-il ouvert ?
   const [empSugHover, setEmpSugHover] = useState(-1);     // ligne survolée (surlignage)
@@ -627,6 +679,7 @@ function AppInner() {
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
   const [rappelUrssafSaving, setRappelUrssafSaving] = useState(false); // toggle du rappel URSSAF (Réglages auto-entrepreneur)
+  const [codeVocal, setCodeVocal] = useState(null);      // {abonne, code, chiffres} : code du jour de la secrétaire vocale (Réglages, abonnés)
   const [avisTexte, setAvisTexte] = useState("");        // « Ton avis compte » (Réglages)
   const [avisConsent, setAvisConsent] = useState(false); // consentement de publication (prénom + métier)
   const [avisSaving, setAvisSaving] = useState(false);
@@ -1117,6 +1170,8 @@ function AppInner() {
     try {
       const p = await apiFetch("/profile");
       setProfile(p);
+      // Code du jour de la secrétaire vocale (abonnés) — best effort, n'interrompt rien.
+      apiFetch("/voice/code").then(setCodeVocal).catch(() => {});
       if (p.prenom != null) setProfilPrenom(p.prenom);
       if (p.nom != null) setProfilNom(p.nom);
       if (p.telephone != null) setProfilTelephone(p.telephone);
@@ -1140,7 +1195,9 @@ function AppInner() {
         setPaieData(paie);
         // État de la connexion bancaire — best effort, n'interrompt rien.
         loadBankStatus();
-        // Ouvrir le walkthrough au premier accès de CE compte uniquement
+        // Ouvrir le walkthrough au premier accès de CE compte uniquement.
+        // `p.walkthrough_vu` vient du serveur : c'est lui qui survit à une
+        // réinstallation, contrairement au marqueur local.
         if (!walkthroughDejaVu(p.email, p.walkthrough_vu)) {
           setShowWalkthrough(true);
         }
@@ -1202,7 +1259,7 @@ function AppInner() {
   function handleGoogleCredential(response) {
     setError("");
     setLoading(true);
-    apiFetch("/auth/google", { method: "POST", body: JSON.stringify({ credential: response.credential }) })
+    apiFetch("/auth/google", { method: "POST", body: JSON.stringify({ credential: response.credential, gclid: safeStorage.getItem("gclid") || null }) })
       .then(data => { clearLocalAccountData(); safeStorage.setItem("token", data.token); setToken(data.token); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
@@ -1386,7 +1443,11 @@ function AppInner() {
     try {
       const data = await apiFetch(`/auth/${authMode === "login" ? "login" : "register"}`, {
         method: "POST",
-        body: JSON.stringify({ email: authEmail, password: authPassword }),
+        body: JSON.stringify({
+          email: authEmail, password: authPassword,
+          // gclid capturé à l'arrivée, envoyé UNIQUEMENT à l'inscription (pas au login).
+          ...(authMode === "register" ? { gclid: safeStorage.getItem("gclid") || null } : {}),
+        }),
       });
       clearLocalAccountData();
       safeStorage.setItem("token", data.token);
@@ -2484,6 +2545,18 @@ function AppInner() {
               </button>
             </div>
 
+            {/* Essai gratuit 7 jours — NATIF SEULEMENT (l'essai est configuré côté
+                Apple/Google ; sur le web/Stripe il n'y a pas d'essai, cf. estNatif). */}
+            {estNatif() && (
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+                <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden="true">🎁</span>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#5DCAA5", lineHeight: 1.3 }}>7 jours gratuits pour essayer</div>
+                  <div style={{ fontSize: 11.5, color: "#9FD9C2", lineHeight: 1.4, marginTop: 2 }}>Annulable en 2 clics, on te prévient avant que ça devienne payant.</div>
+                </div>
+              </div>
+            )}
+
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐶 Je prends le relais</div>
@@ -2513,8 +2586,8 @@ function AppInner() {
               </div>
               {planChoisi === "pionnier" && offresBilling?.pionnier_ouvert ? (
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>44,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/an</span>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 3,75 €/mois, verrouillé à vie · 🐾 Pionnier</div>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>3,75 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 44,99 € par an, verrouillé à vie · 🐾 Pionnier</div>
                 </div>
               ) : planChoisi === "annuel" ? (
                 <div style={{ marginBottom: 4 }}>
@@ -2552,9 +2625,13 @@ function AppInner() {
                 </div>
               ))}
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
-                {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
+                {billingBusy ? "…" : (estNatif() ? "Commencer mes 7 jours gratuits" : "🐶 Je laisse Totor s'en occuper")}
               </button>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>Sans engagement : tu annules quand tu veux, en 2 clics.</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>
+                {estNatif()
+                  ? "Gratuit 7 jours, puis ton abonnement. Sans engagement, annulable quand tu veux."
+                  : "Sans engagement : tu annules quand tu veux, en 2 clics."}
+              </div>
             </div>
           </div>
 
@@ -2585,6 +2662,8 @@ function AppInner() {
           </div>
         </>
       )}
+      {/* Badges mobiles : visibles pour TOUS (gratuit ET abonnés VIP/Stripe) */}
+      <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
     </div>
   );
 
@@ -2830,6 +2909,28 @@ function AppInner() {
           style={{ marginTop: 14, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: (pwdSaving || vide) ? "default" : "pointer", fontFamily: "inherit", opacity: (pwdSaving || vide) ? 0.6 : 1 }}>
           {pwdSaving ? "…" : "Changer mon mot de passe"}
         </button>
+      </div>
+    );
+  }
+
+  // Carte « Ma secrétaire vocale » (Réglages) : le code du jour à taper au clavier
+  // si le numéro de l'appelant n'est pas reconnu. Affichée UNIQUEMENT aux abonnés.
+  function renderCodeVocal(dark = true) {
+    if (!codeVocal?.abonne || !codeVocal?.code) return null;
+    const carte = dark
+      ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
+      : { ...S.card, marginBottom: 16 };
+    return (
+      <div style={carte}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🎙️ Ma secrétaire vocale</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+          Quand tu appelles TOTOR, si ton numéro n'est pas reconnu, tape ce code à six chiffres sur le clavier de ton téléphone. Il change chaque jour.
+        </div>
+        <div style={{ display: "inline-flex", gap: 8, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 10, padding: "12px 18px" }}>
+          {String(codeVocal.code).split("").map((ch, i) => (
+            <span key={i} style={{ fontSize: 26, fontWeight: 800, color: "#5DCAA5", fontVariantNumeric: "tabular-nums", minWidth: 18, textAlign: "center", letterSpacing: 1 }}>{ch}</span>
+          ))}
+        </div>
       </div>
     );
   }
@@ -3273,6 +3374,7 @@ function AppInner() {
             nombre,
             employeur: interForm.employeur || null,
             salaire_brut: interForm.salaire_brut !== "" ? parseFloat(String(interForm.salaire_brut).replace(",", ".")) : null,
+            pas_montant: interForm.pas_montant !== "" ? parseFloat(String(interForm.pas_montant).replace(",", ".")) : null,
             estime: !!interForm.estime,
             // Cachet = toujours artiste ; heures = choix de l'utilisateur (ou null) ; autres types = null.
             metier: interForm.type_activite === "cachet_isole" ? "artiste" : (interForm.type_activite === "heures" ? (interMetier || null) : null),
@@ -3283,7 +3385,7 @@ function AppInner() {
       const heuresAjoutees = Math.round(heuresDe({ type_activite: interForm.type_activite, nombre }) * envois.length);
       setInterRepartition("parjour");
       setInterMetier("");
-      setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", estime: false });
+      setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", pas_montant: "", estime: false });
       setInterShowAdd(false);
       await loadIntermittentCockpit();
       setHectorPop(true); setTimeout(() => setHectorPop(false), 650);
@@ -5645,12 +5747,34 @@ function AppInner() {
     // Témoignages de testeurs — À REMPLIR UNIQUEMENT avec de vraies citations
     // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
     // Format : { texte: "…", prenom: "…", metier: "…" }
-    const TEMOIGNAGES = [];
+    const TEMOIGNAGES = [
+      // Héloïse — avis reçu le 13/07/2026 par le circuit /avis, consentement
+      // publication OUI (prénom + métier). Citation VERBATIM, jamais retouchée.
+      // note : donnée par email à Camille (5/5, réponse au Reply-To, preuve conservée).
+      {
+        texte: "C'est la première fois que je ne stresse plus pour le calcul de mes heures. Je comprends enfin mes cotisations et, surtout, je sens que je suis vraiment accompagné au quotidien. Une vraie tranquillité d'esprit. Merci TOTOR ! 🐾",
+        prenom: "Héloïse",
+        metier: "intermittente du spectacle",
+        note: 5,
+      },
+      // JlGlut — avis PUBLIC 5/5 laissé sur l'App Store, récupéré via le flux RSS
+      // Apple le 19/07/2026. Citation VERBATIM, sourcée « App Store », jamais retouchée.
+      {
+        texte: "Grâce à Totor, j'ai enfin compris que mon intermittence était une vraie source de stress. Aujourd'hui, c'est devenu un outil indispensable",
+        prenom: "JlGlut",
+        metier: "sur l'App Store",
+        note: 5,
+      },
+    ];
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
     const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
     const badgeEstim = { display: "inline-flex", alignItems: "center", gap: 4, background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.32)", color: "#F0C070", borderRadius: 20, padding: "3px 9px", fontSize: 9.5, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" };
     const lienDiscret = { display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", color: "#5DCAA5", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", padding: 0, marginTop: 14 };
+    // Badges « bientôt sur les stores » — HONNÊTE : les apps ne sont pas encore publiées
+    // (iOS en examen, Android en test interne). On annonce, on ne prétend pas. À remplacer
+    // par de vrais liens de téléchargement au lancement (1er octobre).
+    const badgesBientot = <BadgesBientot />;
 
     // Compteur circulaire 444h/507h (hero + scroll 01) — même chiffre partout (Loi X).
     const compteurCirculaire = (ring) => {
@@ -5759,6 +5883,7 @@ function AppInner() {
                   <i className="ti ti-paw" style={{ marginRight: 6, fontStyle: "normal" }} />Pourquoi un chien ? →
                 </button>
               </div>
+              <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
             </div>
           </div>
         </div>
@@ -5816,6 +5941,9 @@ function AppInner() {
             </div>
             {/* Colonne droite — titre serif + sous-titre vert + texte + CTA */}
             <div>
+              <div style={{ fontSize: isMobile ? 11.5 : 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#5DCAA5", marginBottom: 14 }}>
+                L'app pensée pour devenir le réflexe n°1 des auto-entrepreneurs
+              </div>
               <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 35 : 54, fontWeight: 700, lineHeight: 1.06, margin: "0 0 22px", color: "white" }}>
                 Tu sais vraiment ce que tu peux dépenser&nbsp;?
               </h1>
@@ -5829,6 +5957,7 @@ function AppInner() {
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
+              {badgesBientot}
             </div>
           </section>
 
@@ -6074,6 +6203,9 @@ function AppInner() {
           </div>
           {/* Colonne droite — titre serif énorme + sous-titre vert + texte + CTA */}
           <div>
+            <div style={{ fontSize: isMobile ? 11.5 : 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#5DCAA5", marginBottom: 14 }}>
+              L'app pensée pour devenir le réflexe n°1 des intermittents
+            </div>
             <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 39 : 60, fontWeight: 700, lineHeight: 1.04, margin: "0 0 22px", color: "white" }}>
               Tu te demandes<br />si tu vas renouveler&nbsp;?
             </h1>
@@ -6087,6 +6219,7 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
+              {badgesBientot}
           </div>
         </section>
 
@@ -6256,7 +6389,13 @@ function AppInner() {
             <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
               {TEMOIGNAGES.map((t, i) => (
                 <div key={i} style={{ textAlign: "center" }}>
-                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 19 : 24, color: "#EAF2FB", lineHeight: 1.5, fontStyle: "italic", margin: "0 0 12px" }}>« {t.texte} »</p>
+                  {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
+                  {t.note >= 1 && (
+                    <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 15, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
+                      {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
+                    </div>
+                  )}
+                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15.5 : 18, color: "#C9D8E8", lineHeight: 1.65, fontStyle: "italic", margin: "0 auto 12px", maxWidth: 560 }}>« {t.texte} »</p>
                   <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>— {t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
                 </div>
               ))}
@@ -8177,6 +8316,18 @@ function AppInner() {
                   </div>
                 );
                 })();
+                // PAS prélevé cette année : SOMME des montants réels recopiés des
+                // bulletins (backend). Rien si l'utilisateur n'a rien saisi. Jamais une estimation.
+                const blocPAS = c.pas_preleve && (
+                  <div style={{ background: "linear-gradient(160deg, rgba(159,203,245,0.06), rgba(10,19,34,0.5))", border: "1px solid rgba(159,203,245,0.24)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+                      <span style={{ fontSize: 18 }}>🧾</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>PAS prélevé en {c.pas_preleve.annee}</div>
+                    </div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#9FCBF5", lineHeight: 1.1 }}>{formatEUR(c.pas_preleve.montant)}</div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>D'après tes bulletins de paie. C'est la somme des montants que tu as recopiés, pas une estimation.</div>
+                  </div>
+                );
                 return (
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
@@ -8277,6 +8428,7 @@ function AppInner() {
                 </div>
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
+                {!isMobile && blocPAS}
                 </div>
 
 
@@ -8662,6 +8814,7 @@ function AppInner() {
               )}
               {isMobile && blocFrise}
               {isMobile && blocConges}
+              {isMobile && blocPAS}
 
                 </div>{/* ── fin colonne droite ── */}
               </div>
@@ -10378,6 +10531,11 @@ function AppInner() {
                       <MontantInput decimales value={interForm.salaire_brut} onChange={v => setInterForm({ ...interForm, salaire_brut: v })} placeholder="Salaire brut € (optionnel, pour tes Congés Spectacles)"
                         style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                     )}
+                    {/* PAS prélevé : donnée réelle recopiée du bulletin, jamais calculée (Loi X). */}
+                    {(interForm.type_activite === "cachet_isole" || interForm.type_activite === "cachet_groupe" || interForm.type_activite === "heures") && (
+                      <MontantInput decimales value={interForm.pas_montant} onChange={v => setInterForm({ ...interForm, pas_montant: v })} placeholder="PAS prélevé € (optionnel, recopie ton bulletin de paie)"
+                        style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    )}
                     {(interForm.type_activite === "arret_maladie_ordinaire" || interForm.type_activite === "arret_paternite") ? (
                       <div style={{ display: "flex", alignItems: "flex-start", gap: 7, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 8, padding: "9px 11px" }}>
                         <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 14, flexShrink: 0, marginTop: 1 }} />
@@ -10847,6 +11005,7 @@ function AppInner() {
                 </div>
               </div>
 
+              {renderCodeVocal()}
               {renderChangePassword()}
 
               {/* Une question ? — le contact humain, bien visible */}
@@ -14683,6 +14842,7 @@ function AppInner() {
               </p>
             </div>
 
+            {renderCodeVocal(false)}
             {renderChangePassword(false)}
 
             <div style={{ ...S.card, marginTop: 14 }}>
