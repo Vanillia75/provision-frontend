@@ -5857,6 +5857,9 @@ function AppInner() {
           </div>
           {/* Colonne droite — titre serif énorme + sous-titre vert + texte + CTA */}
           <div>
+            <div style={{ fontSize: isMobile ? 11.5 : 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#5DCAA5", marginBottom: 14 }}>
+              L'app pensée pour devenir le réflexe n°1 des intermittents
+            </div>
             <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 39 : 60, fontWeight: 700, lineHeight: 1.04, margin: "0 0 22px", color: "white" }}>
               Tu te demandes<br />si tu vas renouveler&nbsp;?
             </h1>
