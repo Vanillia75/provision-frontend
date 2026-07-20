@@ -5597,6 +5597,9 @@ function AppInner() {
             </div>
             {/* Colonne droite — titre serif + sous-titre vert + texte + CTA */}
             <div>
+              <div style={{ fontSize: isMobile ? 11.5 : 12.5, fontWeight: 700, letterSpacing: 1.5, textTransform: "uppercase", color: "#5DCAA5", marginBottom: 14 }}>
+                L'app pensée pour devenir le réflexe n°1 des auto-entrepreneurs
+              </div>
               <h1 style={{ fontFamily: SERIF, fontSize: isMobile ? 35 : 54, fontWeight: 700, lineHeight: 1.06, margin: "0 0 22px", color: "white" }}>
                 Tu sais vraiment ce que tu peux dépenser&nbsp;?
               </h1>
