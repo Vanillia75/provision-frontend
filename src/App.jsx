@@ -28,6 +28,14 @@ if (typeof window !== "undefined") {
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 
+// Vrai UNIQUEMENT dans l'app native (Capacitor iOS/Android), faux sur le web.
+// Sert à n'afficher l'essai gratuit 7 jours QUE dans les stores (l'essai est
+// configuré côté Apple/Google ; le web/Stripe n'a pas d'essai). Sur `main` (web)
+// window.Capacitor n'existe pas → toujours faux, donc le web ne change pas.
+function estNatif() {
+  try { return !!(window.Capacitor?.isNativePlatform?.()); } catch { return false; }
+}
+
 // Collecteur léger des dernières erreurs JS (pour les signalements de bug de l'Aide
 // vivante) : 5 messages max, jamais envoyés sans action explicite de l'utilisateur.
 const dernieresErreursConsole = [];
@@ -2259,6 +2267,18 @@ function AppInner() {
               </button>
             </div>
 
+            {/* Essai gratuit 7 jours — NATIF SEULEMENT (l'essai est configuré côté
+                Apple/Google ; sur le web/Stripe il n'y a pas d'essai, cf. estNatif). */}
+            {estNatif() && (
+              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+                <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden="true">🎁</span>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#5DCAA5", lineHeight: 1.3 }}>7 jours gratuits pour essayer</div>
+                  <div style={{ fontSize: 11.5, color: "#9FD9C2", lineHeight: 1.4, marginTop: 2 }}>Annulable en 2 clics, on te prévient avant que ça devienne payant.</div>
+                </div>
+              </div>
+            )}
+
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐶 Je prends le relais</div>
@@ -2327,9 +2347,13 @@ function AppInner() {
                 </div>
               ))}
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
-                {billingBusy ? "…" : "🐶 Je laisse Totor s'en occuper"}
+                {billingBusy ? "…" : (estNatif() ? "Commencer mes 7 jours gratuits" : "🐶 Je laisse Totor s'en occuper")}
               </button>
-              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>Sans engagement : tu annules quand tu veux, en 2 clics.</div>
+              <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>
+                {estNatif()
+                  ? "Gratuit 7 jours, puis ton abonnement. Sans engagement, annulable quand tu veux."
+                  : "Sans engagement : tu annules quand tu veux, en 2 clics."}
+              </div>
             </div>
           </div>
 
