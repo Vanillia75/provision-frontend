@@ -659,6 +659,7 @@ function AppInner() {
   const [resendVerifStatus, setResendVerifStatus] = useState(""); // "", "sending", "sent"
   const [rappelActuSaving, setRappelActuSaving] = useState(false); // toggle du rappel d'actualisation (Réglages intermittent)
   const [rappelUrssafSaving, setRappelUrssafSaving] = useState(false); // toggle du rappel URSSAF (Réglages auto-entrepreneur)
+  const [codeVocal, setCodeVocal] = useState(null);      // {abonne, code, chiffres} : code du jour de la secrétaire vocale (Réglages, abonnés)
   const [avisTexte, setAvisTexte] = useState("");        // « Ton avis compte » (Réglages)
   const [avisConsent, setAvisConsent] = useState(false); // consentement de publication (prénom + métier)
   const [avisSaving, setAvisSaving] = useState(false);
@@ -1149,6 +1150,8 @@ function AppInner() {
     try {
       const p = await apiFetch("/profile");
       setProfile(p);
+      // Code du jour de la secrétaire vocale (abonnés) — best effort, n'interrompt rien.
+      apiFetch("/voice/code").then(setCodeVocal).catch(() => {});
       if (p.prenom != null) setProfilPrenom(p.prenom);
       if (p.nom != null) setProfilNom(p.nom);
       if (p.telephone != null) setProfilTelephone(p.telephone);
@@ -2603,6 +2606,28 @@ function AppInner() {
           style={{ marginTop: 14, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: (pwdSaving || vide) ? "default" : "pointer", fontFamily: "inherit", opacity: (pwdSaving || vide) ? 0.6 : 1 }}>
           {pwdSaving ? "…" : "Changer mon mot de passe"}
         </button>
+      </div>
+    );
+  }
+
+  // Carte « Ma secrétaire vocale » (Réglages) : le code du jour à taper au clavier
+  // si le numéro de l'appelant n'est pas reconnu. Affichée UNIQUEMENT aux abonnés.
+  function renderCodeVocal(dark = true) {
+    if (!codeVocal?.abonne || !codeVocal?.code) return null;
+    const carte = dark
+      ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
+      : { ...S.card, marginBottom: 16 };
+    return (
+      <div style={carte}>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🎙️ Ma secrétaire vocale</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+          Quand tu appelles TOTOR, si ton numéro n'est pas reconnu, tape ce code à six chiffres sur le clavier de ton téléphone. Il change chaque jour.
+        </div>
+        <div style={{ display: "inline-flex", gap: 8, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 10, padding: "12px 18px" }}>
+          {String(codeVocal.code).split("").map((ch, i) => (
+            <span key={i} style={{ fontSize: 26, fontWeight: 800, color: "#5DCAA5", fontVariantNumeric: "tabular-nums", minWidth: 18, textAlign: "center", letterSpacing: 1 }}>{ch}</span>
+          ))}
+        </div>
       </div>
     );
   }
@@ -10660,6 +10685,7 @@ function AppInner() {
                 </div>
               </div>
 
+              {renderCodeVocal()}
               {renderChangePassword()}
 
               {/* Une question ? — le contact humain, bien visible */}
@@ -14494,6 +14520,7 @@ function AppInner() {
               </p>
             </div>
 
+            {renderCodeVocal(false)}
             {renderChangePassword(false)}
 
             <div style={{ ...S.card, marginTop: 14 }}>
