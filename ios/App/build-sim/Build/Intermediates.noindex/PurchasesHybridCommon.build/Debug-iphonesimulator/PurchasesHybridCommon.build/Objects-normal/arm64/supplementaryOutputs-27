@@ -1,0 +1,23 @@
+{
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/VirtualCurrencies+HybridAdditions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrencies+HybridAdditions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrencies+HybridAdditions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrencies+HybridAdditions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrencies+HybridAdditions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrencies+HybridAdditions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/VirtualCurrency+HybridAdditions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrency+HybridAdditions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrency+HybridAdditions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrency+HybridAdditions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrency+HybridAdditions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/VirtualCurrency+HybridAdditions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/WinBackOffer+HybridAdditions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/WinBackOffer+HybridAdditions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/WinBackOffer+HybridAdditions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/WinBackOffer+HybridAdditions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/WinBackOffer+HybridAdditions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/WinBackOffer+HybridAdditions.swiftdeps"
+  }
+}

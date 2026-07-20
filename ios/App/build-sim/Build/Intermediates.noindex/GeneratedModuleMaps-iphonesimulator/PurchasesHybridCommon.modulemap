@@ -1,0 +1,4 @@
+module PurchasesHybridCommon {
+header "PurchasesHybridCommon-Swift.h"
+export *
+}

@@ -1,0 +1,177 @@
+{
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/Events/FeatureEvents/StoredFeatureEventSerializer.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/StoredFeatureEventSerializer.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/StoredFeatureEventSerializer.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/StoredFeatureEventSerializer.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/StoredFeatureEventSerializer.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/StoredFeatureEventSerializer.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/Events/Networking/EventsHTTPRequestPath.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/EventsHTTPRequestPath.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/EventsHTTPRequestPath.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/EventsHTTPRequestPath.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/EventsHTTPRequestPath.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/EventsHTTPRequestPath.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Array+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Array+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Array+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Array+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Array+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Array+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/AsyncExtensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/AsyncExtensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/AsyncExtensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/AsyncExtensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/AsyncExtensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/AsyncExtensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Data+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Data+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Data+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Data+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Data+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Data+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Date+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Date+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Date+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Date+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Date+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Date+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Decoder+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Decoder+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Decoder+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Decoder+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Decoder+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Decoder+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Dictionary+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Dictionary+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Dictionary+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Dictionary+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Dictionary+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Dictionary+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/DispatchTimeInterval+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/DispatchTimeInterval+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/DispatchTimeInterval+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/DispatchTimeInterval+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/DispatchTimeInterval+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/DispatchTimeInterval+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Error+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Error+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Error+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Error+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Error+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Error+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Integer+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Integer+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Integer+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Integer+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Integer+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Integer+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Locale+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Locale+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Locale+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Locale+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Locale+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Locale+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/OperationQueue+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/OperationQueue+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/OperationQueue+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/OperationQueue+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/OperationQueue+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/OperationQueue+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Operators+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Operators+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Operators+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Operators+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Operators+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Operators+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Optional+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Optional+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Optional+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Optional+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Optional+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Optional+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Result+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Result+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Result+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Result+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Result+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Result+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/Set+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Set+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Set+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Set+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Set+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/Set+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/String+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/String+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/String+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/String+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/String+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/String+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/TimeInterval+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/TimeInterval+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/TimeInterval+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/TimeInterval+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/TimeInterval+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/TimeInterval+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/UIApplication+RCExtensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UIApplication+RCExtensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UIApplication+RCExtensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UIApplication+RCExtensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UIApplication+RCExtensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UIApplication+RCExtensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/FoundationExtensions/UserDefaults+Extensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UserDefaults+Extensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UserDefaults+Extensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UserDefaults+Extensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UserDefaults+Extensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/UserDefaults+Extensions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/Generated/ErrorCode.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/ErrorCode.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/ErrorCode.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/ErrorCode.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/ErrorCode.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/ErrorCode.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/Identity/CustomerInfo+ActiveDates.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+ActiveDates.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+ActiveDates.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+ActiveDates.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+ActiveDates.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+ActiveDates.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/Identity/CustomerInfo+NonSubscriptions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+NonSubscriptions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+NonSubscriptions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+NonSubscriptions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+NonSubscriptions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo+NonSubscriptions.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-ios-spm/Sources/Identity/CustomerInfo.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/RevenueCat.build/Debug-iphonesimulator/RevenueCat.build/Objects-normal/arm64/CustomerInfo.swiftdeps"
+  }
+}

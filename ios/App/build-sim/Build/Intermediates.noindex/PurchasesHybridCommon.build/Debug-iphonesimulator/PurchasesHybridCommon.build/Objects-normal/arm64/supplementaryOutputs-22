@@ -1,0 +1,30 @@
+{
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/ErrorContainer.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/ErrorContainer.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/ErrorContainer.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/ErrorContainer.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/ErrorContainer.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/ErrorContainer.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/FatalErrorUtil.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/FatalErrorUtil.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/FatalErrorUtil.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/FatalErrorUtil.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/FatalErrorUtil.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/FatalErrorUtil.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/IOSAPIAvailabilityChecker.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IOSAPIAvailabilityChecker.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IOSAPIAvailabilityChecker.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IOSAPIAvailabilityChecker.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IOSAPIAvailabilityChecker.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IOSAPIAvailabilityChecker.swiftdeps"
+  },
+  "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/SourcePackages/checkouts/purchases-hybrid-common/ios/PurchasesHybridCommon/PurchasesHybridCommon/IntroEligibility+HybridExtensions.swift" : {
+    "const-values" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IntroEligibility+HybridExtensions.swiftconstvalues",
+    "dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IntroEligibility+HybridExtensions.d",
+    "diagnostics" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IntroEligibility+HybridExtensions.dia",
+    "object" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IntroEligibility+HybridExtensions.o",
+    "swift-dependencies" : "/Users/heloisegardereau/Projets/provision-frontend/ios/App/build-sim/Build/Intermediates.noindex/PurchasesHybridCommon.build/Debug-iphonesimulator/PurchasesHybridCommon.build/Objects-normal/arm64/IntroEligibility+HybridExtensions.swiftdeps"
+  }
+}
