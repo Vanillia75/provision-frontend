@@ -3,6 +3,8 @@
     { "source": "/ae", "destination": "/auto-entrepreneur", "statusCode": 301 }
   ],
   "rewrites": [
+    { "source": "/devis/:path*", "destination": "https://provision-backend-production.up.railway.app/devis/:path*" },
+    { "source": "/paiement/:path*", "destination": "https://provision-backend-production.up.railway.app/paiement/:path*" },
     { "source": "/guides", "destination": "/guides/index.html" },
     { "source": "/guides/", "destination": "/guides/index.html" },
     { "source": "/intermittent", "destination": "/intermittent.html" },

@@ -762,9 +762,13 @@ function AppInner() {
   }
 
   useEffect(() => {
-    // Contacts chargés aussi sur Factures et Devis : ils servent au pré-remplissage
-    // des formulaires (la promesse de la page Contacts).
-    if ((nav === "contacts" || nav === "factures" || nav === "devis") && token) loadContacts();
+    // Contacts chargés aussi sur Factures, Devis et Frais : ils servent au
+    // pré-remplissage des formulaires (la promesse de la page Contacts).
+    if ((nav === "contacts" || nav === "factures" || nav === "devis" || nav === "frais") && token) loadContacts();
+    // État de l'encaissement en ligne : Réglages + bannières Factures/Devis.
+    if ((nav === "profil" || nav === "factures" || nav === "devis") && token) {
+      apiFetch("/billing/connect/status").then(setConnectInfo).catch(() => {});
+    }
   }, [nav, token]);
 
   // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
@@ -847,7 +851,7 @@ function AppInner() {
   const [parlerType, setParlerType] = useState("achat");
   const [parlerVerdict, setParlerVerdict] = useState(null);
   const [parlerPourquoi, setParlerPourquoi] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "" });
+  const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "", client_nom: "" });
   const [uploadingExpenseFile, setUploadingExpenseFile] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [showNewFacture, setShowNewFacture] = useState(false);
@@ -871,6 +875,48 @@ function AppInner() {
   const [sendQuoteError, setSendQuoteError] = useState("");
   const [sendQuoteMessage, setSendQuoteMessage] = useState("");
   const [convertingQuote, setConvertingQuote] = useState(false);
+
+  // ─── Encaissement en ligne (Stripe Connect de l'utilisateur) ───
+  const [connectInfo, setConnectInfo] = useState(null);   // {configure, actif, dossier_complet}
+  const [connectBusy, setConnectBusy] = useState(false);
+
+  async function activerEncaissement() {
+    setConnectBusy(true);
+    try {
+      const r = await apiFetch("/billing/connect/onboarding", { method: "POST" });
+      if (r.url) window.open(r.url, "_blank");   // formulaire hébergé par Stripe (KYC)
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setConnectBusy(false);
+    }
+  }
+
+  // Bannière « fais-toi payer en ligne » sur Factures et Devis : LE banger de la
+  // MAJ, mis en avant là où il sert. Cachée une fois l'encaissement actif (le
+  // bouton « Payer en ligne » part alors tout seul avec chaque facture).
+  function renderBanniereEncaissement() {
+    if (!connectInfo || connectInfo.actif) return null;
+    const enCours = connectInfo.configure;
+    return (
+      <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "16px 18px", marginBottom: 16, display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 26 }} aria-hidden="true">💶</span>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#F8FAFC" }}>
+            {enCours ? "Ton encaissement en ligne est presque prêt" : "Nouveau : fais-toi payer en ligne"}
+          </div>
+          <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 3, lineHeight: 1.5 }}>
+            {enCours
+              ? "Il reste des informations à donner à Stripe, puis tes factures partiront avec le bouton « Payer en ligne »."
+              : "Tes clients paient tes factures par carte ou prélèvement, l'argent arrive directement sur ton compte. Zéro commission TOTOR."}
+          </div>
+        </div>
+        <button style={{ ...S.btnPrimary, whiteSpace: "nowrap" }} onClick={activerEncaissement} disabled={connectBusy}>
+          {connectBusy ? "…" : enCours ? "Reprendre mon dossier" : "Activer en 5 minutes"}
+        </button>
+      </div>
+    );
+  }
 
   const [onboardingSiretStatus, setOnboardingSiretStatus] = useState(""); // "", "loading", "success", "error"
   const [onboardingSiretMessage, setOnboardingSiretMessage] = useState("");
@@ -2066,8 +2112,8 @@ function AppInner() {
     revenus: ["Je peux saisir des mois passés ?", "Facturé ou encaissé : je note quoi ?"],
     frais: ["Comment scanner une facture de dépense ?", "Mes frais changent quoi dans mes chiffres ?"],
     salaire: ["Comment marche la Paie de Totor ?", "C'est quoi prudent, recommandé, maximum ?"],
-    factures: ["Comment marchent les relances automatiques ?", "Comment marquer une facture payée ?"],
-    devis: ["Comment faire un devis ?", "Comment transformer un devis en facture ?"],
+    factures: ["Comment me faire payer en ligne ?", "Comment marchent les relances automatiques ?", "Comment marquer une facture payée ?"],
+    devis: ["Comment faire signer mon devis en ligne ?", "Comment faire un devis ?", "Comment transformer un devis en facture ?"],
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
     abonnement: ["Que donne le Premium ?", "Comment activer un code ?"],
@@ -4928,10 +4974,11 @@ function AppInner() {
           montant,
           categorie: expenseForm.categorie,
           description: expenseForm.description || null,
+          client_nom: (expenseForm.client_nom || "").trim() || null,
         }),
       });
       if (montant > 0) addHectorMessage(`Frais de ${formatEUR(montant)} enregistré. Je l'ai déduit de ton disponible. Chaque euro que je connais, c'est un euro que tu ne perdras pas.`, "#8BA5C0");
-      setExpenseForm({ date: "", montant: "", categorie: "autre", description: "" });
+      setExpenseForm({ date: "", montant: "", categorie: "autre", description: "", client_nom: "" });
       setShowAddExpense(false);
       await loadExpenses();
       await loadEverything();
@@ -13961,6 +14008,8 @@ function AppInner() {
               </div>
             )}
 
+            {renderBanniereEncaissement()}
+
             {showNewFacture && (
               <div style={{ ...S.card, marginBottom: 16 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500, color: "#E6EDF5" }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
@@ -14206,10 +14255,25 @@ function AppInner() {
                       )}
                     </div>
 
+                    {/* Prélèvement SEPA parti mais pas encore confirmé par la banque (~7 j). */}
+                    {inv.paiement_en_cours && inv.statut !== "payee" && (
+                      <div style={{ background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12.5, color: "#854F0B" }}>
+                        ⏳ Prélèvement SEPA en cours : la banque confirme sous quelques jours, la facture passera « payée » toute seule.
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <button style={S.btnPrimary} onClick={() => handleViewInvoicePdf(inv)} disabled={loadingPdf}>
                         <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />{loadingPdf ? "Génération…" : "Voir / Télécharger le PDF"}
                       </button>
+                      {inv.payment_token && inv.statut !== "payee" && (
+                        <button style={S.btnSecondary} onClick={() => {
+                          navigator.clipboard?.writeText(`https://www.montotor.fr/paiement/${inv.payment_token}`);
+                          setToastContent({ msg: "Lien de paiement copié", icon: "ti-link" });
+                          setSavedToast(true); setTimeout(() => setSavedToast(false), 2200);
+                        }}>
+                          <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Copier le lien de paiement
+                        </button>
+                      )}
                       <button style={S.btnSecondary} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>
                         <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
                       </button>
@@ -14237,6 +14301,8 @@ function AppInner() {
                 <div style={S.kpiCard}><span style={S.kpiLabel}>Taux de conversion</span><span style={S.kpiValue}>{quotesSummary.taux_conversion !== null ? `${quotesSummary.taux_conversion}%` : "—"}</span></div>
               </div>
             )}
+
+            {renderBanniereEncaissement()}
 
             {showNewQuote && (
               <div style={{ ...S.card, marginBottom: 16 }}>
@@ -14401,7 +14467,25 @@ function AppInner() {
                       <button style={S.btnPrimary} onClick={() => handleViewQuotePdf(q)} disabled={loadingPdf}>
                         <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />{loadingPdf ? "Génération…" : "Voir / Télécharger le PDF"}
                       </button>
+                      {q.signature_token && !q.signe_le && (
+                        <button style={S.btnSecondary} onClick={() => {
+                          navigator.clipboard?.writeText(`https://www.montotor.fr/devis/${q.signature_token}`);
+                          setToastContent({ msg: "Lien d'acceptation copié", icon: "ti-link" });
+                          setSavedToast(true); setTimeout(() => setSavedToast(false), 2200);
+                        }}>
+                          <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Copier le lien d'acceptation
+                        </button>
+                      )}
                     </div>
+
+                    {/* Signature en ligne : la preuve enregistrée (email + horodatage + empreinte). */}
+                    {q.signe_le && (
+                      <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 12.5, color: "#0F6E56", lineHeight: 1.5 }}>
+                        <strong>✍️ Accepté en ligne le {formatDate(q.signe_le)}</strong>
+                        {q.signe_email ? <> par {q.signe_email}</> : null}
+                        <span style={{ color: "#4A8E77" }}> · preuve horodatée conservée (empreinte du document, adresse IP)</span>
+                      </div>
+                    )}
 
                     {q.converted_invoice_id ? (
                       <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
@@ -14524,6 +14608,8 @@ function AppInner() {
                       {CATEGORIES_FRAIS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
                     <input style={S.input} type="text" placeholder="Description (optionnel, ex : Adobe Creative Cloud)" value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} />
+                    <input style={S.input} type="text" placeholder="Client ou projet lié (optionnel)" value={expenseForm.client_nom} onChange={e => setExpenseForm({ ...expenseForm, client_nom: e.target.value })} />
+                    {renderSuggestionsContacts(expenseForm, setExpenseForm)}
                     <div style={{ display: "flex", gap: 10 }}>
                       <button style={S.btnPrimary} type="submit">Ajouter</button>
                       <button type="button" style={S.btnSecondary} onClick={() => setShowAddExpense(false)}>Annuler</button>
@@ -14553,7 +14639,7 @@ function AppInner() {
                       <div style={{ fontSize: 14, fontWeight: 500, color: "#E6EDF5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {exp.description || labelCategorie(exp.categorie)}
                       </div>
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{formatDate(exp.date)}</div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{formatDate(exp.date)}{exp.client_nom ? ` · ${exp.client_nom}` : ""}</div>
                     </div>
                     <span style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{labelCategorie(exp.categorie)}</span>
                     <span style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5", minWidth: 60, textAlign: "right", flexShrink: 0 }}>{formatEUR(exp.montant)}</span>
@@ -14850,6 +14936,33 @@ function AppInner() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>💶 Encaissement en ligne</div>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "-8px 0 12px", lineHeight: 1.55 }}>
+                Tes clients paient tes factures en ligne (carte ou prélèvement SEPA) et l'argent arrive directement
+                sur ton compte : il ne passe jamais par TOTOR, et TOTOR ne prend aucune commission. Seuls les frais
+                Stripe s'appliquent (carte : 1,5 % + 0,25 € · prélèvement SEPA : 0,35 €).
+              </p>
+              {connectInfo?.actif ? (
+                <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#0F6E56", fontWeight: 600 }}>
+                  ✓ Actif : tes prochaines factures envoyées incluront le bouton « Payer en ligne ».
+                </div>
+              ) : connectInfo?.configure ? (
+                <>
+                  <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: "0 0 10px" }}>
+                    ⏳ Ton dossier est chez Stripe. S'il te reste des informations à donner, reprends-le ci-dessous.
+                  </p>
+                  <button style={S.btnSecondary} onClick={activerEncaissement} disabled={connectBusy}>
+                    {connectBusy ? "…" : "Reprendre mon dossier Stripe"}
+                  </button>
+                </>
+              ) : (
+                <button style={S.btnPrimary} onClick={activerEncaissement} disabled={connectBusy}>
+                  {connectBusy ? "…" : "Activer l'encaissement en ligne"}
+                </button>
+              )}
             </div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
