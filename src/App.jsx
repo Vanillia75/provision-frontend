@@ -14104,7 +14104,25 @@ function AppInner() {
                       <button style={S.btnPrimary} onClick={() => handleViewQuotePdf(q)} disabled={loadingPdf}>
                         <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />{loadingPdf ? "Génération…" : "Voir / Télécharger le PDF"}
                       </button>
+                      {q.signature_token && !q.signe_le && (
+                        <button style={S.btnSecondary} onClick={() => {
+                          navigator.clipboard?.writeText(`https://www.montotor.fr/devis/${q.signature_token}`);
+                          setToastContent({ msg: "Lien d'acceptation copié", icon: "ti-link" });
+                          setSavedToast(true); setTimeout(() => setSavedToast(false), 2200);
+                        }}>
+                          <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Copier le lien d'acceptation
+                        </button>
+                      )}
                     </div>
+
+                    {/* Signature en ligne : la preuve enregistrée (email + horodatage + empreinte). */}
+                    {q.signe_le && (
+                      <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "12px 16px", marginBottom: 16, fontSize: 12.5, color: "#0F6E56", lineHeight: 1.5 }}>
+                        <strong>✍️ Accepté en ligne le {formatDate(q.signe_le)}</strong>
+                        {q.signe_email ? <> par {q.signe_email}</> : null}
+                        <span style={{ color: "#4A8E77" }}> · preuve horodatée conservée (empreinte du document, adresse IP)</span>
+                      </div>
+                    )}
 
                     {q.converted_invoice_id ? (
                       <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "14px 16px", marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
