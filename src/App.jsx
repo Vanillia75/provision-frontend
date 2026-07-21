@@ -753,6 +753,8 @@ function AppInner() {
     // Contacts chargés aussi sur Factures, Devis et Frais : ils servent au
     // pré-remplissage des formulaires (la promesse de la page Contacts).
     if ((nav === "contacts" || nav === "factures" || nav === "devis" || nav === "frais") && token) loadContacts();
+    // État de l'encaissement en ligne, affiché dans les Réglages.
+    if (nav === "profil" && token) apiFetch("/billing/connect/status").then(setConnectInfo).catch(() => {});
   }, [nav, token]);
 
   // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
@@ -859,6 +861,22 @@ function AppInner() {
   const [sendQuoteError, setSendQuoteError] = useState("");
   const [sendQuoteMessage, setSendQuoteMessage] = useState("");
   const [convertingQuote, setConvertingQuote] = useState(false);
+
+  // ─── Encaissement en ligne (Stripe Connect de l'utilisateur) ───
+  const [connectInfo, setConnectInfo] = useState(null);   // {configure, actif, dossier_complet}
+  const [connectBusy, setConnectBusy] = useState(false);
+
+  async function activerEncaissement() {
+    setConnectBusy(true);
+    try {
+      const r = await apiFetch("/billing/connect/onboarding", { method: "POST" });
+      if (r.url) window.open(r.url, "_blank");   // formulaire hébergé par Stripe (KYC)
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setConnectBusy(false);
+    }
+  }
 
   const [onboardingSiretStatus, setOnboardingSiretStatus] = useState(""); // "", "loading", "success", "error"
   const [onboardingSiretMessage, setOnboardingSiretMessage] = useState("");
@@ -13909,10 +13927,25 @@ function AppInner() {
                       )}
                     </div>
 
+                    {/* Prélèvement SEPA parti mais pas encore confirmé par la banque (~7 j). */}
+                    {inv.paiement_en_cours && inv.statut !== "payee" && (
+                      <div style={{ background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", marginBottom: 12, fontSize: 12.5, color: "#854F0B" }}>
+                        ⏳ Prélèvement SEPA en cours : la banque confirme sous quelques jours, la facture passera « payée » toute seule.
+                      </div>
+                    )}
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
                       <button style={S.btnPrimary} onClick={() => handleViewInvoicePdf(inv)} disabled={loadingPdf}>
                         <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />{loadingPdf ? "Génération…" : "Voir / Télécharger le PDF"}
                       </button>
+                      {inv.payment_token && inv.statut !== "payee" && (
+                        <button style={S.btnSecondary} onClick={() => {
+                          navigator.clipboard?.writeText(`https://www.montotor.fr/paiement/${inv.payment_token}`);
+                          setToastContent({ msg: "Lien de paiement copié", icon: "ti-link" });
+                          setSavedToast(true); setTimeout(() => setSavedToast(false), 2200);
+                        }}>
+                          <i className="ti ti-link" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Copier le lien de paiement
+                        </button>
+                      )}
                       <button style={S.btnSecondary} onClick={() => { setViewingInvoice(null); startEditInvoice(inv); }}>
                         <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 14, marginRight: 6, verticalAlign: -2 }} />Modifier
                       </button>
@@ -14573,6 +14606,33 @@ function AppInner() {
                   ))}
                 </div>
               </div>
+            </div>
+
+            <div style={{ ...S.card, marginTop: 14 }}>
+              <div style={S.cardTitle}>💶 Encaissement en ligne</div>
+              <p style={{ fontSize: 12, color: "#8BA5C0", margin: "-8px 0 12px", lineHeight: 1.55 }}>
+                Tes clients paient tes factures en ligne (carte ou prélèvement SEPA) et l'argent arrive directement
+                sur ton compte : il ne passe jamais par TOTOR, et TOTOR ne prend aucune commission. Seuls les frais
+                Stripe s'appliquent (carte : 1,5 % + 0,25 € · prélèvement SEPA : 0,35 €).
+              </p>
+              {connectInfo?.actif ? (
+                <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#0F6E56", fontWeight: 600 }}>
+                  ✓ Actif : tes prochaines factures envoyées incluront le bouton « Payer en ligne ».
+                </div>
+              ) : connectInfo?.configure ? (
+                <>
+                  <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: "0 0 10px" }}>
+                    ⏳ Ton dossier est chez Stripe. S'il te reste des informations à donner, reprends-le ci-dessous.
+                  </p>
+                  <button style={S.btnSecondary} onClick={activerEncaissement} disabled={connectBusy}>
+                    {connectBusy ? "…" : "Reprendre mon dossier Stripe"}
+                  </button>
+                </>
+              ) : (
+                <button style={S.btnPrimary} onClick={activerEncaissement} disabled={connectBusy}>
+                  {connectBusy ? "…" : "Activer l'encaissement en ligne"}
+                </button>
+              )}
             </div>
 
             <div style={{ ...S.card, marginTop: 14 }}>
