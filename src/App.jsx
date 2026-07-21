@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
-import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate } from "./legalMentions";
+import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate, MENTION_PENALITES_B2B } from "./legalMentions";
 import { connexionApple, AppleAnnule, STYLE_BOUTON_APPLE } from "./appleAuthWeb";
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
@@ -750,8 +750,45 @@ function AppInner() {
   }
 
   useEffect(() => {
-    if (nav === "contacts" && token) loadContacts();
+    // Contacts chargés aussi sur Factures et Devis : ils servent au pré-remplissage
+    // des formulaires (la promesse de la page Contacts).
+    if ((nav === "contacts" || nav === "factures" || nav === "devis") && token) loadContacts();
   }, [nav, token]);
+
+  // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
+  // Tape un nom → les contacts correspondants s'affichent en petites puces sous le
+  // champ ; un clic remplit nom, email, adresse, SIRET (et passe en « professionnel »
+  // si le contact a un SIRET). C'est la promesse affichée sur la page Contacts.
+  function appliquerContact(c, form, setForm) {
+    setForm({
+      ...form,
+      client_nom: c.nom,
+      client_email: c.email || form.client_email,
+      client_adresse: c.adresse || form.client_adresse,
+      client_siret: c.siret || form.client_siret,
+      client_type: c.siret ? "professionnel" : form.client_type,
+    });
+  }
+
+  function renderSuggestionsContacts(form, setForm) {
+    const saisie = (form.client_nom || "").trim().toLowerCase();
+    if (!saisie) return null;
+    const matches = contacts
+      .filter(c => c.nom && c.nom.toLowerCase().includes(saisie) && c.nom.toLowerCase() !== saisie)
+      .slice(0, 4);
+    if (!matches.length) return null;
+    return (
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 10, alignItems: "center" }}>
+        <span style={{ fontSize: 11, color: "#8BA5C0" }}>Dans tes contacts :</span>
+        {matches.map(c => (
+          <button key={c.id} type="button" onClick={() => appliquerContact(c, form, setForm)}
+            style={{ background: "#F0F7F4", border: "1px solid #CFE5DC", borderRadius: 999, padding: "4px 12px", fontSize: 12, color: "#0A2540", cursor: "pointer", fontFamily: "inherit" }}>
+            {c.nom}
+          </button>
+        ))}
+      </div>
+    );
+  }
 
   // ─── PWA : capte l'événement Android qui permet l'installation en 1 clic ───
   useEffect(() => {
@@ -13660,6 +13697,7 @@ function AppInner() {
                   <input style={S.input} placeholder="Nom du client" value={factureForm.client_nom} onChange={e => setFactureForm({ ...factureForm, client_nom: e.target.value })} />
                   <input style={S.input} placeholder="Email du client" type="email" value={factureForm.client_email} onChange={e => setFactureForm({ ...factureForm, client_email: e.target.value })} />
                 </div>
+                {renderSuggestionsContacts(factureForm, setFactureForm)}
                 {renderRadarAcompte(factureForm.client_nom)}
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={factureForm.client_adresse} onChange={e => setFactureForm({ ...factureForm, client_adresse: e.target.value })} />
                 {renderClientType(factureForm, p => setFactureForm({ ...factureForm, ...p }))}
@@ -13689,6 +13727,11 @@ function AppInner() {
                 <div style={{ ...S.netPreview, marginBottom: 12 }}>
                   {renderTotaux(totalFacture(), false, null, factureForm.client_type === "professionnel" ? factureForm.client_localisation : null)}
                 </div>
+                {/* Client professionnel : mention pénalités de retard + indemnité 40 €
+                    (obligation B2B) — elle figurera sur le PDF et l'email de la facture. */}
+                {factureForm.client_type === "professionnel" && (
+                  <p style={{ fontSize: 10.5, color: "#8BA5C0", margin: "0 0 12px", lineHeight: 1.4 }}>{MENTION_PENALITES_B2B}</p>
+                )}
                 <textarea style={{ ...S.input, height: 60, resize: "none" }} placeholder="Notes (optionnel)" value={factureForm.notes} onChange={e => setFactureForm({ ...factureForm, notes: e.target.value })} />
                 <div style={{ display: "flex", gap: 10, marginTop: 12, flexWrap: "wrap" }}>
                   <button style={S.btnPrimary} onClick={() => saveFacture(editingInvoiceId ? undefined : "brouillon")}>{editingInvoiceId ? "Enregistrer les modifications" : "Enregistrer en brouillon"}</button>
@@ -13904,6 +13947,7 @@ function AppInner() {
                   <input style={S.input} placeholder="Nom du client" value={quoteForm.client_nom} onChange={e => setQuoteForm({ ...quoteForm, client_nom: e.target.value })} />
                   <input style={S.input} placeholder="Email du client" type="email" value={quoteForm.client_email} onChange={e => setQuoteForm({ ...quoteForm, client_email: e.target.value })} />
                 </div>
+                {renderSuggestionsContacts(quoteForm, setQuoteForm)}
                 {renderRadarAcompte(quoteForm.client_nom)}
                 <input style={{ ...S.input, marginBottom: 10 }} placeholder="Adresse du client" value={quoteForm.client_adresse} onChange={e => setQuoteForm({ ...quoteForm, client_adresse: e.target.value })} />
                 {renderClientType(quoteForm, p => setQuoteForm({ ...quoteForm, ...p }))}

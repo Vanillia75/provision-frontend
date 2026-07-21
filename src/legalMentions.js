@@ -43,6 +43,19 @@ export function formatVatRate(rate) {
 export const MENTION_HORS_FRANCE = "TVA non applicable, art. 259-1 du CGI";
 export const MENTION_AUTOLIQUIDATION = "Autoliquidation";
 
+// Pénalités de retard entre PROFESSIONNELS (B2B) : mention obligatoire sur les
+// FACTURES adressées à un client professionnel (jamais devis, jamais particulier).
+// Miroir EXACT de MENTION_PENALITES_B2B / get_b2b_late_fee_mention (backend).
+export const MENTION_PENALITES_B2B =
+  "En cas de retard de paiement : pénalités au taux de trois fois le taux d'intérêt légal " +
+  "et indemnité forfaitaire de recouvrement de 40 € (art. L441-10 et D441-5 du Code de commerce). " +
+  "Pas d'escompte pour paiement anticipé.";
+
+export function b2bLateFeeMention(clientType, kind = "facture") {
+  if (kind !== "facture" || (clientType || "particulier") !== "professionnel") return null;
+  return MENTION_PENALITES_B2B;
+}
+
 // Totaux d'AFFICHAGE d'une facture/devis à partir du montant HT (= Σ quantité ×
 // prix_unitaire). Miroir EXACT de legal_mentions.compute_invoice_totals (back).
 // Une seule logique : franchise = taux 0 (HT = TTC) ; assujetti applique vat_rate ;
