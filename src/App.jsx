@@ -2267,16 +2267,19 @@ function AppInner() {
               </button>
             </div>
 
-            {/* Essai gratuit 7 jours — NATIF SEULEMENT (l'essai est configuré côté
-                Apple/Google ; sur le web/Stripe il n'y a pas d'essai, cf. estNatif). */}
+            {/* Essai gratuit 7 jours — NATIF SEULEMENT, et UNIQUEMENT sur le plan
+                MENSUEL (décision 21/07 : l'essai store n'existe que sur le mensuel,
+                Apple ET Google ; l'annuel/Pionnier restent des achats classiques).
+                Le bandeau sélectionne le mensuel au clic. Web/Stripe : rien. */}
             {estNatif() && (
-              <div style={{ display: "flex", gap: 10, alignItems: "flex-start", background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "11px 14px", marginBottom: 14 }}>
+              <button type="button" onClick={() => setPlanChoisi("mensuel")}
+                style={{ display: "flex", gap: 10, alignItems: "flex-start", textAlign: "left", width: "100%", background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "11px 14px", marginBottom: 14, cursor: "pointer", fontFamily: "inherit" }}>
                 <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden="true">🎁</span>
                 <div>
                   <div style={{ fontSize: 13.5, fontWeight: 700, color: "#5DCAA5", lineHeight: 1.3 }}>7 jours gratuits pour essayer</div>
-                  <div style={{ fontSize: 11.5, color: "#9FD9C2", lineHeight: 1.4, marginTop: 2 }}>Annulable en 2 clics, on te prévient avant que ça devienne payant.</div>
+                  <div style={{ fontSize: 11.5, color: "#9FD9C2", lineHeight: 1.4, marginTop: 2 }}>Avec la formule Mensuel. Annulable en 2 clics, on te prévient avant que ça devienne payant.</div>
                 </div>
-              </div>
+              </button>
             )}
 
             {/* Payant — Je prends le relais */}
@@ -2303,6 +2306,7 @@ function AppInner() {
                   <button key={v} type="button" onClick={() => setPlanChoisi(v)}
                     style={{ flex: 1, background: planChoisi === v ? ACCENT : "transparent", color: planChoisi === v ? "white" : "#8BA5C0", border: "none", borderRadius: 999, padding: "6px 8px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                     {lab}{v === "annuel" ? <span style={{ fontSize: 9.5, marginLeft: 4, fontWeight: 800, color: planChoisi === v ? "white" : "#5DCAA5" }}>−34 %</span> : null}
+                    {v === "mensuel" && estNatif() ? <span style={{ fontSize: 9.5, marginLeft: 4, fontWeight: 800, color: planChoisi === v ? "white" : "#5DCAA5" }}>essai 7 j</span> : null}
                   </button>
                 ))}
               </div>
@@ -2317,7 +2321,10 @@ function AppInner() {
                   <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 79 € facturé une fois par an · ⭐ Recommandé</div>
                 </div>
               ) : (
-                <div style={{ marginBottom: 4 }}><span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span></div>
+                <div style={{ marginBottom: 4 }}>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  {estNatif() && <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>Gratuit les 7 premiers jours</div>}
+                </div>
               )}
               <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.4 }}>Quelques centimes par jour pour ne plus penser à l'administratif.</div>
               {(profile?.statut === "intermittent"
@@ -2347,11 +2354,11 @@ function AppInner() {
                 </div>
               ))}
               <button style={{ ...S.btnPrimary, marginTop: 16 }} disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}>
-                {billingBusy ? "…" : (estNatif() ? "Commencer mes 7 jours gratuits" : "🐶 Je laisse Totor s'en occuper")}
+                {billingBusy ? "…" : (estNatif() && planChoisi === "mensuel" ? "Commencer mes 7 jours gratuits" : "🐶 Je laisse Totor s'en occuper")}
               </button>
               <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>
-                {estNatif()
-                  ? "Gratuit 7 jours, puis ton abonnement. Sans engagement, annulable quand tu veux."
+                {estNatif() && planChoisi === "mensuel"
+                  ? "Gratuit 7 jours, puis 9,99 €/mois. Sans engagement, annulable quand tu veux."
                   : "Sans engagement : tu annules quand tu veux, en 2 clics."}
               </div>
             </div>
