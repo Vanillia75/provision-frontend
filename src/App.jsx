@@ -750,9 +750,9 @@ function AppInner() {
   }
 
   useEffect(() => {
-    // Contacts chargés aussi sur Factures et Devis : ils servent au pré-remplissage
-    // des formulaires (la promesse de la page Contacts).
-    if ((nav === "contacts" || nav === "factures" || nav === "devis") && token) loadContacts();
+    // Contacts chargés aussi sur Factures, Devis et Frais : ils servent au
+    // pré-remplissage des formulaires (la promesse de la page Contacts).
+    if ((nav === "contacts" || nav === "factures" || nav === "devis" || nav === "frais") && token) loadContacts();
   }, [nav, token]);
 
   // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
@@ -835,7 +835,7 @@ function AppInner() {
   const [parlerType, setParlerType] = useState("achat");
   const [parlerVerdict, setParlerVerdict] = useState(null);
   const [parlerPourquoi, setParlerPourquoi] = useState(false);
-  const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "" });
+  const [expenseForm, setExpenseForm] = useState({ date: "", montant: "", categorie: "autre", description: "", client_nom: "" });
   const [uploadingExpenseFile, setUploadingExpenseFile] = useState(false);
   const [invoicesLoading, setInvoicesLoading] = useState(false);
   const [showNewFacture, setShowNewFacture] = useState(false);
@@ -4649,10 +4649,11 @@ function AppInner() {
           montant,
           categorie: expenseForm.categorie,
           description: expenseForm.description || null,
+          client_nom: (expenseForm.client_nom || "").trim() || null,
         }),
       });
       if (montant > 0) addHectorMessage(`Frais de ${formatEUR(montant)} enregistré. Je l'ai déduit de ton disponible. Chaque euro que je connais, c'est un euro que tu ne perdras pas.`, "#8BA5C0");
-      setExpenseForm({ date: "", montant: "", categorie: "autre", description: "" });
+      setExpenseForm({ date: "", montant: "", categorie: "autre", description: "", client_nom: "" });
       setShowAddExpense(false);
       await loadExpenses();
       await loadEverything();
@@ -14226,6 +14227,8 @@ function AppInner() {
                       {CATEGORIES_FRAIS.map(c => <option key={c.id} value={c.id}>{c.label}</option>)}
                     </select>
                     <input style={S.input} type="text" placeholder="Description (optionnel, ex : Adobe Creative Cloud)" value={expenseForm.description} onChange={e => setExpenseForm({ ...expenseForm, description: e.target.value })} />
+                    <input style={S.input} type="text" placeholder="Client ou projet lié (optionnel)" value={expenseForm.client_nom} onChange={e => setExpenseForm({ ...expenseForm, client_nom: e.target.value })} />
+                    {renderSuggestionsContacts(expenseForm, setExpenseForm)}
                     <div style={{ display: "flex", gap: 10 }}>
                       <button style={S.btnPrimary} type="submit">Ajouter</button>
                       <button type="button" style={S.btnSecondary} onClick={() => setShowAddExpense(false)}>Annuler</button>
@@ -14255,7 +14258,7 @@ function AppInner() {
                       <div style={{ fontSize: 14, fontWeight: 500, color: "#E6EDF5", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {exp.description || labelCategorie(exp.categorie)}
                       </div>
-                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{formatDate(exp.date)}</div>
+                      <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>{formatDate(exp.date)}{exp.client_nom ? ` · ${exp.client_nom}` : ""}</div>
                     </div>
                     <span style={{ background: "#E6F1FB", color: "#0C447C", fontSize: 11, fontWeight: 600, padding: "4px 10px", borderRadius: 8, whiteSpace: "nowrap", flexShrink: 0 }}>{labelCategorie(exp.categorie)}</span>
                     <span style={{ fontSize: 15, fontWeight: 600, color: "#E6EDF5", minWidth: 60, textAlign: "right", flexShrink: 0 }}>{formatEUR(exp.montant)}</span>
