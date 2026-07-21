@@ -2,7 +2,6 @@ import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
 import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate, MENTION_PENALITES_B2B } from "./legalMentions";
-import { connexionApple, AppleAnnule, STYLE_BOUTON_APPLE } from "./appleAuthWeb";
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
