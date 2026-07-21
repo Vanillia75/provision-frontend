@@ -753,8 +753,10 @@ function AppInner() {
     // Contacts chargés aussi sur Factures, Devis et Frais : ils servent au
     // pré-remplissage des formulaires (la promesse de la page Contacts).
     if ((nav === "contacts" || nav === "factures" || nav === "devis" || nav === "frais") && token) loadContacts();
-    // État de l'encaissement en ligne, affiché dans les Réglages.
-    if (nav === "profil" && token) apiFetch("/billing/connect/status").then(setConnectInfo).catch(() => {});
+    // État de l'encaissement en ligne : Réglages + bannières Factures/Devis.
+    if ((nav === "profil" || nav === "factures" || nav === "devis") && token) {
+      apiFetch("/billing/connect/status").then(setConnectInfo).catch(() => {});
+    }
   }, [nav, token]);
 
   // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
@@ -876,6 +878,32 @@ function AppInner() {
     } finally {
       setConnectBusy(false);
     }
+  }
+
+  // Bannière « fais-toi payer en ligne » sur Factures et Devis : LE banger de la
+  // MAJ, mis en avant là où il sert. Cachée une fois l'encaissement actif (le
+  // bouton « Payer en ligne » part alors tout seul avec chaque facture).
+  function renderBanniereEncaissement() {
+    if (!connectInfo || connectInfo.actif) return null;
+    const enCours = connectInfo.configure;
+    return (
+      <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "16px 18px", marginBottom: 16, display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 26 }} aria-hidden="true">💶</span>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#F8FAFC" }}>
+            {enCours ? "Ton encaissement en ligne est presque prêt" : "Nouveau : fais-toi payer en ligne"}
+          </div>
+          <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 3, lineHeight: 1.5 }}>
+            {enCours
+              ? "Il reste des informations à donner à Stripe, puis tes factures partiront avec le bouton « Payer en ligne »."
+              : "Tes clients paient tes factures par carte ou prélèvement, l'argent arrive directement sur ton compte. Zéro commission TOTOR."}
+          </div>
+        </div>
+        <button style={{ ...S.btnPrimary, whiteSpace: "nowrap" }} onClick={activerEncaissement} disabled={connectBusy}>
+          {connectBusy ? "…" : enCours ? "Reprendre mon dossier" : "Activer en 5 minutes"}
+        </button>
+      </div>
+    );
   }
 
   const [onboardingSiretStatus, setOnboardingSiretStatus] = useState(""); // "", "loading", "success", "error"
@@ -2001,8 +2029,8 @@ function AppInner() {
     revenus: ["Je peux saisir des mois passés ?", "Facturé ou encaissé : je note quoi ?"],
     frais: ["Comment scanner une facture de dépense ?", "Mes frais changent quoi dans mes chiffres ?"],
     salaire: ["Comment marche la Paie de Totor ?", "C'est quoi prudent, recommandé, maximum ?"],
-    factures: ["Comment marchent les relances automatiques ?", "Comment marquer une facture payée ?"],
-    devis: ["Comment faire un devis ?", "Comment transformer un devis en facture ?"],
+    factures: ["Comment me faire payer en ligne ?", "Comment marchent les relances automatiques ?", "Comment marquer une facture payée ?"],
+    devis: ["Comment faire signer mon devis en ligne ?", "Comment faire un devis ?", "Comment transformer un devis en facture ?"],
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
     abonnement: ["Que donne le Premium ?", "Comment activer un code ?"],
@@ -13682,6 +13710,8 @@ function AppInner() {
               </div>
             )}
 
+            {renderBanniereEncaissement()}
+
             {showNewFacture && (
               <div style={{ ...S.card, marginBottom: 16 }}>
                 <h3 style={{ margin: "0 0 16px", fontSize: 15, fontWeight: 500, color: "#E6EDF5" }}>{editingInvoiceId ? "Modifier la facture" : "Nouvelle facture"}</h3>
@@ -13973,6 +14003,8 @@ function AppInner() {
                 <div style={S.kpiCard}><span style={S.kpiLabel}>Taux de conversion</span><span style={S.kpiValue}>{quotesSummary.taux_conversion !== null ? `${quotesSummary.taux_conversion}%` : "—"}</span></div>
               </div>
             )}
+
+            {renderBanniereEncaissement()}
 
             {showNewQuote && (
               <div style={{ ...S.card, marginBottom: 16 }}>
