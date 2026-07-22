@@ -945,6 +945,30 @@ function AppInner() {
     );
   }
 
+  // Bannière « la ligne TOTOR » pour les non-abonnés : cockpit et Parle à Totor,
+  // là où les gens sont, pas au fond des Réglages. Le numéro reste réservé aux
+  // abonnés : la bannière vend le service et emmène vers l'abonnement.
+  function renderBanniereLigneTotor() {
+    if (!codeVocal || codeVocal.abonne) return null;
+    return (
+      <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "16px 18px", marginBottom: 16, display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
+        <span style={{ fontSize: 26 }} aria-hidden="true">📞</span>
+        <div style={{ flex: 1, minWidth: 220 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#F8FAFC" }}>
+            La ligne TOTOR : tu appelles, ça répond.
+          </div>
+          <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 3, lineHeight: 1.5 }}>
+            Une question, pas envie d'écrire ? Mon assistante te répond au téléphone, à toute heure. Abonne-toi et le numéro t'attend dans tes Réglages, avec ton code d'accès du jour.
+          </div>
+        </div>
+        <button style={{ ...S.btnPrimary, whiteSpace: "nowrap" }}
+          onClick={() => (profile?.statut === "intermittent" ? setInterNav("abonnement") : setNav("abonnement"))}>
+          Découvrir
+        </button>
+      </div>
+    );
+  }
+
   const [onboardingSiretStatus, setOnboardingSiretStatus] = useState(""); // "", "loading", "success", "error"
   const [onboardingSiretMessage, setOnboardingSiretMessage] = useState("");
   const [onboardingNafCode, setOnboardingNafCode] = useState("");
@@ -8365,6 +8389,8 @@ function AppInner() {
                 <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
               </button>
 
+              {renderBanniereLigneTotor()}
+
               {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -10308,6 +10334,8 @@ function AppInner() {
               </div>
 
               {renderQuotaJauge("chat", "conversation")}
+
+              {renderBanniereLigneTotor()}
 
               <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 {/* Fil de discussion */}
@@ -12589,6 +12617,8 @@ function AppInner() {
                 <button onClick={() => setHectorMessages(prev => prev.filter(m => m.id !== msg.id))} style={{ background: "none", border: "none", color: "#8BA5C0", fontSize: 14, cursor: "pointer", padding: 0, lineHeight: 1, flexShrink: 0 }}>✕</button>
               </div>
             ))}
+
+            {renderBanniereLigneTotor()}
 
             {/* ── TOTOR UNIFIÉ : écrire librement OU décision rapide ── */}
             <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #10233f 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px" }}>
