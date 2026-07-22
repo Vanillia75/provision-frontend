@@ -771,6 +771,21 @@ function AppInner() {
     }
   }, [nav, token]);
 
+  // Retour du formulaire Stripe (?stripe_onboarding=retour|refresh) : relire
+  // l'état du dossier tout de suite (sinon la bannière reste périmée) et
+  // nettoyer l'URL. Le cas "refresh" (lien expiré) retombe sur la bannière,
+  // dont le bouton regénère un lien frais.
+  useEffect(() => {
+    if (!token) return;
+    if (!window.location.search.includes("stripe_onboarding")) return;
+    apiFetch("/billing/connect/status").then(setConnectInfo).catch(() => {});
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("stripe_onboarding");
+      window.history.replaceState({}, "", u.pathname + (u.search || "") + u.hash);
+    } catch {}
+  }, [token]);
+
   // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
   // Tape un nom → les contacts correspondants s'affichent en petites puces sous le
   // champ ; un clic remplit nom, email, adresse, SIRET (et passe en « professionnel »
@@ -884,7 +899,13 @@ function AppInner() {
     setConnectBusy(true);
     try {
       const r = await apiFetch("/billing/connect/onboarding", { method: "POST" });
-      if (r.url) window.open(r.url, "_blank");   // formulaire hébergé par Stripe (KYC)
+      if (r.url) {
+        // Safari/PWA iOS bloque un window.open qui arrive APRÈS un await :
+        // si l'onglet ne s'ouvre pas, on navigue dans le même onglet (le
+        // return_url de Stripe ramène de toute façon sur montotor.fr).
+        const w = window.open(r.url, "_blank");
+        if (!w) window.location.assign(r.url);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -897,6 +918,9 @@ function AppInner() {
   // bouton « Payer en ligne » part alors tout seul avec chaque facture).
   function renderBanniereEncaissement() {
     if (!connectInfo || connectInfo.actif) return null;
+    // Statut illisible (pépin Stripe passager) : ne rien affirmer plutôt que
+    // de montrer « il reste des informations à donner » à un compte déjà actif.
+    if (connectInfo.erreur) return null;
     const enCours = connectInfo.configure;
     const enVerification = enCours && connectInfo.dossier_complet;
     return (
@@ -1165,8 +1189,8 @@ function AppInner() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
           {(profile?.statut === "intermittent"
-            ? ["Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
-            : ["Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
+            ? ["Ma ligne TOTOR : une assistante te répond, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            : ["Ma ligne TOTOR : une assistante te répond, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
           ).map((b, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
               <span style={{ color: "#5DCAA5", fontWeight: 800, flexShrink: 0 }}>✓</span>
@@ -2120,13 +2144,13 @@ function AppInner() {
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
     abonnement: ["Que donne le Premium ?", "Comment activer un code ?"],
-    profil: ["Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+    profil: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
     // Mode intermittent (interNav)
     cockpit: ["Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
     activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
     mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
     actu: ["Quand dois-je m'actualiser ?", "Totor s'actualise à ma place ?"],
-    reglages: ["Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+    reglages: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
   };
   const aideSuggestions = AIDE_SUGGESTIONS[aideEcranCourant]
     || (profile?.statut === "intermittent" ? AIDE_SUGGESTIONS.cockpit : AIDE_SUGGESTIONS.dashboard);
@@ -2693,6 +2717,7 @@ function AppInner() {
               {(profile?.statut === "intermittent"
                 ? [
                     "Tout le gratuit SANS LIMITE : scans d'AEM, conversations, Mode Achat",
+                    "Ma ligne TOTOR : tu appelles, mon assistante répond à tes questions, à toute heure",
                     "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
                     "Je vérifie ta décision face à France Travail",
                     "Je repère les écarts qui te coûteraient des droits",
@@ -2703,6 +2728,7 @@ function AppInner() {
                   ]
                 : [
                     "Tout le gratuit SANS LIMITE : scans, conversations, factures, devis, Mode Achat",
+                    "Ma ligne TOTOR : tu appelles, mon assistante répond à tes questions, à toute heure",
                     "Ta paie complète : les 3 scénarios (prudent, recommandé, maximum)",
                     "Je relance tes impayés à ta place, sans relâche",
                     "Le radar acompte : je repère les mauvais payeurs avant le devis",
@@ -3014,14 +3040,24 @@ function AppInner() {
       : { ...S.card, marginBottom: 16 };
     return (
       <div style={carte}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🎙️ Ma secrétaire vocale</div>
-        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
-          Quand tu appelles TOTOR, si ton numéro n'est pas reconnu, tape ce code à six chiffres sur le clavier de ton téléphone. Il change chaque jour.
+        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>📞 Ma ligne TOTOR</div>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
+          Une question, pas envie d'écrire ? Appelle : mon assistante te répond, à toute heure. C'est réservé aux abonnés.
+        </div>
+        <a href="tel:+33162290762" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#0d2440", border: "1px solid #378ADD", borderRadius: 10, padding: "12px 18px", marginBottom: 12, textDecoration: "none" }}>
+          <span style={{ fontSize: 20 }} aria-hidden="true">📞</span>
+          <span style={{ fontSize: 21, fontWeight: 800, color: "#E6EDF5", letterSpacing: 1, fontVariantNumeric: "tabular-nums" }}>01 62 29 07 62</span>
+        </a>
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 10, lineHeight: 1.5 }}>
+          Si ton numéro n'est pas reconnu, elle te demandera ce code à six chiffres (tape-le sur le clavier ou dis-le). Il change chaque jour.
         </div>
         <div style={{ display: "inline-flex", gap: 8, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 10, padding: "12px 18px" }}>
           {String(codeVocal.code).split("").map((ch, i) => (
             <span key={i} style={{ fontSize: 26, fontWeight: 800, color: "#5DCAA5", fontVariantNumeric: "tabular-nums", minWidth: 18, textAlign: "center", letterSpacing: 1 }}>{ch}</span>
           ))}
+        </div>
+        <div style={{ fontSize: 11.5, color: "#6B8299", marginTop: 10, lineHeight: 1.45 }}>
+          Astuce : renseigne ton numéro de téléphone dans ton profil et je te reconnais dès que tu appelles, sans code.
         </div>
       </div>
     );
@@ -6229,6 +6265,20 @@ function AppInner() {
             </div>
           </section>
 
+          {/* ===== Secrétaire au téléphone (abonnés) — le numéro n'est JAMAIS publié ici ===== */}
+          <section style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "0 22px 48px" : "0 48px 64px" }}>
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
+              <div style={{ marginBottom: 14 }}><i className="ti ti-phone" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
+              <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 24 : 30, fontWeight: 700, color: "white", lineHeight: 1.25, margin: "0 0 12px" }}>
+                La ligne TOTOR : appelle, ça répond.
+              </h2>
+              <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 14px", maxWidth: 500 }}>
+                Une question sur ta déclaration, tes factures, l'application ? Tu appelles, l'assistante TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
+              </p>
+              <span style={{ display: "inline-block", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#5DCAA5", letterSpacing: 0.4 }}>Réservé aux abonnés</span>
+            </div>
+          </section>
+
           {/* ===== SIGNATURE FINALE ===== */}
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.06)", background: "linear-gradient(180deg, rgba(93,202,165,0.05), rgba(7,25,46,0))", padding: isMobile ? "72px 22px 84px" : "120px 40px 128px", textAlign: "center" }}>
             <div style={{ maxWidth: 900, margin: "0 auto" }}>
@@ -6523,6 +6573,20 @@ function AppInner() {
               </div>
               <button type="button" onClick={() => chooseLandingStatut("auto_entrepreneur")} style={lienDiscret}>En savoir plus <i className="ti ti-arrow-right" aria-hidden="true" /></button>
             </div>
+          </div>
+        </section>
+
+        {/* ===== Secrétaire au téléphone (abonnés) — le numéro n'est JAMAIS publié ici ===== */}
+        <section style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "0 22px 48px" : "0 48px 64px" }}>
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
+            <div style={{ marginBottom: 14 }}><i className="ti ti-phone" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
+            <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 24 : 30, fontWeight: 700, color: "white", lineHeight: 1.25, margin: "0 0 12px" }}>
+              La ligne TOTOR : appelle, ça répond.
+            </h2>
+            <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 14px", maxWidth: 500 }}>
+              Une question sur tes heures, ton actualisation, l'application ? Tu appelles, l'assistante TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
+            </p>
+            <span style={{ display: "inline-block", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#5DCAA5", letterSpacing: 0.4 }}>Réservé aux abonnés</span>
           </div>
         </section>
 
@@ -14951,6 +15015,10 @@ function AppInner() {
                 <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#0F6E56", fontWeight: 600 }}>
                   ✓ Actif : tes prochaines factures envoyées incluront le bouton « Payer en ligne ».
                 </div>
+              ) : connectInfo?.erreur ? (
+                <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: 0 }}>
+                  ⏳ Je n'arrive pas à lire l'état de ton dossier pour l'instant. Recharge la page dans un petit moment, rien n'est perdu.
+                </p>
               ) : connectInfo?.configure ? (
                 <>
                   <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: "0 0 10px" }}>
