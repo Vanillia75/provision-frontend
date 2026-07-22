@@ -2514,7 +2514,7 @@ function AppInner() {
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <input
                 style={{ ...S.input, flex: 1, minWidth: 160, textTransform: "uppercase" }}
-                placeholder="Ex : VIP-XXXX"
+                placeholder="Ton code cadeau"
                 autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
                 value={promoInput}
                 onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
