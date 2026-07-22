@@ -759,6 +759,21 @@ function AppInner() {
     }
   }, [nav, token]);
 
+  // Retour du formulaire Stripe (?stripe_onboarding=retour|refresh) : relire
+  // l'état du dossier tout de suite (sinon la bannière reste périmée) et
+  // nettoyer l'URL. Le cas "refresh" (lien expiré) retombe sur la bannière,
+  // dont le bouton regénère un lien frais.
+  useEffect(() => {
+    if (!token) return;
+    if (!window.location.search.includes("stripe_onboarding")) return;
+    apiFetch("/billing/connect/status").then(setConnectInfo).catch(() => {});
+    try {
+      const u = new URL(window.location.href);
+      u.searchParams.delete("stripe_onboarding");
+      window.history.replaceState({}, "", u.pathname + (u.search || "") + u.hash);
+    } catch {}
+  }, [token]);
+
   // ─── Pré-remplissage depuis les Contacts (factures ET devis) ───
   // Tape un nom → les contacts correspondants s'affichent en petites puces sous le
   // champ ; un clic remplit nom, email, adresse, SIRET (et passe en « professionnel »
@@ -872,7 +887,13 @@ function AppInner() {
     setConnectBusy(true);
     try {
       const r = await apiFetch("/billing/connect/onboarding", { method: "POST" });
-      if (r.url) window.open(r.url, "_blank");   // formulaire hébergé par Stripe (KYC)
+      if (r.url) {
+        // Safari/PWA iOS bloque un window.open qui arrive APRÈS un await :
+        // si l'onglet ne s'ouvre pas, on navigue dans le même onglet (le
+        // return_url de Stripe ramène de toute façon sur montotor.fr).
+        const w = window.open(r.url, "_blank");
+        if (!w) window.location.assign(r.url);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
@@ -885,6 +906,9 @@ function AppInner() {
   // bouton « Payer en ligne » part alors tout seul avec chaque facture).
   function renderBanniereEncaissement() {
     if (!connectInfo || connectInfo.actif) return null;
+    // Statut illisible (pépin Stripe passager) : ne rien affirmer plutôt que
+    // de montrer « il reste des informations à donner » à un compte déjà actif.
+    if (connectInfo.erreur) return null;
     const enCours = connectInfo.configure;
     const enVerification = enCours && connectInfo.dossier_complet;
     return (
@@ -14654,6 +14678,10 @@ function AppInner() {
                 <div style={{ background: "#E1F5EE", border: "1px solid #5DCAA5", borderRadius: 10, padding: "10px 14px", fontSize: 12.5, color: "#0F6E56", fontWeight: 600 }}>
                   ✓ Actif : tes prochaines factures envoyées incluront le bouton « Payer en ligne ».
                 </div>
+              ) : connectInfo?.erreur ? (
+                <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: 0 }}>
+                  ⏳ Je n'arrive pas à lire l'état de ton dossier pour l'instant. Recharge la page dans un petit moment, rien n'est perdu.
+                </p>
               ) : connectInfo?.configure ? (
                 <>
                   <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: "0 0 10px" }}>
