@@ -2761,10 +2761,29 @@ function AppInner() {
   // Carte « Ma secrétaire vocale » (Réglages) : le code du jour à taper au clavier
   // si le numéro de l'appelant n'est pas reconnu. Affichée UNIQUEMENT aux abonnés.
   function renderCodeVocal(dark = true) {
-    if (!codeVocal?.abonne || !codeVocal?.code) return null;
+    if (!codeVocal) return null;
     const carte = dark
       ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
       : { ...S.card, marginBottom: 16 };
+    // Non-abonné : la vitrine. On montre le service, pas le numéro : il
+    // n'apparaît (avec le code du jour) qu'une fois abonné.
+    if (!codeVocal.abonne || !codeVocal.code) {
+      return (
+        <div style={carte}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>📞 Ma ligne TOTOR</div>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
+            Une question, pas envie d'écrire ? Appelle : mon assistante te répond, à toute heure.
+          </div>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
+            Abonne-toi pour recevoir le numéro et ton code d'accès du jour : ils s'afficheront ici.
+          </div>
+          <button type="button" style={S.btnPrimary}
+            onClick={() => (profile?.statut === "intermittent" ? setInterNav("abonnement") : setNav("abonnement"))}>
+            Découvrir TOTOR Veille
+          </button>
+        </div>
+      );
+    }
     return (
       <div style={carte}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>📞 Ma ligne TOTOR</div>
