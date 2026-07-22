@@ -2406,7 +2406,12 @@ function AppInner() {
                   </div>
                   <div style={{ fontSize: 11.5, color: "#9FD9C2", marginTop: 5, lineHeight: 1.45 }}>
                     Réservé aux 100 premiers. Ce prix ne bougera jamais tant que tu restes abonné·e, même quand le tarif public augmentera.
-                    <span style={{ fontWeight: 700, color: "#5DCAA5" }}> Il reste {offresBilling.pionnier_restantes} place{offresBilling.pionnier_restantes > 1 ? "s" : ""} sur {offresBilling.pionnier_limite}.</span>
+                    {/* Compteur RÉEL, affiché seulement quand la moitié des places est partie :
+                        avant ça, un « 100 sur 100 » crierait que personne n'a pris (jamais de
+                        fausse rareté non plus : on masque, on n'invente pas). */}
+                    {offresBilling.pionnier_restantes <= (offresBilling.pionnier_limite || 100) / 2 && (
+                      <span style={{ fontWeight: 700, color: "#5DCAA5" }}> Il reste {offresBilling.pionnier_restantes} place{offresBilling.pionnier_restantes > 1 ? "s" : ""} sur {offresBilling.pionnier_limite}.</span>
+                    )}
                   </div>
                 </button>
               )}
