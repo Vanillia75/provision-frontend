@@ -2484,6 +2484,19 @@ function AppInner() {
 
           {veilleProduits && (veilleProduits.mensuel || veilleProduits.annuel) ? (
             <>
+              {/* Essai gratuit 7 jours — UNIQUEMENT sur le plan MENSUEL (décision 21/07 :
+                  l'essai store n'existe que sur le mensuel, Apple ET Google ; l'annuel
+                  reste un achat classique). Le bandeau sélectionne le mensuel au clic.
+                  NB : ce bandeau vit ICI, dans le paywall natif — pas dans l'écran
+                  web/Stripe (il y avait été posé par erreur, invisible partout). */}
+              <button type="button" onClick={() => setVeillePlanNatif("mensuel")}
+                style={{ display: "flex", gap: 10, alignItems: "flex-start", textAlign: "left", width: "100%", background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "11px 14px", marginBottom: 14, cursor: "pointer", fontFamily: "inherit" }}>
+                <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden="true">🎁</span>
+                <div>
+                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#5DCAA5", lineHeight: 1.3 }}>7 jours gratuits pour essayer</div>
+                  <div style={{ fontSize: 11.5, color: "#9FD9C2", lineHeight: 1.4, marginTop: 2 }}>Avec la formule Mensuel. Annulable en 2 clics, on te prévient avant que ça devienne payant.</div>
+                </div>
+              </button>
               {/* Choix du plan : prix LUS chez Apple/Google (source de vérité des stores) */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
                 {[["annuel", veilleProduits.annuel, "⭐ Annuel"], ["mensuel", veilleProduits.mensuel, "Mensuel"]].map(([id, prod, label]) => {
@@ -2628,20 +2641,6 @@ function AppInner() {
               </button>
             </div>
 
-            {/* Essai gratuit 7 jours — NATIF SEULEMENT, et UNIQUEMENT sur le plan
-                MENSUEL (décision 21/07 : l'essai store n'existe que sur le mensuel,
-                Apple ET Google ; l'annuel/Pionnier restent des achats classiques).
-                Le bandeau sélectionne le mensuel au clic. Web/Stripe : rien. */}
-            {estNatif() && (
-              <button type="button" onClick={() => setPlanChoisi("mensuel")}
-                style={{ display: "flex", gap: 10, alignItems: "flex-start", textAlign: "left", width: "100%", background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: "11px 14px", marginBottom: 14, cursor: "pointer", fontFamily: "inherit" }}>
-                <span style={{ fontSize: 18, lineHeight: 1 }} aria-hidden="true">🎁</span>
-                <div>
-                  <div style={{ fontSize: 13.5, fontWeight: 700, color: "#5DCAA5", lineHeight: 1.3 }}>7 jours gratuits pour essayer</div>
-                  <div style={{ fontSize: 11.5, color: "#9FD9C2", lineHeight: 1.4, marginTop: 2 }}>Avec la formule Mensuel. Annulable en 2 clics, on te prévient avant que ça devienne payant.</div>
-                </div>
-              </button>
-            )}
 
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
