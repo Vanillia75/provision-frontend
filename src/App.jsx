@@ -1177,8 +1177,8 @@ function AppInner() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
           {(profile?.statut === "intermittent"
-            ? ["Ma secrétaire te répond au téléphone, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
-            : ["Ma secrétaire te répond au téléphone, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
+            ? ["Ma ligne TOTOR : une assistante te répond, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            : ["Ma ligne TOTOR : une assistante te répond, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
           ).map((b, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
               <span style={{ color: "#5DCAA5", fontWeight: 800, flexShrink: 0 }}>✓</span>
@@ -2061,13 +2061,13 @@ function AppInner() {
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
     abonnement: ["Que donne le Premium ?", "Comment activer un code ?"],
-    profil: ["Comment appeler la secrétaire vocale ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+    profil: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
     // Mode intermittent (interNav)
     cockpit: ["Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
     activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
     mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
     actu: ["Quand dois-je m'actualiser ?", "Totor s'actualise à ma place ?"],
-    reglages: ["Comment appeler la secrétaire vocale ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+    reglages: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
   };
   const aideSuggestions = AIDE_SUGGESTIONS[aideEcranCourant]
     || (profile?.statut === "intermittent" ? AIDE_SUGGESTIONS.cockpit : AIDE_SUGGESTIONS.dashboard);
@@ -2440,7 +2440,7 @@ function AppInner() {
               {(profile?.statut === "intermittent"
                 ? [
                     "Tout le gratuit SANS LIMITE : scans d'AEM, conversations, Mode Achat",
-                    "Ma secrétaire au téléphone : tu appelles, elle répond à tes questions, à toute heure",
+                    "Ma ligne TOTOR : tu appelles, mon assistante répond à tes questions, à toute heure",
                     "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
                     "Je vérifie ta décision face à France Travail",
                     "Je repère les écarts qui te coûteraient des droits",
@@ -2451,7 +2451,7 @@ function AppInner() {
                   ]
                 : [
                     "Tout le gratuit SANS LIMITE : scans, conversations, factures, devis, Mode Achat",
-                    "Ma secrétaire au téléphone : tu appelles, elle répond à tes questions, à toute heure",
+                    "Ma ligne TOTOR : tu appelles, mon assistante répond à tes questions, à toute heure",
                     "Ta paie complète : les 3 scénarios (prudent, recommandé, maximum)",
                     "Je relance tes impayés à ta place, sans relâche",
                     "Le radar acompte : je repère les mauvais payeurs avant le devis",
@@ -2762,9 +2762,9 @@ function AppInner() {
       : { ...S.card, marginBottom: 16 };
     return (
       <div style={carte}>
-        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🎙️ Ma secrétaire vocale</div>
+        <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>📞 Ma ligne TOTOR</div>
         <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
-          Une question, pas envie d'écrire ? Appelle : ma secrétaire répond au téléphone, à toute heure. C'est réservé aux abonnés.
+          Une question, pas envie d'écrire ? Appelle : mon assistante te répond, à toute heure. C'est réservé aux abonnés.
         </div>
         <a href="tel:+33162290762" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#0d2440", border: "1px solid #378ADD", borderRadius: 10, padding: "12px 18px", marginBottom: 12, textDecoration: "none" }}>
           <span style={{ fontSize: 20 }} aria-hidden="true">📞</span>
@@ -5976,10 +5976,10 @@ function AppInner() {
             <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
               <div style={{ marginBottom: 14 }}><i className="ti ti-phone" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
               <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 24 : 30, fontWeight: 700, color: "white", lineHeight: 1.25, margin: "0 0 12px" }}>
-                Une secrétaire qui répond au téléphone.
+                La ligne TOTOR : appelle, ça répond.
               </h2>
               <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 14px", maxWidth: 500 }}>
-                Une question sur ta déclaration, tes factures, l'application ? Tu appelles, ma secrétaire te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
+                Une question sur ta déclaration, tes factures, l'application ? Tu appelles, l'assistante TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
               </p>
               <span style={{ display: "inline-block", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#5DCAA5", letterSpacing: 0.4 }}>Réservé aux abonnés</span>
             </div>
@@ -6288,10 +6288,10 @@ function AppInner() {
           <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
             <div style={{ marginBottom: 14 }}><i className="ti ti-phone" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
             <h2 style={{ fontFamily: SERIF, fontSize: isMobile ? 24 : 30, fontWeight: 700, color: "white", lineHeight: 1.25, margin: "0 0 12px" }}>
-              Une secrétaire qui répond au téléphone.
+              La ligne TOTOR : appelle, ça répond.
             </h2>
             <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 14px", maxWidth: 500 }}>
-              Une question sur tes heures, ton actualisation, l'application ? Tu appelles, ma secrétaire te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
+              Une question sur tes heures, ton actualisation, l'application ? Tu appelles, l'assistante TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
             </p>
             <span style={{ display: "inline-block", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#5DCAA5", letterSpacing: 0.4 }}>Réservé aux abonnés</span>
           </div>
