@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Accueil telephonique TOTOR : Twilio joue le jingle (lecteur natif, qualite
+     parfaite) PUIS passe l'appel a la secretaire Vapi. Le firstMessage Vapi
+     est la mention legale, dite immediatement apres : zero blanc genant.
+     Ce fichier est appele par Twilio en GET (VoiceUrl du +33162290762). -->
+<Response>
+  <Play>https://www.montotor.fr/jingle-totor-24k.wav</Play>
+  <Redirect method="POST">https://api.vapi.ai/twilio/inbound_call</Redirect>
+</Response>
