@@ -946,7 +946,7 @@ function AppInner() {
             La ligne TOTOR : tu appelles, ça répond.
           </div>
           <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 3, lineHeight: 1.5 }}>
-            Une question, pas envie d'écrire ? Mon assistante te répond au téléphone, à toute heure. Abonne-toi et le numéro t'attend dans tes Réglages, avec ton code d'accès du jour.
+            Une question, pas envie d'écrire ? La ligne TOTOR te répond, à toute heure. Abonne-toi et le numéro t'attend dans tes Réglages, avec ton code d'accès du jour.
           </div>
         </div>
         <button style={{ ...S.btnPrimary, whiteSpace: "nowrap" }}
@@ -1201,8 +1201,8 @@ function AppInner() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
           {(profile?.statut === "intermittent"
-            ? ["Ma ligne TOTOR : une assistante te répond, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
-            : ["Ma ligne TOTOR : une assistante te répond, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
+            ? ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            : ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
           ).map((b, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
               <span style={{ color: "#5DCAA5", fontWeight: 800, flexShrink: 0 }}>✓</span>
@@ -2469,7 +2469,7 @@ function AppInner() {
               {(profile?.statut === "intermittent"
                 ? [
                     "Tout le gratuit SANS LIMITE : scans d'AEM, conversations, Mode Achat",
-                    "Ma ligne TOTOR : tu appelles, mon assistante répond à tes questions, à toute heure",
+                    "Ma ligne TOTOR : tu appelles, ça répond à tes questions, à toute heure",
                     "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
                     "Je vérifie ta décision face à France Travail",
                     "Je repère les écarts qui te coûteraient des droits",
@@ -2480,7 +2480,7 @@ function AppInner() {
                   ]
                 : [
                     "Tout le gratuit SANS LIMITE : scans, conversations, factures, devis, Mode Achat",
-                    "Ma ligne TOTOR : tu appelles, mon assistante répond à tes questions, à toute heure",
+                    "Ma ligne TOTOR : tu appelles, ça répond à tes questions, à toute heure",
                     "Ta paie complète : les 3 scénarios (prudent, recommandé, maximum)",
                     "Je relance tes impayés à ta place, sans relâche",
                     "Le radar acompte : je repère les mauvais payeurs avant le devis",
@@ -2796,7 +2796,7 @@ function AppInner() {
         <div style={carte}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>📞 Ma ligne TOTOR</div>
           <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
-            Une question, pas envie d'écrire ? Appelle : mon assistante te répond, à toute heure.
+            Une question, pas envie d'écrire ? Appelle la ligne TOTOR : ça te répond, à toute heure.
           </div>
           <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
             Abonne-toi pour recevoir le numéro et ton code d'accès du jour : ils s'afficheront ici.
@@ -2812,7 +2812,7 @@ function AppInner() {
       <div style={carte}>
         <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>📞 Ma ligne TOTOR</div>
         <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>
-          Une question, pas envie d'écrire ? Appelle : mon assistante te répond, à toute heure. C'est réservé aux abonnés.
+          Une question, pas envie d'écrire ? Appelle la ligne TOTOR : ça te répond, à toute heure. C'est réservé aux abonnés.
         </div>
         <a href="tel:+33162290762" style={{ display: "inline-flex", alignItems: "center", gap: 10, background: "#0d2440", border: "1px solid #378ADD", borderRadius: 10, padding: "12px 18px", marginBottom: 12, textDecoration: "none" }}>
           <span style={{ fontSize: 20 }} aria-hidden="true">📞</span>
@@ -6027,7 +6027,7 @@ function AppInner() {
                 La ligne TOTOR : appelle, ça répond.
               </h2>
               <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 14px", maxWidth: 500 }}>
-                Une question sur ta déclaration, tes factures, l'application ? Tu appelles, l'assistante TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
+                Une question sur ta déclaration, tes factures, l'application ? Tu appelles, la ligne TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
               </p>
               <span style={{ display: "inline-block", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#5DCAA5", letterSpacing: 0.4 }}>Réservé aux abonnés</span>
             </div>
@@ -6339,7 +6339,7 @@ function AppInner() {
               La ligne TOTOR : appelle, ça répond.
             </h2>
             <p style={{ fontSize: isMobile ? 15 : 16.5, color: "#B5D4F4", lineHeight: 1.6, margin: "0 auto 14px", maxWidth: 500 }}>
-              Une question sur tes heures, ton actualisation, l'application ? Tu appelles, l'assistante TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
+              Une question sur tes heures, ton actualisation, l'application ? Tu appelles, la ligne TOTOR te répond, à toute heure. Ton numéro d'accès t'attend dans l'app.
             </p>
             <span style={{ display: "inline-block", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "5px 14px", fontSize: 12, fontWeight: 700, color: "#5DCAA5", letterSpacing: 0.4 }}>Réservé aux abonnés</span>
           </div>
