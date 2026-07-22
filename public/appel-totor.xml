@@ -5,5 +5,5 @@
      Ce fichier est appele par Twilio en GET (VoiceUrl du +33162290762). -->
 <Response>
   <Play>https://www.montotor.fr/jingle-totor-24k.wav</Play>
-  <Redirect method="POST">https://api.vapi.ai/twilio/inbound_call</Redirect>
+  <Dial><Sip>sip:totor-ligne-fr@sip.vapi.ai</Sip></Dial>
 </Response>
