@@ -886,21 +886,24 @@ function AppInner() {
   function renderBanniereEncaissement() {
     if (!connectInfo || connectInfo.actif) return null;
     const enCours = connectInfo.configure;
+    const enVerification = enCours && connectInfo.dossier_complet;
     return (
       <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "16px 18px", marginBottom: 16, display: "flex", gap: 14, alignItems: "center", flexWrap: "wrap" }}>
         <span style={{ fontSize: 26 }} aria-hidden="true">💶</span>
         <div style={{ flex: 1, minWidth: 220 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "#F8FAFC" }}>
-            {enCours ? "Ton encaissement en ligne est presque prêt" : "Nouveau : fais-toi payer en ligne"}
+            {enVerification ? "Stripe vérifie ton dossier" : enCours ? "Ton encaissement en ligne est presque prêt" : "Nouveau : fais-toi payer en ligne"}
           </div>
           <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 3, lineHeight: 1.5 }}>
-            {enCours
+            {enVerification
+              ? "Ton dossier est complet, tu n'as rien de plus à faire. La vérification prend en général quelques heures, parfois un jour ou deux. Dès que c'est bon, tes factures partiront avec le bouton « Payer en ligne »."
+              : enCours
               ? "Il reste des informations à donner à Stripe, puis tes factures partiront avec le bouton « Payer en ligne »."
               : "Tes clients paient tes factures par carte ou prélèvement, l'argent arrive directement sur ton compte. Zéro commission TOTOR."}
           </div>
         </div>
         <button style={{ ...S.btnPrimary, whiteSpace: "nowrap" }} onClick={activerEncaissement} disabled={connectBusy}>
-          {connectBusy ? "…" : enCours ? "Reprendre mon dossier" : "Activer en 5 minutes"}
+          {connectBusy ? "…" : enVerification ? "Voir mon dossier" : enCours ? "Reprendre mon dossier" : "Activer en 5 minutes"}
         </button>
       </div>
     );
@@ -14654,10 +14657,12 @@ function AppInner() {
               ) : connectInfo?.configure ? (
                 <>
                   <p style={{ fontSize: 12.5, color: "#854F0B", background: "#FAEEDA", border: "1px solid #FAC775", borderRadius: 10, padding: "10px 14px", margin: "0 0 10px" }}>
-                    ⏳ Ton dossier est chez Stripe. S'il te reste des informations à donner, reprends-le ci-dessous.
+                    {connectInfo?.dossier_complet
+                      ? "⏳ Ton dossier est complet, Stripe fait ses vérifications. Ça prend en général quelques heures, parfois un jour ou deux. Tu n'as rien de plus à faire, je te montre « Actif » ici dès que c'est bon."
+                      : "⏳ Ton dossier est chez Stripe. S'il te reste des informations à donner, reprends-le ci-dessous."}
                   </p>
                   <button style={S.btnSecondary} onClick={activerEncaissement} disabled={connectBusy}>
-                    {connectBusy ? "…" : "Reprendre mon dossier Stripe"}
+                    {connectBusy ? "…" : connectInfo?.dossier_complet ? "Voir mon dossier Stripe" : "Reprendre mon dossier Stripe"}
                   </button>
                 </>
               ) : (
