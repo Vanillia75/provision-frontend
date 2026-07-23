@@ -11531,7 +11531,7 @@ function AppInner() {
                   src={hectorEtat?.img || "/hector-tete.png"}
                   alt=""
                   aria-hidden="true"
-                  style={{ position: "absolute", right: 20, top: -30, bottom: 14, width: 390, objectFit: "contain", objectPosition: "center bottom", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
+                  style={{ position: "absolute", right: 20, top: -30, bottom: 14, width: 400, objectFit: "contain", objectPosition: "center top", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
                 />
                 {/* (le fondu du poitrail est désormais dans l'image elle-même, alpha) */}
               </>
