@@ -623,14 +623,14 @@ function AppInner() {
   const [interChat, setInterChat] = useState([]);
   const [interChatInput, setInterChatInput] = useState("");
   const [interChatLoading, setInterChatLoading] = useState(false);
-  // Brique 5.3 : les 6 paliers de Totor intermittent (frise visuelle, mêmes codes que le cockpit AE)
+  // Les 4 paliers de Totor intermittent (resserrés le 23/07, décision Camille :
+  // moins d'étapes = chaque passage devient un événement ; le palier final
+  // s'appelle « 507 », le chiffre mythique se suffit).
   const PALIERS_INTERMITTENT = [
-    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",        img: "/hector-1.png" },
-    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",          img: "/hector-2.png" },
-    { etat: "jeune",    seuil: 200, nom: "Jeune",    court: "200h",  sous: "Il prend de l'élan",      img: "/hector-3.png" },
-    { etat: "confirme", seuil: 350, nom: "Confirmé", court: "350h",  sous: "Il assure",               img: "/hector-4.png" },
-    { etat: "pro",      seuil: 450, nom: "Pro",      court: "450h",  sous: "Presque au but",          img: "/hector-5.png" },
-    { etat: "gardien",  seuil: 507, nom: "Gardien",  court: "507h",  sous: "Objectif atteint",        img: "/hector-6.png" },
+    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",  img: "/hector-1.png" },
+    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",    img: "/hector-2.png" },
+    { etat: "confirme", seuil: 300, nom: "Confirmé", court: "300h",  sous: "Il assure",         img: "/hector-4.png" },
+    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes droits sont là", img: "/hector-6.png" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -6786,7 +6786,7 @@ function AppInner() {
       }
       if (palierSuivant && heuresAvantSuivant <= 24) {
         return [
-          `Plus que ${heuresAvantSuivant}h et je deviens ${palierSuivant.nom}. On y est presque !`,
+          `Plus que ${heuresAvantSuivant}h et j'atteins « ${palierSuivant.nom} ». On y est presque !`,
           `Encore un petit effort — ${cachetsAvantSuivant} cachet${cachetsAvantSuivant > 1 ? "s" : ""} et je grandis. 🐾`,
           "Je sens qu'on approche. Continue, ne lâche rien.",
         ];
@@ -6802,7 +6802,7 @@ function AppInner() {
         "Chaque heure te rapproche de ta niche. 🐾",
         "Tu avances plus vite que tu ne le crois.",
         "J'adore quand tu ajoutes un nouveau contrat.",
-        `Encore ${heuresAvantSuivant}h et je deviens ${palierSuivant ? palierSuivant.nom : "Gardien"}.`,
+        `Encore ${heuresAvantSuivant}h et j'atteins « ${palierSuivant ? palierSuivant.nom : "507"} ».`,
       ];
     })();
     // On choisit une pensée stable par session (basée sur les heures, pour ne pas clignoter à chaque render).
