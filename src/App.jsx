@@ -13101,7 +13101,7 @@ function AppInner() {
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
                     <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tape 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
+                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Le montant, ex : 1 200" value={achatMontant} onChange={e => setAchatMontant(e)} />
                     </div>
                     {achatQuotaEtat === "bloque" && (
                       <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "14px 16px", fontSize: 13, color: "#C2E6D8", lineHeight: 1.55 }}>
