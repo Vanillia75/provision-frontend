@@ -627,10 +627,10 @@ function AppInner() {
   // moins d'étapes = chaque passage devient un événement ; le palier final
   // s'appelle « 507 », le chiffre mythique se suffit).
   const PALIERS_INTERMITTENT = [
-    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",  img: "/hector-1.png" },
-    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",    img: "/hector-2.png" },
-    { etat: "confirme", seuil: 300, nom: "Confirmé", court: "300h",  sous: "Il assure",         img: "/hector-4.png" },
-    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes droits sont là", img: "/hector-6.png" },
+    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",  img: "/totor-chiot.webp?v=1" },
+    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",    img: "/totor-vigilant.webp?v=5" },
+    { etat: "confirme", seuil: 300, nom: "Confirmé", court: "300h",  sous: "Il assure",         img: "/totor-alerte.webp?v=5" },
+    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes droits sont là", img: "/totor-serein.webp?v=5" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -8245,14 +8245,16 @@ function AppInner() {
 
                 {/* ───────── COLONNE GAUCHE : Totor (la star) ───────── */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
+                    les oreilles dépassent du cadre (même signature que la carte AE ;
+                    l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
+                <div style={{ position: "relative", paddingTop: 44 }}>
                 <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", boxShadow: "0 0 0 10px rgba(93,202,165,0.07), 0 10px 30px rgba(0,0,0,0.4)" }}>
                   {/* Header immersif Totor (agrandi : il est la star) */}
                   <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
                     {/* halo doux derrière Totor */}
                     <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
-                    <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
+                    {/* (l'image de Totor est posée par le wrapper, au-dessus de la carte) */}
 
                     {/* Badge palier en haut à droite */}
                     <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
@@ -8337,6 +8339,12 @@ function AppInner() {
                     </div>
                     <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5, fontStyle: "italic" }}>{penseeHector}</div>
                   </div>
+                </div>
+                {/* Totor détouré par-dessus la carte : oreilles hors cadre, poitrail
+                    fondu (alpha dans l'image). Sous le badge/titre (zIndex 1 < 2). */}
+                <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block" }} />
                 </div>
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
