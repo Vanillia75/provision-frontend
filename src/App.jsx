@@ -5667,6 +5667,22 @@ function AppInner() {
         metier: "sur l'App Store",
         note: 5,
       },
+      // startod — avis PUBLIC 5/5 laissé sur l'App Store (« Au top ! »), relevé par
+      // Camille le 23/07/2026 dans App Store Connect. Citation VERBATIM, jamais retouchée.
+      {
+        texte: "Vraiment bien fait, ça simplifie ma compréhension de l'intermittence.",
+        prenom: "startod",
+        metier: "sur l'App Store",
+        note: 5,
+      },
+      // Dannyg75 — avis PUBLIC 5/5 laissé sur l'App Store (« Top »), relevé par
+      // Camille le 23/07/2026 dans App Store Connect. Citation VERBATIM, jamais retouchée.
+      {
+        texte: "Top ! Merci pour cette application 👏 enfin une appli qui nous explique tout lol",
+        prenom: "Dannyg75",
+        metier: "sur l'App Store",
+        note: 5,
+      },
     ];
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
@@ -6297,6 +6313,11 @@ function AppInner() {
         {TEMOIGNAGES.length > 0 && (
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
             <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
+              {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
+              <div style={{ textAlign: "center" }}>
+                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
+              </div>
               {TEMOIGNAGES.map((t, i) => (
                 <div key={i} style={{ textAlign: "center" }}>
                   {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
@@ -6306,7 +6327,7 @@ function AppInner() {
                     </div>
                   )}
                   <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15.5 : 18, color: "#C9D8E8", lineHeight: 1.65, fontStyle: "italic", margin: "0 auto 12px", maxWidth: 560 }}>« {t.texte} »</p>
-                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>— {t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
+                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
                 </div>
               ))}
             </div>
