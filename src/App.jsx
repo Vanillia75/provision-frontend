@@ -5193,15 +5193,15 @@ function AppInner() {
   // Les 4 états émotionnels de Totor selon les jours ACTUELS (pas le record).
   function etatHector(j) {
     if (j === null) return { id: "accueil", label: "🐾 Pour aller encore plus loin", couleur: "#378ADD", pastille: "#378ADD",
-      titre: "Réveille Totor 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/hector-attentif-fondu.webp", accueil: true };
+      titre: "Réveille Totor 🐾", mot: "Quand tu veux, dis-moi combien tu dépenses par mois pour vivre, et je veille sur ta tranquillité au quotidien. On avance à ton rythme.", img: "/totor-attentif.webp?v=5", accueil: true };
     if (j >= 90) return { id: "serein", label: "Sérénité", couleur: "#5DCAA5", pastille: "#5DCAA5",
-      mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/hector-serein-fondu.webp" };
+      mot: "Tout va bien, profite ! Je veille sur ta sérénité.", img: "/totor-serein.webp?v=5" };
     if (j >= 30) return { id: "attentif", label: "Attentif", couleur: "#FAC775", pastille: "#FAC775",
-      mot: "Tout va bien, restons attentifs. Gardons un œil ensemble.", img: "/hector-attentif-fondu.webp" };
+      mot: "Tout va bien, restons attentifs. Gardons un œil ensemble.", img: "/totor-attentif.webp?v=5" };
     if (j >= 7) return { id: "vigilant", label: "Vigilant", couleur: "#EF9F27", pastille: "#EF9F27",
-      mot: "On devrait renforcer un peu ta réserve. Je suis là.", img: "/hector-vigilant-fondu.webp" };
+      mot: "On devrait renforcer un peu ta réserve. Je suis là.", img: "/totor-vigilant.webp?v=5" };
     return { id: "alerte", label: "Alerte", couleur: "#E24B4A", pastille: "#E24B4A",
-      mot: "Viens, on regarde ça ensemble. On va s'en sortir !", img: "/hector-alerte-fondu.webp" };
+      mot: "Viens, on regarde ça ensemble. On va s'en sortir !", img: "/totor-alerte.webp?v=5" };
   }
   const hectorEtat = etatHector(joursTranquillite);
 
@@ -11323,7 +11323,10 @@ function AppInner() {
   //    Ceinture : tout estimateData.X ici est en optional chaining (cf crash 664adee).
   const renderHeroHector = () => (
     <>
-            {/* ── EN-TÊTE TOTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ── */}
+            {/* ── EN-TÊTE TOTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ──
+                Wrapper SANS overflow : Totor détouré flotte au-dessus de la carte,
+                son oreille dépasse du cadre (détail maquette 23/07). */}
+            <div style={{ position: "relative" }}>
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
                 <div>
@@ -11414,9 +11417,11 @@ function AppInner() {
                 </div>
               ) : (
                 <div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 420px", minHeight: 180, position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "relative", zIndex: 2, padding: "20px 28px 8px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                      <div style={{ fontSize: 20, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
+                  {/* Maquette « présence » (22/07) : texte à gauche, Totor PLEINE HAUTEUR
+                      à droite, fondu CSS dans la carte : une présence, pas une vignette. */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "relative", zIndex: 2, padding: "24px 8px 10px 28px" }}>
+                      <div style={{ fontSize: 22, fontWeight: 700, color: "white", marginBottom: 2 }}>🐾 {briefingMatin.salut}{briefingMatin.prenom ? ` ${briefingMatin.prenom}` : ""}</div>
                       <div style={{ fontSize: 12, color: "#6B8299" }}>{new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</div>
                       {/* Sans prénom, Totor invite à se présenter (Loi VIII : un vide est un point de départ). */}
                       {!briefingMatin.prenom && (
@@ -11425,18 +11430,7 @@ function AppInner() {
                           Dis-moi ton prénom →
                         </button>
                       )}
-                    </div>
-                    <div style={{ position: "relative", display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
-                      <img
-                        src={hectorEtat?.img || "/hector-tete.png"}
-                        alt="Totor"
-                        style={{ width: "100%", height: "auto", maxHeight: 240, objectFit: "contain", objectPosition: "center bottom", display: "block", filter: "brightness(1.1)" }}
-                      />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to left, rgba(10,19,34,0) 65%, #0a1322 100%)", pointerEvents: "none" }} />
-                      <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(10,19,34,0) 75%, #0a1322 100%)", pointerEvents: "none" }} />
-                    </div>
-                  </div>
-                  <div style={{ padding: "0 28px 4px" }}>
+                      <div style={{ marginTop: 20 }}>
                   {argentDisponibleBrut !== null && (() => {
                     // Salon V2 — HÉROS UNIQUE. Affichage seul : disponibleAujourdhui / argentDisponibleBrut /
                     // urssafProvision / securiteNum restent calculés en 3409-3444. Aucun calcul ici.
@@ -11483,9 +11477,17 @@ function AppInner() {
                     {argentDisponibleBrut === null && (
                       <div style={{ fontSize: 14, color: "#C2D4E6", lineHeight: 1.6, marginBottom: 4, maxWidth: 460 }}>{briefingMatin.analyse}</div>
                     )}
+                      </div>
+                    </div>
+                    {/* Colonne réservée à Totor : l'image détourée flotte AU-DESSUS de la
+                        carte (posée par le wrapper), ici juste le halo studio derrière. */}
+                    <div style={{ position: "relative", minHeight: 340 }}>
+                      <div style={{ position: "absolute", inset: 0, background: "radial-gradient(ellipse at 60% 45%, rgba(0,0,0,0.5) 0%, rgba(10,19,34,0) 70%)", pointerEvents: "none" }} />
+                    </div>
                   </div>
-                  {/* Bande solde */}
-                  <div style={{ background: "rgba(0,0,0,0.25)", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between" }}>
+                  {/* Bande solde : fondue dans la carte (pas de fond ni de trait, demande
+                      du 23/07 : aucune coupure visuelle, le poitrail se dissout derrière). */}
+                  <div style={{ padding: "12px 24px", display: "flex", flexWrap: "wrap", gap: 12, alignItems: "center", justifyContent: "space-between", position: "relative", zIndex: 5 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flex: 1, minWidth: 200 }}>
                       <span style={{ fontSize: 12, color: "#6B8299", whiteSpace: "nowrap" }}>💳 Solde bancaire</span>
                       <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
@@ -11519,6 +11521,21 @@ function AppInner() {
                   </div>
                 </div>
               )}
+            </div>
+            {/* Totor détouré, posé PAR-DESSUS la carte : l'oreille dépasse du cadre
+                en haut, le poitrail se fond dans la carte juste au-dessus de la
+                bande solde. Décoratif pur (pointerEvents none). */}
+            {!isMobile && (
+              <>
+                <img
+                  src={hectorEtat?.img || "/hector-tete.png"}
+                  alt=""
+                  aria-hidden="true"
+                  style={{ position: "absolute", right: 20, top: -30, bottom: 14, width: 390, objectFit: "contain", objectPosition: "center bottom", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
+                />
+                {/* (le fondu du poitrail est désormais dans l'image elle-même, alpha) */}
+              </>
+            )}
             </div>
 
             {/* ── BRIEFING DÉTAIL (pliable) — sans salut ni héros (remontés dans l'en-tête) ; masqué en accueil pour ne pas dédoubler l'invitation ── */}
