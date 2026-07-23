@@ -11325,8 +11325,11 @@ function AppInner() {
     <>
             {/* ── EN-TÊTE TOTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ──
                 Wrapper SANS overflow : Totor détouré flotte au-dessus de la carte,
-                son oreille dépasse du cadre (détail maquette 23/07). */}
-            <div style={{ position: "relative" }}>
+                son oreille dépasse du cadre (détail maquette 23/07).
+                ⚠️ L'espace du débord est RÉSERVÉ par un paddingTop (jamais de top
+                négatif : quand la carte est le 1er élément de la page, un débord
+                négatif est rogné par la zone de défilement, bug vu chez Camille). */}
+            <div style={{ position: "relative", paddingTop: isMobile ? 0 : 58 }}>
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
                 <div>
@@ -11531,7 +11534,7 @@ function AppInner() {
                   src={hectorEtat?.img || "/hector-tete.png"}
                   alt=""
                   aria-hidden="true"
-                  style={{ position: "absolute", right: 20, top: -58, bottom: 14, width: 410, objectFit: "contain", objectPosition: "center top", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
+                  style={{ position: "absolute", right: 20, top: 0, bottom: 14, width: 410, objectFit: "contain", objectPosition: "center top", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
                 />
                 {/* (le fondu du poitrail est désormais dans l'image elle-même, alpha) */}
               </>
