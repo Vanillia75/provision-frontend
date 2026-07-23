@@ -6073,7 +6073,7 @@ function AppInner() {
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
               {badgesBientot}
-              <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
+              <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>
             </div>
           </section>
 
@@ -6390,7 +6390,7 @@ function AppInner() {
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
               {badgesBientot}
-            <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>
+            <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>
           </div>
         </section>
 
