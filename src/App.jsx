@@ -299,7 +299,7 @@ function HectorTete({ size = 32 }) {
   // Tête de Totor pour l'assistant. Fallback sur une icône si l'image n'est pas déposée.
   const [ok, setOk] = useState(true);
   if (ok) {
-    return <img src="/hector-tete.png" alt="Totor" width={size} height={size}
+    return <img src="/totor-tete.webp?v=2" alt="Totor" width={size} height={size}
       onError={() => setOk(false)}
       style={{ width: size, height: size, objectFit: "contain", display: "block", flexShrink: 0 }} />;
   }
@@ -635,14 +635,14 @@ function AppInner() {
   const [interChat, setInterChat] = useState([]);
   const [interChatInput, setInterChatInput] = useState("");
   const [interChatLoading, setInterChatLoading] = useState(false);
-  // Brique 5.3 : les 6 paliers de Totor intermittent (frise visuelle, mêmes codes que le cockpit AE)
+  // Les 4 paliers de Totor intermittent (resserrés le 23/07, décision Camille :
+  // moins d'étapes = chaque passage devient un événement ; le palier final
+  // s'appelle « 507 », le chiffre mythique se suffit).
   const PALIERS_INTERMITTENT = [
-    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",        img: "/hector-1.png" },
-    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",          img: "/hector-2.png" },
-    { etat: "jeune",    seuil: 200, nom: "Jeune",    court: "200h",  sous: "Il prend de l'élan",      img: "/hector-3.png" },
-    { etat: "confirme", seuil: 350, nom: "Confirmé", court: "350h",  sous: "Il assure",               img: "/hector-4.png" },
-    { etat: "pro",      seuil: 450, nom: "Pro",      court: "450h",  sous: "Presque au but",          img: "/hector-5.png" },
-    { etat: "gardien",  seuil: 507, nom: "Gardien",  court: "507h",  sous: "Objectif atteint",        img: "/hector-6.png" },
+    { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",  img: "/totor-chiot.webp?v=1" },
+    { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",    img: "/totor-vigilant.webp?v=5" },
+    { etat: "confirme", seuil: 300, nom: "Confirmé", court: "300h",  sous: "Il assure",         img: "/totor-alerte.webp?v=5" },
+    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes droits sont là", img: "/totor-serein.webp?v=5" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -2331,6 +2331,18 @@ function AppInner() {
                   style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0, marginTop: 8 }}>
                   🐞 Un truc qui bug ? Dis-le-moi →
                 </button>
+                {codeVocal?.abonne && codeVocal.code ? (
+                  <a href="tel:+33162290762"
+                    style={{ display: "block", fontSize: 11.5, color: "#B5D4F4", textDecoration: "underline", marginTop: 6 }}>
+                    📞 Tu préfères parler ? Appelle ta ligne TOTOR : 01 62 29 07 62 →
+                  </a>
+                ) : (
+                  <button type="button"
+                    onClick={() => { setAideOuverte(false); if (profile?.statut === "intermittent") setInterNav("abonnement"); else setNav("abonnement"); }}
+                    style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0, marginTop: 6, textAlign: "left" }}>
+                    📞 On répond aussi au téléphone : la ligne TOTOR (réservée aux abonnés) →
+                  </button>
+                )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
                   <a href="mailto:bonjour@montotor.fr" style={{ fontSize: 11.5, color: "#5DCAA5", textDecoration: "underline" }}>Pas trouvé ? Écris à Camille →</a>
                   <button type="button" onClick={masquerAide}
@@ -2840,7 +2852,7 @@ function AppInner() {
       <div style={{ maxWidth: 600, margin: "0 auto" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
           <div style={{ width: 48, height: 48, borderRadius: 14, background: "#0a1322", border: "1.5px solid rgba(55,138,221,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-notebook" fallbackColor="#378ADD" />
+            <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-notebook" fallbackColor="#378ADD" />
           </div>
           <div>
             <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>🐶 Ce que j'ai appris</h1>
@@ -6267,7 +6279,7 @@ function AppInner() {
                     <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>14:10 <span style={{ color: "#5DCAA5" }}>✓✓</span></div>
                   </div>
                   <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                    <img src="/hector-tete.png" alt="" style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                    <img src="/totor-tete.webp?v=2" alt="" style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                     <div style={{ background: "rgba(255,255,255,0.06)", color: "#EAF2FB", borderRadius: "14px 14px 14px 4px", padding: "11px 15px", fontSize: 14, lineHeight: 1.5 }}>
                       <span style={{ color: "#5DCAA5" }}>✓</span> Oui. Ce mois-ci il te reste <strong>2 522 €</strong> réellement à toi (une fois l'URSSAF mise de côté). 800 € te laissent 1 722 € de marge.
                     </div>
@@ -6520,7 +6532,7 @@ function AppInner() {
                   <div style={{ fontSize: 10, color: "#4A6280", whiteSpace: "nowrap" }}>10:24 <span style={{ color: "#5DCAA5" }}>✓✓</span></div>
                 </div>
                 <div style={{ display: "flex", alignItems: "flex-end", gap: 8 }}>
-                  <img src="/hector-tete.png" alt="" style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
+                  <img src="/totor-tete.webp?v=2" alt="" style={{ width: 30, height: 30, borderRadius: "50%", objectFit: "cover", flexShrink: 0 }} />
                   <div style={{ background: "rgba(255,255,255,0.06)", color: "#EAF2FB", borderRadius: "14px 14px 14px 4px", padding: "11px 15px", fontSize: 14, lineHeight: 1.5 }}>
                     Tes 507 heures correspondent aux heures effectivement travaillées, déclarées par tes employeurs et retenues par France Travail. Je t'explique le détail et les règles appliquées.
                   </div>
@@ -6693,7 +6705,7 @@ function AppInner() {
         return (
           <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
             <div style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }} className="hector-breathe">
-              <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+              <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
             </div>
             {error ? (
               <div style={{ textAlign: "center", maxWidth: 320 }}>
@@ -6760,7 +6772,7 @@ function AppInner() {
             <div style={{ position: "relative", width: 130, height: 130, margin: "0 auto" }}>
               <div style={{ position: "absolute", inset: -10, borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.25) 0%, transparent 70%)" }} />
               <div style={{ width: 130, height: 130, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(93,202,165,0.35)", position: "relative", boxShadow: "0 8px 32px rgba(0,0,0,0.35)" }}>
-                <img src="/hector-tete.png" alt="Totor" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                <img src="/totor-tete.webp?v=2" alt="Totor" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
               </div>
             </div>
             <h1 style={{ ...S.authHero, marginTop: 24 }}>Une dernière chose.</h1>
@@ -7037,7 +7049,7 @@ function AppInner() {
     return (
       <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 20 }}>
         <div className="hector-breathe" style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
-          <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+          <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
         </div>
         <div style={{ color: "#8BA5C0", fontSize: 14 }}>Je prépare ton espace…</div>
       </div>
@@ -7078,7 +7090,7 @@ function AppInner() {
       }
       if (palierSuivant && heuresAvantSuivant <= 24) {
         return [
-          `Plus que ${heuresAvantSuivant}h et je deviens ${palierSuivant.nom}. On y est presque !`,
+          `Plus que ${heuresAvantSuivant}h et j'atteins « ${palierSuivant.nom} ». On y est presque !`,
           `Encore un petit effort — ${cachetsAvantSuivant} cachet${cachetsAvantSuivant > 1 ? "s" : ""} et je grandis. 🐾`,
           "Je sens qu'on approche. Continue, ne lâche rien.",
         ];
@@ -7094,7 +7106,7 @@ function AppInner() {
         "Chaque heure te rapproche de ta niche. 🐾",
         "Tu avances plus vite que tu ne le crois.",
         "J'adore quand tu ajoutes un nouveau contrat.",
-        `Encore ${heuresAvantSuivant}h et je deviens ${palierSuivant ? palierSuivant.nom : "Gardien"}.`,
+        `Encore ${heuresAvantSuivant}h et j'atteins « ${palierSuivant ? palierSuivant.nom : "507"} ».`,
       ];
     })();
     // On choisit une pensée stable par session (basée sur les heures, pour ne pas clignoter à chaque render).
@@ -7955,7 +7967,7 @@ function AppInner() {
                 ) : docViewer.loading ? (
                   <div style={{ color: "#8BA5C0", fontSize: 14, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
                     <div style={{ width: 48, height: 48, borderRadius: "50%", border: "1.5px solid rgba(93,202,165,0.4)", overflow: "hidden" }} className="hector-breathe">
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                     </div>
                     🐾 Je récupère ton document…
                   </div>
@@ -8118,7 +8130,7 @@ function AppInner() {
                   )}
                   <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
                     <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                     </div>
                     <div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>
@@ -8297,7 +8309,7 @@ function AppInner() {
               <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
                 <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
+                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     {/* Salon V2 — présence d'abord : salut léger AU-DESSUS de l'état, dans l'unique Totor du
@@ -8422,7 +8434,7 @@ function AppInner() {
                 <button type="button" onClick={() => setInterNav("calcul")}
                   style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
                   <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
+                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
                   </div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
@@ -8540,14 +8552,16 @@ function AppInner() {
 
                 {/* ───────── COLONNE GAUCHE : Totor (la star) ───────── */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
+                    les oreilles dépassent du cadre (même signature que la carte AE ;
+                    l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
+                <div style={{ position: "relative", paddingTop: 44 }}>
                 <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", boxShadow: "0 0 0 10px rgba(93,202,165,0.07), 0 10px 30px rgba(0,0,0,0.4)" }}>
                   {/* Header immersif Totor (agrandi : il est la star) */}
                   <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
                     {/* halo doux derrière Totor */}
                     <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
-                    <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
-                      onError={(e) => { e.currentTarget.style.display = "none"; }}
-                      style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover", objectPosition: "center 60%", display: "block" }} />
+                    {/* (l'image de Totor est posée par le wrapper, au-dessus de la carte) */}
 
                     {/* Badge palier en haut à droite */}
                     <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
@@ -8628,10 +8642,16 @@ function AppInner() {
                   {/* ── PENSÉE DE TOTOR (il est vivant) ── */}
                   <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px 18px", display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.04)" }}>
                     <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
                     </div>
                     <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5, fontStyle: "italic" }}>{penseeHector}</div>
                   </div>
+                </div>
+                {/* Totor détouré par-dessus la carte : oreilles hors cadre, poitrail
+                    fondu (alpha dans l'image). Sous le badge/titre (zIndex 1 < 2). */}
+                <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block" }} />
                 </div>
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
@@ -9089,7 +9109,7 @@ function AppInner() {
                       {s.type === "done" ? (
                         <div style={{ textAlign: "center", padding: "6px 0" }}>
                           <div style={{ width: 82, height: 82, borderRadius: "50%", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 18px", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
-                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
+                            <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
                           </div>
                           <h2 style={{ fontSize: 21, fontWeight: 800, color: "white", marginBottom: 10 }}>C'est fait ! 🐾</h2>
                           <p style={{ fontSize: 14, color: "#B5D4F4", lineHeight: 1.6, marginBottom: 22 }}>J'ai archivé ton mois de {moisDeclNom}.<br />Repose-toi, je reprends le 28.</p>
@@ -9100,7 +9120,7 @@ function AppInner() {
                           <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1, color: "#5DCAA5", textTransform: "uppercase", textAlign: "center" }}>{s.label}</div>
                           <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", margin: "14px 0 20px" }}>
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                              <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                              <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                             </div>
                             <div style={{ fontSize: 14, color: "white", fontWeight: 700 }}>{s.say}</div>
                           </div>
@@ -9145,7 +9165,7 @@ function AppInner() {
               {actuVide && !dejaActualise && (
                 <div style={{ textAlign: "center", padding: "20px 0 8px" }}>
                   <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                   </div>
                   <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto 8px" }}>Pour {moisDeclNom}, je n'ai aucune activité enregistrée.</h1>
                   <p style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.5, maxWidth: 380, margin: "0 auto 10px" }}>Pourquoi {moisDeclNom} ? On déclare toujours le mois écoulé : sa fenêtre est ouverte jusqu'au ~15 du mois suivant.</p>
@@ -9171,7 +9191,7 @@ function AppInner() {
                   {/* 1. Le mois est le héros */}
                   <div style={{ textAlign: "center", marginBottom: 22 }}>
                     <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05)", overflow: "hidden" }}>
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-mood-happy" fallbackColor="#5DCAA5" />
                     </div>
                     <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1.25, margin: "0 auto 8px" }}>{actuDeclareeSansData ? `🐾 C'est noté pour ${moisDeclNom}` : `✅ ${moisDeclNom} terminé`}</h1>
                     <p style={{ fontSize: 13.5, color: "#8FB4D8", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
@@ -9295,7 +9315,7 @@ function AppInner() {
                       <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(10,19,34,0.4))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 16, padding: "18px 20px" }}>
                         <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
                           <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                            <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
                           </div>
                           <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6 }}>
                             Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? ", tes droits sont sécurisés ✓" : `, soit ${pct} % vers ton renouvellement.`}
@@ -9318,7 +9338,7 @@ function AppInner() {
                 {/* 1. LA PRÉSENCE */}
                 <div style={{ textAlign: "center", marginBottom: 26 }}>
                   <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05), 0 10px 30px rgba(0,0,0,0.4)", overflow: "hidden" }}>
-                    <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                   </div>
                   <h1 style={{ fontSize: 21, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto" }}>Salut 🐾 J'ai préparé ton actualisation de {moisDeclNom}.</h1>
                   <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 8 }}>
@@ -9451,7 +9471,7 @@ function AppInner() {
               {/* En-tête */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-calculator" fallbackColor="#5DCAA5" />
+                  <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-calculator" fallbackColor="#5DCAA5" />
                 </div>
                 <div>
                   <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Centre de calcul 🐾</div>
@@ -9470,7 +9490,7 @@ function AppInner() {
                 return (
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "14px 16px", marginBottom: 22 }}>
                     <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
                     </div>
                     <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55 }}><span style={{ color: "#5DCAA5", fontWeight: 700 }}>En résumé :</span> {phrase}</div>
                   </div>
@@ -9572,7 +9592,7 @@ function AppInner() {
                   <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.4))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px", marginBottom: 22 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                       <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                        <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                        <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
                       </div>
                       <div style={{ fontSize: 15, fontWeight: 800, color: "white" }}>Ce que je pense 🐾</div>
                     </div>
@@ -9759,7 +9779,7 @@ function AppInner() {
                         ) : (
                           <div key={i} style={{ display: "flex", gap: 10 }}>
                             <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                              <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                              <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                             </div>
                             <div style={{ maxWidth: "88%" }}>
                               <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "4px 14px 14px 14px", padding: "13px 15px", fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.55 }}>
@@ -9875,7 +9895,7 @@ function AppInner() {
                       {calcThinking && (
                         <div style={{ display: "flex", gap: 10 }}>
                           <div style={{ width: 32, height: 32, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                            <NiveauImage src="/hector-tete.png" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
+                            <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
                           </div>
                           <div style={{ background: "rgba(255,255,255,0.05)", borderRadius: "4px 14px 14px 14px", padding: "13px 15px", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.9, minWidth: 220 }}>
                             <div style={{ fontWeight: 700, color: "#5DCAA5", marginBottom: 4 }}>🐾 Je regarde ton dossier…</div>
@@ -10170,7 +10190,7 @@ function AppInner() {
 
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-folder" fallbackColor="#5DCAA5" />
+                  <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-folder" fallbackColor="#5DCAA5" />
                 </div>
                 <div>
                   <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Mes documents 🐾</div>
@@ -10325,7 +10345,7 @@ function AppInner() {
               {/* ── Le chat Totor intermittent (assistant expert du régime) ── */}
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-message" fallbackColor="#3a5169" />
+                  <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-message" fallbackColor="#3a5169" />
                 </div>
                 <div>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>Parle à Totor</div>
@@ -11181,7 +11201,7 @@ function AppInner() {
               {interNav === "reglages" && (<>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/hector-tete.png" fallbackIcon="ti-settings" fallbackColor="#5DCAA5" />
+                  <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-settings" fallbackColor="#5DCAA5" />
                 </div>
                 <div>
                   <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Réglages</div>
@@ -11329,7 +11349,7 @@ function AppInner() {
         // Parcours dédié intermittent du spectacle (le côté "507h / cachets / AEM").
         const wtStepsIntermittent = [
           {
-            img: "/hector-tete.png",
+            img: "/totor-tete.webp?v=2",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es, sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
@@ -11451,7 +11471,7 @@ function AppInner() {
         ];
         const wtStepsAuto = [
           {
-            img: "/hector-tete.png",
+            img: "/totor-tete.webp?v=2",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser, sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
@@ -11620,8 +11640,11 @@ function AppInner() {
     <>
             {/* ── EN-TÊTE TOTOR UNIFIÉ (Salon V2 / PR2) : image + salut + héros 1170, TOUJOURS visible ──
                 Wrapper SANS overflow : Totor détouré flotte au-dessus de la carte,
-                son oreille dépasse du cadre (détail maquette 23/07). */}
-            <div style={{ position: "relative" }}>
+                son oreille dépasse du cadre (détail maquette 23/07).
+                ⚠️ L'espace du débord est RÉSERVÉ par un paddingTop (jamais de top
+                négatif : quand la carte est le 1er élément de la page, un débord
+                négatif est rogné par la zone de défilement, bug vu chez Camille). */}
+            <div style={{ position: "relative", paddingTop: isMobile ? 0 : 58 }}>
             <div style={{ background: "#0a1322", border: `1px solid ${hectorEtat ? hectorEtat.couleur + "33" : "rgba(55,138,221,0.2)"}`, borderRadius: 16, overflow: "hidden", position: "relative" }}>
               {isMobile ? (
                 <div>
@@ -11823,10 +11846,10 @@ function AppInner() {
             {!isMobile && (
               <>
                 <img
-                  src={hectorEtat?.img || "/hector-tete.png"}
+                  src={hectorEtat?.img || "/totor-tete.webp?v=2"}
                   alt=""
                   aria-hidden="true"
-                  style={{ position: "absolute", right: 20, top: -30, bottom: 14, width: 400, objectFit: "contain", objectPosition: "center top", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
+                  style={{ position: "absolute", right: 20, top: 0, bottom: 14, width: 410, objectFit: "contain", objectPosition: "center top", zIndex: 3, pointerEvents: "none", filter: "brightness(1.1)" }}
                 />
                 {/* (le fondu du poitrail est désormais dans l'image elle-même, alpha) */}
               </>
@@ -12559,7 +12582,7 @@ function AppInner() {
 
                   <div style={{ display: "flex", alignItems: "flex-start", gap: 11, background: `${accent}0D`, border: `1px solid ${accent}33`, borderRadius: 12, padding: "12px 14px", marginBottom: (hasDetail || hasLeviers) ? 14 : 0 }}>
                     <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: `1.5px solid ${accent}66`, display: "flex", alignItems: "center", justifyContent: "center", color: accent, flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/hector-tete.png" fallbackIcon="ti-paw" fallbackColor={accent} />
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={accent} />
                     </div>
                     <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.55 }}>{pr.message}</div>
                   </div>
@@ -12641,7 +12664,7 @@ function AppInner() {
             <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #10233f 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
                 <div style={{ width: 40, height: 40, borderRadius: "50%", overflow: "hidden", border: "2px solid rgba(93,202,165,0.4)", flexShrink: 0 }}>
-                  <img src="/hector-tete.png" alt="Totor" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                  <img src="/totor-tete.webp?v=2" alt="Totor" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ fontSize: 15, fontWeight: 700, color: "white" }}>Parle à Totor</div>
@@ -13387,7 +13410,7 @@ function AppInner() {
                   <div style={{ ...S.card, border: `2px solid ${ACCENT}` }}>
                     <div style={S.cardTitle}>Puis-je me permettre cette dépense ?</div>
                     <div style={{ display: "flex", gap: 10, marginBottom: 12 }}>
-                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Ex : Jaguar E-PACE → tape 18000" value={achatMontant} onChange={e => setAchatMontant(e)} />
+                      <MontantInput decimales style={{ ...S.input, flex: 1 }} placeholder="Le montant, ex : 1 200" value={achatMontant} onChange={e => setAchatMontant(e)} />
                     </div>
                     {achatQuotaEtat === "bloque" && (
                       <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "14px 16px", fontSize: 13, color: "#C2E6D8", lineHeight: 1.55 }}>
@@ -15401,7 +15424,7 @@ function AppInner() {
         // Parcours dédié intermittent du spectacle (le côté "507h / cachets / AEM").
         const wtStepsIntermittent = [
           {
-            img: "/hector-tete.png",
+            img: "/totor-tete.webp?v=2",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es, sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
@@ -15523,7 +15546,7 @@ function AppInner() {
         ];
         const wtStepsAuto = [
           {
-            img: "/hector-tete.png",
+            img: "/totor-tete.webp?v=2",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser, sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
