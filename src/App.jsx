@@ -2248,6 +2248,18 @@ function AppInner() {
                   style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0, marginTop: 8 }}>
                   🐞 Un truc qui bug ? Dis-le-moi →
                 </button>
+                {codeVocal?.abonne && codeVocal.code ? (
+                  <a href="tel:+33162290762"
+                    style={{ display: "block", fontSize: 11.5, color: "#B5D4F4", textDecoration: "underline", marginTop: 6 }}>
+                    📞 Tu préfères parler ? Appelle ta ligne TOTOR : 01 62 29 07 62 →
+                  </a>
+                ) : (
+                  <button type="button"
+                    onClick={() => { setAideOuverte(false); if (profile?.statut === "intermittent") setInterNav("abonnement"); else setNav("abonnement"); }}
+                    style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0, marginTop: 6, textAlign: "left" }}>
+                    📞 On répond aussi au téléphone : la ligne TOTOR (réservée aux abonnés) →
+                  </button>
+                )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
                   <a href="mailto:bonjour@montotor.fr" style={{ fontSize: 11.5, color: "#5DCAA5", textDecoration: "underline" }}>Pas trouvé ? Écris à Camille →</a>
                   <button type="button" onClick={masquerAide}
