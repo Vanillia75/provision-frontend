@@ -3261,8 +3261,9 @@ function AppInner() {
     //    compte nombre×12h / nombre h ; date_fin ne sert qu'à l'affichage (comme une AEM multi-jours).
     const debut = interForm.date;
     const finValide = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : null;
-    const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures";
-    const modeTotal = finValide && interRepartition === "total" && estCachetOuHeures;
+    // Un autre salaire sur une période = toujours UNE ligne (0h, pas de tournée qui multiplie).
+    const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures" || interForm.type_activite === "autre_salaire";
+    const modeTotal = finValide && (interRepartition === "total" || interForm.type_activite === "autre_salaire") && estCachetOuHeures;
 
     // Liste des envois {date, date_fin}.
     let envois;
@@ -7647,8 +7648,11 @@ function AppInner() {
     // Activités tombant dans le mois à déclarer. Les formations suivies sont EXCLUES :
     // elles comptent pour les 507h mais ne sont pas des heures travaillées chez un
     // employeur — France Travail les déclare via la case « en formation », pas ici.
+    // Les AUTRES SALAIRES (hors spectacle) sont exclus aussi : FT les attend avec
+    // leurs VRAIES heures, que TOTOR ne connaît pas — l'utilisateur les déclare
+    // lui-même (le formulaire de saisie le lui dit).
     const actusDuMois = (interActivites || []).filter(a => {
-      if (!a || !a.date || a.type_activite === "formation") return false;
+      if (!a || !a.date || a.type_activite === "formation" || a.type_activite === "autre_salaire") return false;
       const d = new Date(a.date);
       return !isNaN(d) && d.getMonth() === moisDecl.getMonth() && d.getFullYear() === moisDecl.getFullYear();
     });
@@ -10293,7 +10297,7 @@ function AppInner() {
                                         <div key={j} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5, color: "#8BA5C0", padding: "3px 0" }}>
                                           <span style={{ color: "#6B8299", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{c.date ? new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "—"}</span>
                                           <span style={{ color: "#C5D4E3", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.employeur || "Employeur non renseigné"}</span>
-                                          <span style={{ flexShrink: 0 }}>{c.type === "heures" ? `${c.nombre} h` : `${c.nombre} cachet${(c.nombre || 0) > 1 ? "s" : ""}`}</span>
+                                          <span style={{ flexShrink: 0 }}>{c.type === "autre_salaire" ? "hors 507h" : c.type === "heures" ? `${c.nombre} h` : `${c.nombre} cachet${(c.nombre || 0) > 1 ? "s" : ""}`}</span>
                                           <span style={{ flexShrink: 0, color: "#E8F4FF", fontWeight: 600, minWidth: 52, textAlign: "right" }}>{c.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(c.brut)) + " €" : "—"}</span>
                                         </div>
                                       ))}
@@ -10664,7 +10668,7 @@ function AppInner() {
                           {!showSelect ? (
                             <button type="button" onClick={() => setInterTypeAutre(true)}
                               style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#6B8299", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
-                              Autre&nbsp;: formation, arrêt maladie…
+                              Autre&nbsp;: formation, arrêt maladie, salaire hors spectacle…
                             </button>
                           ) : (
                             <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
@@ -10683,7 +10687,15 @@ function AppInner() {
                                 <option value="arret_maladie_ordinaire">Maladie ordinaire (entre 2 contrats)</option>
                                 <option value="arret_paternite">Congé paternité</option>
                               </optgroup>
+                              <optgroup label="Hors intermittence (0h pour tes 507)">
+                                <option value="autre_salaire">Autre salaire (pub, mannequinat, régime général…)</option>
+                              </optgroup>
                             </select>
+                          )}
+                          {interForm.type_activite === "autre_salaire" && (
+                            <div style={{ fontSize: 11, color: "#8FB4D8", lineHeight: 1.5, background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 8, padding: "8px 11px" }}>
+                              Ce salaire s'ajoute à ton <strong style={{ color: "#C8E0F5" }}>récapitulatif de revenus</strong> mais ne compte <strong style={{ color: "#C8E0F5" }}>jamais</strong> dans tes 507h. Pense à le déclarer toi-même dans ton actualisation (avec ses vraies heures) : je ne les connais pas.
+                            </div>
                           )}
                         </div>
                       );
@@ -10742,7 +10754,7 @@ function AppInner() {
                     })()}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
-                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : "Nb d'heures"}
+                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : interForm.type_activite === "autre_salaire" ? "Nb de contrats (ex : 1)" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       {(() => {
                         // Autocomplétion employeur : suggère les employeurs DÉJÀ saisis par l'utilisateur
@@ -11048,6 +11060,7 @@ function AppInner() {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "formation" ? `${a.nombre}h formation` :
                         a.type_activite === "enseignement" ? `${a.nombre}h enseignement` :
+                        a.type_activite === "autre_salaire" ? `salaire hors 507h${a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : ""}` :
                         estArretNeutralise ? `${a.nombre} j → 0h (allonge)` :
                         (a.type_activite || "").startsWith("arret_") ? `${a.nombre} j arrêt → ${Math.round((a.nombre || 0) * 5)}h` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} · ${Math.round(heuresDe(a))} h`;
@@ -11079,6 +11092,9 @@ function AppInner() {
                                 <optgroup label="Arrêt qui allonge la période (0h · estimation)">
                                   <option value="arret_maladie_ordinaire">maladie ordinaire (entre 2 contrats)</option>
                                   <option value="arret_paternite">congé paternité</option>
+                                </optgroup>
+                                <optgroup label="Hors intermittence (0h pour tes 507)">
+                                  <option value="autre_salaire">autre salaire (pub, régime général…)</option>
                                 </optgroup>
                               </select>
                               {interEditForm.type_activite === "heures" && (
@@ -11125,6 +11141,7 @@ function AppInner() {
                       const typeLabelComplet = a.type_activite === "heures" ? "Heures (artiste ou technicien)" :
                         a.type_activite === "formation" ? "Formation suivie" :
                         a.type_activite === "enseignement" ? "Enseignement dispensé" :
+                        a.type_activite === "autre_salaire" ? "Autre salaire (hors 507h)" :
                         ARRET_LABELS[a.type_activite] || "Cachet (artiste)";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
