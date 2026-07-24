@@ -9179,13 +9179,21 @@ function AppInner() {
                       {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
                     </div>
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
-                      Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Chaque contrat ajouté dans le mois met ce chiffre à jour.
+                      Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Montant <strong style={{ color: "#C8E0F5" }}>net social, avant ton impôt à la source</strong> (il varie selon ton taux, je ne l'estime jamais). Chaque contrat ajouté dans le mois met ce chiffre à jour.
                     </div>
-                    {em.approximatif && (
+                    {em.bruts_manquants && (
                       <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
-                        {em.bruts_manquants
-                          ? "Il me manque des salaires bruts sur tes contrats du mois : complète-les pour fiabiliser l'estimation."
-                          : "Certains arrondis de France Travail ne sont pas documentés : le résultat peut bouger d'un jour ou deux."}
+                        Il me manque des salaires bruts sur tes contrats du mois : complète-les pour fiabiliser l'estimation.
+                      </div>
+                    )}
+                    {em.autre_salaire_non_decale && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Ton salaire hors spectacle de ce mois décale aussi des jours, d'une façon que je ne sais pas encore chiffrer précisément : le versement réel sera un peu plus bas que mon estimation.
+                      </div>
+                    )}
+                    {em.arrondi_approximatif && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Ton mois tombe sur des fractions de jours : je tronque comme France Travail le fait sur les relevés que j'ai vérifiés, mais le résultat peut bouger d'un jour.
                       </div>
                     )}
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
