@@ -7573,7 +7573,7 @@ function AppInner() {
       const acts = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= debut; });
       // Agrégat par mois
       const parMois = {};
-      let totalBrut = 0, totalAvecBrut = 0, totalContrats = 0;
+      let totalBrut = 0, totalAvecBrut = 0, totalContrats = 0, totalCachets = 0;
       acts.forEach(a => {
         const d = new Date(a.date);
         const clef = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
@@ -7588,6 +7588,8 @@ function AppInner() {
         totalBrut += brut;
         if (brut > 0) totalAvecBrut += 1;
         totalContrats += 1;
+        // Total de cachets (retour testeuse 24/07 : « un cachet = une journée », son repère).
+        if (a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe" || a.type_activite === "cachet") totalCachets += parseFloat(a.nombre) || 0;
       });
       const lignes = Object.keys(parMois).sort().reverse().map(k => ({ ...parMois[k], employeurs: parMois[k].employeurs.size, details: [...parMois[k].details].sort((x, y) => String(x.date).localeCompare(String(y.date))) }));
       const moisAvecRevenu = lignes.filter(l => l.brut > 0).length;
@@ -7596,7 +7598,7 @@ function AppInner() {
       const periodeLabel = `${MOIS[debut.getMonth()]} ${debut.getFullYear()} – ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
       // % de contrats avec brut renseigné (pour avertir si incomplet)
       const completude = totalContrats > 0 ? Math.round((totalAvecBrut / totalContrats) * 100) : 0;
-      return { lignes, totalBrut: Math.round(totalBrut), moyenneMensuelle: Math.round(moyenneMensuelle), totalContrats, employeursUniques, periodeLabel, completude, aDesDonnees: acts.length > 0 };
+      return { lignes, totalBrut: Math.round(totalBrut), moyenneMensuelle: Math.round(moyenneMensuelle), totalContrats, totalCachets, employeursUniques, periodeLabel, completude, aDesDonnees: acts.length > 0 };
     })();
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
@@ -7669,7 +7671,10 @@ function AppInner() {
       totalHeuresMois += h;
       if (estCachet) totalCachetsMois += nb;
       totalBrutMois += brut;
-      if (!parEmployeur[emp]) parEmployeur[emp] = { nom: emp, cachets: 0, heures: 0, brut: 0, aemRecue: a.aem_recue === true };
+      if (!parEmployeur[emp]) parEmployeur[emp] = { nom: emp, cachets: 0, heures: 0, brut: 0, aemRecue: true };
+      // Un employeur n'est « AEM reçue » que si TOUTES ses lignes du mois l'ont
+      // (avant, seule la 1re ligne décidait — retour testeuse 24/07 : compte faux).
+      parEmployeur[emp].aemRecue = parEmployeur[emp].aemRecue && a.aem_recue === true;
       parEmployeur[emp].heures += h;
       if (estCachet) parEmployeur[emp].cachets += nb;
       parEmployeur[emp].brut += brut;
@@ -8142,7 +8147,9 @@ function AppInner() {
                       </div>
                     ) : (
                       <>
-                        <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
+                        {/* Totaux en cachets ET en heures (retour testeuse 24/07 : « un cachet, c'est une journée » — son unité mentale) */}
+                        <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+                          <strong style={{ color: "#C8E0F5" }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}{(() => { const tc = aems.reduce((s, x) => s + ((x.type_activite === "cachet_isole" || x.type_activite === "cachet_groupe" || x.type_activite === "cachet") ? (parseFloat(x.nombre) || 0) : 0), 0); const th = Math.round(aems.reduce((s, x) => s + heuresDe(x), 0)); return ` · ${tc} cachet${tc > 1 ? "s" : ""} · ${th} h`; })()}</strong>. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
                             <Fragment key={a.id || i}>
@@ -9386,8 +9393,8 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.22)", borderRadius: 12, padding: "12px 15px" }}>
                       <div style={{ width: 21, height: 21, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, marginTop: 1, background: "rgba(250,199,117,0.18)", color: "#FAC775" }}><i className="ti ti-alert-triangle" aria-hidden="true" /></div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#FAE3B6", lineHeight: 1.4 }}>Il me manque {aemManquantes.length} AEM</div>
-                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2, lineHeight: 1.45 }}>{aemManquantes.map(e => e.nom).join(", ")}, sans elle{aemManquantes.length > 1 ? "s" : ""}, ces heures ne comptent pas.</div>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#FAE3B6", lineHeight: 1.4 }}>Il me manque l'AEM de {aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""}</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2, lineHeight: 1.45 }}>{aemManquantes.map(e => e.nom).join(", ")} : au moins un contrat du mois n'a pas son attestation. Sans elle, ces heures ne comptent pas.</div>
                         <div style={{ display: "flex", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
                           <button type="button" onClick={() => setInterNav("activites")} style={{ fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, cursor: "pointer", borderRadius: 7, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", border: "1px solid #FAC775", background: "#FAC775", color: "#412402" }}>Voir mes activités</button>
                         </div>
@@ -10264,6 +10271,12 @@ function AppInner() {
                         <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{recapRevenus.totalContrats}</div>
                         <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Contrats</div>
                       </div>
+                      {recapRevenus.totalCachets > 0 && (
+                        <div style={{ flex: "1 1 100px", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{recapRevenus.totalCachets}</div>
+                          <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Cachets</div>
+                        </div>
+                      )}
                     </div>
                     {/* Tableau */}
                     <div style={{ overflowX: "auto" }}>
