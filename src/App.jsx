@@ -8959,10 +8959,10 @@ function AppInner() {
                       </div>
                     )}
 
-                    {/* Le « pas encore » assumé : l'allocation mensuelle */}
+                    {/* Le renvoi vers l'estimation mensuelle (lancée le 24/07, carte « Ton mois ») */}
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(93,202,165,0.15)", lineHeight: 1.55 }}>
-                      <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Pourquoi je n'affiche pas encore ton allocation mensuelle ?</strong><br />
-                      Je préfère attendre d'avoir vérifié ce calcul sur de vrais relevés de paiement avant de te donner un montant. Je préfère être exact que rapide. 🐾
+                      <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Et ton versement du mois ?</strong><br />
+                      Il est juste en dessous : la carte « Ton mois » estime ce que France Travail te versera pour le mois en cours. Et je me calerai au centime sur ton premier relevé de situation. 🐾
                     </div>
 
                     <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
