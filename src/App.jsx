@@ -636,6 +636,11 @@ function AppInner() {
   // Chat Totor intermittent (assistant IA spécialisé régime)
   const [interChat, setInterChat] = useState([]);
   const [interChatInput, setInterChatInput] = useState("");
+  // Historique persistant du chat : date du dernier échange rechargé (bandeau « on reprend »),
+  // verrou une-seule-tentative de chargement, et armement du bouton « Repartir de zéro ».
+  const [interChatReprise, setInterChatReprise] = useState(null);
+  const [interChatHistoOk, setInterChatHistoOk] = useState(false);
+  const [interChatEffaceArme, setInterChatEffaceArme] = useState(false);
   const [interChatLoading, setInterChatLoading] = useState(false);
   // Les 4 paliers de Totor intermittent (resserrés le 23/07, décision Camille :
   // moins d'étapes = chaque passage devient un événement ; le palier final
@@ -1014,6 +1019,10 @@ function AppInner() {
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
+  // Historique persistant du chat AE (mêmes rôles que côté intermittent).
+  const [aiReprise, setAiReprise] = useState(null);
+  const [aiHistoOk, setAiHistoOk] = useState(false);
+  const [aiEffaceArme, setAiEffaceArme] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [devisCreating, setDevisCreating] = useState(null);
   const [devisCreated, setDevisCreated] = useState({});
@@ -1845,6 +1854,11 @@ function AppInner() {
     setIncomeList([]);
     setMobileMenuOpen(false);
     setNav("dashboard");
+    // Les chats repartent à neuf : jamais la conversation d'un compte devant un autre.
+    setAiMessages([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
+    setAiReprise(null); setAiHistoOk(false); setAiEffaceArme(false);
+    setInterChat([]);
+    setInterChatReprise(null); setInterChatHistoOk(false); setInterChatEffaceArme(false);
   }
 
   // ── Abonnement Stripe (Premium) ──
@@ -5030,9 +5044,12 @@ function AppInner() {
     setAiInput("");
     setAiLoading(true);
     try {
+      // canal "chat" : le serveur ENREGISTRE l'échange (la conversation se retrouve
+      // d'un jour à l'autre). On n'envoie au modèle que les 12 derniers messages :
+      // l'historique complet reste affiché, mais le contexte reste léger.
       const data = await apiFetch("/assistant/chat", {
         method: "POST",
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ canal: "chat", messages: newMessages.slice(-12).map(m => ({ role: m.role, content: m.content })) }),
       });
       setAiMessages(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
@@ -5053,9 +5070,10 @@ function AppInner() {
     setInterChatInput("");
     setInterChatLoading(true);
     try {
+      // canal "chat" : le serveur ENREGISTRE l'échange (voir askAI) ; contexte = 12 derniers.
       const data = await apiFetch("/assistant/chat", {
         method: "POST",
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ canal: "chat", messages: newMessages.slice(-12).map(m => ({ role: m.role, content: m.content })) }),
       });
       setInterChat(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
@@ -5063,6 +5081,58 @@ function AppInner() {
         setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setInterChatLoading(false);
+    }
+  }
+
+  // ── Historique persistant « Parle à Totor » ──
+  // Au premier passage sur l'écran du chat, on recharge la conversation enregistrée
+  // (d'un jour à l'autre, d'un appareil à l'autre). Une seule tentative par session,
+  // jamais bloquante, et jamais par-dessus une conversation déjà en cours à l'écran.
+  useEffect(() => {
+    if (interNav !== "hector" || !token || interChatHistoOk) return;
+    setInterChatHistoOk(true);
+    apiFetch("/assistant/chat/historique").then(d => {
+      const msgs = (d && d.messages) || [];
+      if (!msgs.length) return;
+      setInterChat(prev => (prev.length ? prev : msgs.map(m => ({ role: m.role, content: m.content }))));
+      setInterChatReprise(msgs[msgs.length - 1].date || null);
+    }).catch(() => {});
+  }, [interNav, token, interChatHistoOk]);
+
+  useEffect(() => {
+    if (nav !== "assistant" || !token || aiHistoOk) return;
+    setAiHistoOk(true);
+    apiFetch("/assistant/chat/historique").then(d => {
+      const msgs = (d && d.messages) || [];
+      if (!msgs.length) return;
+      // Le message d'accueil local (1 message) s'efface au profit du vrai fil.
+      setAiMessages(prev => (prev.length > 1 ? prev : msgs.map(m => ({ role: m.role, content: m.content }))));
+      setAiReprise(msgs[msgs.length - 1].date || null);
+    }).catch(() => {});
+  }, [nav, token, aiHistoOk]);
+
+  // Petit libellé du bandeau de reprise : « dernier échange le 23 juillet ».
+  function libelleReprise(iso) {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "";
+      return ` (dernier échange le ${d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })})`;
+    } catch { return ""; }
+  }
+
+  // « Repartir de zéro » : efface l'historique de l'espace courant, côté serveur
+  // PUIS à l'écran (si le serveur rate, on ne fait rien : jamais d'écran menteur).
+  async function effacerHistoriqueChat(espaceIntermittent) {
+    try {
+      await apiFetch("/assistant/chat/historique", { method: "DELETE" });
+      if (espaceIntermittent) {
+        setInterChat([]); setInterChatReprise(null); setInterChatEffaceArme(false);
+      } else {
+        setAiMessages([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
+        setAiReprise(null); setAiEffaceArme(false);
+      }
+    } catch {
+      if (espaceIntermittent) setInterChatEffaceArme(false); else setAiEffaceArme(false);
     }
   }
 
@@ -10513,6 +10583,11 @@ function AppInner() {
                       </div>
                     </div>
                   )}
+                  {interChatReprise && interChat.length > 0 && (
+                    <div style={{ textAlign: "center", fontSize: 11, color: "#5A7088", padding: "2px 0 4px" }}>
+                      Je garde le fil : on reprend où on s'était arrêtés{libelleReprise(interChatReprise)}.
+                    </div>
+                  )}
                   {interChat.map((m, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                       <div style={{ maxWidth: "85%", background: m.role === "user" ? "#378ADD" : "rgba(255,255,255,0.06)", color: m.role === "user" ? "white" : "#E8F4FF", borderRadius: 14, padding: "10px 14px", fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
@@ -10539,6 +10614,15 @@ function AppInner() {
                 <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
                   Totor connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
                 </div>
+                {interChat.length > 0 && (
+                  <div style={{ textAlign: "center", marginTop: 6 }}>
+                    <button type="button"
+                      onClick={() => (interChatEffaceArme ? effacerHistoriqueChat(true) : setInterChatEffaceArme(true))}
+                      style={{ background: "none", border: "none", color: interChatEffaceArme ? "#E0533D" : "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: "6px 8px" }}>
+                      {interChatEffaceArme ? "Tu confirmes ? J'efface toute notre conversation" : "Repartir de zéro (effacer la conversation)"}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ── Brique 5.4 : "Quoi accepter" — le conseiller de décision ── */}
@@ -15513,6 +15597,11 @@ function AppInner() {
             )}
             <div style={{ ...S.card, display: "flex", flexDirection: "column", height: "calc(100vh - 260px)" }}>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}>
+                {aiReprise && aiMessages.length > 1 && (
+                  <div style={{ textAlign: "center", fontSize: 11, color: "#8B98A8", padding: "2px 0 4px" }}>
+                    Je garde le fil : on reprend où on s'était arrêtés{libelleReprise(aiReprise)}.
+                  </div>
+                )}
                 {aiMessages.map((m, i) => {
                   const devis = m.role === "assistant" ? parseDevisBlock(m.content) : null;
                   return (
@@ -15578,6 +15667,15 @@ function AppInner() {
                 )}
                 <button style={S.btnPrimarySmall} type="submit" disabled={aiLoading}>Envoyer</button>
               </form>
+              {aiMessages.length > 1 && (
+                <div style={{ textAlign: "center", marginTop: 6 }}>
+                  <button type="button"
+                    onClick={() => (aiEffaceArme ? effacerHistoriqueChat(false) : setAiEffaceArme(true))}
+                    style={{ background: "none", border: "none", color: aiEffaceArme ? "#E0533D" : "#8B98A8", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: "6px 8px" }}>
+                    {aiEffaceArme ? "Tu confirmes ? J'efface toute notre conversation" : "Repartir de zéro (effacer la conversation)"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}

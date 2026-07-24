@@ -12,6 +12,7 @@ const VAGUES = [
     date: "24 juillet 2026",
     titre: "Ton prochain renouvellement, projeté",
     items: [
+      { qui: "tous", texte: "Je garde le fil de nos conversations : tu retrouves « Parle à Totor » là où on s'était arrêtés, d'un jour à l'autre et d'un appareil à l'autre. Un bouton « Repartir de zéro » efface tout quand tu veux." },
       { qui: "intermittent", texte: "Nouvelle carte « Ton prochain renouvellement » sur ton cockpit : ton allocation journalière projetée à partir des heures et salaires que tu as déjà déclarés, avec le détail du calcul à l'appui." },
       { qui: "intermittent", texte: "La courbe « chaque cachet compte » : tu vois la pente réelle de ton allocation, sans paliers imaginaires." },
       { qui: "intermittent", texte: "Le mini-simulateur dans la carte : « Et si j'ajoute 5 cachets à 200 € ? », et je te réponds tout de suite." },
