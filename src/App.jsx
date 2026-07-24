@@ -3299,7 +3299,7 @@ function AppInner() {
       }
       // Célébration : on dit tout de suite ce que ça change (heures ajoutées au compteur).
       const heuresAjoutees = Math.round(heuresDe({ type_activite: interForm.type_activite, nombre }) * envois.length);
-      setInterRepartition("parjour");
+      setInterRepartition("total");
       setInterMetier("");
       setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", pas_montant: "", estime: false });
       setInterShowAdd(false);
@@ -3331,6 +3331,26 @@ function AppInner() {
       if (brut != null && aBrut != null) return Math.abs(aBrut - brut) < 0.01; // brut connu des 2 côtés → doit coïncider
       const aNb = a.nombre != null ? parseFloat(a.nombre) : null;
       return nb != null && aNb != null && Math.abs(aNb - nb) < 0.001;          // sinon on compare le nombre
+    }) || null;
+  }
+
+  // Trouve une ligne ESTIMÉE que l'AEM scannée vient confirmer : même employeur (quand
+  // les deux sont connus) et périodes qui se CHEVAUCHENT. Les chiffres peuvent différer,
+  // c'est le principe même d'une estimation : on matche la période, pas le montant.
+  // (Réconciliation demandée par une testeuse le 23/07/2026.)
+  function trouveEstimationARemplacer(extrait, activites) {
+    if (!extrait || !extrait.date) return null;
+    const norm = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const emp = norm(extrait.employeur);
+    const eDeb = extrait.date;
+    const eFin = extrait.date_fin || extrait.date;
+    return (activites || []).find((a) => {
+      if (!a || a.estime !== true || !a.date) return false;
+      const aEmp = norm(a.employeur);
+      if (emp && aEmp && aEmp !== emp) return false;
+      const aDeb = a.date;
+      const aFin = a.date_fin || a.date;
+      return aDeb <= eFin && eDeb <= aFin;
     }) || null;
   }
 
@@ -3579,6 +3599,63 @@ function AppInner() {
     } catch (err) {
       setAemError(err.message);
       aemBatchRef.current = null;        // reset en erreur : sinon le prochain batch partirait avec un avant/cachets pollué
+    } finally {
+      setAemSaving(false);
+    }
+  }
+
+  // ─── Réconciliation estimé → AEM (retour testeuse 23/07) : l'AEM scannée REMPLACE la ligne
+  // estimée correspondante (PUT) au lieu d'en créer une seconde. Même déroulé de file/victoire
+  // que handleConfirmAEMMesaem, avec le même snapshot frais (immunisé au closure).
+  async function remplacerEstimationParAEM(cible) {
+    const nombre = parseFloat(aemExtrait.nombre);
+    if (!aemExtrait.date || !nombre || nombre <= 0) { setAemError("Vérifie la date et le nombre avant de remplacer."); return; }
+    setAemSaving(true); setAemError("");
+    if (!aemBatchRef.current) aemBatchRef.current = { avant: (interCockpit?.total_heures ?? 0), cachets: 0, heures: 0 };
+    if (aemExtrait.type_activite === "cachet_isole") aemBatchRef.current.cachets += nombre;
+    else aemBatchRef.current.heures += nombre;
+    try {
+      await apiFetch(`/intermittent/activite/${cible.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          date: aemExtrait.date,
+          date_fin: aemExtrait.date_fin || null,
+          type_activite: aemExtrait.type_activite,
+          nombre,
+          employeur: aemExtrait.employeur || null,
+          salaire_brut: aemExtrait.salaire_brut !== "" ? parseFloat(aemExtrait.salaire_brut) : null,
+          estime: false,
+          aem_recue: true,
+          aem_filename: aemExtrait.filename || null,
+          aem_r2_key: aemExtrait.aem_r2_key || null,
+          metier: aemExtrait.type_activite === "cachet_isole" ? "artiste" : (aemExtrait.metier || null),
+        }),
+      });
+      if (aemQueue.length > 0) {
+        setAemExtrait(aemQueue[0]);
+        setAemQueue(aemQueue.slice(1));
+        await loadIntermittentCockpit();
+        setAemSaving(false);
+        return;
+      }
+      setAemExtrait(null); setAemTotal(0);
+      const [fresh, activites] = await Promise.all([
+        apiFetch("/intermittent/cockpit"),
+        apiFetch("/intermittent/activites"),
+      ]);
+      setInterCockpit(fresh);
+      setInterActivites(activites);
+      const batch = aemBatchRef.current || { avant: (fresh.total_heures ?? 0), cachets: 0, heures: 0 };
+      setAemVictoire({
+        deltaH: Math.max(0, Math.round((fresh.total_heures ?? 0) - batch.avant)),
+        deltaCachets: batch.cachets,
+        total: fresh.total_heures ?? 0,
+        reste: fresh.manquant ?? 0,
+      });
+      aemBatchRef.current = null;
+    } catch (err) {
+      setAemError(err.message);
+      aemBatchRef.current = null;
     } finally {
       setAemSaving(false);
     }
@@ -7974,6 +8051,21 @@ function AppInner() {
                   {renderEnvoiHumain()}
 
                   {(() => {
+                    // Réconciliation d'abord : si une ligne ESTIMÉE couvre cette période,
+                    // on propose de la remplacer d'un clic (retour testeuse 23/07).
+                    const est = trouveEstimationARemplacer(aemExtrait, interActivites);
+                    if (est) {
+                      return (
+                        <div style={{ marginTop: 14, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#BFE6D6", lineHeight: 1.55 }}>
+                          <strong style={{ color: "#9FE1CB" }}>💡 Tu avais estimé cette période.</strong> Ta ligne « {est.employeur || "sans employeur"} · {fmtDate(est.date)}{est.date_fin ? ` → ${fmtDate(est.date_fin)}` : ""} · {Math.round(heuresDe(est))} h » attend ses vrais chiffres : cette AEM les apporte.
+                          <button type="button" disabled={aemSaving} onClick={() => remplacerEstimationParAEM(est)}
+                            style={{ display: "block", width: "100%", marginTop: 10, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 700, cursor: aemSaving ? "default" : "pointer", fontFamily: "inherit", opacity: aemSaving ? 0.6 : 1 }}>
+                            Remplacer mon estimation par cette AEM ✓
+                          </button>
+                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6 }}>Ou enregistre-la comme une nouvelle ligne avec le bouton vert du bas, si c'est un autre contrat.</div>
+                        </div>
+                      );
+                    }
                     const dup = trouveDoublonAEM(aemExtrait, interActivites);
                     if (!dup) return null;
                     return (
