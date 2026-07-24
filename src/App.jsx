@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, Fragment } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
 import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate, MENTION_PENALITES_B2B } from "./legalMentions";
@@ -592,6 +592,8 @@ function AppInner() {
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
   // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
   const [docTab, setDocTab] = useState("revenus");
+  // Mois déplié dans le récap de revenus (clef "AAAA-MM" ou null) — détail contrat par contrat.
+  const [recapMoisOuvert, setRecapMoisOuvert] = useState(null);
   // ─── Vie de Totor sur le cockpit (micro-interactions) ───
   const [hectorPop, setHectorPop] = useState(false); // déclenche l'animation pop quand on ajoute
   // ─── Centre de calcul conversationnel ───
@@ -7451,16 +7453,19 @@ function AppInner() {
       acts.forEach(a => {
         const d = new Date(a.date);
         const clef = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
-        if (!parMois[clef]) parMois[clef] = { label: `${MOIS[d.getMonth()]} ${d.getFullYear()}`, brut: 0, contrats: 0, employeurs: new Set() };
+        if (!parMois[clef]) parMois[clef] = { clef, label: `${MOIS[d.getMonth()]} ${d.getFullYear()}`, brut: 0, contrats: 0, employeurs: new Set(), details: [] };
         const brut = parseFloat(a.salaire_brut) || 0;
         parMois[clef].brut += brut;
         parMois[clef].contrats += 1;
         if (a.employeur) parMois[clef].employeurs.add(a.employeur);
+        // Détail contrat par contrat (retour testeuse 23/07 : « 3 contrats, 400 € »
+        // sans détail = invérifiable). Trié plus bas par date.
+        parMois[clef].details.push({ date: a.date, employeur: a.employeur || null, type: a.type_activite, nombre: a.nombre, brut });
         totalBrut += brut;
         if (brut > 0) totalAvecBrut += 1;
         totalContrats += 1;
       });
-      const lignes = Object.keys(parMois).sort().reverse().map(k => ({ ...parMois[k], employeurs: parMois[k].employeurs.size }));
+      const lignes = Object.keys(parMois).sort().reverse().map(k => ({ ...parMois[k], employeurs: parMois[k].employeurs.size, details: [...parMois[k].details].sort((x, y) => String(x.date).localeCompare(String(y.date))) }));
       const moisAvecRevenu = lignes.filter(l => l.brut > 0).length;
       const moyenneMensuelle = moisAvecRevenu > 0 ? totalBrut / moisAvecRevenu : 0;
       const employeursUniques = new Set(acts.map(a => a.employeur).filter(Boolean)).size;
@@ -7820,6 +7825,13 @@ function AppInner() {
                         style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                         Scanner la suivante
                       </button>
+                      {/* Retour explicite vers la liste (retour testeuse 23/07 : après un scan,
+                          elle ne savait pas où retrouver ses AEM). Même écran, ancré sur la liste. */}
+                      <button type="button"
+                        onClick={() => { setAemVictoire(null); setTimeout(() => { const el = document.getElementById("aem-liste-scannees"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); }}
+                        style={{ width: "100%", marginTop: 8, background: "none", color: "#9FE1CB", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: 12, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Voir toutes mes AEM scannées
+                      </button>
                     </div>
                   );
                 }
@@ -7988,7 +8000,7 @@ function AppInner() {
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
+                        <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
                             <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
@@ -9995,14 +10007,36 @@ function AppInner() {
                           </tr>
                         </thead>
                         <tbody>
-                          {recapRevenus.lignes.map((l, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>{l.label}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.contrats}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.employeurs}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
-                            </tr>
-                          ))}
+                          {recapRevenus.lignes.map((l, i) => {
+                            const ouvert = recapMoisOuvert === l.clef;
+                            return (
+                              <Fragment key={l.clef || i}>
+                                <tr onClick={() => setRecapMoisOuvert(ouvert ? null : l.clef)} style={{ cursor: "pointer" }} title={ouvert ? "Replier le détail" : "Voir le détail des contrats"}>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)" }}>
+                                    <i className={`ti ti-chevron-${ouvert ? "down" : "right"}`} aria-hidden="true" style={{ fontSize: 12, color: "#5DCAA5", marginRight: 6 }} />{l.label}
+                                  </td>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.contrats}</td>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.employeurs}</td>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
+                                </tr>
+                                {/* Détail contrat par contrat (retour testeuse 23/07 : pouvoir VÉRIFIER le total du mois) */}
+                                {ouvert && (
+                                  <tr>
+                                    <td colSpan={4} style={{ padding: "0 10px 10px 26px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                                      {l.details.map((c, j) => (
+                                        <div key={j} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5, color: "#8BA5C0", padding: "3px 0" }}>
+                                          <span style={{ color: "#6B8299", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{c.date ? new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "—"}</span>
+                                          <span style={{ color: "#C5D4E3", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.employeur || "Employeur non renseigné"}</span>
+                                          <span style={{ flexShrink: 0 }}>{c.type === "heures" ? `${c.nombre} h` : `${c.nombre} cachet${(c.nombre || 0) > 1 ? "s" : ""}`}</span>
+                                          <span style={{ flexShrink: 0, color: "#E8F4FF", fontWeight: 600, minWidth: 52, textAlign: "right" }}>{c.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(c.brut)) + " €" : "—"}</span>
+                                        </div>
+                                      ))}
+                                    </td>
+                                  </tr>
+                                )}
+                              </Fragment>
+                            );
+                          })}
                         </tbody>
                         <tfoot>
                           <tr style={{ fontWeight: 700 }}>

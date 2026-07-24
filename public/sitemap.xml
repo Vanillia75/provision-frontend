@@ -26,6 +26,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.montotor.fr/guides/fin-des-aem-aer-cs-intermittent.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.montotor.fr/guides/507-heures-intermittent.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>
