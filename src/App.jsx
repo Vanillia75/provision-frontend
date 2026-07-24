@@ -587,6 +587,8 @@ function AppInner() {
   const [areError, setAreError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
+  // Ligne dont le panneau « doublon : oui ou non ? » est ouvert (id ou null).
+  const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
   // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
   const [aemVictoire, setAemVictoire] = useState(null);
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
@@ -3870,6 +3872,21 @@ function AppInner() {
     try {
       await apiFetch(`/intermittent/activite/${id}`, { method: "DELETE" });
       await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
+  // L'utilisateur a vérifié une alerte « doublon possible » : pas un doublon.
+  // On acquitte TOUTES les lignes du groupe (même signature) : l'alerte disparaît
+  // définitivement, sur tous ses appareils (demande testeuse 23/07/2026).
+  async function acquitterDoublon(groupe) {
+    try {
+      for (const a of groupe) {
+        await apiFetch(`/intermittent/activite/${a.id}/doublon-ok`, { method: "POST" });
+      }
+      await loadIntermittentCockpit();
+      setAemDoublonPanelId(null);
     } catch (err) {
       setError(err.message);
     }
@@ -7301,9 +7318,12 @@ function AppInner() {
       }
 
       // 5. Doublon potentiel (même date + employeur + nombre + type)
+      // Les lignes ACQUITTÉES par l'utilisateur (doublon_ok, « j'ai vérifié, deux
+      // contrats différents ») ne déclenchent plus jamais l'alerte.
       const vus = {};
       let doublon = null;
       for (const a of acts) {
+        if (a.doublon_ok) continue;
         const clef = `${a.date}|${(a.employeur || "").trim().toLowerCase()}|${a.nombre}|${a.type_activite}`;
         if (vus[clef]) { doublon = a; break; }
         vus[clef] = true;
@@ -8012,17 +8032,21 @@ function AppInner() {
                         <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
-                            <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
+                            <Fragment key={a.id || i}>
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                 <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</span>
-                                  {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && (
-                                    <span style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible
-                                    </span>
+                                  {/* Badge cliquable (demande testeuse 23/07) : l'alerte se TRANCHE au lieu de rester à vie. */}
+                                  {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && !a.doublon_ok && (
+                                    <button type="button" title="Doublon ou pas ? Clique pour trancher"
+                                      onClick={() => setAemDoublonPanelId(aemDoublonPanelId === a.id ? null : a.id)}
+                                      style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer", fontFamily: "inherit" }}>
+                                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible ? <i className={`ti ti-chevron-${aemDoublonPanelId === a.id ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 10 }} />
+                                    </button>
                                   )}
                                 </div>
                                 <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
@@ -8039,6 +8063,27 @@ function AppInner() {
                                 <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
                               </button>
                             </div>
+                            {/* Panneau de décision : le doublon se tranche, l'alerte ne reste jamais à vie. */}
+                            {aemDoublonPanelId === a.id && (
+                              <div style={{ background: "rgba(240,180,70,0.07)", border: "1px solid rgba(240,180,70,0.35)", borderRadius: 12, padding: "13px 15px", marginTop: -4 }}>
+                                <div style={{ fontSize: 12.5, color: "#F2C879", lineHeight: 1.55, marginBottom: 10 }}>
+                                  Ces lignes se ressemblent beaucoup (même employeur, même date, même montant). C'est un doublon ?
+                                </div>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button type="button"
+                                    onClick={() => acquitterDoublon(aems.filter(x => signatureAEM(x) === signatureAEM(a)))}
+                                    style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 9, padding: "9px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                    Non, deux contrats différents ✓
+                                  </button>
+                                  <button type="button"
+                                    onClick={() => { setAemDoublonPanelId(null); if (window.confirm(`Supprimer cette ligne en double ?\n\n${a.employeur || "Employeur à compléter"} · ${fmtDate(a.date)}\n\nElle sera retirée de ton compteur d'heures.`)) handleDeleteActivite(a.id); }}
+                                    style={{ background: "transparent", border: "1px solid rgba(226,75,74,0.4)", color: "#F09595", borderRadius: 9, padding: "9px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                    Oui, supprimer celle-ci
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            </Fragment>
                           ))}
                         </div>
                       </>
