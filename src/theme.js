@@ -37,6 +37,10 @@ export const CSS = `
   body { margin: 0; font-family: 'Inter', system-ui, sans-serif; background: ${PAPER}; }
   button { font-family: inherit; }
   input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  /* L'icône native du calendrier est noire -> invisible sur nos fonds bleu nuit.
+     On l'éclaircit vers le bleu clair de la charte (retour testeuse 23/07). */
+  input[type=date]::-webkit-calendar-picker-indicator { filter: invert(0.75) sepia(0.4) saturate(2.5) hue-rotate(175deg); opacity: 0.95; cursor: pointer; }
+  input[type=date]::-webkit-calendar-picker-indicator:hover { opacity: 1; filter: invert(0.9) sepia(0.3) saturate(2) hue-rotate(175deg); }
   input[type=number] { -moz-appearance: textfield; }
   input, select, textarea, button { transition: border-color 0.15s, background 0.15s, transform 0.1s; }
   input:focus, select:focus, textarea:focus { border-color: #378ADD !important; box-shadow: 0 0 0 3px rgba(55,138,221,0.12); }

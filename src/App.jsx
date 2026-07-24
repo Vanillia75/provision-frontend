@@ -1,4 +1,4 @@
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, Fragment } from "react";
 import * as Sentry from "@sentry/react";
 import { FISCALITE, getRegime, calcUrssaf, statutPlafond, statutTVA } from "./fiscalite";
 import { franchiseVatMention, appendEiMention, computeInvoiceTotals, formatVatRate, MENTION_PENALITES_B2B } from "./legalMentions";
@@ -6,6 +6,7 @@ import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./reg
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { LegalPageView } from "./LegalPage";
+import { NouveautesPage } from "./Nouveautes";
 import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
@@ -461,13 +462,13 @@ function AppInner() {
   // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
   const [legalPage, setLegalPage] = useState(() => {
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p) ? p : null;
+    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes"].includes(p) ? p : null;
   });
   // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
   const fermerLegal = () => {
     setLegalPage(null);
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p)) {
+    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes"].includes(p)) {
       window.history.replaceState({}, "", "/");
     }
   };
@@ -552,8 +553,10 @@ function AppInner() {
   const [empSugHover, setEmpSugHover] = useState(-1);     // ligne survolée (surlignage)
   // #1 saisie : type via toggle visible Cachets/Heures ; "Autre" déplie le select (formation/arrêts).
   const [interTypeAutre, setInterTypeAutre] = useState(false);
-  // #1 saisie : répartition d'une plage de dates — "parjour" (tournée) ou "total" (N sur la période).
-  const [interRepartition, setInterRepartition] = useState("parjour");
+  // #1 saisie : répartition d'une plage de dates — "total" (N sur la période, DÉFAUT depuis le
+  // 24/07/2026, retour testeuse : l'ancien défaut "parjour" transformait « 3 cachets du 3 au 5 »
+  // en 9 cachets, survalorisation SILENCIEUSE du compteur 507) ou "parjour" (tournée).
+  const [interRepartition, setInterRepartition] = useState("total");
   // Métier des HEURES saisies à la main : "" (je ne sais pas) | "artiste" | "technicien".
   // Informatif (répartition annexe 8/10) — les cachets sont toujours artiste, pas de choix.
   const [interMetier, setInterMetier] = useState("");
@@ -599,11 +602,25 @@ function AppInner() {
   const [areError, setAreError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
+  // Ligne dont le panneau « doublon : oui ou non ? » est ouvert (id ou null).
+  const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
+  // Projection AJ au prochain renouvellement (carte cockpit, TOTOR Veille).
+  const [projAj, setProjAj] = useState(null);
+  // Estimation du versement du mois en cours (carte cockpit, TOTOR Veille,
+  // décision Camille 24/07 : lancée en mode estimation assumée avant backtest).
+  const [estMois, setEstMois] = useState(null);
+  // Mini-simulateur de la carte : « et si j'ajoute N cachets à X € ? »
+  const [projSimCachets, setProjSimCachets] = useState("");
+  const [projSimBrut, setProjSimBrut] = useState("");
+  const [projSimResult, setProjSimResult] = useState(null);
+  const [projSimLoading, setProjSimLoading] = useState(false);
   // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
   const [aemVictoire, setAemVictoire] = useState(null);
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
   // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
   const [docTab, setDocTab] = useState("revenus");
+  // Mois déplié dans le récap de revenus (clef "AAAA-MM" ou null) — détail contrat par contrat.
+  const [recapMoisOuvert, setRecapMoisOuvert] = useState(null);
   // ─── Vie de Totor sur le cockpit (micro-interactions) ───
   const [hectorPop, setHectorPop] = useState(false); // déclenche l'animation pop quand on ajoute
   // ─── Centre de calcul conversationnel ───
@@ -634,6 +651,11 @@ function AppInner() {
   // Chat Totor intermittent (assistant IA spécialisé régime)
   const [interChat, setInterChat] = useState([]);
   const [interChatInput, setInterChatInput] = useState("");
+  // Historique persistant du chat : date du dernier échange rechargé (bandeau « on reprend »),
+  // verrou une-seule-tentative de chargement, et armement du bouton « Repartir de zéro ».
+  const [interChatReprise, setInterChatReprise] = useState(null);
+  const [interChatHistoOk, setInterChatHistoOk] = useState(false);
+  const [interChatEffaceArme, setInterChatEffaceArme] = useState(false);
   const [interChatLoading, setInterChatLoading] = useState(false);
   // Les 4 paliers de Totor intermittent (resserrés le 23/07, décision Camille :
   // moins d'étapes = chaque passage devient un événement ; le palier final
@@ -1012,6 +1034,10 @@ function AppInner() {
   const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
+  // Historique persistant du chat AE (mêmes rôles que côté intermittent).
+  const [aiReprise, setAiReprise] = useState(null);
+  const [aiHistoOk, setAiHistoOk] = useState(false);
+  const [aiEffaceArme, setAiEffaceArme] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [devisCreating, setDevisCreating] = useState(null);
   const [devisCreated, setDevisCreated] = useState({});
@@ -1213,7 +1239,7 @@ function AppInner() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
           {(profile?.statut === "intermittent"
-            ? ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            ? ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "J'estime ton versement du mois et ton prochain renouvellement", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Scans d'AEM et conversations illimités"]
             : ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
           ).map((b, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
@@ -1841,6 +1867,11 @@ function AppInner() {
     setIncomeList([]);
     setMobileMenuOpen(false);
     setNav("dashboard");
+    // Les chats repartent à neuf : jamais la conversation d'un compte devant un autre.
+    setAiMessages([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
+    setAiReprise(null); setAiHistoOk(false); setAiEffaceArme(false);
+    setInterChat([]);
+    setInterChatReprise(null); setInterChatHistoOk(false); setInterChatEffaceArme(false);
   }
 
   // ── Abonnement Stripe (Premium) ──
@@ -2762,7 +2793,9 @@ function AppInner() {
                     "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
                     "Je vérifie ta décision face à France Travail",
                     "Je repère les écarts qui te coûteraient des droits",
-                    "Je recalcule ton allocation après chaque AEM",
+                    "Je projette ton allocation au prochain renouvellement, affinée à chaque AEM",
+                    "J'estime ton versement France Travail du mois en cours, mis à jour à chaque contrat",
+                    "Le simulateur « et si j'ajoute 5 cachets à 200 € ? » : l'effet sur tes heures ET ton allocation",
                     "Je surveille tes jours par employeur avant que ça coince",
                     "Ton espace auto-entrepreneur complet inclus : paie 3 scénarios, relances d'impayés, radar acompte, taux horaire",
                     "Toutes les prochaines fonctionnalités, incluses d'office",
@@ -3499,6 +3532,10 @@ function AppInner() {
       ]);
       setInterCockpit(data);
       setInterActivites(activites);
+      // Projection au prochain renouvellement — best effort, n'interrompt rien.
+      apiFetch("/intermittent/projection-aj").then(setProjAj).catch(() => {});
+      // Estimation du mois en cours — même régime : best effort, jamais bloquant.
+      apiFetch("/intermittent/estimation-mois").then(setEstMois).catch(() => {});
       // Détection d'un franchissement de palier (pour la célébration).
       const heures = data ? data.total_heures : 0;
       let palierAtteint = PALIERS_INTERMITTENT[0];
@@ -3529,8 +3566,9 @@ function AppInner() {
     //    compte nombre×12h / nombre h ; date_fin ne sert qu'à l'affichage (comme une AEM multi-jours).
     const debut = interForm.date;
     const finValide = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : null;
-    const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures";
-    const modeTotal = finValide && interRepartition === "total" && estCachetOuHeures;
+    // Un autre salaire sur une période = toujours UNE ligne (0h, pas de tournée qui multiplie).
+    const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures" || interForm.type_activite === "autre_salaire";
+    const modeTotal = finValide && (interRepartition === "total" || interForm.type_activite === "autre_salaire") && estCachetOuHeures;
 
     // Liste des envois {date, date_fin}.
     let envois;
@@ -3571,7 +3609,7 @@ function AppInner() {
       }
       // Célébration : on dit tout de suite ce que ça change (heures ajoutées au compteur).
       const heuresAjoutees = Math.round(heuresDe({ type_activite: interForm.type_activite, nombre }) * envois.length);
-      setInterRepartition("parjour");
+      setInterRepartition("total");
       setInterMetier("");
       setInterForm({ date: "", date_fin: "", type_activite: "cachet_isole", nombre: "", employeur: "", salaire_brut: "", pas_montant: "", estime: false });
       setInterShowAdd(false);
@@ -3603,6 +3641,26 @@ function AppInner() {
       if (brut != null && aBrut != null) return Math.abs(aBrut - brut) < 0.01; // brut connu des 2 côtés → doit coïncider
       const aNb = a.nombre != null ? parseFloat(a.nombre) : null;
       return nb != null && aNb != null && Math.abs(aNb - nb) < 0.001;          // sinon on compare le nombre
+    }) || null;
+  }
+
+  // Trouve une ligne ESTIMÉE que l'AEM scannée vient confirmer : même employeur (quand
+  // les deux sont connus) et périodes qui se CHEVAUCHENT. Les chiffres peuvent différer,
+  // c'est le principe même d'une estimation : on matche la période, pas le montant.
+  // (Réconciliation demandée par une testeuse le 23/07/2026.)
+  function trouveEstimationARemplacer(extrait, activites) {
+    if (!extrait || !extrait.date) return null;
+    const norm = (s) => (s || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const emp = norm(extrait.employeur);
+    const eDeb = extrait.date;
+    const eFin = extrait.date_fin || extrait.date;
+    return (activites || []).find((a) => {
+      if (!a || a.estime !== true || !a.date) return false;
+      const aEmp = norm(a.employeur);
+      if (emp && aEmp && aEmp !== emp) return false;
+      const aDeb = a.date;
+      const aFin = a.date_fin || a.date;
+      return aDeb <= eFin && eDeb <= aFin;
     }) || null;
   }
 
@@ -3653,6 +3711,7 @@ function AppInner() {
       const tousLesForms = [];
       const echecs = [];
       let premierMessageErreur = ""; // le message honnête du backend (ex. « je ne sais pas lire ce type de document »)
+      let erreurTechnique = false;   // erreur NON-422 (serveur en redéploiement, réseau…) : ce n'est PAS la faute du document
       for (let i = 0; i < fichiers.length; i++) {
         const file = fichiers[i];
         if (fichiers.length > 1) setAemScanProgress({ courant: i + 1, total: fichiers.length });
@@ -3667,16 +3726,24 @@ function AppInner() {
         } catch (e) {
           // Quota atteint : ce n'est pas un document illisible, la modale Premium s'en charge.
           if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") continue;
-          if (!premierMessageErreur && e.status === 422 && e.message) premierMessageErreur = e.message;
+          // 422 = document illisible, 429 = pause anti-abus : dans les deux cas le backend
+          // parle avec un message honnête → on l'affiche TEL QUEL (vécu du 23/07 : le
+          // message « réessaie demain » du quota était déguisé en panne technique).
+          if (!premierMessageErreur && (e.status === 422 || e.status === 429) && e.message) premierMessageErreur = e.message;
+          else if (e.status !== 422 && e.status !== 429) erreurTechnique = true;
           echecs.push({ name: file.name, file }); // un fichier illisible ne doit pas faire perdre les autres
         }
       }
       setAemEchecs(echecs); // fichiers gardés en main pour proposer la lecture humaine
       if (tousLesForms.length === 0) {
         if (echecs.length === 0) return; // tout venait du quota : rien à afficher ici
-        setAemError(premierMessageErreur || (fichiers.length > 1
-          ? "Je n'ai rien trouvé d'exploitable dans ces documents. Réessaie avec des scans plus nets."
-          : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette."));
+        // Vécu du 23/07 (Lucile) : un scan pendant un redéploiement serveur affichait
+        // « scans plus nets » et accusait ses documents à tort. On dit la vérité.
+        setAemError(premierMessageErreur || (erreurTechnique
+          ? "Petit souci technique de mon côté, tes documents n'y sont pour rien. Réessaie dans une minute."
+          : (fichiers.length > 1
+            ? "Je n'ai rien trouvé d'exploitable dans ces documents. Réessaie avec des scans plus nets."
+            : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette.")));
         return;
       }
       if (echecs.length > 0) {
@@ -3847,6 +3914,63 @@ function AppInner() {
     }
   }
 
+  // ─── Réconciliation estimé → AEM (retour testeuse 23/07) : l'AEM scannée REMPLACE la ligne
+  // estimée correspondante (PUT) au lieu d'en créer une seconde. Même déroulé de file/victoire
+  // que handleConfirmAEMMesaem, avec le même snapshot frais (immunisé au closure).
+  async function remplacerEstimationParAEM(cible) {
+    const nombre = parseFloat(aemExtrait.nombre);
+    if (!aemExtrait.date || !nombre || nombre <= 0) { setAemError("Vérifie la date et le nombre avant de remplacer."); return; }
+    setAemSaving(true); setAemError("");
+    if (!aemBatchRef.current) aemBatchRef.current = { avant: (interCockpit?.total_heures ?? 0), cachets: 0, heures: 0 };
+    if (aemExtrait.type_activite === "cachet_isole") aemBatchRef.current.cachets += nombre;
+    else aemBatchRef.current.heures += nombre;
+    try {
+      await apiFetch(`/intermittent/activite/${cible.id}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          date: aemExtrait.date,
+          date_fin: aemExtrait.date_fin || null,
+          type_activite: aemExtrait.type_activite,
+          nombre,
+          employeur: aemExtrait.employeur || null,
+          salaire_brut: aemExtrait.salaire_brut !== "" ? parseFloat(aemExtrait.salaire_brut) : null,
+          estime: false,
+          aem_recue: true,
+          aem_filename: aemExtrait.filename || null,
+          aem_r2_key: aemExtrait.aem_r2_key || null,
+          metier: aemExtrait.type_activite === "cachet_isole" ? "artiste" : (aemExtrait.metier || null),
+        }),
+      });
+      if (aemQueue.length > 0) {
+        setAemExtrait(aemQueue[0]);
+        setAemQueue(aemQueue.slice(1));
+        await loadIntermittentCockpit();
+        setAemSaving(false);
+        return;
+      }
+      setAemExtrait(null); setAemTotal(0);
+      const [fresh, activites] = await Promise.all([
+        apiFetch("/intermittent/cockpit"),
+        apiFetch("/intermittent/activites"),
+      ]);
+      setInterCockpit(fresh);
+      setInterActivites(activites);
+      const batch = aemBatchRef.current || { avant: (fresh.total_heures ?? 0), cachets: 0, heures: 0 };
+      setAemVictoire({
+        deltaH: Math.max(0, Math.round((fresh.total_heures ?? 0) - batch.avant)),
+        deltaCachets: batch.cachets,
+        total: fresh.total_heures ?? 0,
+        reste: fresh.manquant ?? 0,
+      });
+      aemBatchRef.current = null;
+    } catch (err) {
+      setAemError(err.message);
+      aemBatchRef.current = null;
+    } finally {
+      setAemSaving(false);
+    }
+  }
+
   // ─── Ouvre le document AEM original dans une visionneuse overlay (sans quitter l'app) ───
   async function voirDocumentAEM(activiteId, filename) {
     setDocViewer({ url: null, filename: filename || "Document", loading: true });
@@ -3893,11 +4017,14 @@ function AppInner() {
     // Données réelles du dossier (déterministes).
     // On part du total OFFICIEL du backend (c.total_heures, déjà filtré sur 365j)
     // pour ne JAMAIS contredire le cockpit. Secours : recalcul fenêtre glissante.
+    // ⚠️ `interCockpit` DIRECTEMENT (pas l'alias `c` du rendu, hors de portée ici :
+    // il faisait planter TOUTE question tapée à la main — ReferenceError silencieux,
+    // « réflexion » figée à l'infini. Découvert le 24/07 grâce au retour de la testeuse).
     const acts = interActivites || [];
-    const heuresActuelles = (c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts);
-    const seuil = (c && c.seuil) || valeurDe("seuilHeures");
+    const heuresActuelles = (interCockpit && typeof interCockpit.total_heures === "number") ? interCockpit.total_heures : heuresFenetre(acts);
+    const seuil = (interCockpit && interCockpit.seuil) || valeurDe("seuilHeures");
     const manque = Math.max(0, seuil - heuresActuelles);
-    const dateAnniv = c && c.date_anniversaire ? new Date(c.date_anniversaire) : null;
+    const dateAnniv = interCockpit && interCockpit.date_anniversaire ? new Date(interCockpit.date_anniversaire) : null;
     const joursAnniv = dateAnniv ? Math.ceil((dateAnniv - new Date()) / 86400000) : null;
     // Extrait un nombre de la question (ex "3 cachets", "8 heures", "15 jours")
     const num = (() => { const m = q.match(/(\d+([.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : null; })();
@@ -3909,9 +4036,14 @@ function AppInner() {
       const ajout = n * valeurDe("cachetHeures");
       const apres = heuresActuelles + ajout;
       const secu = apres >= seuil;
+      // Si la question donne AUSSI le prix (« 2 cachets à 150 € »), on chiffrera
+      // l'impact sur l'allocation (retour testeuse 24/07 : cachets + salaire = la vraie décision).
+      const prixMatch = q.match(/(\d+(?:[.,]\d+)?)\s*(?:€|euros?)/);
+      const prix = prixMatch ? parseFloat(prixMatch[1].replace(",", ".")) : null;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
+        simulerAj: prix && prix > 0 ? { n, brut: prix } : null,
       };
     }
     // ─ Scénario 2 : accepter des heures ─
@@ -3988,18 +4120,38 @@ function AppInner() {
     // 1. Totor tente de calculer lui-même (déterministe)
     const scenario = calculerScenarioEtSi(question);
     if (scenario) {
+      let texte = scenario.text;
+      // Le prix du contrat est donné → on ajoute l'impact ALLOCATION (moteur validé,
+      // mêmes règles Loi X que la carte projection ; abonnés Veille).
+      if (scenario.simulerAj && projAj && projAj.verrou === false && projAj.affichable) {
+        try {
+          const d = await apiFetch(`/intermittent/projection-aj?cachets_sup=${scenario.simulerAj.n}&brut_cachet=${scenario.simulerAj.brut}`);
+          const s = d && d.simulation;
+          if (s && s.affichable) {
+            texte += formatEUR(s.aj_nette) === formatEUR(projAj.aj_nette)
+              // Le plancher absorbe le lot : dire « de X à X » serait vrai mais illisible.
+              ? ` Et côté allocation : ton estimation resterait autour de ${formatEUR(projAj.aj_nette)} par jour, tu es au plancher. À ce niveau, ce contrat joue surtout sur tes heures (valeur 2026, estimation).`
+              : ` Et côté allocation : ton estimation au prochain renouvellement passerait d'environ ${formatEUR(projAj.aj_nette)} à ${formatEUR(s.aj_nette)} par jour (valeur 2026, estimation).`;
+          } else if (s) {
+            texte += ` Et côté allocation : ce lot te ferait dépasser 60 €/jour d'estimation, zone que je ne chiffre pas encore. Ce qui est sûr : ça monte.`;
+          }
+        } catch { /* l'impact allocation est un bonus : la réponse heures part quand même */ }
+      } else if (scenario.simulerAj && projAj && projAj.verrou) {
+        texte += ` (Avec TOTOR Veille, je te chiffrerais aussi l'impact sur ton allocation.)`;
+      }
       setTimeout(() => {
         setCalcThinking(false);
-        setCalcConvo(prev => [...prev, { role: "bot", text: scenario.text, ouv: scenario.ouv, questions: [] }]);
-      }, 1100);
+        setCalcConvo(prev => [...prev, { role: "bot", text: texte, ouv: scenario.ouv, questions: [] }]);
+      }, 400);
       return;
     }
 
     // 2. Scénario non reconnu → on demande à l'IA de comprendre, MAIS en lui interdisant d'inventer.
     //    On lui fournit les chiffres réels pour qu'elle reformule sans calculer.
     const acts = interActivites || [];
-    const heuresActuelles = Math.round((c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts));
-    const seuil = (c && c.seuil) || valeurDe("seuilHeures");
+    // Même correctif que calculerScenarioEtSi : `interCockpit` direct, jamais l'alias `c` du rendu.
+    const heuresActuelles = Math.round((interCockpit && typeof interCockpit.total_heures === "number") ? interCockpit.total_heures : heuresFenetre(acts));
+    const seuil = (interCockpit && interCockpit.seuil) || valeurDe("seuilHeures");
     const contexte = `Données réelles de l'utilisateur (NE LES MODIFIE PAS, n'invente AUCUN autre chiffre) : heures actuelles = ${heuresActuelles}h, seuil = ${seuil}h, il manque = ${Math.max(0, seuil - heuresActuelles)}h.`;
     const consigne = `Tu es Totor, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
     try {
@@ -4142,14 +4294,52 @@ function AppInner() {
     }
   }
 
+  // Simulation « N cachets à X € » sur le moteur validé (Loi X respectée côté serveur).
+  async function lancerSimulationAj() {
+    const n = parseInt(projSimCachets, 10);
+    if (!n || n <= 0 || projSimLoading) return;
+    setProjSimLoading(true);
+    setProjSimResult(null);
+    try {
+      const brut = projSimBrut !== "" ? parseFloat(String(projSimBrut).replace(",", ".")) : null;
+      const q = `?cachets_sup=${n}` + (brut != null && !isNaN(brut) ? `&brut_cachet=${brut}` : "");
+      const d = await apiFetch(`/intermittent/projection-aj${q}`);
+      setProjSimResult(d && d.simulation ? d.simulation : { erreur: true });
+    } catch {
+      setProjSimResult({ erreur: true });
+    } finally {
+      setProjSimLoading(false);
+    }
+  }
+
+  // L'utilisateur a vérifié une alerte « doublon possible » : pas un doublon.
+  // On acquitte TOUTES les lignes du groupe (même signature) : l'alerte disparaît
+  // définitivement, sur tous ses appareils (demande testeuse 23/07/2026).
+  async function acquitterDoublon(groupe) {
+    try {
+      for (const a of groupe) {
+        await apiFetch(`/intermittent/activite/${a.id}/doublon-ok`, { method: "POST" });
+      }
+      await loadIntermittentCockpit();
+      setAemDoublonPanelId(null);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   // ─── Modifier une activité existante ───
   function startEditActivite(a) {
     setInterEditId(a.id);
     setInterEditForm({
       date: a.date || "",
+      // Date de fin incluse (retour testeuse 23/07 : l'édition l'effaçait en silence
+      // et il était impossible de la modifier).
+      date_fin: a.date_fin || "",
       type_activite: a.type_activite || "cachet_isole",
       nombre: String(a.nombre ?? ""),
       employeur: a.employeur || "",
+      salaire_brut: (a.salaire_brut != null && a.salaire_brut !== "") ? String(a.salaire_brut) : "",
+      pas_montant: (a.pas_montant != null && a.pas_montant !== "") ? String(a.pas_montant) : "",
       estime: a.estime === true,
       metier: (a.metier === "artiste" || a.metier === "technicien") ? a.metier : "",
     });
@@ -4166,9 +4356,13 @@ function AppInner() {
         method: "PUT",
         body: JSON.stringify({
           date: interEditForm.date,
+          // Une fin antérieure au début serait absurde : on l'ignore plutôt que de l'envoyer.
+          date_fin: (interEditForm.date_fin && interEditForm.date_fin >= interEditForm.date) ? interEditForm.date_fin : null,
           type_activite: interEditForm.type_activite,
           nombre,
           employeur: interEditForm.employeur || null,
+          salaire_brut: interEditForm.salaire_brut !== "" ? parseFloat(String(interEditForm.salaire_brut).replace(",", ".")) : null,
+          pas_montant: interEditForm.pas_montant !== "" ? parseFloat(String(interEditForm.pas_montant).replace(",", ".")) : null,
           estime: !!interEditForm.estime,
           metier: interEditForm.type_activite === "cachet_isole" ? "artiste" : (interEditForm.type_activite === "heures" ? (interEditForm.metier || null) : null),
         }),
@@ -5134,9 +5328,12 @@ function AppInner() {
     setAiInput("");
     setAiLoading(true);
     try {
+      // canal "chat" : le serveur ENREGISTRE l'échange (la conversation se retrouve
+      // d'un jour à l'autre). On n'envoie au modèle que les 12 derniers messages :
+      // l'historique complet reste affiché, mais le contexte reste léger.
       const data = await apiFetch("/assistant/chat", {
         method: "POST",
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ canal: "chat", messages: newMessages.slice(-12).map(m => ({ role: m.role, content: m.content })) }),
       });
       setAiMessages(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
@@ -5157,9 +5354,10 @@ function AppInner() {
     setInterChatInput("");
     setInterChatLoading(true);
     try {
+      // canal "chat" : le serveur ENREGISTRE l'échange (voir askAI) ; contexte = 12 derniers.
       const data = await apiFetch("/assistant/chat", {
         method: "POST",
-        body: JSON.stringify({ messages: newMessages.map(m => ({ role: m.role, content: m.content })) }),
+        body: JSON.stringify({ canal: "chat", messages: newMessages.slice(-12).map(m => ({ role: m.role, content: m.content })) }),
       });
       setInterChat(m => [...m, { role: "assistant", content: data.reply }]);
     } catch (err) {
@@ -5167,6 +5365,58 @@ function AppInner() {
         setInterChat(m => [...m, { role: "assistant", content: `Erreur : ${err.message}` }]);
     } finally {
       setInterChatLoading(false);
+    }
+  }
+
+  // ── Historique persistant « Parle à Totor » ──
+  // Au premier passage sur l'écran du chat, on recharge la conversation enregistrée
+  // (d'un jour à l'autre, d'un appareil à l'autre). Une seule tentative par session,
+  // jamais bloquante, et jamais par-dessus une conversation déjà en cours à l'écran.
+  useEffect(() => {
+    if (interNav !== "hector" || !token || interChatHistoOk) return;
+    setInterChatHistoOk(true);
+    apiFetch("/assistant/chat/historique").then(d => {
+      const msgs = (d && d.messages) || [];
+      if (!msgs.length) return;
+      setInterChat(prev => (prev.length ? prev : msgs.map(m => ({ role: m.role, content: m.content }))));
+      setInterChatReprise(msgs[msgs.length - 1].date || null);
+    }).catch(() => {});
+  }, [interNav, token, interChatHistoOk]);
+
+  useEffect(() => {
+    if (nav !== "assistant" || !token || aiHistoOk) return;
+    setAiHistoOk(true);
+    apiFetch("/assistant/chat/historique").then(d => {
+      const msgs = (d && d.messages) || [];
+      if (!msgs.length) return;
+      // Le message d'accueil local (1 message) s'efface au profit du vrai fil.
+      setAiMessages(prev => (prev.length > 1 ? prev : msgs.map(m => ({ role: m.role, content: m.content }))));
+      setAiReprise(msgs[msgs.length - 1].date || null);
+    }).catch(() => {});
+  }, [nav, token, aiHistoOk]);
+
+  // Petit libellé du bandeau de reprise : « dernier échange le 23 juillet ».
+  function libelleReprise(iso) {
+    try {
+      const d = new Date(iso);
+      if (isNaN(d.getTime())) return "";
+      return ` (dernier échange le ${d.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })})`;
+    } catch { return ""; }
+  }
+
+  // « Repartir de zéro » : efface l'historique de l'espace courant, côté serveur
+  // PUIS à l'écran (si le serveur rate, on ne fait rien : jamais d'écran menteur).
+  async function effacerHistoriqueChat(espaceIntermittent) {
+    try {
+      await apiFetch("/assistant/chat/historique", { method: "DELETE" });
+      if (espaceIntermittent) {
+        setInterChat([]); setInterChatReprise(null); setInterChatEffaceArme(false);
+      } else {
+        setAiMessages([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
+        setAiReprise(null); setAiEffaceArme(false);
+      }
+    } catch {
+      if (espaceIntermittent) setInterChatEffaceArme(false); else setAiEffaceArme(false);
     }
   }
 
@@ -5754,6 +6004,9 @@ function AppInner() {
   if (legalPage === "pourquoi") {
     return <PourquoiHector onBack={() => setLegalPage(null)} />;
   }
+  if (legalPage === "nouveautes") {
+    return <NouveautesPage onBack={fermerLegal} statut={profile?.statut || null} />;
+  }
   if (legalPage) {
     return <LegalPageView page={legalPage} onBack={fermerLegal} />;
   }
@@ -5951,6 +6204,22 @@ function AppInner() {
       {
         texte: "Grâce à Totor, j'ai enfin compris que mon intermittence était une vraie source de stress. Aujourd'hui, c'est devenu un outil indispensable",
         prenom: "JlGlut",
+        metier: "sur l'App Store",
+        note: 5,
+      },
+      // startod — avis PUBLIC 5/5 laissé sur l'App Store (« Au top ! »), relevé par
+      // Camille le 23/07/2026 dans App Store Connect. Citation VERBATIM, jamais retouchée.
+      {
+        texte: "Vraiment bien fait, ça simplifie ma compréhension de l'intermittence.",
+        prenom: "startod",
+        metier: "sur l'App Store",
+        note: 5,
+      },
+      // Dannyg75 — avis PUBLIC 5/5 laissé sur l'App Store (« Top »), relevé par
+      // Camille le 23/07/2026 dans App Store Connect. Citation VERBATIM, jamais retouchée.
+      {
+        texte: "Top ! Merci pour cette application 👏 enfin une appli qui nous explique tout lol",
+        prenom: "Dannyg75",
         metier: "sur l'App Store",
         note: 5,
       },
@@ -6350,7 +6619,8 @@ function AppInner() {
                 Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
-              {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
+              {badgesBientot}
+              {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
             </div>
           </section>
 
@@ -6358,6 +6628,7 @@ function AppInner() {
           <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
               {[
+                { page: "nouveautes", label: "Nouveautés" },
                 { page: "mentions", label: "Mentions légales" },
                 { page: "cgu", label: "CGU" },
                 { page: "confidentialite", label: "Confidentialité" },
@@ -6466,7 +6737,7 @@ function AppInner() {
             <div>
               <div style={numFantome}>02</div>
               <h2 style={titreSec}>TOTOR veille sur<br />ce que tu vas <span style={{ color: "#5DCAA5" }}>toucher</span>.</h2>
-              <p style={texteSec}>Il estime ton allocation et tes Congés Spectacles.</p>
+              <p style={texteSec}>Il estime ton allocation, ce que France Travail va te verser pour le mois en cours, et projette ton prochain renouvellement à partir de tes attestations, cachet par cachet. Sans oublier tes Congés Spectacles.</p>
               <p style={{ ...texteSec, color: "#5DCAA5", fontWeight: 700, marginTop: 12 }}>Toujours des estimations, jamais de promesses.</p>
             </div>
             <div style={demoFondu}>
@@ -6475,6 +6746,22 @@ function AppInner() {
                 <div>
                   <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton allocation journalière <span style={{ color: "#45596F", fontSize: 10 }}>· exemple</span></div>
                   <div style={{ fontSize: isMobile ? 25 : 30, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>Environ 51,18 €<span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}> / jour</span></div>
+                </div>
+                <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
+              </div>
+              {/* Projection au prochain renouvellement (la nouveauté vitrine, demande Camille 24/07) */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton prochain renouvellement <span style={{ color: "#45596F", fontSize: 10 }}>· exemple</span></div>
+                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>« Et si j'ajoute <strong style={{ color: "#C8E0F5" }}>5 cachets à 200 €</strong> ? »<br /><span style={{ color: "#5DCAA5", fontWeight: 700 }}>→ environ 44,41 € /jour au lieu de 42,99 €</span></div>
+                </div>
+                <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
+              </div>
+              {/* Le versement du mois en cours (lancé le 24/07, demande Camille : vitrine landing) */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton versement du mois <span style={{ color: "#45596F", fontSize: 10 }}>· exemple</span></div>
+                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>27 jours indemnisés sur 31 avec tes cachets du mois<br /><span style={{ color: "#5DCAA5", fontWeight: 700 }}>→ environ 1 160 € nets, avant impôt</span></div>
                 </div>
                 <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
               </div>
@@ -6589,19 +6876,27 @@ function AppInner() {
         {/* ===== TÉMOIGNAGES (uniquement de vraies citations — section invisible tant que vide) ===== */}
         {TEMOIGNAGES.length > 0 && (
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
-            <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
-              {TEMOIGNAGES.map((t, i) => (
-                <div key={i} style={{ textAlign: "center" }}>
-                  {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
-                  {t.note >= 1 && (
-                    <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 15, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
-                      {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
-                    </div>
-                  )}
-                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15.5 : 18, color: "#C9D8E8", lineHeight: 1.65, fontStyle: "italic", margin: "0 auto 12px", maxWidth: 560 }}>« {t.texte} »</p>
-                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>— {t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
-                </div>
-              ))}
+            <div style={{ maxWidth: 980, margin: "0 auto" }}>
+              {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
+              <div style={{ textAlign: "center", marginBottom: isMobile ? 26 : 36 }}>
+                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
+              </div>
+              {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 14 : 18 }}>
+                {TEMOIGNAGES.map((t, i) => (
+                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: isMobile ? "20px 18px" : "26px 26px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
+                    {t.note >= 1 && (
+                      <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
+                        {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
+                      </div>
+                    )}
+                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15 : 16.5, color: "#C9D8E8", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 12px" }}>« {t.texte} »</p>
+                    <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}
@@ -6661,7 +6956,8 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
-            {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · Premium 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
+              {badgesBientot}
+            {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
           </div>
         </section>
 
@@ -6669,6 +6965,7 @@ function AppInner() {
         <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
             {[
+              { page: "nouveautes", label: "Nouveautés" },
               { page: "mentions", label: "Mentions légales" },
               { page: "cgu", label: "CGU" },
               { page: "confidentialite", label: "Confidentialité" },
@@ -7248,9 +7545,11 @@ function AppInner() {
       if (calc.secu) {
         niveau = "green";
         titre = "Je veille, tu peux souffler.";
+        // Le compteur EXACT en clair (retour testeuse 23/07 : « je veux voir combien
+        // j'ai d'heures, en grand, pas en petit ») — l'info importante doit ressortir.
         phrase = calc.aDateAnniv
-          ? `Tes droits sont sécurisés jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
-          : "Tes 507h sont là. Je continue à monter la garde sur ton dossier.";
+          ? `Tes droits sont sécurisés avec ${Math.round(c.total_heures)} h au compteur, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
+          : `Tes 507h sont là : ${Math.round(c.total_heures)} h au compteur. Je continue à monter la garde sur ton dossier.`;
       } else if (calc.dansLesTemps === true) {
         niveau = "green";
         titre = "Je pense qu'on est sur la bonne voie.";
@@ -7285,7 +7584,7 @@ function AppInner() {
       // 🟢 SÉCURISÉ — seul cas vert : le moteur confirme les droits.
       if (calc.secu) {
         return {
-          ton: "green", emoji: "🟢", titre: "Tes droits sont sécurisés",
+          ton: "green", emoji: "🟢", titre: `Tes droits sont sécurisés (${Math.round(c.total_heures)} h)`,
           bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5", st: "#BFE6D6",
           phrase: calc.aDateAnniv
             ? `C'est bon jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Je monte la garde, tu peux souffler. 🐾`
@@ -7561,9 +7860,12 @@ function AppInner() {
       }
 
       // 5. Doublon potentiel (même date + employeur + nombre + type)
+      // Les lignes ACQUITTÉES par l'utilisateur (doublon_ok, « j'ai vérifié, deux
+      // contrats différents ») ne déclenchent plus jamais l'alerte.
       const vus = {};
       let doublon = null;
       for (const a of acts) {
+        if (a.doublon_ok) continue;
         const clef = `${a.date}|${(a.employeur || "").trim().toLowerCase()}|${a.nombre}|${a.type_activite}`;
         if (vus[clef]) { doublon = a; break; }
         vus[clef] = true;
@@ -7718,27 +8020,32 @@ function AppInner() {
       const acts = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= debut; });
       // Agrégat par mois
       const parMois = {};
-      let totalBrut = 0, totalAvecBrut = 0, totalContrats = 0;
+      let totalBrut = 0, totalAvecBrut = 0, totalContrats = 0, totalCachets = 0;
       acts.forEach(a => {
         const d = new Date(a.date);
         const clef = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, "0")}`;
-        if (!parMois[clef]) parMois[clef] = { label: `${MOIS[d.getMonth()]} ${d.getFullYear()}`, brut: 0, contrats: 0, employeurs: new Set() };
+        if (!parMois[clef]) parMois[clef] = { clef, label: `${MOIS[d.getMonth()]} ${d.getFullYear()}`, brut: 0, contrats: 0, employeurs: new Set(), details: [] };
         const brut = parseFloat(a.salaire_brut) || 0;
         parMois[clef].brut += brut;
         parMois[clef].contrats += 1;
         if (a.employeur) parMois[clef].employeurs.add(a.employeur);
+        // Détail contrat par contrat (retour testeuse 23/07 : « 3 contrats, 400 € »
+        // sans détail = invérifiable). Trié plus bas par date.
+        parMois[clef].details.push({ date: a.date, employeur: a.employeur || null, type: a.type_activite, nombre: a.nombre, brut });
         totalBrut += brut;
         if (brut > 0) totalAvecBrut += 1;
         totalContrats += 1;
+        // Total de cachets (retour testeuse 24/07 : « un cachet = une journée », son repère).
+        if (a.type_activite === "cachet_isole" || a.type_activite === "cachet_groupe" || a.type_activite === "cachet") totalCachets += parseFloat(a.nombre) || 0;
       });
-      const lignes = Object.keys(parMois).sort().reverse().map(k => ({ ...parMois[k], employeurs: parMois[k].employeurs.size }));
+      const lignes = Object.keys(parMois).sort().reverse().map(k => ({ ...parMois[k], employeurs: parMois[k].employeurs.size, details: [...parMois[k].details].sort((x, y) => String(x.date).localeCompare(String(y.date))) }));
       const moisAvecRevenu = lignes.filter(l => l.brut > 0).length;
       const moyenneMensuelle = moisAvecRevenu > 0 ? totalBrut / moisAvecRevenu : 0;
       const employeursUniques = new Set(acts.map(a => a.employeur).filter(Boolean)).size;
       const periodeLabel = `${MOIS[debut.getMonth()]} ${debut.getFullYear()} – ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
       // % de contrats avec brut renseigné (pour avertir si incomplet)
       const completude = totalContrats > 0 ? Math.round((totalAvecBrut / totalContrats) * 100) : 0;
-      return { lignes, totalBrut: Math.round(totalBrut), moyenneMensuelle: Math.round(moyenneMensuelle), totalContrats, employeursUniques, periodeLabel, completude, aDesDonnees: acts.length > 0 };
+      return { lignes, totalBrut: Math.round(totalBrut), moyenneMensuelle: Math.round(moyenneMensuelle), totalContrats, totalCachets, employeursUniques, periodeLabel, completude, aDesDonnees: acts.length > 0 };
     })();
     // Fiches pédagogiques (Conseils) — contenu vérifié sur sources officielles
     // (France Travail, Audiens) en juin 2026. Pédagogie pure, pas de conseil personnalisé.
@@ -7790,8 +8097,11 @@ function AppInner() {
     // Activités tombant dans le mois à déclarer. Les formations suivies sont EXCLUES :
     // elles comptent pour les 507h mais ne sont pas des heures travaillées chez un
     // employeur — France Travail les déclare via la case « en formation », pas ici.
+    // Les AUTRES SALAIRES (hors spectacle) sont exclus aussi : FT les attend avec
+    // leurs VRAIES heures, que TOTOR ne connaît pas — l'utilisateur les déclare
+    // lui-même (le formulaire de saisie le lui dit).
     const actusDuMois = (interActivites || []).filter(a => {
-      if (!a || !a.date || a.type_activite === "formation") return false;
+      if (!a || !a.date || a.type_activite === "formation" || a.type_activite === "autre_salaire") return false;
       const d = new Date(a.date);
       return !isNaN(d) && d.getMonth() === moisDecl.getMonth() && d.getFullYear() === moisDecl.getFullYear();
     });
@@ -7808,7 +8118,10 @@ function AppInner() {
       totalHeuresMois += h;
       if (estCachet) totalCachetsMois += nb;
       totalBrutMois += brut;
-      if (!parEmployeur[emp]) parEmployeur[emp] = { nom: emp, cachets: 0, heures: 0, brut: 0, aemRecue: a.aem_recue === true };
+      if (!parEmployeur[emp]) parEmployeur[emp] = { nom: emp, cachets: 0, heures: 0, brut: 0, aemRecue: true };
+      // Un employeur n'est « AEM reçue » que si TOUTES ses lignes du mois l'ont
+      // (avant, seule la 1re ligne décidait — retour testeuse 24/07 : compte faux).
+      parEmployeur[emp].aemRecue = parEmployeur[emp].aemRecue && a.aem_recue === true;
       parEmployeur[emp].heures += h;
       if (estCachet) parEmployeur[emp].cachets += nb;
       parEmployeur[emp].brut += brut;
@@ -7844,21 +8157,24 @@ function AppInner() {
       safeStorage.setItem("actuHistorique", JSON.stringify(next));
     };
 
-    // Les entrées du menu intermittent (reflètent les 6 promesses de la landing)
+    // Les entrées du menu intermittent, dans l'ordre du PARCOURS RÉEL :
+    // mon dossier au quotidien (piloter, saisir, scanner, m'actualiser),
+    // puis avancer (trouver des heures, simuler, demander), puis lire,
+    // et l'administratif à la fin. Réordonné le 24/07 (retour Camille).
     const interMenuItems = [
       { id: "cockpit", icon: "ti-gauge", label: "Cockpit", dispo: true },
-      { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
+      { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "mesaem", icon: "ti-file-check", label: "Mes AEM", dispo: true },
+      { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
+      { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
       { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
       { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
-      { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
-      { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
+      { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
       // Appli native (App Store 3.1.1) : l'écran devient une DÉCOUVERTE de TOTOR Veille,
       // sans prix ni achat (le paiement vit sur le web). Sur le web : abonnement normal.
       { id: "abonnement", icon: IS_NATIVE_APP ? "ti-paw" : "ti-crown", label: IS_NATIVE_APP ? "TOTOR Veille" : "Abonnement", dispo: true },
-      { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
       // Fond OPAQUE (correction revue) + safe-area du natif : les deux réunis.
@@ -8094,6 +8410,13 @@ function AppInner() {
                         style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: 14, fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                         Scanner la suivante
                       </button>
+                      {/* Retour explicite vers la liste (retour testeuse 23/07 : après un scan,
+                          elle ne savait pas où retrouver ses AEM). Même écran, ancré sur la liste. */}
+                      <button type="button"
+                        onClick={() => { setAemVictoire(null); setTimeout(() => { const el = document.getElementById("aem-liste-scannees"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80); }}
+                        style={{ width: "100%", marginTop: 8, background: "none", color: "#9FE1CB", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 12, padding: 12, fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Voir toutes mes AEM scannées
+                      </button>
                     </div>
                   );
                 }
@@ -8194,6 +8517,21 @@ function AppInner() {
                   {renderEnvoiHumain()}
 
                   {(() => {
+                    // Réconciliation d'abord : si une ligne ESTIMÉE couvre cette période,
+                    // on propose de la remplacer d'un clic (retour testeuse 23/07).
+                    const est = trouveEstimationARemplacer(aemExtrait, interActivites);
+                    if (est) {
+                      return (
+                        <div style={{ marginTop: 14, background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#BFE6D6", lineHeight: 1.55 }}>
+                          <strong style={{ color: "#9FE1CB" }}>💡 Tu avais estimé cette période.</strong> Ta ligne « {est.employeur || "sans employeur"} · {fmtDate(est.date)}{est.date_fin ? ` → ${fmtDate(est.date_fin)}` : ""} · {Math.round(heuresDe(est))} h » attend ses vrais chiffres : cette AEM les apporte.
+                          <button type="button" disabled={aemSaving} onClick={() => remplacerEstimationParAEM(est)}
+                            style={{ display: "block", width: "100%", marginTop: 10, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "11px", fontSize: 13, fontWeight: 700, cursor: aemSaving ? "default" : "pointer", fontFamily: "inherit", opacity: aemSaving ? 0.6 : 1 }}>
+                            Remplacer mon estimation par cette AEM ✓
+                          </button>
+                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 6 }}>Ou enregistre-la comme une nouvelle ligne avec le bouton vert du bas, si c'est un autre contrat.</div>
+                        </div>
+                      );
+                    }
                     const dup = trouveDoublonAEM(aemExtrait, interActivites);
                     if (!dup) return null;
                     return (
@@ -8262,20 +8600,26 @@ function AppInner() {
                       </div>
                     ) : (
                       <>
-                        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
+                        {/* Totaux en cachets ET en heures (retour testeuse 24/07 : « un cachet, c'est une journée » — son unité mentale) */}
+                        <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
+                          <strong style={{ color: "#C8E0F5" }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}{(() => { const tc = aems.reduce((s, x) => s + ((x.type_activite === "cachet_isole" || x.type_activite === "cachet_groupe" || x.type_activite === "cachet") ? (parseFloat(x.nombre) || 0) : 0), 0); const th = Math.round(aems.reduce((s, x) => s + heuresDe(x), 0)); return ` · ${tc} cachet${tc > 1 ? "s" : ""} · ${th} h`; })()}</strong>. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
-                            <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
+                            <Fragment key={a.id || i}>
+                            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", gap: 12 }}>
                               <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(93,202,165,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                 <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 19 }} />
                               </div>
                               <div style={{ flex: 1, minWidth: 0 }}>
                                 <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
                                   <span style={{ fontSize: 13.5, fontWeight: 600, color: "white" }}>{a.employeur || "Employeur à compléter"}</span>
-                                  {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && (
-                                    <span style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible
-                                    </span>
+                                  {/* Badge cliquable (demande testeuse 23/07) : l'alerte se TRANCHE au lieu de rester à vie. */}
+                                  {signatureAEM(a) && dupSig[signatureAEM(a)] > 1 && !a.doublon_ok && (
+                                    <button type="button" title="Doublon ou pas ? Clique pour trancher"
+                                      onClick={() => setAemDoublonPanelId(aemDoublonPanelId === a.id ? null : a.id)}
+                                      style={{ fontSize: 10, fontWeight: 700, color: "#F2C879", background: "rgba(240,180,70,0.12)", border: "1px solid rgba(240,180,70,0.4)", borderRadius: 5, padding: "2px 6px", display: "inline-flex", alignItems: "center", gap: 3, cursor: "pointer", fontFamily: "inherit" }}>
+                                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 11 }} /> Doublon possible ? <i className={`ti ti-chevron-${aemDoublonPanelId === a.id ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 10 }} />
+                                    </button>
                                   )}
                                 </div>
                                 <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
@@ -8292,6 +8636,27 @@ function AppInner() {
                                 <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
                               </button>
                             </div>
+                            {/* Panneau de décision : le doublon se tranche, l'alerte ne reste jamais à vie. */}
+                            {aemDoublonPanelId === a.id && (
+                              <div style={{ background: "rgba(240,180,70,0.07)", border: "1px solid rgba(240,180,70,0.35)", borderRadius: 12, padding: "13px 15px", marginTop: -4 }}>
+                                <div style={{ fontSize: 12.5, color: "#F2C879", lineHeight: 1.55, marginBottom: 10 }}>
+                                  Ces lignes se ressemblent beaucoup (même employeur, même date, même montant). C'est un doublon ?
+                                </div>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  <button type="button"
+                                    onClick={() => acquitterDoublon(aems.filter(x => signatureAEM(x) === signatureAEM(a)))}
+                                    style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 9, padding: "9px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                    Non, deux contrats différents ✓
+                                  </button>
+                                  <button type="button"
+                                    onClick={() => { setAemDoublonPanelId(null); if (window.confirm(`Supprimer cette ligne en double ?\n\n${a.employeur || "Employeur à compléter"} · ${fmtDate(a.date)}\n\nElle sera retirée de ton compteur d'heures.`)) handleDeleteActivite(a.id); }}
+                                    style={{ background: "transparent", border: "1px solid rgba(226,75,74,0.4)", color: "#F09595", borderRadius: 9, padding: "9px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                    Oui, supprimer celle-ci
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                            </Fragment>
                           ))}
                         </div>
                       </>
@@ -8920,6 +9285,236 @@ function AppInner() {
                 )}
               </div>
 
+              {/* ══ PROJECTION AU PROCHAIN RENOUVELLEMENT (demande testeuse 23/07/2026) ══
+                   L'AJ que donnerait la formule si le dossier était examiné tel quel, et la
+                   courbe « chaque cachet compte ». MÊME Loi X que la carte allocation :
+                   branche validée uniquement (annexe 10, ≤ 60 €/jour), sinon on le dit. */}
+              {(() => {
+                const pj = projAj;
+                if (!pj) return null;
+                if (pj.ok === false && pj.raison === "aucune_activite") return null;
+                const shell = { background: "linear-gradient(160deg, rgba(55,138,221,0.09), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" };
+                const tete = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18 }}>🔭</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton prochain renouvellement</div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                  </div>
+                );
+                // Vitrine (gratuit) : la promesse Veille, sans chiffre.
+                if (pj.verrou) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
+                        Avec TOTOR Veille, je projette <strong style={{ color: "#C8E0F5" }}>l'allocation de ton prochain renouvellement</strong> à partir de tes AEM, et je te montre ce que chaque cachet en plus changerait. L'estimation s'affine à chaque scan.
+                      </div>
+                      <button type="button" onClick={() => setInterNav("abonnement")}
+                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Découvrir TOTOR Veille
+                      </button>
+                    </div>
+                  );
+                }
+                if (pj.ok === false && pj.raison === "bruts_incomplets") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Pour projeter ton allocation, il me faut tes <strong style={{ color: "#C8E0F5" }}>salaires bruts</strong> : je ne les connais que sur <strong style={{ color: "#F2C879" }}>{pj.completude} %</strong> de tes heures. Complète-les dans « Mes activités » (ou scanne tes AEM, je lis tout), et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (pj.affichable === false) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                        {pj.raison_non_affichable === "au_dela_60"
+                          ? <>Ta projection dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur une vraie notification : je préfère ne pas t'avancer de chiffre, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
+                          : <>Ton dossier penche côté <strong style={{ color: "#C8E0F5" }}>technicien (annexe 8)</strong>{pj.annexe_indeterminee ? " (métiers non départagés : j'ai retenu l'hypothèse prudente)" : ""}, et je n'ai pas encore validé ce calcul sur un vrai courrier. Je préfère attendre plutôt que d'estimer à l'aveugle. 🐾</>}
+                      </div>
+                    </div>
+                  );
+                }
+                // Affichable : le chiffre + la courbe « chaque cachet compte ».
+                const pts = pj.points || [];
+                const courbe = (() => {
+                  if (pts.length < 2) return null;
+                  const W = 300, H = 110, PAD = 22;
+                  const ajs = pts.map(p => p.aj_brute);
+                  const min = Math.min(...ajs), max = Math.max(...ajs);
+                  const x = (i) => PAD + i * ((W - 2 * PAD) / (pts.length - 1));
+                  const y = (v) => max === min ? H / 2 : (H - PAD) - ((v - min) / (max - min)) * (H - 2 * PAD);
+                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.aj_brute).toFixed(1)}`).join(" ");
+                  return (
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 10 }} aria-label="Courbe de l'allocation estimée selon les cachets ajoutés">
+                      <path d={d} fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" />
+                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.aj_brute)} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
+                      <text x={x(0)} y={y(pts[0].aj_brute) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{pts[0].aj_brute.toFixed(2).replace(".", ",")} €</text>
+                      <text x={x(pts.length - 1)} y={y(pts[pts.length - 1].aj_brute) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{pts[pts.length - 1].aj_brute.toFixed(2).replace(".", ",")} €</text>
+                      <text x={x(0)} y={H - 4} fontSize="9" fill="#6B8299">aujourd'hui</text>
+                      <text x={x(pts.length - 1)} y={H - 4} fontSize="9" fill="#6B8299" textAnchor="end">+{pts[pts.length - 1].cachets} cachets</text>
+                    </svg>
+                  );
+                })();
+                return (
+                  <div style={shell}>
+                    {tete}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
+                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{pj.nht} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
+                    </div>
+                    {courbe}
+                    {pts.length >= 2 && (
+                      <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                        <strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue. Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{formatEUR(pj.brut_moyen_cachet)}).
+                      </div>
+                    )}
+                    {pj.courbe_plafonnee_60 && (
+                      <div style={{ fontSize: 11, color: "#8FB4D8", marginTop: 6, lineHeight: 1.45 }}>
+                        La courbe s'arrête à 60 €/jour : au-delà, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai courrier.
+                      </div>
+                    )}
+                    {/* Mini-simulateur « et si j'ajoute N cachets à X € ? » (demande testeuse 24/07 :
+                        « c'est le nombre de cachets PLUS combien ils sont payés qui décide ») */}
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(55,138,221,0.18)" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#C8E0F5", marginBottom: 8 }}>Et si j'ajoute… ?</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <input type="number" min="1" max="200" value={projSimCachets} onChange={e => setProjSimCachets(e.target.value)} placeholder="Nb cachets"
+                          style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={`€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
+                          style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <button type="button" disabled={projSimLoading || !projSimCachets} onClick={lancerSimulationAj}
+                          style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: projSimLoading || !projSimCachets ? "default" : "pointer", fontFamily: "inherit", opacity: projSimLoading || !projSimCachets ? 0.6 : 1 }}>
+                          {projSimLoading ? "…" : "Simuler"}
+                        </button>
+                      </div>
+                      {projSimResult && (
+                        <div style={{ fontSize: 12.5, marginTop: 9, lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "10px 13px", color: "#B5D4F4" }}>
+                          {projSimResult.erreur
+                            ? "La simulation n'a pas répondu, réessaie dans un instant."
+                            : projSimResult.affichable
+                              ? <>Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} à {formatEUR(projSimResult.brut_cachet)}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}</>
+                              : <>Ce lot ferait dépasser <strong style={{ color: "#C8E0F5" }}>60 €/jour</strong> d'estimation : au-delà, je ne chiffre pas encore (un calcul de CSG non vérifié entre en jeu). Ce que je peux te dire de sûr : ça monte. 🐾</>}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+                      Estimation d'après tes activités déclarées, affinée à chaque AEM scannée. Seule ta notification France Travail fera foi.
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ══ TON MOIS EN COURS (décision Camille 24/07/2026 : lancé en mode ESTIMATION
+                   assumée AVANT le backtest sur relevé réel — la carte le dit et promet de se
+                   caler sur le premier relevé partagé). Même Loi X que la carte allocation. ══ */}
+              {(() => {
+                const em = estMois;
+                if (!em) return null;
+                const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                const nomMois = em.mois ? MOIS[em.mois - 1] : MOIS[new Date().getMonth()];
+                const nomMoisSuivant = em.mois ? MOIS[em.mois % 12] : MOIS[(new Date().getMonth() + 1) % 12];
+                const shell = { background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.26)", borderRadius: 16, padding: "18px 20px" };
+                const tete = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18 }}>📅</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton mois de {nomMois}</div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#9FE1CB", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                  </div>
+                );
+                if (em.verrou) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
+                        Avec TOTOR Veille, j'estime <strong style={{ color: "#C8E0F5" }}>ce que France Travail te versera pour le mois en cours</strong> : jours indemnisés, jours déduits par tes contrats, montant net. Mis à jour à chaque activité saisie.
+                      </div>
+                      <button type="button" onClick={() => setInterNav("abonnement")}
+                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Découvrir TOTOR Veille
+                      </button>
+                    </div>
+                  );
+                }
+                if (em.ok === false && em.raison === "allocation_manquante") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Pour estimer ton versement du mois, il me faut ta <strong style={{ color: "#C8E0F5" }}>notification France Travail</strong> : renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière », et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                        {em.raison === "au_dela_60"
+                          ? <>Ton allocation dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai relevé : je préfère ne pas t'avancer de montant mensuel, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
+                          : <>Ton dossier est côté <strong style={{ color: "#C8E0F5" }}>technicien (annexe 8)</strong>, et je n'ai pas encore validé ce calcul sur un vrai relevé. Je préfère attendre plutôt que d'estimer à l'aveugle. 🐾</>}
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.seuil_atteint) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Gros mois : <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jours travaillés</strong>, c'est au-delà du seuil d'indemnisation du mois. France Travail ne devrait rien verser pour {nomMois}, mais ton compteur d'heures, lui, fait le plein. 🐾
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={shell}>
+                    {tete}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(em.net_estime)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> nets</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
+                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour.
+                      {em.jours_travailles > 0
+                        ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
+                        : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
+                      {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                      Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Montant <strong style={{ color: "#C8E0F5" }}>net social, avant ton impôt à la source</strong> (il varie selon ton taux, je ne l'estime jamais). Chaque contrat ajouté dans le mois met ce chiffre à jour.
+                    </div>
+                    {em.bruts_manquants && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Il me manque des salaires bruts sur tes contrats du mois : complète-les pour fiabiliser l'estimation.
+                      </div>
+                    )}
+                    {em.autre_salaire_non_decale && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Ton salaire hors spectacle de ce mois décale aussi des jours, d'une façon que je ne sais pas encore chiffrer précisément : le versement réel sera un peu plus bas que mon estimation.
+                      </div>
+                    )}
+                    {em.arrondi_approximatif && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Ton mois tombe sur des fractions de jours : je tronque comme France Travail le fait sur les relevés que j'ai vérifiés, mais le résultat peut bouger d'un jour.
+                      </div>
+                    )}
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+                      Estimation d'après les barèmes publiés (franchises éventuelles de début de droits non comptées). Ton premier relevé de situation me servira à me caler au centime : partage-le et je vérifie. Seul le versement de France Travail fait foi.
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ══ TOTOR VÉRIFIE TA DÉCISION (contrôle de conformité — la feature volée au concurrent, en humain) ══
                    Reconstitution de Totor vs le chiffre officiel de France Travail, écart expliqué,
                    drapeau estimation. Ne s'affiche que si l'utilisateur a saisi sa notif (heures_reference). */}
@@ -9378,8 +9973,8 @@ function AppInner() {
                     <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.22)", borderRadius: 12, padding: "12px 15px" }}>
                       <div style={{ width: 21, height: 21, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, marginTop: 1, background: "rgba(250,199,117,0.18)", color: "#FAC775" }}><i className="ti ti-alert-triangle" aria-hidden="true" /></div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#FAE3B6", lineHeight: 1.4 }}>Il me manque {aemManquantes.length} AEM</div>
-                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2, lineHeight: 1.45 }}>{aemManquantes.map(e => e.nom).join(", ")}, sans elle{aemManquantes.length > 1 ? "s" : ""}, ces heures ne comptent pas.</div>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: "#FAE3B6", lineHeight: 1.4 }}>Il me manque l'AEM de {aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""}</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2, lineHeight: 1.45 }}>{aemManquantes.map(e => e.nom).join(", ")} : au moins un contrat du mois n'a pas son attestation. Sans elle, ces heures ne comptent pas.</div>
                         <div style={{ display: "flex", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
                           <button type="button" onClick={() => setInterNav("activites")} style={{ fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, cursor: "pointer", borderRadius: 7, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", border: "1px solid #FAC775", background: "#FAC775", color: "#412402" }}>Voir mes activités</button>
                         </div>
@@ -10256,6 +10851,12 @@ function AppInner() {
                         <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{recapRevenus.totalContrats}</div>
                         <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Contrats</div>
                       </div>
+                      {recapRevenus.totalCachets > 0 && (
+                        <div style={{ flex: "1 1 100px", border: "1px solid rgba(255,255,255,0.10)", borderRadius: 8, padding: "12px", textAlign: "center" }}>
+                          <div style={{ fontSize: 20, fontWeight: 800, color: "white" }}>{recapRevenus.totalCachets}</div>
+                          <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>Cachets</div>
+                        </div>
+                      )}
                     </div>
                     {/* Tableau */}
                     <div style={{ overflowX: "auto" }}>
@@ -10269,14 +10870,36 @@ function AppInner() {
                           </tr>
                         </thead>
                         <tbody>
-                          {recapRevenus.lignes.map((l, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>{l.label}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.contrats}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.employeurs}</td>
-                              <td style={{ padding: "8px 10px", borderBottom: "1px solid rgba(255,255,255,0.07)", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
-                            </tr>
-                          ))}
+                          {recapRevenus.lignes.map((l, i) => {
+                            const ouvert = recapMoisOuvert === l.clef;
+                            return (
+                              <Fragment key={l.clef || i}>
+                                <tr onClick={() => setRecapMoisOuvert(ouvert ? null : l.clef)} style={{ cursor: "pointer" }} title={ouvert ? "Replier le détail" : "Voir le détail des contrats"}>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)" }}>
+                                    <i className={`ti ti-chevron-${ouvert ? "down" : "right"}`} aria-hidden="true" style={{ fontSize: 12, color: "#5DCAA5", marginRight: 6 }} />{l.label}
+                                  </td>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.contrats}</td>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)", textAlign: "center" }}>{l.employeurs}</td>
+                                  <td style={{ padding: "8px 10px", borderBottom: ouvert ? "none" : "1px solid rgba(255,255,255,0.07)", textAlign: "right", fontWeight: 600 }}>{l.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(l.brut)) + " €" : "—"}</td>
+                                </tr>
+                                {/* Détail contrat par contrat (retour testeuse 23/07 : pouvoir VÉRIFIER le total du mois) */}
+                                {ouvert && (
+                                  <tr>
+                                    <td colSpan={4} style={{ padding: "0 10px 10px 26px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                                      {l.details.map((c, j) => (
+                                        <div key={j} style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: 11.5, color: "#8BA5C0", padding: "3px 0" }}>
+                                          <span style={{ color: "#6B8299", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>{c.date ? new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit" }) : "—"}</span>
+                                          <span style={{ color: "#C5D4E3", flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.employeur || "Employeur non renseigné"}</span>
+                                          <span style={{ flexShrink: 0 }}>{c.type === "autre_salaire" ? "hors 507h" : c.type === "heures" ? `${c.nombre} h` : `${c.nombre} cachet${(c.nombre || 0) > 1 ? "s" : ""}`}</span>
+                                          <span style={{ flexShrink: 0, color: "#E8F4FF", fontWeight: 600, minWidth: 52, textAlign: "right" }}>{c.brut > 0 ? new Intl.NumberFormat("fr-FR").format(Math.round(c.brut)) + " €" : "—"}</span>
+                                        </div>
+                                      ))}
+                                    </td>
+                                  </tr>
+                                )}
+                              </Fragment>
+                            );
+                          })}
                         </tbody>
                         <tfoot>
                           <tr style={{ fontWeight: 700 }}>
@@ -10380,6 +11003,11 @@ function AppInner() {
                       </div>
                     </div>
                   )}
+                  {interChatReprise && interChat.length > 0 && (
+                    <div style={{ textAlign: "center", fontSize: 11, color: "#5A7088", padding: "2px 0 4px" }}>
+                      Je garde le fil : on reprend où on s'était arrêtés{libelleReprise(interChatReprise)}.
+                    </div>
+                  )}
                   {interChat.map((m, i) => (
                     <div key={i} style={{ display: "flex", justifyContent: m.role === "user" ? "flex-end" : "flex-start" }}>
                       <div style={{ maxWidth: "85%", background: m.role === "user" ? "#378ADD" : "rgba(255,255,255,0.06)", color: m.role === "user" ? "white" : "#E8F4FF", borderRadius: 14, padding: "10px 14px", fontSize: 13.5, lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
@@ -10406,6 +11034,15 @@ function AppInner() {
                 <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
                   Totor connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
                 </div>
+                {interChat.length > 0 && (
+                  <div style={{ textAlign: "center", marginTop: 6 }}>
+                    <button type="button"
+                      onClick={() => (interChatEffaceArme ? effacerHistoriqueChat(true) : setInterChatEffaceArme(true))}
+                      style={{ background: "none", border: "none", color: interChatEffaceArme ? "#E0533D" : "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: "6px 8px" }}>
+                      {interChatEffaceArme ? "Tu confirmes ? J'efface toute notre conversation" : "Repartir de zéro (effacer la conversation)"}
+                    </button>
+                  </div>
+                )}
               </div>
 
               {/* ── Brique 5.4 : "Quoi accepter" — le conseiller de décision ── */}
@@ -10638,7 +11275,7 @@ function AppInner() {
                           {!showSelect ? (
                             <button type="button" onClick={() => setInterTypeAutre(true)}
                               style={{ alignSelf: "flex-start", background: "none", border: "none", color: "#6B8299", fontSize: 11.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
-                              Autre&nbsp;: formation, arrêt maladie…
+                              Autre&nbsp;: formation, arrêt maladie, salaire hors spectacle…
                             </button>
                           ) : (
                             <select value={interForm.type_activite} onChange={e => setInterForm({ ...interForm, type_activite: e.target.value })}
@@ -10657,7 +11294,15 @@ function AppInner() {
                                 <option value="arret_maladie_ordinaire">Maladie ordinaire (entre 2 contrats)</option>
                                 <option value="arret_paternite">Congé paternité</option>
                               </optgroup>
+                              <optgroup label="Hors intermittence (0h pour tes 507)">
+                                <option value="autre_salaire">Autre salaire (pub, mannequinat, régime général…)</option>
+                              </optgroup>
                             </select>
+                          )}
+                          {interForm.type_activite === "autre_salaire" && (
+                            <div style={{ fontSize: 11, color: "#8FB4D8", lineHeight: 1.5, background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.2)", borderRadius: 8, padding: "8px 11px" }}>
+                              Ce salaire s'ajoute à ton <strong style={{ color: "#C8E0F5" }}>récapitulatif de revenus</strong> mais ne compte <strong style={{ color: "#C8E0F5" }}>jamais</strong> dans tes 507h. Pense à le déclarer toi-même dans ton actualisation (avec ses vraies heures) : je ne les connais pas.
+                            </div>
                           )}
                         </div>
                       );
@@ -10692,16 +11337,31 @@ function AppInner() {
                           <span style={{ fontSize: 10.5, color: "#8FB4D8", marginLeft: 21, lineHeight: 1.35 }}>{sous}</span>
                         </label>
                       );
+                      const nbJours = Math.round((new Date(fin + "T00:00:00") - new Date(interForm.date + "T00:00:00")) / 86400000) + 1;
+                      const nb = parseFloat(interForm.nombre) || 0;
+                      const heuresUnite = interForm.type_activite === "cachet_isole" ? 12 : 1;
+                      const totalNb = interRepartition === "parjour" ? nb * nbJours : nb;
                       return (
+                        <>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {opt("parjour", "1 par jour", "tournée : le même nombre chaque jour")}
                           {opt("total", "Au total sur la période", `${interForm.nombre || "N"} ${unite} en tout, une seule ligne`)}
+                          {opt("parjour", "1 par jour", "tournée : le même nombre CHAQUE jour")}
                         </div>
+                        {/* Récap EN DIRECT de ce qui sera compté (retour testeuse 24/07 : l'ancien
+                            défaut « 1 par jour » multipliait les cachets en silence). */}
+                        {nb > 0 && (
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: interRepartition === "parjour" ? "#F2C879" : "#5DCAA5", background: interRepartition === "parjour" ? "rgba(240,180,70,0.08)" : "rgba(93,202,165,0.08)", border: `1px solid ${interRepartition === "parjour" ? "rgba(240,180,70,0.35)" : "rgba(93,202,165,0.3)"}`, borderRadius: 8, padding: "8px 12px" }}>
+                            {interRepartition === "parjour"
+                              ? `⚠ Je compterai ${nb} ${unite} × ${nbJours} jours = ${totalNb} ${unite} · ${Math.round(totalNb * heuresUnite)} h en tout`
+                              : `✓ Je compterai ${totalNb} ${unite} · ${Math.round(totalNb * heuresUnite)} h en tout sur la période`}
+                          </div>
+                        )}
+                        </>
                       );
                     })()}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
-                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : "Nb d'heures"}
+                        placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : interForm.type_activite === "autre_salaire" ? "Nb de contrats (ex : 1)" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                       {(() => {
                         // Autocomplétion employeur : suggère les employeurs DÉJÀ saisis par l'utilisateur
@@ -11007,6 +11667,7 @@ function AppInner() {
                       const typeLabel = a.type_activite === "heures" ? `${a.nombre}h` :
                         a.type_activite === "formation" ? `${a.nombre}h formation` :
                         a.type_activite === "enseignement" ? `${a.nombre}h enseignement` :
+                        a.type_activite === "autre_salaire" ? `salaire hors 507h${a.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €` : ""}` :
                         estArretNeutralise ? `${a.nombre} j → 0h (allonge)` :
                         (a.type_activite || "").startsWith("arret_") ? `${a.nombre} j arrêt → ${Math.round((a.nombre || 0) * 5)}h` :
                         `${a.nombre} cachet${a.nombre > 1 ? "s" : ""} · ${Math.round(heuresDe(a))} h`;
@@ -11015,8 +11676,14 @@ function AppInner() {
                         return (
                           <div key={a.id} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 10, padding: 12 }}>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                              <input type="date" value={interEditForm.date} onChange={e => setInterEditForm({ ...interEditForm, date: e.target.value })}
-                                style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              <label style={{ flex: "1 1 130px", fontSize: 10.5, color: "#8BA5C0", fontWeight: 600 }}>Premier jour
+                                <input type="date" value={interEditForm.date} onChange={e => setInterEditForm({ ...interEditForm, date: e.target.value })}
+                                  style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              </label>
+                              <label style={{ flex: "1 1 130px", fontSize: 10.5, color: "#8BA5C0", fontWeight: 600 }}>Dernier jour (si période)
+                                <input type="date" value={interEditForm.date_fin || ""} onChange={e => setInterEditForm({ ...interEditForm, date_fin: e.target.value })}
+                                  style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              </label>
                               <select value={interEditForm.type_activite} onChange={e => setInterEditForm({ ...interEditForm, type_activite: e.target.value })}
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                                 <option value="heures">Heures (artiste ou technicien)</option>
@@ -11033,6 +11700,9 @@ function AppInner() {
                                   <option value="arret_maladie_ordinaire">maladie ordinaire (entre 2 contrats)</option>
                                   <option value="arret_paternite">congé paternité</option>
                                 </optgroup>
+                                <optgroup label="Hors intermittence (0h pour tes 507)">
+                                  <option value="autre_salaire">autre salaire (pub, régime général…)</option>
+                                </optgroup>
                               </select>
                               {interEditForm.type_activite === "heures" && (
                                 <select value={interEditForm.metier || ""} onChange={e => setInterEditForm({ ...interEditForm, metier: e.target.value })}
@@ -11048,6 +11718,13 @@ function AppInner() {
                                 style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                               <input type="text" value={interEditForm.employeur} onChange={e => setInterEditForm({ ...interEditForm, employeur: e.target.value })} placeholder="Employeur (optionnel)"
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                            </div>
+                            {/* Montants (retour testeuse 23/07 : impossible d'ajouter son salaire après coup) */}
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                              <MontantInput decimales value={interEditForm.salaire_brut} onChange={v => setInterEditForm({ ...interEditForm, salaire_brut: v })} placeholder="Salaire brut € (optionnel)"
+                                style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              <MontantInput decimales value={interEditForm.pas_montant} onChange={v => setInterEditForm({ ...interEditForm, pas_montant: v })} placeholder="PAS prélevé € (optionnel)"
+                                style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                             </div>
                             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, fontSize: 12, color: "#9FCBF5" }}>
                               <input type="checkbox" checked={!!interEditForm.estime} onChange={e => setInterEditForm({ ...interEditForm, estime: e.target.checked })}
@@ -11071,6 +11748,7 @@ function AppInner() {
                       const typeLabelComplet = a.type_activite === "heures" ? "Heures (artiste ou technicien)" :
                         a.type_activite === "formation" ? "Formation suivie" :
                         a.type_activite === "enseignement" ? "Enseignement dispensé" :
+                        a.type_activite === "autre_salaire" ? "Autre salaire (hors 507h)" :
                         ARRET_LABELS[a.type_activite] || "Cachet (artiste)";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
@@ -11337,6 +12015,8 @@ function AppInner() {
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("cgu")}>CGU</button>
                 <span>·</span>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+                <span>·</span>
+                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("nouveautes")}>Nouveautés</button>
                 <span>·</span>
                 <a href="mailto:bonjour@montotor.fr" style={{ color: "#5A7088", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
               </p>
@@ -15243,6 +15923,8 @@ function AppInner() {
               <span>·</span>
               <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
               <span>·</span>
+              <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("nouveautes")}>Nouveautés</button>
+              <span>·</span>
               <a href="mailto:bonjour@montotor.fr" style={{ color: "#B0B6C0", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
             </p>
           </div>
@@ -15337,6 +16019,11 @@ function AppInner() {
             )}
             <div style={{ ...S.card, display: "flex", flexDirection: "column", height: "calc(100vh - 260px)" }}>
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 12, paddingBottom: 16 }}>
+                {aiReprise && aiMessages.length > 1 && (
+                  <div style={{ textAlign: "center", fontSize: 11, color: "#8B98A8", padding: "2px 0 4px" }}>
+                    Je garde le fil : on reprend où on s'était arrêtés{libelleReprise(aiReprise)}.
+                  </div>
+                )}
                 {aiMessages.map((m, i) => {
                   const devis = m.role === "assistant" ? parseDevisBlock(m.content) : null;
                   return (
@@ -15402,6 +16089,15 @@ function AppInner() {
                 )}
                 <button style={S.btnPrimarySmall} type="submit" disabled={aiLoading}>Envoyer</button>
               </form>
+              {aiMessages.length > 1 && (
+                <div style={{ textAlign: "center", marginTop: 6 }}>
+                  <button type="button"
+                    onClick={() => (aiEffaceArme ? effacerHistoriqueChat(false) : setAiEffaceArme(true))}
+                    style={{ background: "none", border: "none", color: aiEffaceArme ? "#E0533D" : "#8B98A8", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: "6px 8px" }}>
+                    {aiEffaceArme ? "Tu confirmes ? J'efface toute notre conversation" : "Repartir de zéro (effacer la conversation)"}
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
