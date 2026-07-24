@@ -591,6 +591,8 @@ function AppInner() {
   const [aemDetailId, setAemDetailId] = useState(null);
   // Ligne dont le panneau « doublon : oui ou non ? » est ouvert (id ou null).
   const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
+  // Projection AJ au prochain renouvellement (carte cockpit, TOTOR Veille).
+  const [projAj, setProjAj] = useState(null);
   // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
   const [aemVictoire, setAemVictoire] = useState(null);
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
@@ -3227,6 +3229,8 @@ function AppInner() {
       ]);
       setInterCockpit(data);
       setInterActivites(activites);
+      // Projection au prochain renouvellement — best effort, n'interrompt rien.
+      apiFetch("/intermittent/projection-aj").then(setProjAj).catch(() => {});
       // Détection d'un franchissement de palier (pour la célébration).
       const heures = data ? data.total_heures : 0;
       let palierAtteint = PALIERS_INTERMITTENT[0];
@@ -8816,6 +8820,109 @@ function AppInner() {
                   </div>
                 )}
               </div>
+
+              {/* ══ PROJECTION AU PROCHAIN RENOUVELLEMENT (demande testeuse 23/07/2026) ══
+                   L'AJ que donnerait la formule si le dossier était examiné tel quel, et la
+                   courbe « chaque cachet compte ». MÊME Loi X que la carte allocation :
+                   branche validée uniquement (annexe 10, ≤ 60 €/jour), sinon on le dit. */}
+              {(() => {
+                const pj = projAj;
+                if (!pj) return null;
+                if (pj.ok === false && pj.raison === "aucune_activite") return null;
+                const shell = { background: "linear-gradient(160deg, rgba(55,138,221,0.09), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" };
+                const tete = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18 }}>🔭</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton prochain renouvellement</div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                  </div>
+                );
+                // Vitrine (gratuit) : la promesse Veille, sans chiffre.
+                if (pj.verrou) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
+                        Avec TOTOR Veille, je projette <strong style={{ color: "#C8E0F5" }}>l'allocation de ton prochain renouvellement</strong> à partir de tes AEM, et je te montre ce que chaque cachet en plus changerait. L'estimation s'affine à chaque scan.
+                      </div>
+                      <button type="button" onClick={() => setInterNav("abonnement")}
+                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Découvrir TOTOR Veille
+                      </button>
+                    </div>
+                  );
+                }
+                if (pj.ok === false && pj.raison === "bruts_incomplets") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Pour projeter ton allocation, il me faut tes <strong style={{ color: "#C8E0F5" }}>salaires bruts</strong> : je ne les connais que sur <strong style={{ color: "#F2C879" }}>{pj.completude} %</strong> de tes heures. Complète-les dans « Mes activités » (ou scanne tes AEM, je lis tout), et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (pj.affichable === false) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                        {pj.raison_non_affichable === "au_dela_60"
+                          ? <>Ta projection dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur une vraie notification : je préfère ne pas t'avancer de chiffre, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
+                          : <>Ton dossier penche côté <strong style={{ color: "#C8E0F5" }}>technicien (annexe 8)</strong>{pj.annexe_indeterminee ? " (métiers non départagés : j'ai retenu l'hypothèse prudente)" : ""}, et je n'ai pas encore validé ce calcul sur un vrai courrier. Je préfère attendre plutôt que d'estimer à l'aveugle. 🐾</>}
+                      </div>
+                    </div>
+                  );
+                }
+                // Affichable : le chiffre + la courbe « chaque cachet compte ».
+                const pts = pj.points || [];
+                const courbe = (() => {
+                  if (pts.length < 2) return null;
+                  const W = 300, H = 110, PAD = 22;
+                  const ajs = pts.map(p => p.aj_brute);
+                  const min = Math.min(...ajs), max = Math.max(...ajs);
+                  const x = (i) => PAD + i * ((W - 2 * PAD) / (pts.length - 1));
+                  const y = (v) => max === min ? H / 2 : (H - PAD) - ((v - min) / (max - min)) * (H - 2 * PAD);
+                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.aj_brute).toFixed(1)}`).join(" ");
+                  return (
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 10 }} aria-label="Courbe de l'allocation estimée selon les cachets ajoutés">
+                      <path d={d} fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" />
+                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.aj_brute)} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
+                      <text x={x(0)} y={y(pts[0].aj_brute) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{pts[0].aj_brute.toFixed(2).replace(".", ",")} €</text>
+                      <text x={x(pts.length - 1)} y={y(pts[pts.length - 1].aj_brute) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{pts[pts.length - 1].aj_brute.toFixed(2).replace(".", ",")} €</text>
+                      <text x={x(0)} y={H - 4} fontSize="9" fill="#6B8299">aujourd'hui</text>
+                      <text x={x(pts.length - 1)} y={H - 4} fontSize="9" fill="#6B8299" textAnchor="end">+{pts[pts.length - 1].cachets} cachets</text>
+                    </svg>
+                  );
+                })();
+                return (
+                  <div style={shell}>
+                    {tete}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
+                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{pj.nht} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
+                    </div>
+                    {courbe}
+                    {pts.length >= 2 && (
+                      <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                        <strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue. Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{formatEUR(pj.brut_moyen_cachet)}).
+                      </div>
+                    )}
+                    {pj.courbe_plafonnee_60 && (
+                      <div style={{ fontSize: 11, color: "#8FB4D8", marginTop: 6, lineHeight: 1.45 }}>
+                        La courbe s'arrête à 60 €/jour : au-delà, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai courrier.
+                      </div>
+                    )}
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+                      Estimation d'après tes activités déclarées, affinée à chaque AEM scannée. Seule ta notification France Travail fera foi.
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* ══ TOTOR VÉRIFIE TA DÉCISION (contrôle de conformité — la feature volée au concurrent, en humain) ══
                    Reconstitution de Totor vs le chiffre officiel de France Travail, écart expliqué,
