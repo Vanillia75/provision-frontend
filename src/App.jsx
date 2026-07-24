@@ -6582,24 +6582,27 @@ function AppInner() {
         {/* ===== TÉMOIGNAGES (uniquement de vraies citations — section invisible tant que vide) ===== */}
         {TEMOIGNAGES.length > 0 && (
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
-            <div style={{ maxWidth: 760, margin: "0 auto", display: "flex", flexDirection: "column", gap: 28 }}>
+            <div style={{ maxWidth: 980, margin: "0 auto" }}>
               {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
-              <div style={{ textAlign: "center" }}>
+              <div style={{ textAlign: "center", marginBottom: isMobile ? 26 : 36 }}>
                 <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
                 <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
               </div>
-              {TEMOIGNAGES.map((t, i) => (
-                <div key={i} style={{ textAlign: "center" }}>
-                  {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
-                  {t.note >= 1 && (
-                    <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 15, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
-                      {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
-                    </div>
-                  )}
-                  <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15.5 : 18, color: "#C9D8E8", lineHeight: 1.65, fontStyle: "italic", margin: "0 auto 12px", maxWidth: 560 }}>« {t.texte} »</p>
-                  <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
-                </div>
-              ))}
+              {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 14 : 18 }}>
+                {TEMOIGNAGES.map((t, i) => (
+                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: isMobile ? "20px 18px" : "26px 26px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
+                    {t.note >= 1 && (
+                      <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
+                        {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
+                      </div>
+                    )}
+                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15 : 16.5, color: "#C9D8E8", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 12px" }}>« {t.texte} »</p>
+                    <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
+                  </div>
+                ))}
+              </div>
             </div>
           </section>
         )}
