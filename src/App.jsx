@@ -3897,9 +3897,14 @@ function AppInner() {
     setInterEditId(a.id);
     setInterEditForm({
       date: a.date || "",
+      // Date de fin incluse (retour testeuse 23/07 : l'édition l'effaçait en silence
+      // et il était impossible de la modifier).
+      date_fin: a.date_fin || "",
       type_activite: a.type_activite || "cachet_isole",
       nombre: String(a.nombre ?? ""),
       employeur: a.employeur || "",
+      salaire_brut: (a.salaire_brut != null && a.salaire_brut !== "") ? String(a.salaire_brut) : "",
+      pas_montant: (a.pas_montant != null && a.pas_montant !== "") ? String(a.pas_montant) : "",
       estime: a.estime === true,
       metier: (a.metier === "artiste" || a.metier === "technicien") ? a.metier : "",
     });
@@ -3916,9 +3921,13 @@ function AppInner() {
         method: "PUT",
         body: JSON.stringify({
           date: interEditForm.date,
+          // Une fin antérieure au début serait absurde : on l'ignore plutôt que de l'envoyer.
+          date_fin: (interEditForm.date_fin && interEditForm.date_fin >= interEditForm.date) ? interEditForm.date_fin : null,
           type_activite: interEditForm.type_activite,
           nombre,
           employeur: interEditForm.employeur || null,
+          salaire_brut: interEditForm.salaire_brut !== "" ? parseFloat(String(interEditForm.salaire_brut).replace(",", ".")) : null,
+          pas_montant: interEditForm.pas_montant !== "" ? parseFloat(String(interEditForm.pas_montant).replace(",", ".")) : null,
           estime: !!interEditForm.estime,
           metier: interEditForm.type_activite === "cachet_isole" ? "artiste" : (interEditForm.type_activite === "heures" ? (interEditForm.metier || null) : null),
         }),
@@ -7005,9 +7014,11 @@ function AppInner() {
       if (calc.secu) {
         niveau = "green";
         titre = "Je veille, tu peux souffler.";
+        // Le compteur EXACT en clair (retour testeuse 23/07 : « je veux voir combien
+        // j'ai d'heures, en grand, pas en petit ») — l'info importante doit ressortir.
         phrase = calc.aDateAnniv
-          ? `Tes droits sont sécurisés jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
-          : "Tes 507h sont là. Je continue à monter la garde sur ton dossier.";
+          ? `Tes droits sont sécurisés avec ${Math.round(c.total_heures)} h au compteur, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
+          : `Tes 507h sont là : ${Math.round(c.total_heures)} h au compteur. Je continue à monter la garde sur ton dossier.`;
       } else if (calc.dansLesTemps === true) {
         niveau = "green";
         titre = "Je pense qu'on est sur la bonne voie.";
@@ -7042,7 +7053,7 @@ function AppInner() {
       // 🟢 SÉCURISÉ — seul cas vert : le moteur confirme les droits.
       if (calc.secu) {
         return {
-          ton: "green", emoji: "🟢", titre: "Tes droits sont sécurisés",
+          ton: "green", emoji: "🟢", titre: `Tes droits sont sécurisés (${Math.round(c.total_heures)} h)`,
           bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5", st: "#BFE6D6",
           phrase: calc.aDateAnniv
             ? `C'est bon jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Je monte la garde, tu peux souffler. 🐾`
@@ -10829,8 +10840,14 @@ function AppInner() {
                         return (
                           <div key={a.id} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 10, padding: 12 }}>
                             <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
-                              <input type="date" value={interEditForm.date} onChange={e => setInterEditForm({ ...interEditForm, date: e.target.value })}
-                                style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              <label style={{ flex: "1 1 130px", fontSize: 10.5, color: "#8BA5C0", fontWeight: 600 }}>Premier jour
+                                <input type="date" value={interEditForm.date} onChange={e => setInterEditForm({ ...interEditForm, date: e.target.value })}
+                                  style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              </label>
+                              <label style={{ flex: "1 1 130px", fontSize: 10.5, color: "#8BA5C0", fontWeight: 600 }}>Dernier jour (si période)
+                                <input type="date" value={interEditForm.date_fin || ""} onChange={e => setInterEditForm({ ...interEditForm, date_fin: e.target.value })}
+                                  style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              </label>
                               <select value={interEditForm.type_activite} onChange={e => setInterEditForm({ ...interEditForm, type_activite: e.target.value })}
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
                                 <option value="heures">Heures (artiste ou technicien)</option>
@@ -10862,6 +10879,13 @@ function AppInner() {
                                 style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                               <input type="text" value={interEditForm.employeur} onChange={e => setInterEditForm({ ...interEditForm, employeur: e.target.value })} placeholder="Employeur (optionnel)"
                                 style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                            </div>
+                            {/* Montants (retour testeuse 23/07 : impossible d'ajouter son salaire après coup) */}
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                              <MontantInput decimales value={interEditForm.salaire_brut} onChange={v => setInterEditForm({ ...interEditForm, salaire_brut: v })} placeholder="Salaire brut € (optionnel)"
+                                style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                              <MontantInput decimales value={interEditForm.pas_montant} onChange={v => setInterEditForm({ ...interEditForm, pas_montant: v })} placeholder="PAS prélevé € (optionnel)"
+                                style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                             </div>
                             <label style={{ display: "flex", alignItems: "center", gap: 8, cursor: "pointer", marginBottom: 10, fontSize: 12, color: "#9FCBF5" }}>
                               <input type="checkbox" checked={!!interEditForm.estime} onChange={e => setInterEditForm({ ...interEditForm, estime: e.target.checked })}
