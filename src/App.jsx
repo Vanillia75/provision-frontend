@@ -1214,7 +1214,7 @@ function AppInner() {
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, textAlign: "left", margin: "0 auto 14px", maxWidth: 310, background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.18)", borderRadius: 14, padding: "13px 15px" }}>
           {(profile?.statut === "intermittent"
-            ? ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Je recalcule ton allocation après chaque AEM", "Scans d'AEM et conversations illimités"]
+            ? ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je projette ton allocation au prochain renouvellement", "Je vérifie ta décision face à France Travail", "Je repère les écarts qui te coûteraient des droits", "Scans d'AEM et conversations illimités"]
             : ["Ma ligne TOTOR : tu appelles, ça te répond, à toute heure", "Je relance tes impayés à ta place, sans relâche", "Ta paie complète chaque mois, les 3 scénarios", "Le radar acompte et ton vrai taux horaire", "Factures, devis et scans illimités"]
           ).map((b, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
@@ -2498,7 +2498,8 @@ function AppInner() {
                     "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
                     "Je vérifie ta décision face à France Travail",
                     "Je repère les écarts qui te coûteraient des droits",
-                    "Je recalcule ton allocation après chaque AEM",
+                    "Je projette ton allocation au prochain renouvellement, affinée à chaque AEM",
+                    "Le simulateur « et si j'ajoute 5 cachets à 200 € ? » : l'effet sur tes heures ET ton allocation",
                     "Je surveille tes jours par employeur avant que ça coince",
                     "Ton espace auto-entrepreneur complet inclus : paie 3 scénarios, relances d'impayés, radar acompte, taux horaire",
                     "Toutes les prochaines fonctionnalités, incluses d'office",
@@ -6361,7 +6362,7 @@ function AppInner() {
             <div>
               <div style={numFantome}>02</div>
               <h2 style={titreSec}>TOTOR veille sur<br />ce que tu vas <span style={{ color: "#5DCAA5" }}>toucher</span>.</h2>
-              <p style={texteSec}>Il estime ton allocation et tes Congés Spectacles.</p>
+              <p style={texteSec}>Il estime ton allocation, projette ton prochain renouvellement à partir de tes attestations, et simule l'effet de chaque cachet en plus. Sans oublier tes Congés Spectacles.</p>
               <p style={{ ...texteSec, color: "#5DCAA5", fontWeight: 700, marginTop: 12 }}>Toujours des estimations, jamais de promesses.</p>
             </div>
             <div style={demoFondu}>
@@ -6370,6 +6371,14 @@ function AppInner() {
                 <div>
                   <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton allocation journalière <span style={{ color: "#45596F", fontSize: 10 }}>· exemple</span></div>
                   <div style={{ fontSize: isMobile ? 25 : 30, fontWeight: 800, color: "#5DCAA5", lineHeight: 1 }}>Environ 51,18 €<span style={{ fontSize: 14, color: "#8BA5C0", fontWeight: 600 }}> / jour</span></div>
+                </div>
+                <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
+              </div>
+              {/* Projection au prochain renouvellement (la nouveauté vitrine, demande Camille 24/07) */}
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, padding: "18px 0", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 7 }}>Ton prochain renouvellement <span style={{ color: "#45596F", fontSize: 10 }}>· exemple</span></div>
+                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>« Et si j'ajoute <strong style={{ color: "#C8E0F5" }}>5 cachets à 200 €</strong> ? »<br /><span style={{ color: "#5DCAA5", fontWeight: 700 }}>→ environ 44,41 € /jour au lieu de 42,99 €</span></div>
                 </div>
                 <span style={badgeEstim}><i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 10 }} /> estimation</span>
               </div>
