@@ -7863,19 +7863,22 @@ function AppInner() {
       safeStorage.setItem("actuHistorique", JSON.stringify(next));
     };
 
-    // Les entrées du menu intermittent (reflètent les 6 promesses de la landing)
+    // Les entrées du menu intermittent, dans l'ordre du PARCOURS RÉEL :
+    // mon dossier au quotidien (piloter, saisir, scanner, m'actualiser),
+    // puis avancer (trouver des heures, simuler, demander), puis lire,
+    // et l'administratif à la fin. Réordonné le 24/07 (retour Camille).
     const interMenuItems = [
       { id: "cockpit", icon: "ti-gauge", label: "Cockpit", dispo: true },
-      { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
+      { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "mesaem", icon: "ti-file-check", label: "Mes AEM", dispo: true },
+      { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
+      { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
       { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
       { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
-      { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
-      { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
+      { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
       { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
-      { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
     ];
     const interSidebar = (
       <div style={{ width: 220, flexShrink: 0, background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
