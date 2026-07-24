@@ -7,6 +7,7 @@ import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./reg
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { LegalPageView } from "./LegalPage";
+import { NouveautesPage } from "./Nouveautes";
 import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
@@ -449,13 +450,13 @@ function AppInner() {
   // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
   const [legalPage, setLegalPage] = useState(() => {
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p) ? p : null;
+    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes"].includes(p) ? p : null;
   });
   // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
   const fermerLegal = () => {
     setLegalPage(null);
     const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte"].includes(p)) {
+    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes"].includes(p)) {
       window.history.replaceState({}, "", "/");
     }
   };
@@ -5649,6 +5650,9 @@ function AppInner() {
   if (legalPage === "pourquoi") {
     return <PourquoiHector onBack={() => setLegalPage(null)} />;
   }
+  if (legalPage === "nouveautes") {
+    return <NouveautesPage onBack={fermerLegal} statut={profile?.statut || null} />;
+  }
   if (legalPage) {
     return <LegalPageView page={legalPage} onBack={fermerLegal} />;
   }
@@ -6254,6 +6258,7 @@ function AppInner() {
           <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", gap: 16 }}>
               {[
+                { page: "nouveautes", label: "Nouveautés" },
                 { page: "mentions", label: "Mentions légales" },
                 { page: "cgu", label: "CGU" },
                 { page: "confidentialite", label: "Confidentialité" },
@@ -6579,6 +6584,7 @@ function AppInner() {
         <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", gap: 16 }}>
             {[
+              { page: "nouveautes", label: "Nouveautés" },
               { page: "mentions", label: "Mentions légales" },
               { page: "cgu", label: "CGU" },
               { page: "confidentialite", label: "Confidentialité" },
@@ -11506,6 +11512,8 @@ function AppInner() {
                 <span>·</span>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
                 <span>·</span>
+                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("nouveautes")}>Nouveautés</button>
+                <span>·</span>
                 <a href="mailto:bonjour@montotor.fr" style={{ color: "#5A7088", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
               </p>
               </>)}
@@ -15408,6 +15416,8 @@ function AppInner() {
               <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("cgu")}>CGU</button>
               <span>·</span>
               <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
+              <span>·</span>
+              <button type="button" style={{ ...S.linkBtn, fontSize: 11, color: "#B0B6C0" }} onClick={() => setLegalPage("nouveautes")}>Nouveautés</button>
               <span>·</span>
               <a href="mailto:bonjour@montotor.fr" style={{ color: "#B0B6C0", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
             </p>
