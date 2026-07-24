@@ -3392,8 +3392,11 @@ function AppInner() {
         } catch (e) {
           // Quota atteint : ce n'est pas un document illisible, la modale Premium s'en charge.
           if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") continue;
-          if (!premierMessageErreur && e.status === 422 && e.message) premierMessageErreur = e.message;
-          else if (e.status !== 422) erreurTechnique = true;
+          // 422 = document illisible, 429 = pause anti-abus : dans les deux cas le backend
+          // parle avec un message honnête → on l'affiche TEL QUEL (vécu du 23/07 : le
+          // message « réessaie demain » du quota était déguisé en panne technique).
+          if (!premierMessageErreur && (e.status === 422 || e.status === 429) && e.message) premierMessageErreur = e.message;
+          else if (e.status !== 422 && e.status !== 429) erreurTechnique = true;
           echecs.push({ name: file.name, file }); // un fichier illisible ne doit pas faire perdre les autres
         }
       }
