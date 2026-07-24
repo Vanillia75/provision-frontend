@@ -594,6 +594,9 @@ function AppInner() {
   const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
   // Projection AJ au prochain renouvellement (carte cockpit, TOTOR Veille).
   const [projAj, setProjAj] = useState(null);
+  // Estimation du versement du mois en cours (carte cockpit, TOTOR Veille,
+  // décision Camille 24/07 : lancée en mode estimation assumée avant backtest).
+  const [estMois, setEstMois] = useState(null);
   // Mini-simulateur de la carte : « et si j'ajoute N cachets à X € ? »
   const [projSimCachets, setProjSimCachets] = useState("");
   const [projSimBrut, setProjSimBrut] = useState("");
@@ -3252,6 +3255,8 @@ function AppInner() {
       setInterActivites(activites);
       // Projection au prochain renouvellement — best effort, n'interrompt rien.
       apiFetch("/intermittent/projection-aj").then(setProjAj).catch(() => {});
+      // Estimation du mois en cours — même régime : best effort, jamais bloquant.
+      apiFetch("/intermittent/estimation-mois").then(setEstMois).catch(() => {});
       // Détection d'un franchissement de palier (pour la célébration).
       const heures = data ? data.total_heures : 0;
       let palierAtteint = PALIERS_INTERMITTENT[0];
@@ -9090,6 +9095,101 @@ function AppInner() {
                     </div>
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
                       Estimation d'après tes activités déclarées, affinée à chaque AEM scannée. Seule ta notification France Travail fera foi.
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* ══ TON MOIS EN COURS (décision Camille 24/07/2026 : lancé en mode ESTIMATION
+                   assumée AVANT le backtest sur relevé réel — la carte le dit et promet de se
+                   caler sur le premier relevé partagé). Même Loi X que la carte allocation. ══ */}
+              {(() => {
+                const em = estMois;
+                if (!em) return null;
+                const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                const nomMois = em.mois ? MOIS[em.mois - 1] : MOIS[new Date().getMonth()];
+                const nomMoisSuivant = em.mois ? MOIS[em.mois % 12] : MOIS[(new Date().getMonth() + 1) % 12];
+                const shell = { background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.26)", borderRadius: 16, padding: "18px 20px" };
+                const tete = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18 }}>📅</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton mois de {nomMois}</div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#9FE1CB", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                  </div>
+                );
+                if (em.verrou) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
+                        Avec TOTOR Veille, j'estime <strong style={{ color: "#C8E0F5" }}>ce que France Travail te versera pour le mois en cours</strong> : jours indemnisés, jours déduits par tes contrats, montant net. Mis à jour à chaque activité saisie.
+                      </div>
+                      <button type="button" onClick={() => setInterNav("abonnement")}
+                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Découvrir TOTOR Veille
+                      </button>
+                    </div>
+                  );
+                }
+                if (em.ok === false && em.raison === "allocation_manquante") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Pour estimer ton versement du mois, il me faut ta <strong style={{ color: "#C8E0F5" }}>notification France Travail</strong> : renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière », et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                        {em.raison === "au_dela_60"
+                          ? <>Ton allocation dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai relevé : je préfère ne pas t'avancer de montant mensuel, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
+                          : <>Ton dossier est côté <strong style={{ color: "#C8E0F5" }}>technicien (annexe 8)</strong>, et je n'ai pas encore validé ce calcul sur un vrai relevé. Je préfère attendre plutôt que d'estimer à l'aveugle. 🐾</>}
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.seuil_atteint) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Gros mois : <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jours travaillés</strong>, c'est au-delà du seuil d'indemnisation du mois. France Travail ne devrait rien verser pour {nomMois}, mais ton compteur d'heures, lui, fait le plein. 🐾
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={shell}>
+                    {tete}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(em.net_estime)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> nets</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
+                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour.
+                      {em.jours_travailles > 0
+                        ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
+                        : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
+                      {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                      Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Chaque contrat ajouté dans le mois met ce chiffre à jour.
+                    </div>
+                    {em.approximatif && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        {em.bruts_manquants
+                          ? "Il me manque des salaires bruts sur tes contrats du mois : complète-les pour fiabiliser l'estimation."
+                          : "Certains arrondis de France Travail ne sont pas documentés : le résultat peut bouger d'un jour ou deux."}
+                      </div>
+                    )}
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+                      Estimation d'après les barèmes publiés (franchises éventuelles de début de droits non comptées). Ton premier relevé de situation me servira à me caler au centime : partage-le et je vérifie. Seul le versement de France Travail fait foi.
                     </div>
                   </div>
                 );
