@@ -3377,6 +3377,7 @@ function AppInner() {
       const tousLesForms = [];
       const echecs = [];
       let premierMessageErreur = ""; // le message honnête du backend (ex. « je ne sais pas lire ce type de document »)
+      let erreurTechnique = false;   // erreur NON-422 (serveur en redéploiement, réseau…) : ce n'est PAS la faute du document
       for (let i = 0; i < fichiers.length; i++) {
         const file = fichiers[i];
         if (fichiers.length > 1) setAemScanProgress({ courant: i + 1, total: fichiers.length });
@@ -3392,15 +3393,20 @@ function AppInner() {
           // Quota atteint : ce n'est pas un document illisible, la modale Premium s'en charge.
           if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") continue;
           if (!premierMessageErreur && e.status === 422 && e.message) premierMessageErreur = e.message;
+          else if (e.status !== 422) erreurTechnique = true;
           echecs.push({ name: file.name, file }); // un fichier illisible ne doit pas faire perdre les autres
         }
       }
       setAemEchecs(echecs); // fichiers gardés en main pour proposer la lecture humaine
       if (tousLesForms.length === 0) {
         if (echecs.length === 0) return; // tout venait du quota : rien à afficher ici
-        setAemError(premierMessageErreur || (fichiers.length > 1
-          ? "Je n'ai rien trouvé d'exploitable dans ces documents. Réessaie avec des scans plus nets."
-          : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette."));
+        // Vécu du 23/07 (Lucile) : un scan pendant un redéploiement serveur affichait
+        // « scans plus nets » et accusait ses documents à tort. On dit la vérité.
+        setAemError(premierMessageErreur || (erreurTechnique
+          ? "Petit souci technique de mon côté, tes documents n'y sont pour rien. Réessaie dans une minute."
+          : (fichiers.length > 1
+            ? "Je n'ai rien trouvé d'exploitable dans ces documents. Réessaie avec des scans plus nets."
+            : "Je n'ai rien trouvé d'exploitable sur ce document. Réessaie avec une photo plus nette.")));
         return;
       }
       if (echecs.length > 0) {
