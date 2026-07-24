@@ -593,6 +593,11 @@ function AppInner() {
   const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
   // Projection AJ au prochain renouvellement (carte cockpit, TOTOR Veille).
   const [projAj, setProjAj] = useState(null);
+  // Mini-simulateur de la carte : « et si j'ajoute N cachets à X € ? »
+  const [projSimCachets, setProjSimCachets] = useState("");
+  const [projSimBrut, setProjSimBrut] = useState("");
+  const [projSimResult, setProjSimResult] = useState(null);
+  const [projSimLoading, setProjSimLoading] = useState(false);
   // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
   const [aemVictoire, setAemVictoire] = useState(null);
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
@@ -3712,11 +3717,14 @@ function AppInner() {
     // Données réelles du dossier (déterministes).
     // On part du total OFFICIEL du backend (c.total_heures, déjà filtré sur 365j)
     // pour ne JAMAIS contredire le cockpit. Secours : recalcul fenêtre glissante.
+    // ⚠️ `interCockpit` DIRECTEMENT (pas l'alias `c` du rendu, hors de portée ici :
+    // il faisait planter TOUTE question tapée à la main — ReferenceError silencieux,
+    // « réflexion » figée à l'infini. Découvert le 24/07 grâce au retour de la testeuse).
     const acts = interActivites || [];
-    const heuresActuelles = (c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts);
-    const seuil = (c && c.seuil) || valeurDe("seuilHeures");
+    const heuresActuelles = (interCockpit && typeof interCockpit.total_heures === "number") ? interCockpit.total_heures : heuresFenetre(acts);
+    const seuil = (interCockpit && interCockpit.seuil) || valeurDe("seuilHeures");
     const manque = Math.max(0, seuil - heuresActuelles);
-    const dateAnniv = c && c.date_anniversaire ? new Date(c.date_anniversaire) : null;
+    const dateAnniv = interCockpit && interCockpit.date_anniversaire ? new Date(interCockpit.date_anniversaire) : null;
     const joursAnniv = dateAnniv ? Math.ceil((dateAnniv - new Date()) / 86400000) : null;
     // Extrait un nombre de la question (ex "3 cachets", "8 heures", "15 jours")
     const num = (() => { const m = q.match(/(\d+([.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : null; })();
@@ -3728,9 +3736,14 @@ function AppInner() {
       const ajout = n * valeurDe("cachetHeures");
       const apres = heuresActuelles + ajout;
       const secu = apres >= seuil;
+      // Si la question donne AUSSI le prix (« 2 cachets à 150 € »), on chiffrera
+      // l'impact sur l'allocation (retour testeuse 24/07 : cachets + salaire = la vraie décision).
+      const prixMatch = q.match(/(\d+(?:[.,]\d+)?)\s*(?:€|euros?)/);
+      const prix = prixMatch ? parseFloat(prixMatch[1].replace(",", ".")) : null;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${Math.ceil((seuil - apres) / 12)} cachets. Ça t'avance bien, mais ça ne suffit pas encore.`}`,
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
+        simulerAj: prix && prix > 0 ? { n, brut: prix } : null,
       };
     }
     // ─ Scénario 2 : accepter des heures ─
@@ -3807,18 +3820,38 @@ function AppInner() {
     // 1. Totor tente de calculer lui-même (déterministe)
     const scenario = calculerScenarioEtSi(question);
     if (scenario) {
+      let texte = scenario.text;
+      // Le prix du contrat est donné → on ajoute l'impact ALLOCATION (moteur validé,
+      // mêmes règles Loi X que la carte projection ; abonnés Veille).
+      if (scenario.simulerAj && projAj && projAj.verrou === false && projAj.affichable) {
+        try {
+          const d = await apiFetch(`/intermittent/projection-aj?cachets_sup=${scenario.simulerAj.n}&brut_cachet=${scenario.simulerAj.brut}`);
+          const s = d && d.simulation;
+          if (s && s.affichable) {
+            texte += formatEUR(s.aj_nette) === formatEUR(projAj.aj_nette)
+              // Le plancher absorbe le lot : dire « de X à X » serait vrai mais illisible.
+              ? ` Et côté allocation : ton estimation resterait autour de ${formatEUR(projAj.aj_nette)} par jour, tu es au plancher. À ce niveau, ce contrat joue surtout sur tes heures (valeur 2026, estimation).`
+              : ` Et côté allocation : ton estimation au prochain renouvellement passerait d'environ ${formatEUR(projAj.aj_nette)} à ${formatEUR(s.aj_nette)} par jour (valeur 2026, estimation).`;
+          } else if (s) {
+            texte += ` Et côté allocation : ce lot te ferait dépasser 60 €/jour d'estimation, zone que je ne chiffre pas encore. Ce qui est sûr : ça monte.`;
+          }
+        } catch { /* l'impact allocation est un bonus : la réponse heures part quand même */ }
+      } else if (scenario.simulerAj && projAj && projAj.verrou) {
+        texte += ` (Avec TOTOR Veille, je te chiffrerais aussi l'impact sur ton allocation.)`;
+      }
       setTimeout(() => {
         setCalcThinking(false);
-        setCalcConvo(prev => [...prev, { role: "bot", text: scenario.text, ouv: scenario.ouv, questions: [] }]);
-      }, 1100);
+        setCalcConvo(prev => [...prev, { role: "bot", text: texte, ouv: scenario.ouv, questions: [] }]);
+      }, 400);
       return;
     }
 
     // 2. Scénario non reconnu → on demande à l'IA de comprendre, MAIS en lui interdisant d'inventer.
     //    On lui fournit les chiffres réels pour qu'elle reformule sans calculer.
     const acts = interActivites || [];
-    const heuresActuelles = Math.round((c && typeof c.total_heures === "number") ? c.total_heures : heuresFenetre(acts));
-    const seuil = (c && c.seuil) || valeurDe("seuilHeures");
+    // Même correctif que calculerScenarioEtSi : `interCockpit` direct, jamais l'alias `c` du rendu.
+    const heuresActuelles = Math.round((interCockpit && typeof interCockpit.total_heures === "number") ? interCockpit.total_heures : heuresFenetre(acts));
+    const seuil = (interCockpit && interCockpit.seuil) || valeurDe("seuilHeures");
     const contexte = `Données réelles de l'utilisateur (NE LES MODIFIE PAS, n'invente AUCUN autre chiffre) : heures actuelles = ${heuresActuelles}h, seuil = ${seuil}h, il manque = ${Math.max(0, seuil - heuresActuelles)}h.`;
     const consigne = `Tu es Totor, un chien fidèle qui veille sur le dossier d'un intermittent du spectacle. Réponds à la question avec chaleur, en tutoyant, comme un copilote ("si c'était mon dossier..."). RÈGLE ABSOLUE : n'invente jamais une heure, une date ou une projection chiffrée. Utilise UNIQUEMENT les chiffres fournis. Si la question demande un calcul que tu ne peux pas faire avec ces seuls chiffres, dis honnêtement que tu préfères ne pas répondre à l'aveugle et invite à préciser ou à vérifier avec France Travail. Sois bref (3-4 phrases).`;
     try {
@@ -3958,6 +3991,24 @@ function AppInner() {
       await loadIntermittentCockpit();
     } catch (err) {
       setError(err.message);
+    }
+  }
+
+  // Simulation « N cachets à X € » sur le moteur validé (Loi X respectée côté serveur).
+  async function lancerSimulationAj() {
+    const n = parseInt(projSimCachets, 10);
+    if (!n || n <= 0 || projSimLoading) return;
+    setProjSimLoading(true);
+    setProjSimResult(null);
+    try {
+      const brut = projSimBrut !== "" ? parseFloat(String(projSimBrut).replace(",", ".")) : null;
+      const q = `?cachets_sup=${n}` + (brut != null && !isNaN(brut) ? `&brut_cachet=${brut}` : "");
+      const d = await apiFetch(`/intermittent/projection-aj${q}`);
+      setProjSimResult(d && d.simulation ? d.simulation : { erreur: true });
+    } catch {
+      setProjSimResult({ erreur: true });
+    } finally {
+      setProjSimLoading(false);
     }
   }
 
@@ -8928,6 +8979,30 @@ function AppInner() {
                         La courbe s'arrête à 60 €/jour : au-delà, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai courrier.
                       </div>
                     )}
+                    {/* Mini-simulateur « et si j'ajoute N cachets à X € ? » (demande testeuse 24/07 :
+                        « c'est le nombre de cachets PLUS combien ils sont payés qui décide ») */}
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(55,138,221,0.18)" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#C8E0F5", marginBottom: 8 }}>Et si j'ajoute… ?</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <input type="number" min="1" max="200" value={projSimCachets} onChange={e => setProjSimCachets(e.target.value)} placeholder="Nb cachets"
+                          style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={`€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
+                          style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <button type="button" disabled={projSimLoading || !projSimCachets} onClick={lancerSimulationAj}
+                          style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: projSimLoading || !projSimCachets ? "default" : "pointer", fontFamily: "inherit", opacity: projSimLoading || !projSimCachets ? 0.6 : 1 }}>
+                          {projSimLoading ? "…" : "Simuler"}
+                        </button>
+                      </div>
+                      {projSimResult && (
+                        <div style={{ fontSize: 12.5, marginTop: 9, lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "10px 13px", color: "#B5D4F4" }}>
+                          {projSimResult.erreur
+                            ? "La simulation n'a pas répondu, réessaie dans un instant."
+                            : projSimResult.affichable
+                              ? <>Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} à {formatEUR(projSimResult.brut_cachet)}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}</>
+                              : <>Ce lot ferait dépasser <strong style={{ color: "#C8E0F5" }}>60 €/jour</strong> d'estimation : au-delà, je ne chiffre pas encore (un calcul de CSG non vérifié entre en jeu). Ce que je peux te dire de sûr : ça monte. 🐾</>}
+                        </div>
+                      )}
+                    </div>
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
                       Estimation d'après tes activités déclarées, affinée à chaque AEM scannée. Seule ta notification France Travail fera foi.
                     </div>
