@@ -540,8 +540,10 @@ function AppInner() {
   const [empSugHover, setEmpSugHover] = useState(-1);     // ligne survolée (surlignage)
   // #1 saisie : type via toggle visible Cachets/Heures ; "Autre" déplie le select (formation/arrêts).
   const [interTypeAutre, setInterTypeAutre] = useState(false);
-  // #1 saisie : répartition d'une plage de dates — "parjour" (tournée) ou "total" (N sur la période).
-  const [interRepartition, setInterRepartition] = useState("parjour");
+  // #1 saisie : répartition d'une plage de dates — "total" (N sur la période, DÉFAUT depuis le
+  // 24/07/2026, retour testeuse : l'ancien défaut "parjour" transformait « 3 cachets du 3 au 5 »
+  // en 9 cachets, survalorisation SILENCIEUSE du compteur 507) ou "parjour" (tournée).
+  const [interRepartition, setInterRepartition] = useState("total");
   // Métier des HEURES saisies à la main : "" (je ne sais pas) | "artiste" | "technicien".
   // Informatif (répartition annexe 8/10) — les cachets sont toujours artiste, pas de choix.
   const [interMetier, setInterMetier] = useState("");
@@ -10517,11 +10519,26 @@ function AppInner() {
                           <span style={{ fontSize: 10.5, color: "#8FB4D8", marginLeft: 21, lineHeight: 1.35 }}>{sous}</span>
                         </label>
                       );
+                      const nbJours = Math.round((new Date(fin + "T00:00:00") - new Date(interForm.date + "T00:00:00")) / 86400000) + 1;
+                      const nb = parseFloat(interForm.nombre) || 0;
+                      const heuresUnite = interForm.type_activite === "cachet_isole" ? 12 : 1;
+                      const totalNb = interRepartition === "parjour" ? nb * nbJours : nb;
                       return (
+                        <>
                         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                          {opt("parjour", "1 par jour", "tournée : le même nombre chaque jour")}
                           {opt("total", "Au total sur la période", `${interForm.nombre || "N"} ${unite} en tout, une seule ligne`)}
+                          {opt("parjour", "1 par jour", "tournée : le même nombre CHAQUE jour")}
                         </div>
+                        {/* Récap EN DIRECT de ce qui sera compté (retour testeuse 24/07 : l'ancien
+                            défaut « 1 par jour » multipliait les cachets en silence). */}
+                        {nb > 0 && (
+                          <div style={{ fontSize: 12.5, fontWeight: 700, color: interRepartition === "parjour" ? "#F2C879" : "#5DCAA5", background: interRepartition === "parjour" ? "rgba(240,180,70,0.08)" : "rgba(93,202,165,0.08)", border: `1px solid ${interRepartition === "parjour" ? "rgba(240,180,70,0.35)" : "rgba(93,202,165,0.3)"}`, borderRadius: 8, padding: "8px 12px" }}>
+                            {interRepartition === "parjour"
+                              ? `⚠ Je compterai ${nb} ${unite} × ${nbJours} jours = ${totalNb} ${unite} · ${Math.round(totalNb * heuresUnite)} h en tout`
+                              : `✓ Je compterai ${totalNb} ${unite} · ${Math.round(totalNb * heuresUnite)} h en tout sur la période`}
+                          </div>
+                        )}
+                        </>
                       );
                     })()}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
