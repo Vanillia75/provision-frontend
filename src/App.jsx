@@ -8330,10 +8330,17 @@ function AppInner() {
                                 </div>
                                 <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 1 }}>{fmtDate(a.date)} · {heuresDe(a)} h</div>
                               </div>
-                              {a.a_document && (
+                              {/* « Voir » sur TOUTES les lignes (retour Camille 25/07) : le document
+                                   original s'il est conservé, sinon le détail de ce que Totor a lu. */}
+                              {a.a_document ? (
                                 <button type="button" onClick={() => voirDocumentAEM(a.id, a.aem_filename)}
                                   style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                                   <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
+                                </button>
+                              ) : (
+                                <button type="button" onClick={() => setAemDetailId(aemDetailId === a.id ? null : a.id)}
+                                  style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                                  <i className={`ti ${aemDetailId === a.id ? "ti-eye-off" : "ti-eye"}`} aria-hidden="true" style={{ fontSize: 15 }} /> {aemDetailId === a.id ? "Fermer" : "Voir"}
                                 </button>
                               )}
                               <button type="button" aria-label="Supprimer cette AEM"
@@ -8342,6 +8349,28 @@ function AppInner() {
                                 <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
                               </button>
                             </div>
+                            {/* Panneau « ce que Totor a lu » : pour les lignes SANS document conservé
+                                 (retour Camille 25/07 : « il faudrait pouvoir voir tout au cas où »). */}
+                            {aemDetailId === a.id && !a.a_document && (
+                              <div style={{ background: "rgba(93,202,165,0.05)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "13px 15px", marginTop: -4 }}>
+                                <div style={{ fontSize: 11, fontWeight: 700, color: "#5DCAA5", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 8 }}>Ce que j'ai retenu de cette AEM</div>
+                                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 22px", fontSize: 12.5, color: "#C5D4E3", lineHeight: 1.6 }}>
+                                  <span>Employeur : <strong style={{ color: "white" }}>{a.employeur || "à compléter"}</strong></span>
+                                  <span>Période : <strong style={{ color: "white" }}>{fmtDate(a.date)}{a.date_fin && a.date_fin !== a.date ? ` → ${fmtDate(a.date_fin)}` : ""}</strong></span>
+                                  <span>Volume : <strong style={{ color: "white" }}>{(a.type_activite === "heures") ? `${a.nombre} h` : `${a.nombre} cachet${(parseFloat(a.nombre) || 0) > 1 ? "s" : ""}`} · {heuresDe(a)} h comptées</strong></span>
+                                  {a.salaire_brut != null && <span>Brut : <strong style={{ color: "white" }}>{new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} €</strong></span>}
+                                  {a.pas_montant != null && <span>PAS prélevé : <strong style={{ color: "white" }}>{new Intl.NumberFormat("fr-FR").format(a.pas_montant)} €</strong></span>}
+                                  {a.aem_filename && <span>Fichier : <strong style={{ color: "white" }}>{a.aem_filename}</strong></span>}
+                                </div>
+                                <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                                  Le document original n'a pas été conservé pour cette ligne, mais toutes ses informations sont là.
+                                </div>
+                                <button type="button" onClick={() => { setAemDetailId(null); setInterNav("activites"); startEditActivite(a); }}
+                                  style={{ marginTop: 9, background: "transparent", border: "1px solid rgba(93,202,165,0.4)", color: "#9FE1CB", borderRadius: 8, padding: "8px 13px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                                  Modifier dans Mes activités →
+                                </button>
+                              </div>
+                            )}
                             {/* Panneau de décision : le doublon se tranche, l'alerte ne reste jamais à vie. */}
                             {aemDoublonPanelId === a.id && (
                               <div style={{ background: "rgba(240,180,70,0.07)", border: "1px solid rgba(240,180,70,0.35)", borderRadius: 12, padding: "13px 15px", marginTop: -4 }}>

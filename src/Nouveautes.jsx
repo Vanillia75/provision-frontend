@@ -9,6 +9,13 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "25 juillet 2026",
+    titre: "Chaque AEM s'ouvre",
+    items: [
+      { qui: "intermittent", texte: "Dans « Mes AEM », chaque ligne a maintenant son bouton « Voir » : le document original s'il est conservé, sinon tout ce que j'en ai retenu (employeur, période, cachets, brut), avec la modification à un clic." },
+    ],
+  },
+  {
     date: "24 juillet 2026",
     titre: "Ton prochain renouvellement, projeté",
     items: [
