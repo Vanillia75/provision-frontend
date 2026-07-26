@@ -13,6 +13,7 @@ const VAGUES = [
     titre: "Ton classeur, rangé par employeur",
     items: [
       { qui: "intermittent", texte: "Nouvel onglet « Mon classeur » dans Mes documents : dépose tes contrats, bulletins de paie et certificats Congés Spectacles, je les range par employeur. Plus besoin de fouiller la boîte mail de la production le jour où on te les réclame." },
+      { qui: "intermittent", texte: "Les différés d'indemnisation (congés payés, salaires) entrent enfin dans l'estimation de ton mois : tu recopies ce qu'il te reste depuis ta notification, je déduis les bons jours et je te dis ce qu'il restera après." },
       { qui: "intermittent", texte: "Dans « Mes AEM », chaque ligne a maintenant son bouton « Voir » : le document original s'il est conservé, sinon tout ce que j'en ai retenu (employeur, période, cachets, brut), avec la modification à un clic." },
       { qui: "intermittent", texte: "Ton compteur d'heures actuel s'affiche en grand sur le cockpit, à côté de ce qu'il te reste à faire." },
     ],

@@ -597,6 +597,10 @@ function AppInner() {
   // Estimation du versement du mois en cours (carte cockpit, TOTOR Veille,
   // décision Camille 24/07 : lancée en mode estimation assumée avant backtest).
   const [estMois, setEstMois] = useState(null);
+  // Franchises (différés d'indemnisation) : panneau de saisie de la carte du mois.
+  const [franchisePanel, setFranchisePanel] = useState(false);
+  const [franchiseForm, setFranchiseForm] = useState({ cp: "", salaires: "" });
+  const [franchiseSaving, setFranchiseSaving] = useState(false);
   // Mini-simulateur de la carte : « et si j'ajoute N cachets à X € ? »
   const [projSimCachets, setProjSimCachets] = useState("");
   const [projSimBrut, setProjSimBrut] = useState("");
@@ -5180,6 +5184,26 @@ function AppInner() {
     }).catch(() => {});
   }, [nav, token, aiHistoOk]);
 
+  // Franchises : on enregistre ce que la personne a RECOPIÉ de sa notification,
+  // puis on recharge l'estimation du mois pour qu'elle en tienne compte tout de suite.
+  async function enregistrerFranchises() {
+    setFranchiseSaving(true);
+    try {
+      const nb = (v) => { const n = parseFloat(String(v).replace(",", ".")); return isNaN(n) ? null : n; };
+      await apiFetch("/intermittent/franchises", {
+        method: "POST",
+        body: JSON.stringify({ franchise_cp_jours: nb(franchiseForm.cp), franchise_salaires_jours: nb(franchiseForm.salaires) }),
+      });
+      const maj = await apiFetch("/intermittent/estimation-mois");
+      setEstMois(maj);
+      setFranchisePanel(false);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setFranchiseSaving(false);
+    }
+  }
+
   // Petit libellé du bandeau de reprise : « dernier échange le 23 juillet ».
   function libelleReprise(iso) {
     try {
@@ -8746,8 +8770,64 @@ function AppInner() {
                         Ton mois tombe sur des fractions de jours : je tronque comme France Travail le fait sur les relevés que j'ai vérifiés, mais le résultat peut bouger d'un jour.
                       </div>
                     )}
+                    {/* Les franchises (différés d'indemnisation) : recopiées, jamais devinées. */}
+                    <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px solid rgba(93,202,165,0.15)" }}>
+                      {(em.franchise_cp_imputee > 0 || em.franchise_salaires_imputee > 0) ? (
+                        <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+                          <strong style={{ color: "#C8E0F5" }}>
+                            {em.franchise_cp_imputee + em.franchise_salaires_imputee} jour{(em.franchise_cp_imputee + em.franchise_salaires_imputee) > 1 ? "s" : ""} de différé
+                          </strong> déduit{(em.franchise_cp_imputee + em.franchise_salaires_imputee) > 1 ? "s" : ""} ce mois-ci
+                          {em.franchise_cp_imputee > 0 && em.franchise_salaires_imputee > 0
+                            ? ` (${em.franchise_cp_imputee} congés payés, ${em.franchise_salaires_imputee} salaires)`
+                            : em.franchise_cp_imputee > 0 ? " (congés payés)" : " (salaires)"}.
+                          {" "}Il t'en resterait <strong style={{ color: "#C8E0F5" }}>{(em.franchise_cp_restante_apres || 0) + (em.franchise_salaires_restante_apres || 0)} jour{((em.franchise_cp_restante_apres || 0) + (em.franchise_salaires_restante_apres || 0)) > 1 ? "s" : ""}</strong> après.{" "}
+                          <button type="button" onClick={() => { setFranchiseForm({ cp: em.franchise_cp_jours ?? "", salaires: em.franchise_salaires_jours ?? "" }); setFranchisePanel(!franchisePanel); }}
+                            style={{ background: "none", border: "none", color: "#9FE1CB", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+                            Mettre à jour
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+                          Ta notification mentionne un <strong style={{ color: "#C8E0F5" }}>différé d'indemnisation</strong> (congés payés ou salaires) ?{" "}
+                          <button type="button" onClick={() => { setFranchiseForm({ cp: em.franchise_cp_jours ?? "", salaires: em.franchise_salaires_jours ?? "" }); setFranchisePanel(!franchisePanel); }}
+                            style={{ background: "none", border: "none", color: "#9FE1CB", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+                            Dis-le-moi, je le déduis
+                          </button>
+                        </div>
+                      )}
+
+                      {franchisePanel && (
+                        <div style={{ marginTop: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 10, padding: "12px 14px" }}>
+                          <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 10 }}>
+                            Recopie les jours qu'il te <strong style={{ color: "#C8E0F5" }}>reste</strong>, tels qu'ils figurent sur ta notification ou ton dernier relevé de situation. Laisse vide si tu n'en as pas.
+                          </div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                            <input type="number" min="0" max="365" value={franchiseForm.cp} onChange={e => setFranchiseForm({ ...franchiseForm, cp: e.target.value })}
+                              placeholder="Congés payés (jours)"
+                              style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                            <input type="number" min="0" max="365" value={franchiseForm.salaires} onChange={e => setFranchiseForm({ ...franchiseForm, salaires: e.target.value })}
+                              placeholder="Salaires (jours)"
+                              style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button type="button" disabled={franchiseSaving} onClick={enregistrerFranchises}
+                              style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12.5, fontWeight: 700, cursor: franchiseSaving ? "default" : "pointer", fontFamily: "inherit", opacity: franchiseSaving ? 0.6 : 1 }}>
+                              {franchiseSaving ? "…" : "Enregistrer"}
+                            </button>
+                            <button type="button" onClick={() => setFranchisePanel(false)}
+                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+                              Annuler
+                            </button>
+                          </div>
+                          <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 9, lineHeight: 1.45, fontStyle: "italic" }}>
+                            Je ne les devine jamais et je ne les décompte pas tout seul : une régularisation de France Travail peut les changer. Reviens les corriger à chaque relevé.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
-                      Estimation d'après les barèmes publiés (franchises éventuelles de début de droits non comptées). Ton premier relevé de situation me servira à me caler au centime : partage-le et je vérifie. Seul le versement de France Travail fait foi.
+                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ton premier relevé de situation me servira à me caler au centime : partage-le et je vérifie. Seul le versement de France Travail fait foi.
                     </div>
                   </div>
                 );
