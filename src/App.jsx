@@ -607,6 +607,13 @@ function AppInner() {
   const aemBatchRef = useRef(null); // { avant, cachets } — figé au début du batch, remis à null en fin ET en erreur.
   // Sous-onglet de la page "Mes documents" : "revenus" | "aem" | "actualisations"
   const [docTab, setDocTab] = useState("revenus");
+  // Le classeur : les papiers rangés par employeur (contrats, bulletins, Congés
+  // Spectacles). Rien n'est analysé, on range et on retrouve.
+  const [classeur, setClasseur] = useState([]);
+  const [classeurCharge, setClasseurCharge] = useState(false);
+  const [classeurUpload, setClasseurUpload] = useState(false);
+  const [classeurErreur, setClasseurErreur] = useState("");
+  const [classeurForm, setClasseurForm] = useState({ employeur: "", type_document: "contrat", date_document: "" });
   // Mois déplié dans le récap de revenus (clef "AAAA-MM" ou null) — détail contrat par contrat.
   const [recapMoisOuvert, setRecapMoisOuvert] = useState(null);
   // ─── Vie de Totor sur le cockpit (micro-interactions) ───
@@ -1443,6 +1450,10 @@ function AppInner() {
   useEffect(() => { safeStorage.setItem("tmi", tmi); }, [tmi]);
   useEffect(() => { safeStorage.setItem("nav", nav); }, [nav]);
   useEffect(() => { safeStorage.setItem("interNav", interNav); }, [interNav]);
+  // Le classeur se charge à la première ouverture de « Mes documents ».
+  useEffect(() => {
+    if (interNav === "attestation" && token && !classeurCharge) chargerClasseur();
+  }, [interNav, token, classeurCharge]);
 
   // Message Totor si solde périmé (calcul interne, déclenché une fois par session)
   useEffect(() => {
@@ -3708,6 +3719,55 @@ function AppInner() {
       }
     } catch (err) {
       setDocViewer({ url: null, filename: filename || "Document", loading: false, error: "Je n'arrive pas à ouvrir ce document pour l'instant. Réessaie dans un moment." });
+    }
+  }
+
+  // ─── LE CLASSEUR : déposer, retrouver, supprimer un papier ───
+  async function chargerClasseur() {
+    try {
+      setClasseur(await apiFetch("/documents"));
+    } catch { /* le classeur est un bonus : son échec ne casse jamais la page */ }
+    setClasseurCharge(true);
+  }
+
+  async function deposerDansClasseur(file) {
+    if (!file) return;
+    setClasseurUpload(true);
+    setClasseurErreur("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      if (classeurForm.employeur.trim()) form.append("employeur", classeurForm.employeur.trim());
+      form.append("type_document", classeurForm.type_document);
+      if (classeurForm.date_document) form.append("date_document", classeurForm.date_document);
+      const cree = await apiFetch("/documents", { method: "POST", body: form });
+      setClasseur(prev => [cree, ...prev]);
+      setClasseurForm(f => ({ ...f, date_document: "" }));  // l'employeur reste, on en dépose souvent plusieurs
+    } catch (err) {
+      setClasseurErreur(err.message || "Le dépôt n'a pas marché, réessaie dans un moment.");
+    } finally {
+      setClasseurUpload(false);
+    }
+  }
+
+  async function voirDocumentClasseur(doc) {
+    setDocViewer({ url: null, filename: doc.filename || "Document", loading: true });
+    try {
+      const data = await apiFetch(`/documents/${doc.id}/lien`);
+      if (data && data.url) setDocViewer({ url: data.url, filename: doc.filename, loading: false });
+      else setDocViewer({ url: null, filename: doc.filename, loading: false, error: "Je ne retrouve pas ce document." });
+    } catch {
+      setDocViewer({ url: null, filename: doc.filename, loading: false, error: "Je n'arrive pas à ouvrir ce document pour l'instant. Réessaie dans un moment." });
+    }
+  }
+
+  async function supprimerDuClasseur(doc) {
+    if (!window.confirm(`Supprimer définitivement ce document ?\n\n${doc.filename}\n\nIl sera retiré de ton coffre, sans retour possible.`)) return;
+    try {
+      await apiFetch(`/documents/${doc.id}`, { method: "DELETE" });
+      setClasseur(prev => prev.filter(d => d.id !== doc.id));
+    } catch (err) {
+      setClasseurErreur(err.message || "La suppression n'a pas marché, réessaie.");
     }
   }
 
@@ -10549,7 +10609,7 @@ function AppInner() {
                 </div>
                 <div>
                   <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Mes documents 🐾</div>
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Tout ce que j'ai préparé à partir de tes AEM.</div>
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Ce que j'ai préparé à partir de tes AEM, et ton classeur de papiers.</div>
                 </div>
               </div>
 
@@ -10558,6 +10618,7 @@ function AppInner() {
                 {[
                   { id: "revenus", label: "Revenus", icon: "ti-file-text" },
                   { id: "actualisations", label: "Actualisations", icon: "ti-clipboard-check" },
+                  { id: "classeur", label: "Mon classeur", icon: "ti-folders" },
                 ].map(t => (
                   <button key={t.id} type="button" onClick={() => setDocTab(t.id)}
                     style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, background: docTab === t.id ? "#5DCAA5" : "transparent", color: docTab === t.id ? "#04342C" : "#8BA5C0", border: "none", borderRadius: 7, padding: "9px 6px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
@@ -10565,6 +10626,99 @@ function AppInner() {
                   </button>
                 ))}
               </div>
+
+              {/* ─── SECTION CLASSEUR : les papiers rangés par employeur ─── */}
+              {docTab === "classeur" && (() => {
+                const LIB_TYPE = { contrat: "Contrat", bulletin: "Bulletin de paie", conges_spectacles: "Congés Spectacles", attestation: "Attestation", autre: "Autre" };
+                // Regroupement par employeur, employeurs les plus récents d'abord.
+                const groupes = [];
+                for (const d of classeur) {
+                  const cle = d.employeur || "Sans employeur";
+                  let g = groupes.find(x => x.employeur === cle);
+                  if (!g) { g = { employeur: cle, docs: [] }; groupes.push(g); }
+                  g.docs.push(d);
+                }
+                return (
+                  <>
+                    <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 14 }}>
+                      Ton contrat, ton bulletin, ton certificat Congés Spectacles : dépose-les ici et je les range par employeur. Plus besoin de fouiller la boîte mail de la production le jour où on te les réclame. 🐾
+                    </div>
+
+                    {/* Dépôt */}
+                    <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 700, color: "white", marginBottom: 12 }}>Déposer un document</div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                        <input type="text" list="classeur-employeurs" value={classeurForm.employeur}
+                          onChange={e => setClasseurForm({ ...classeurForm, employeur: e.target.value })}
+                          placeholder="Employeur (ex : Théâtre du Verger)"
+                          style={{ flex: "1 1 200px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <datalist id="classeur-employeurs">
+                          {[...new Set((interActivites || []).map(a => a.employeur).filter(Boolean))].map(e => <option key={e} value={e} />)}
+                        </datalist>
+                        <select value={classeurForm.type_document} onChange={e => setClasseurForm({ ...classeurForm, type_document: e.target.value })}
+                          style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }}>
+                          {Object.entries(LIB_TYPE).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+                        </select>
+                        <input type="date" value={classeurForm.date_document} onChange={e => setClasseurForm({ ...classeurForm, date_document: e.target.value })}
+                          style={{ flex: "1 1 140px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      </div>
+                      <label style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "#5DCAA5", color: "#04342C", borderRadius: 9, padding: "10px 16px", fontSize: 13.5, fontWeight: 700, cursor: classeurUpload ? "default" : "pointer", fontFamily: "inherit", opacity: classeurUpload ? 0.6 : 1 }}>
+                        <input type="file" accept="application/pdf,image/jpeg,image/png,image/webp" disabled={classeurUpload}
+                          onChange={e => { const f = (e.target.files || [])[0]; if (f) deposerDansClasseur(f); e.target.value = ""; }}
+                          style={{ display: "none" }} />
+                        <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 16 }} />
+                        {classeurUpload ? "Je range…" : "Choisir un fichier"}
+                      </label>
+                      <div style={{ fontSize: 11, color: "#6B8299", marginTop: 9, lineHeight: 1.5 }}>
+                        PDF ou photo. Ton document part dans le coffre chiffré, comme tes AEM : il reste privé, et tu peux le supprimer quand tu veux.
+                      </div>
+                      {classeurErreur && (
+                        <div style={{ marginTop: 10, background: "rgba(226,75,74,0.08)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 8, padding: "10px 12px", fontSize: 12.5, color: "#F09595" }}>{classeurErreur}</div>
+                      )}
+                    </div>
+
+                    {/* Le classeur */}
+                    {classeur.length === 0 ? (
+                      <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
+                        {classeurCharge ? <>Ton classeur est vide.<br />Dépose ton premier contrat ou bulletin, je m'occupe du rangement.</> : "Je vais chercher ton classeur…"}
+                      </div>
+                    ) : (
+                      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                        {groupes.map(g => (
+                          <div key={g.employeur} style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 16px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                              <i className="ti ti-building" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 16 }} />
+                              <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>{g.employeur}</div>
+                              <div style={{ marginLeft: "auto", fontSize: 11.5, color: "#6B8299" }}>{g.docs.length} pièce{g.docs.length > 1 ? "s" : ""}</div>
+                            </div>
+                            <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                              {g.docs.map(d => (
+                                <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 10, padding: "10px 12px" }}>
+                                  <i className="ti ti-file-text" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 17, flexShrink: 0 }} />
+                                  <div style={{ flex: 1, minWidth: 0 }}>
+                                    <div style={{ fontSize: 13, color: "white", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{LIB_TYPE[d.type_document] || "Document"}</div>
+                                    <div style={{ fontSize: 11.5, color: "#8BA5C0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                      {d.filename}{d.date_document ? ` · ${fmtDate(d.date_document)}` : ""}
+                                    </div>
+                                  </div>
+                                  <button type="button" onClick={() => voirDocumentClasseur(d)} aria-label="Voir le document"
+                                    style={{ background: "transparent", border: "1px solid rgba(93,202,165,0.35)", color: "#5DCAA5", borderRadius: 8, padding: "7px 12px", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                                    <i className="ti ti-eye" aria-hidden="true" style={{ fontSize: 15 }} /> Voir
+                                  </button>
+                                  <button type="button" onClick={() => supprimerDuClasseur(d)} aria-label="Supprimer le document"
+                                    style={{ background: "transparent", border: "1px solid rgba(226,75,74,0.3)", color: "#E24B4A", borderRadius: 8, padding: "7px 10px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                                    <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
 
               {/* ─── SECTION REVENUS ─── */}
               {docTab === "revenus" && (<>

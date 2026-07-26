@@ -10,9 +10,11 @@ import { CSS } from "./theme";
 const VAGUES = [
   {
     date: "25 juillet 2026",
-    titre: "Chaque AEM s'ouvre",
+    titre: "Ton classeur, rangé par employeur",
     items: [
+      { qui: "intermittent", texte: "Nouvel onglet « Mon classeur » dans Mes documents : dépose tes contrats, bulletins de paie et certificats Congés Spectacles, je les range par employeur. Plus besoin de fouiller la boîte mail de la production le jour où on te les réclame." },
       { qui: "intermittent", texte: "Dans « Mes AEM », chaque ligne a maintenant son bouton « Voir » : le document original s'il est conservé, sinon tout ce que j'en ai retenu (employeur, période, cachets, brut), avec la modification à un clic." },
+      { qui: "intermittent", texte: "Ton compteur d'heures actuel s'affiche en grand sur le cockpit, à côté de ce qu'il te reste à faire." },
     ],
   },
   {
