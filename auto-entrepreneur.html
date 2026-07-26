@@ -41,14 +41,75 @@
     <script type="application/ld+json">
     {"@context":"https://schema.org","@type":"Organization","name":"TOTOR","url":"https://www.montotor.fr","logo":"https://www.montotor.fr/hector-icon-512.png","description":"Le compagnon des intermittents du spectacle et des auto-entrepreneurs : il compte, provisionne et explique chaque chiffre."}
     </script>
+    <!-- L'application elle-meme (aide Google a la presenter comme une app, pas un simple site). -->
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"SoftwareApplication","name":"TOTOR","applicationCategory":"FinanceApplication","operatingSystem":"iOS, Android, Web","url":"https://www.montotor.fr/auto-entrepreneur","description":"Application pour les auto-entrepreneurs : provision des cotisations URSSAF, disponible reel, facturation et devis, relances d'impayes, paie lissee.","inLanguage":"fr-FR","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR","description":"Gratuit, avec un abonnement TOTOR Veille optionnel a 9,99 EUR par mois ou 79 EUR par an."}}
+    </script>
+    <!-- FAQ : les memes questions/reponses que le contenu statique ci-dessous. -->
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"Quelle application pour gerer sa micro-entreprise ?","acceptedAnswer":{"@type":"Answer","text":"TOTOR est pense pour les auto-entrepreneurs qui veulent savoir ou ils en sont : ce qu'ils doivent mettre de cote, ce qu'ils peuvent depenser, et quand declarer. Il fait aussi la facturation complete et les relances d'impayes. Si vous etes aussi intermittent du spectacle, les deux espaces cohabitent dans le meme compte."}},
+      {"@type":"Question","name":"Combien mettre de cote pour l'URSSAF en auto-entrepreneur ?","acceptedAnswer":{"@type":"Answer","text":"Cela depend de l'activite (vente, prestations de services, professions liberales) et d'une eventuelle ACRE ou du versement liberatoire. TOTOR applique le bon taux a chaque encaissement et deduit le montant du disponible affiche, qui est donc deja net de cotisations."}},
+      {"@type":"Question","name":"TOTOR est-il gratuit ?","acceptedAnswer":{"@type":"Answer","text":"Oui, pour toujours, avec des quotas mensuels sur les fonctions assistees. L'abonnement TOTOR Veille (9,99 euros par mois ou 79 euros par an) retire les limites et ajoute la surveillance : relances automatiques, paie complete, projection du mois prochain, radar des mauvais payeurs et une ligne telephonique."}}
+    ]}
+    </script>
   </head>
   <body style="background:#07192E">
-    <!-- Contenu lisible par Google avant React (remplacé au montage de l'app). -->
-    <div id="root"><div style="min-height:100vh;background:#07192E;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#8BA5C0;font-family:system-ui,sans-serif">
-      <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5DCAA5;margin-bottom:14px">L'app pensée pour devenir le réflexe n°1 des auto-entrepreneurs</div>
-      <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,5vw,40px);font-weight:800;color:#F8FAFC;max-width:640px;line-height:1.2;margin-bottom:16px">L'assistant des auto-entrepreneurs</h1>
-      <p style="font-size:16px;max-width:600px;line-height:1.6">TOTOR provisionne tes cotisations URSSAF, te montre ce que tu peux vraiment dépenser et relance tes impayés à ta place. Pour que tu dormes tranquille.</p>
-      <p style="margin-top:20px;font-size:14px;color:#5A7088">🐾 Totor arrive…</p>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Contenu STATIQUE, lisible par Google sans JavaScript (remplacé par
+         React au montage). Version texte de la landing, rien de plus.
+         ⚠️ Toute promesse ajoutée ici doit exister dans l'app (Loi X).
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="root"><div style="background:#07192E;color:#8BA5C0;font-family:system-ui,sans-serif;padding:24px">
+      <div style="max-width:720px;margin:0 auto;text-align:center;padding:40px 0 28px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5DCAA5;margin-bottom:14px">L'app pensée pour devenir le réflexe n°1 des auto-entrepreneurs</div>
+        <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,5vw,40px);font-weight:800;color:#F8FAFC;line-height:1.2;margin-bottom:16px">TOTOR, l'application des auto-entrepreneurs</h1>
+        <p style="font-size:16px;line-height:1.6">TOTOR provisionne tes cotisations URSSAF, te montre ce que tu peux vraiment dépenser et relance tes impayés à ta place. Pour que tu dormes tranquille.</p>
+        <p style="margin-top:20px;font-size:14px;color:#5A7088">🐾 Totor arrive…</p>
+      </div>
+
+      <div style="max-width:720px;margin:0 auto;line-height:1.7;font-size:15px">
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Ce que TOTOR fait pour toi</h2>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Ton disponible réel, aujourd'hui</h3>
+        <p>La vraie question n'est pas « combien j'ai sur mon compte » mais « combien je peux dépenser sans me mettre en danger ». TOTOR déduit ton URSSAF provisionnée, tes charges à venir et ta réserve de sécurité pour afficher un montant prudent, avec le détail du calcul.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Ton URSSAF, préparée</h3>
+        <p>Taux à jour selon ton activité, versement libératoire pris en compte, et à chaque échéance une déclaration prête à recopier sur autoentrepreneur.urssaf.fr, avec un rappel par email. TOTOR t'alerte aussi sur le plafond du régime micro et les seuils de TVA.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Tes factures et devis</h3>
+        <p>Devis et factures aux mentions légales exactes (entreprise individuelle, franchise de TVA ou TVA, clients professionnels et étrangers), numérotation conforme, PDF soignés, envoi par email. Tes clients peuvent payer en ligne par carte ou prélèvement, l'argent arrive directement sur ton compte, et la facture passe « payée » toute seule. Tes devis se signent en ligne d'un clic.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Ta paie, lissée</h3>
+        <p>Chaque mois, TOTOR calcule un salaire stable à te verser à partir de tes six derniers mois de revenus réels, en trois scénarios (prudent, recommandé, maximum). Les bons mois nourrissent les mois creux : fini les montagnes russes de trésorerie.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Et le reste du quotidien</h3>
+        <p>Relances automatiques des impayés en ton nom, projection de ta trésorerie du mois prochain, mode Achat (« puis-je acheter ça sans me mettre en danger ? »), taux horaire réellement gagné après cotisations, et scan de tes notes de frais.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:30px 0 10px">Questions fréquentes</h2>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">Quelle application pour gérer sa micro-entreprise ?</h3>
+        <p>TOTOR est pensé pour les auto-entrepreneurs qui veulent surtout savoir où ils en sont : ce qu'ils doivent mettre de côté, ce qu'ils peuvent dépenser, et quand déclarer. Il fait aussi la facturation complète et les relances. Et si tu es aussi intermittent du spectacle, les deux espaces cohabitent dans le même compte.</p>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">Combien mettre de côté pour l'URSSAF en auto-entrepreneur ?</h3>
+        <p>Cela dépend de ton activité (vente, prestations de services, professions libérales) et de ton éventuelle ACRE ou versement libératoire. TOTOR applique le bon taux à chaque encaissement et met le montant de côté automatiquement dans son calcul, pour que ton disponible affiché soit déjà net de cotisations.</p>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">TOTOR est-il gratuit ?</h3>
+        <p>Oui, pour toujours, avec des quotas mensuels sur les fonctions assistées. L'abonnement TOTOR Veille (9,99 € par mois ou 79 € par an) retire les limites et ajoute la surveillance : relances automatiques, paie complète, projection du mois prochain, radar des mauvais payeurs et une ligne téléphonique.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:30px 0 10px">Nos guides gratuits</h2>
+        <p>
+          <a href="/guides/creer-son-auto-entreprise-etapes.html" style="color:#5DCAA5">Créer son auto-entreprise</a> ·
+          <a href="/guides/declarer-chiffre-affaires-urssaf-auto-entrepreneur.html" style="color:#5DCAA5">Déclarer son chiffre d'affaires à l'URSSAF</a> ·
+          <a href="/guides/acre-auto-entrepreneur.html" style="color:#5DCAA5">L'ACRE</a> ·
+          <a href="/guides/versement-liberatoire-auto-entrepreneur.html" style="color:#5DCAA5">Le versement libératoire</a> ·
+          <a href="/guides/seuil-tva-micro-entreprise.html" style="color:#5DCAA5">Les seuils de TVA</a> ·
+          <a href="/guides/cfe-auto-entrepreneur.html" style="color:#5DCAA5">La CFE</a> ·
+          <a href="/guides/bic-bnc-choisir-activite-auto-entrepreneur.html" style="color:#5DCAA5">BIC ou BNC</a> ·
+          <a href="/guides/" style="color:#5DCAA5">Tous les guides</a>
+        </p>
+        <p style="font-size:13px;color:#5A7088;margin-top:22px">TOTOR est édité par VANILLIA, société française basée à Paris. Toutes les estimations sont indicatives : l'URSSAF et l'administration fiscale restent seules décisionnaires.</p>
+      </div>
     </div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
