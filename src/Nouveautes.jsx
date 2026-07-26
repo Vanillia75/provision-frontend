@@ -9,8 +9,8 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
-    date: "25 juillet 2026",
-    titre: "Ton classeur, rangé par employeur",
+    date: "26 juillet 2026",
+    titre: "Ton classeur, et tes différés comptés",
     items: [
       { qui: "intermittent", texte: "Nouvel onglet « Mon classeur » dans Mes documents : dépose tes contrats, bulletins de paie et certificats Congés Spectacles, je les range par employeur. Plus besoin de fouiller la boîte mail de la production le jour où on te les réclame." },
       { qui: "intermittent", texte: "Les différés d'indemnisation (congés payés, salaires) entrent enfin dans l'estimation de ton mois : tu recopies ce qu'il te reste depuis ta notification, je déduis les bons jours et je te dis ce qu'il restera après." },
