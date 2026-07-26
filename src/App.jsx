@@ -8830,10 +8830,12 @@ function AppInner() {
                 return (<>
                 {isMobile && blocActionLigne}
                 {isMobile && blocPlanReperes}
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
+              <div className="cockpit-masonry" style={isMobile ? { marginBottom: 16 } : { columnCount: 2, columnGap: 16, marginBottom: 16 }}>
 
-                {/* ───────── COLONNE GAUCHE : Totor (la star) ───────── */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* ───────── COLONNE GAUCHE : Totor (la star) ─────────
+                     Desktop : display block, les cartes coulent dans le multicolonnes
+                     (équilibrage automatique) ; mobile : pile flex classique. */}
+                <div style={isMobile ? { display: "flex", flexDirection: "column", gap: 16 } : { display: "block" }}>
                 {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
                     les oreilles dépassent du cadre (même signature que la carte AE ;
                     l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
@@ -8946,7 +8948,7 @@ function AppInner() {
 
 
                 {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div style={isMobile ? { display: "flex", flexDirection: "column", gap: 16 } : { display: "block" }}>
 
               {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
               <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
