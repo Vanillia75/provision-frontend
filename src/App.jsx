@@ -8430,11 +8430,12 @@ function AppInner() {
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
                 {!calc.secu ? (
                   <>
-                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 4 }}>
-                      Plus que <span style={{ color: "#5DCAA5" }}>{calc.manque} h</span> pour sécuriser tes droits.
+                    {/* Le compteur ACTUEL en grand d'abord (demande Camille 25/07), puis le manque. */}
+                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.3, marginBottom: 4 }}>
+                      Tu es à <span style={{ color: "#5DCAA5" }}>{calc.heures} h</span>. Plus que <span style={{ color: "#5DCAA5" }}>{calc.manque} h</span> pour sécuriser tes droits.
                     </div>
                     <div style={{ fontSize: 12.5, color: "#5A7798", marginBottom: 16 }}>
-                      {calc.heures} / {calc.seuil} h validées · ≈ {calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}
+                      Objectif {calc.seuil} h · encore ≈ {calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}
                     </div>
                   </>
                 ) : (
