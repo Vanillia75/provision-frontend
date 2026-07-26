@@ -8756,11 +8756,12 @@ function AppInner() {
                   </div>
                 );
                 })();
-                // Le paquet de PILOTAGE (prochaine action, bannière ligne, plan avec toi,
-                // anomalies) : EN HAUT sur mobile (l'action d'abord sur petit écran),
-                // APRÈS les grandes cartes sur ordinateur (retour Camille 25/07 :
-                // « le plus important doit se voir en premier »). Déplacement pur.
-                const blocsPilotage = (
+                // Le PILOTAGE, scindé en deux (retours Camille 25/07 : « l'important
+                // d'abord », « compact dans le vide », « j'aime pas le vide ») :
+                // mobile = tout EN HAUT dans l'ordre historique ; desktop = action +
+                // bannière en bas de colonne DROITE, plan + anomalies en bas de
+                // colonne GAUCHE, pour que les deux colonnes finissent ensemble.
+                const blocActionLigne = (
                   <>
               {/* ═══ NEXT ACTION UNIQUE ═══ */}
               <button type="button" onClick={() => setInterNav(nextAction.nav)}
@@ -8779,7 +8780,11 @@ function AppInner() {
               </button>
 
               {renderBanniereLigneTotor()}
-
+                  </>
+                );
+                // Deuxième moitié du pilotage : à GAUCHE en desktop (équilibre des colonnes).
+                const blocPlanReperes = (
+                  <>
               {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
@@ -8823,7 +8828,8 @@ function AppInner() {
                   </>
                 );
                 return (<>
-                {isMobile && blocsPilotage}
+                {isMobile && blocActionLigne}
+                {isMobile && blocPlanReperes}
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
                 {/* ───────── COLONNE GAUCHE : Totor (la star) ───────── */}
@@ -8934,6 +8940,7 @@ function AppInner() {
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
                 {!isMobile && blocPAS}
+                {!isMobile && blocPlanReperes}
                 </div>
 
 
@@ -9387,9 +9394,8 @@ function AppInner() {
               {isMobile && blocConges}
               {isMobile && blocPAS}
 
-                {/* Le pilotage vient combler le bas de la colonne droite en desktop
-                     (retour Camille 25/07 : compact, dans le vide, pas en pleine largeur). */}
-                {!isMobile && blocsPilotage}
+                {/* Action + bannière ligne comblent le bas de la colonne droite. */}
+                {!isMobile && blocActionLigne}
                 </div>{/* ── fin colonne droite ── */}
               </div>
                 </>);
