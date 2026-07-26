@@ -10630,6 +10630,16 @@ function AppInner() {
               {/* ─── SECTION CLASSEUR : les papiers rangés par employeur ─── */}
               {docTab === "classeur" && (() => {
                 const LIB_TYPE = { contrat: "Contrat", bulletin: "Bulletin de paie", conges_spectacles: "Congés Spectacles", attestation: "Attestation", autre: "Autre" };
+                // Date lisible LOCALE : `fmtDate` n'existe que dans la page « Mes AEM »
+                // (leçon du bug « Et si » du 24/07 : jamais un helper d'une autre portée).
+                const dateLisible = (iso) => {
+                  try {
+                    const d = new Date(iso);
+                    if (isNaN(d.getTime())) return iso;
+                    const M = ["jan", "fév", "mar", "avr", "mai", "juin", "juil", "août", "sep", "oct", "nov", "déc"];
+                    return `${d.getDate()} ${M[d.getMonth()]} ${d.getFullYear()}`;
+                  } catch { return iso; }
+                };
                 // Regroupement par employeur, employeurs les plus récents d'abord.
                 const groupes = [];
                 for (const d of classeur) {
@@ -10698,7 +10708,7 @@ function AppInner() {
                                   <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontSize: 13, color: "white", fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{LIB_TYPE[d.type_document] || "Document"}</div>
                                     <div style={{ fontSize: 11.5, color: "#8BA5C0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                      {d.filename}{d.date_document ? ` · ${fmtDate(d.date_document)}` : ""}
+                                      {d.filename}{d.date_document ? ` · ${dateLisible(d.date_document)}` : ""}
                                     </div>
                                   </div>
                                   <button type="button" onClick={() => voirDocumentClasseur(d)} aria-label="Voir le document"
