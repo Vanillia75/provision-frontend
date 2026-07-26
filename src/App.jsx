@@ -13,6 +13,13 @@ import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
 
+// ⚠️ Le suivi d'erreurs ne doit JAMAIS recevoir nos sessions de développement :
+// le critère de lancement est « Sentry silencieux », il ne vaut que s'il reflète
+// les VRAIS utilisateurs. Avant ce garde-fou, une erreur déclenchée en local
+// arrivait dans Sentry étiquetée « production » (constaté le 26/07/2026).
+const _sentryLocal = typeof window !== "undefined"
+  && /^(localhost|127\.0\.0\.1|\[::1\]|.*\.local)$/i.test(window.location.hostname);
+
 Sentry.init({
   dsn: "https://8304d759a2e2154b99adb465f73ae6b4@o4511600016293888.ingest.de.sentry.io/4511600023175248",
   // release = __BUILD_ID__ (injecté par vite.config) : lie chaque event aux sourcemaps
@@ -20,7 +27,8 @@ Sentry.init({
   release: __BUILD_ID__,
   integrations: [Sentry.browserTracingIntegration()],
   tracesSampleRate: 0.2,
-  environment: "production",
+  environment: _sentryLocal ? "development" : "production",
+  enabled: !_sentryLocal,
 });
 
 if (typeof window !== "undefined") {
