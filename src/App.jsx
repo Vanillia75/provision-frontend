@@ -8486,65 +8486,6 @@ function AppInner() {
                 );
               })()}
 
-              {/* ═══ NEXT ACTION UNIQUE ═══ */}
-              <button type="button" onClick={() => setInterNav(nextAction.nav)}
-                style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <i className={`ti ${nextAction.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
-                  <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
-                  {nextAction.suivant && (
-                    <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>Puis : {nextAction.suivant}</div>
-                  )}
-                </div>
-                <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
-              </button>
-
-              {renderBanniereLigneTotor()}
-
-              {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
-              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Mon plan avec toi</div>
-                  {/* Loi VIII : sur compte neuf (checklist.vide = nbActs===0, réutilisé), pas de score/bulletin.
-                      Le « X / 5 » n'apparaît qu'une fois le parcours commencé (progression méritée). */}
-                  {!checklist.vide && (
-                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
-                  )}
-                </div>
-                {checklist.vide && (
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
-                    🐾 On commence ensemble. Ajoute ton premier contrat, je m'occupe de suivre tes heures.
-                  </div>
-                )}
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {checklist.lignes.map(l => (
-                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
-                      <span style={{ fontSize: 16 }}>{l.badge}</span>
-                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
-                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Alerte détection d'erreurs (seulement si Totor a repéré quelque chose) */}
-              {aDesAnomalies && (
-                <button type="button" onClick={() => setInterNav("calcul")}
-                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
-                    <div style={{ fontSize: 12, color: "#C9A861", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{anomalies.map(a => a.titre).join(" · ")}</div>
-                  </div>
-                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0 }} />
-                </button>
-              )}
-
               {(() => {
                 // Rééquilibrage des colonnes (déplacement pur) : Progression (frise) + Congés
                 // Spectacles passent SOUS Totor à gauche en DESKTOP (comble le vide) ; en mobile
@@ -8815,7 +8756,74 @@ function AppInner() {
                   </div>
                 );
                 })();
-                return (
+                // Le paquet de PILOTAGE (prochaine action, bannière ligne, plan avec toi,
+                // anomalies) : EN HAUT sur mobile (l'action d'abord sur petit écran),
+                // APRÈS les grandes cartes sur ordinateur (retour Camille 25/07 :
+                // « le plus important doit se voir en premier »). Déplacement pur.
+                const blocsPilotage = (
+                  <>
+              {/* ═══ NEXT ACTION UNIQUE ═══ */}
+              <button type="button" onClick={() => setInterNav(nextAction.nav)}
+                style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <i className={`ti ${nextAction.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
+                  <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
+                  {nextAction.suivant && (
+                    <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>Puis : {nextAction.suivant}</div>
+                  )}
+                </div>
+                <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
+              </button>
+
+              {renderBanniereLigneTotor()}
+
+              {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
+              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Mon plan avec toi</div>
+                  {/* Loi VIII : sur compte neuf (checklist.vide = nbActs===0, réutilisé), pas de score/bulletin.
+                      Le « X / 5 » n'apparaît qu'une fois le parcours commencé (progression méritée). */}
+                  {!checklist.vide && (
+                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
+                  )}
+                </div>
+                {checklist.vide && (
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
+                    🐾 On commence ensemble. Ajoute ton premier contrat, je m'occupe de suivre tes heures.
+                  </div>
+                )}
+                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {checklist.lignes.map(l => (
+                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
+                      <span style={{ fontSize: 16 }}>{l.badge}</span>
+                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
+                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Alerte détection d'erreurs (seulement si Totor a repéré quelque chose) */}
+              {aDesAnomalies && (
+                <button type="button" onClick={() => setInterNav("calcul")}
+                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
+                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
+                    <div style={{ fontSize: 12, color: "#C9A861", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{anomalies.map(a => a.titre).join(" · ")}</div>
+                  </div>
+                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0 }} />
+                </button>
+              )}
+                  </>
+                );
+                return (<>
+                {isMobile && blocsPilotage}
               <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1.15fr 1fr", gap: 16, marginBottom: 16, alignItems: "start" }}>
 
                 {/* ───────── COLONNE GAUCHE : Totor (la star) ───────── */}
@@ -9379,9 +9387,12 @@ function AppInner() {
               {isMobile && blocConges}
               {isMobile && blocPAS}
 
+                {/* Le pilotage vient combler le bas de la colonne droite en desktop
+                     (retour Camille 25/07 : compact, dans le vide, pas en pleine largeur). */}
+                {!isMobile && blocsPilotage}
                 </div>{/* ── fin colonne droite ── */}
               </div>
-                );
+                </>);
               })()}
 
               {/* ═══ ACTIONS (tout en bas : on agit après avoir lu) ═══ */}
