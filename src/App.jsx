@@ -6483,7 +6483,7 @@ function AppInner() {
               <i className="ti ti-calculator" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
               <span style={{ display: "block" }}>
                 <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#E4EDF6", lineHeight: 1.3 }}>
-                  Calcule ton allocation tout de suite <span style={{ color: "#5DCAA5" }}>→</span>
+                  Simulateur d'allocation intermittent <span style={{ color: "#5DCAA5" }}>→</span>
                 </span>
                 <span style={{ display: "block", fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>
                   Gratuit, sans compte. Et en net, pas seulement en brut.
