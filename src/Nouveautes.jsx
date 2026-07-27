@@ -9,6 +9,16 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "27 juillet 2026",
+    titre: "Je sais enfin calculer l'allocation des techniciens",
+    items: [
+      { qui: "intermittent", texte: "Techniciens et ouvriers du spectacle (annexe 8) : je calcule maintenant votre allocation journalière. Jusqu'ici je me taisais, parce que je n'avais jamais pu vérifier mon calcul sur un vrai dossier de technicien. C'est vérifié : je me suis confronté au simulateur officiel de France Travail sur vingt-quatre situations différentes, et je tombe juste." },
+      { qui: "intermittent", texte: "Je ne me tais plus non plus au-dessus de 60 € par jour. Le calcul des cotisations qui me manquait à ce niveau est percé, y compris la règle qui empêche la CSG de faire descendre ton allocation sous un certain plancher." },
+      { qui: "intermittent", texte: "J'ai trouvé une erreur chez moi au passage, et je la corrige : le plafond de l'allocation journalière que j'utilisais était trop haut. Pour les très gros salaires, j'annonçais plus que la réalité. C'est réparé." },
+      { qui: "intermittent", texte: "Ma règle ne change pas d'un pouce : je ne te donne un chiffre que si je l'ai vérifié ailleurs qu'en moi-même. C'est juste que maintenant, j'en ai vérifié beaucoup plus." },
+    ],
+  },
+  {
     date: "26 juillet 2026",
     titre: "Ton classeur, et tes différés comptés",
     items: [

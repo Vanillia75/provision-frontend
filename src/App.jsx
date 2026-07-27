@@ -3930,7 +3930,7 @@ function AppInner() {
               ? ` Et côté allocation : ton estimation resterait autour de ${formatEUR(projAj.aj_nette)} par jour, tu es au plancher. À ce niveau, ce contrat joue surtout sur tes heures (valeur 2026, estimation).`
               : ` Et côté allocation : ton estimation au prochain renouvellement passerait d'environ ${formatEUR(projAj.aj_nette)} à ${formatEUR(s.aj_nette)} par jour (valeur 2026, estimation).`;
           } else if (s) {
-            texte += ` Et côté allocation : ce lot te ferait dépasser 60 €/jour d'estimation, zone que je ne chiffre pas encore. Ce qui est sûr : ça monte.`;
+            texte += ` Et côté allocation : je n'arrive pas à chiffrer ce lot précisément. Ce qui est sûr : ça monte.`;
           }
         } catch { /* l'impact allocation est un bonus : la réponse heures part quand même */ }
       } else if (scenario.simulerAj && projAj && projAj.verrou) {
@@ -8728,9 +8728,7 @@ function AppInner() {
                     <div style={shell}>
                       {tete}
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
-                        {em.raison === "au_dela_60"
-                          ? <>Ton allocation dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai relevé : je préfère ne pas t'avancer de montant mensuel, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
-                          : <>Ton dossier est côté <strong style={{ color: "#C8E0F5" }}>technicien (annexe 8)</strong>, et je n'ai pas encore validé ce calcul sur un vrai relevé. Je préfère attendre plutôt que d'estimer à l'aveugle. 🐾</>}
+                        <>Il me manque quelque chose pour calculer ton mois avec certitude, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
                       </div>
                     </div>
                   );
@@ -9344,9 +9342,7 @@ function AppInner() {
                 {!allocEdit && c.allocation && !c.allocation.affichable && (
                   <div style={{ marginTop: 6 }}>
                     <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
-                      {c.allocation.raison_non_affichable === "au_dela_60"
-                        ? <>Ton allocation dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur une vraie notification. Je préfère ne pas t'avancer de chiffre tant que je n'en suis pas certain, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
-                        : <>Je sais recalculer l'allocation des <strong style={{ color: "#C8E0F5" }}>artistes</strong> avec certitude (validé sur de vraies notifications). Pour un profil <strong style={{ color: "#C8E0F5" }}>technicien</strong>, je préfère attendre d'avoir vérifié mon calcul sur un vrai courrier avant de t'afficher un montant. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>}
+                      <>Il me manque quelque chose pour recalculer ton allocation avec certitude, et je préfère me taire plutôt que t'avancer un chiffre à l'aveugle. Vérifie tes informations juste en dessous. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
                     </div>
                     <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
                       style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 }}>
@@ -9359,7 +9355,8 @@ function AppInner() {
               {/* ══ PROJECTION AU PROCHAIN RENOUVELLEMENT (demande testeuse 23/07/2026) ══
                    L'AJ que donnerait la formule si le dossier était examiné tel quel, et la
                    courbe « chaque cachet compte ». MÊME Loi X que la carte allocation :
-                   branche validée uniquement (annexe 10, ≤ 60 €/jour), sinon on le dit. */}
+                   branche validée seulement, sinon on le dit. Depuis le 27/07/2026 les deux
+                   annexes passent (backtest contre le simulateur officiel France Travail). */}
               {(() => {
                 const pj = projAj;
                 if (!pj) return null;
@@ -9402,9 +9399,7 @@ function AppInner() {
                     <div style={shell}>
                       {tete}
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
-                        {pj.raison_non_affichable === "au_dela_60"
-                          ? <>Ta projection dépasse 60 €/jour. À ce niveau, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur une vraie notification : je préfère ne pas t'avancer de chiffre, <strong style={{ color: "#9FE1CB" }}>je préfère être exact que rapide</strong>. 🐾</>
-                          : <>Ton dossier penche côté <strong style={{ color: "#C8E0F5" }}>technicien (annexe 8)</strong>{pj.annexe_indeterminee ? " (métiers non départagés : j'ai retenu l'hypothèse prudente)" : ""}, et je n'ai pas encore validé ce calcul sur un vrai courrier. Je préfère attendre plutôt que d'estimer à l'aveugle. 🐾</>}
+                        <>Il me manque quelque chose pour projeter ton renouvellement avec certitude, et je préfère me taire plutôt que t'avancer un chiffre à l'aveugle. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
                       </div>
                     </div>
                   );
@@ -9449,7 +9444,7 @@ function AppInner() {
                     )}
                     {pj.courbe_plafonnee_60 && (
                       <div style={{ fontSize: 11, color: "#8FB4D8", marginTop: 6, lineHeight: 1.45 }}>
-                        La courbe s'arrête à 60 €/jour : au-delà, un calcul de CSG entre en jeu que je n'ai pas encore vérifié sur un vrai courrier.
+                        La courbe s'arrête au plafond de l'allocation : au-delà, ajouter des cachets ne fait plus monter le montant journalier.
                       </div>
                     )}
                     {/* Mini-simulateur « et si j'ajoute N cachets à X € ? » (demande testeuse 24/07 :
@@ -9472,7 +9467,7 @@ function AppInner() {
                             ? "La simulation n'a pas répondu, réessaie dans un instant."
                             : projSimResult.affichable
                               ? <>Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} à {formatEUR(projSimResult.brut_cachet)}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}</>
-                              : <>Ce lot ferait dépasser <strong style={{ color: "#C8E0F5" }}>60 €/jour</strong> d'estimation : au-delà, je ne chiffre pas encore (un calcul de CSG non vérifié entre en jeu). Ce que je peux te dire de sûr : ça monte. 🐾</>}
+                              : <>Je n'arrive pas à chiffrer ce lot précisément, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. Ce que je peux te dire de sûr : ça monte. 🐾</>}
                         </div>
                       )}
                     </div>
