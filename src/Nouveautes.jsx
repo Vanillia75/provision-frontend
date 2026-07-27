@@ -19,6 +19,8 @@ const VAGUES = [
       { qui: "tous", texte: "Nouveau simulateur en accès libre sur montotor.fr/simulateur-allocation-intermittent : calcule ton allocation journalière sans compte et sans email. Tu peux le partager à qui tu veux, même à quelqu'un qui n'a pas l'application. Et contrairement aux autres, il te donne ton NET, pas seulement ton brut." },
       { qui: "intermittent", texte: "Nouvelle entrée « Simuler une allocation » dans ton menu. Elle s'ouvre déjà remplie avec tes vrais chiffres : tu changes ce que tu veux pour voir l'effet, plus d'heures, un meilleur cachet, l'autre annexe. Ton dossier n'est pas touché, c'est un brouillon." },
       { qui: "intermittent", texte: "Tes actualisations passées se déplient : tape sur une ligne de ton historique et tu revois exactement ce que tu avais déclaré ce mois-là, employeur par employeur, avec la date à laquelle tu l'as fait. Sur l'écran Actualisation comme dans Mes documents." },
+      { qui: "ae", texte: "Mon menu ne se cache plus. « Facturer » et « Déclarer » étaient repliés par défaut : beaucoup d'entre vous ne savaient tout simplement pas que je sais faire vos factures, vos devis et préparer votre URSSAF. Ils sont ouverts maintenant. Désolé, c'était ma faute." },
+      { qui: "ae", texte: "Nouvelle carte sur ton cockpit si tu n'as encore ni facture ni devis : je te montre ce que je sais faire pour toi. Factures et devis aux normes, bouton « Payer en ligne » pour que tes clients paient par carte sans commission de ma part, relances d'impayés automatiques, et un devis accepté qui devient une facture en un clic. Si tu ne factures jamais, un bouton l'écarte pour de bon." },
     ],
   },
   {
@@ -126,8 +128,11 @@ export function NouveautesPage({ onBack, statut }) {
     .map(v => ({ ...v, items: visibles ? v.items.filter(i => visibles.includes(i.qui)) : v.items }))
     .filter(v => v.items.length > 0);
 
+  // Le haut réserve la barre d'état de l'iPhone : sans ça, le bouton Retour passe
+  // DESSOUS et on ne peut plus sortir de la page autrement qu'en relançant l'app
+  // (constaté par le Mac le 27/07/2026).
   return (
-    <div style={{ minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
+    <div style={{ minHeight: "100vh", background: "#07192E", padding: "calc(32px + env(safe-area-inset-top, 0px)) 20px 32px" }}>
       <style>{CSS}</style>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 20, padding: "6px 2px", display: "flex", alignItems: "center", gap: 6 }}>

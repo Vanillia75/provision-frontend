@@ -6,7 +6,9 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/hector-icon-180.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!-- viewport-fit=cover : indispensable pour que env(safe-area-inset-*) marche
+         dans l'app iOS (cf. index.html). Ne pas le retirer. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#07192E" />
     <title>Simulateur allocation intermittent du spectacle — gratuit, sans compte | TOTOR</title>
     <meta name="description" content="Calcule ton allocation journalière d'intermittent (annexe 8 ou annexe 10) gratuitement et sans inscription. Montant NET, pas seulement brut : retraite complémentaire et CSG déduites, détail du calcul affiché." />

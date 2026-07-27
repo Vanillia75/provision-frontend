@@ -334,8 +334,11 @@ function SuppressionCompteContent() {
 
 export function LegalPageView({ page, onBack }) {
   const content = page === "mentions" ? MENTIONS_LEGALES_MD : page === "cgu" ? CGU_MD : CONFIDENTIALITE_MD;
+  // Le haut réserve la barre d'état de l'iPhone : sans ça, le bouton Retour passe
+  // DESSOUS et devient invisible (repéré par le Mac le 27/07/2026 sur la 1.1.4
+  // déjà en ligne). Sur le web, env() vaut 0 : rien ne change.
   return (
-    <div style={{ minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
+    <div style={{ minHeight: "100vh", background: "#07192E", padding: "calc(32px + env(safe-area-inset-top, 0px)) 20px 32px" }}>
       <style>{CSS}</style>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 20, padding: "6px 2px", display: "flex", alignItems: "center", gap: 6 }}>

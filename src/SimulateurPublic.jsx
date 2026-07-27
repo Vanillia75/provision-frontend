@@ -111,8 +111,12 @@ export function SimulateurPublic({ onBack, onInscription, initial, dansLApp }) {
     }
   }
 
+  // Le haut réserve la barre d'état de l'iPhone : sans ça, le bouton Retour passe
+  // DESSOUS et devient invisible. C'est la porte d'entrée mise en avant sur la
+  // landing, donc vue avant connexion : elle doit être irréprochable. En mode
+  // « dansLApp », la mise en page de l'app gère déjà la marge.
   return (
-    <div style={dansLApp ? undefined : { minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
+    <div style={dansLApp ? undefined : { minHeight: "100vh", background: "#07192E", padding: "calc(32px + env(safe-area-inset-top, 0px)) 20px 32px" }}>
       {!dansLApp && <style>{CSS}</style>}
       <div style={dansLApp ? undefined : { maxWidth: 720, margin: "0 auto" }}>
 

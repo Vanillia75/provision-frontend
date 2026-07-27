@@ -966,6 +966,64 @@ function AppInner() {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  //  DÉCOUVERTE DE LA FACTURATION (27/07/2026)
+  //  Constat qui a déclenché ça : 1 auto-entrepreneur sur 22 seulement avait
+  //  fait une facture ou un devis. Pas parce que la fonction est mauvaise, mais
+  //  parce que RIEN ne disait qu'elle existait : le groupe de menu était replié,
+  //  le cockpit muet, et la bannière « payer en ligne » vivait sur la page
+  //  Factures, qu'il fallait donc avoir déjà trouvée. Un cercle fermé.
+  //  Cette carte n'apparaît qu'à quelqu'un qui n'a NI facture NI devis, et elle
+  //  peut être écartée définitivement.
+  // ─────────────────────────────────────────────────────────────────────────
+  function renderDecouverteFacturation() {
+    if (decouverteFactureMasquee) return null;
+    if (invoicesLoading || quotesLoading) return null;      // on attend de savoir
+    if ((invoicesList || []).length > 0) return null;        // elle s'en sert déjà
+    if ((quotesList || []).length > 0) return null;
+    const ecarter = () => {
+      safeStorage.setItem("decouverteFactureMasquee", "1");
+      setDecouverteFactureMasquee(true);
+    };
+    const atout = (icone, texte) => (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+        <i className={`ti ${icone}`} aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, marginTop: 2, flexShrink: 0 }} />
+        <span>{texte}</span>
+      </div>
+    );
+    return (
+      <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "18px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <HectorTete size={32} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#F8FAFC" }}>Tu factures des clients ?</div>
+            <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 2 }}>Je m'occupe de tout, de l'envoi jusqu'au paiement.</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, margin: "12px 0 16px" }}>
+          {atout("ti-file-invoice", <>Des <strong style={{ color: "#E8F4FF" }}>factures et devis conformes</strong>, avec toutes les mentions obligatoires, numérotées comme la loi l'exige.</>)}
+          {atout("ti-credit-card", <>Un bouton <strong style={{ color: "#E8F4FF" }}>« Payer en ligne »</strong> sur tes factures : tes clients paient par carte, l'argent arrive sur ton compte. Zéro commission TOTOR.</>)}
+          {atout("ti-bell-ringing", <>Je <strong style={{ color: "#E8F4FF" }}>relance tes impayés</strong> à ta place, au bon moment, sans que tu aies à écrire le message gênant.</>)}
+          {atout("ti-transform", <>Un devis accepté devient une facture <strong style={{ color: "#E8F4FF" }}>en un clic</strong>.</>)}
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <button type="button" onClick={() => { setFacturerOpen(true); setNav("factures"); }}
+            style={{ ...S.btnPrimary, whiteSpace: "nowrap" }}>
+            Créer ma première facture →
+          </button>
+          <button type="button" onClick={() => { setFacturerOpen(true); setNav("devis"); }}
+            style={{ background: "transparent", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "11px 18px", minHeight: 44, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+            Faire un devis
+          </button>
+          <button type="button" onClick={ecarter}
+            style={{ background: "none", border: "none", color: "#6B8299", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "10px 4px", marginLeft: "auto" }}>
+            Je ne facture pas
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Bannière « la ligne TOTOR » pour les non-abonnés : cockpit et Parle à Totor,
   // là où les gens sont, pas au fond des Réglages. Le numéro reste réservé aux
   // abonnés : la bannière vend le service et emmène vers l'abonnement.
@@ -1104,8 +1162,19 @@ function AppInner() {
   const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
   const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [argentOpen, setArgentOpen] = useState(false);
-  const [prepareOpen, setPrepareOpen] = useState(false);
-  const [facturerOpen, setFacturerOpen] = useState(false);
+  // ⚠️ OUVERTS PAR DÉFAUT depuis le 27/07/2026. Ils étaient repliés, et c'était
+  // LA raison pour laquelle 1 auto-entrepreneur sur 22 seulement avait fait une
+  // facture : un nouveau venu voyait « Facturer ▾ » et « Déclarer ▾ » fermés, et
+  // ne découvrait jamais les factures, les devis ni le simulateur URSSAF.
+  // Ne pas les refermer sans une bonne raison.
+  const [prepareOpen, setPrepareOpen] = useState(true);
+  const [facturerOpen, setFacturerOpen] = useState(true);
+  // La carte de découverte de la facturation peut être écartée : quelqu'un qui
+  // ne facture jamais (salarié en complément, revenus de plateforme…) ne doit
+  // pas la voir tous les jours.
+  const [decouverteFactureMasquee, setDecouverteFactureMasquee] = useState(
+    () => safeStorage.getItem("decouverteFactureMasquee") === "1"
+  );
   const [montantCopie, setMontantCopie] = useState(false);
   const [caCopie, setCaCopie] = useState(false);
   const [declarationPeriode, setDeclarationPeriode] = useState("");
@@ -5319,7 +5388,10 @@ function AppInner() {
   }, [nav, token]);
 
   useEffect(() => {
-    if (nav === "devis" && token) loadQuotes();
+    // "dashboard" inclus depuis le 27/07 : la carte de découverte de la
+    // facturation doit savoir si la personne a DÉJÀ fait un devis, sinon elle
+    // s'afficherait à quelqu'un qui s'en sert déjà.
+    if ((nav === "devis" || nav === "dashboard") && token) loadQuotes();
   }, [nav, token]);
 
 
@@ -6641,11 +6713,45 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 03 — impayés (aperçu mail de relance) ===== */}
+          {/* ===== 03 — facturation + paiement en ligne (27/07, retour Camille :
+                 la landing racontait les impayés sans jamais dire COMMENT on se
+                 fait payer). C'est le plus gros atout du produit AE, il n'était
+                 nulle part sur la page. ===== */}
           <section style={secShell}>
             <div style={secGrid}>
               <div>
                 <div style={numFantome}>03</div>
+                <h2 style={titreSec}>TOTOR fait tes factures.<br />Tes clients les paient <span style={{ color: "#5DCAA5" }}>en ligne</span>.</h2>
+                <p style={texteSec}>Factures et devis aux normes en deux minutes. Ton client clique, paie par carte, et l'argent arrive sur ton compte. Zéro commission TOTOR.</p>
+              </div>
+              <div style={demoFondu}>
+                {/* Aperçu d'une facture telle que la reçoit le client */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 14 }}>
+                  <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
+                  <span style={{ fontSize: 12.5, color: "#8BA5C0" }}>Facture 2024-042 · Studio Marie</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13.5, color: "#B5D4F4" }}>Création de site vitrine</span>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: "#EAF2FB", whiteSpace: "nowrap" }}>900,00 €</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#6B8299", marginBottom: 16 }}>Échéance le 15 septembre · TVA non applicable, art. 293 B du CGI</div>
+                <div style={{ background: "#5DCAA5", color: "#04342C", borderRadius: 10, padding: "13px 18px", textAlign: "center", fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 17 }} />
+                  Payer en ligne
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+                  <i className="ti ti-circle-check-filled" aria-hidden="true" style={{ fontSize: 15, color: "#5DCAA5", flexShrink: 0 }} />
+                  <span>Payée par carte le 12 septembre. Trois jours avant l'échéance, sans que tu aies eu à relancer.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== 04 — impayés (aperçu mail de relance) ===== */}
+          <section style={secShell}>
+            <div style={secGrid}>
+              <div>
+                <div style={numFantome}>04</div>
                 <h2 style={titreSec}>TOTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>impayés</span>.</h2>
                 <p style={texteSec}>Une facture en retard ? Il relance ton client à ta place, un email pro, signé de ton nom, jamais de spam.</p>
               </div>
@@ -6665,11 +6771,11 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 04 — chat AE ===== */}
+          {/* ===== 05 — chat AE ===== */}
           <section style={secShell}>
             <div style={secGrid}>
               <div>
-                <div style={numFantome}>04</div>
+                <div style={numFantome}>05</div>
                 <h2 style={titreSec}>TOTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
                 <p style={texteSec}>Pose ta question en langage naturel. Il te répond clairement, avec le raisonnement.</p>
               </div>
@@ -6697,10 +6803,10 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 05 — Je veille sur toi (identique à l'intermittent, mot pour mot) ===== */}
+          {/* ===== 06 — Je veille sur toi (identique à l'intermittent, mot pour mot) ===== */}
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "58px 22px" : "104px 48px" }}>
             <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
-              <div style={{ ...numFantome, margin: "0 0 6px" }}>05</div>
+              <div style={{ ...numFantome, margin: "0 0 6px" }}>06</div>
               <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
                 {[
@@ -6714,7 +6820,7 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 06 — pont inverse vers l'intermittent ===== */}
+          {/* ===== 07 — pont inverse vers l'intermittent ===== */}
           <section style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "48px 22px" : "64px 48px" }}>
             <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(55,138,221,0.06))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
               <div style={{ marginBottom: 14 }}><i className="ti ti-masks-theater" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
@@ -13346,6 +13452,17 @@ function AppInner() {
                 </div>
               </div>
             )}
+
+            {/* ═══ DÉCOUVERTE DE LA FACTURATION (27/07) : la porte d'entrée qui
+                manquait. Ne s'affiche qu'à qui n'a ni facture ni devis. ═══ */}
+            {renderDecouverteFacturation()}
+
+            {/* ═══ « Fais-toi payer en ligne » sur le COCKPIT (27/07) : elle ne
+                vivait que sur la page Factures, donc seuls ceux qui l'avaient
+                déjà trouvée apprenaient que ça existait. Ici, uniquement pour
+                qui a DÉJÀ des factures : sinon la carte de découverte ci-dessus
+                le dit déjà, et deux bannières d'affilée, c'est du bruit. ═══ */}
+            {(invoicesList || []).length > 0 && renderBanniereEncaissement()}
 
             {/* ═══ LA PAIE D'HECTOR — le rendez-vous mensuel du salaire lissé. ═══
                 Recommandation seulement (Loi X : badge estimation, base visible) ;
