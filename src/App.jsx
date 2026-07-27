@@ -6168,14 +6168,11 @@ function AppInner() {
                     {authPasswordConfirm.length > 0 && authPassword !== authPasswordConfirm && (<p style={styleMismatch}>🐾 Les deux mots de passe ne correspondent pas, revérifie</p>)}
                   </>)}
                   {authMode === "login" && (<p style={{ textAlign: "right", marginTop: -8, marginBottom: 14 }}><button type="button" style={{ ...S.linkBtn, fontSize: 12 }} onClick={() => setForgotMode(true)}>Mot de passe oublié ?</button></p>)}
-<<<<<<< Updated upstream
-=======
                   {/* L'encart « Inscrit avec Google sur le site ? » a vécu ici : il
                       aiguillait les inscrits Google du web vers « Mot de passe oublié »,
                       faute de bouton Google natif. Retiré le 28/07/2026, décision de
                       Camille : les DEUX applis ont désormais leur bouton Google, le
                       détour n'a plus de raison d'être. */}
->>>>>>> Stashed changes
                   <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
                   {authMode === "register" && (
                     <p style={{ fontSize: 11, color: "#8595a8", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
