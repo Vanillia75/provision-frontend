@@ -18,6 +18,7 @@ const VAGUES = [
       { qui: "intermittent", texte: "Ma règle ne change pas d'un pouce : je ne te donne un chiffre que si je l'ai vérifié ailleurs qu'en moi-même. C'est juste que maintenant, j'en ai vérifié beaucoup plus." },
       { qui: "tous", texte: "Nouveau simulateur en accès libre sur montotor.fr/simulateur-allocation-intermittent : calcule ton allocation journalière sans compte et sans email. Tu peux le partager à qui tu veux, même à quelqu'un qui n'a pas l'application. Et contrairement aux autres, il te donne ton NET, pas seulement ton brut." },
       { qui: "intermittent", texte: "Nouvelle entrée « Simuler une allocation » dans ton menu. Elle s'ouvre déjà remplie avec tes vrais chiffres : tu changes ce que tu veux pour voir l'effet, plus d'heures, un meilleur cachet, l'autre annexe. Ton dossier n'est pas touché, c'est un brouillon." },
+      { qui: "intermittent", texte: "Tes actualisations passées se déplient : tape sur une ligne de ton historique et tu revois exactement ce que tu avais déclaré ce mois-là, employeur par employeur, avec la date à laquelle tu l'as fait. Sur l'écran Actualisation comme dans Mes documents." },
     ],
   },
   {

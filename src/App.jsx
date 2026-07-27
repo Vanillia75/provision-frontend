@@ -624,6 +624,9 @@ function AppInner() {
   const [actuEmpChecked, setActuEmpChecked] = useState({});
   // Petit feedback "copié" sur les boutons du mode recopie.
   const [actuCopied, setActuCopied] = useState("");
+  // Quelle ligne de l'historique d'actualisation est dépliée (la clef du mois, ou null).
+  // Demande de Camille du 27/07 : voir le DÉTAIL de ce qu'on a déclaré, pas juste le total.
+  const [actuDetailOuvert, setActuDetailOuvert] = useState(null);
   // Historique des actualisations marquées comme faites (persistées localement pour la V1).
   const [actuHistorique, setActuHistorique] = useState(() => {
     try { return JSON.parse(safeStorage.getItem("actuHistorique") || "[]"); } catch { return []; }
@@ -1351,6 +1354,52 @@ function AppInner() {
     } finally {
       setLoading(false);
     }
+  }
+
+  // ── Le DÉTAIL d'une actualisation passée (demande Camille du 27/07 : « pouvoir
+  //    visualiser ce qu'on a fait »). Une SEULE définition, utilisée aux DEUX
+  //    endroits qui listent l'historique (l'écran Actualisation et l'onglet
+  //    « Mes documents »), pour qu'ils ne puissent jamais diverger.
+  //    ⚠️ Fonction de composant, PAS un helper caché dans un morceau de rendu :
+  //    c'est exactement le piège qui a produit le crash « fmtDate is not defined ».
+  function renderDetailActualisation(h) {
+    // La clef vaut « AAAA-MM » : on retrouve les activités réelles de ce mois-là.
+    const [an, mois] = String(h.clef || "").split("-");
+    const lignes = (interActivites || []).filter(a => {
+      if (!a || !a.date || a.type_activite === "formation" || a.type_activite === "autre_salaire") return false;
+      const d = new Date(a.date);
+      return !isNaN(d) && d.getFullYear() === Number(an) && (d.getMonth() + 1) === Number(mois);
+    }).sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    return (
+      <div style={{ marginTop: 10 }}>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", marginBottom: 10, fontSize: 12, color: "#8BA5C0" }}>
+          {h.date && <span>Déclarée le <strong style={{ color: "#C5D4E3" }}>{formatDate(h.date)}</strong></span>}
+          {h.brut != null && h.brut > 0 && <span>Brut total <strong style={{ color: "#C5D4E3" }}>{formatEUR(h.brut)}</strong></span>}
+          {h.employeurs != null && h.employeurs > 0 && <span><strong style={{ color: "#C5D4E3" }}>{h.employeurs}</strong> employeur{h.employeurs > 1 ? "s" : ""}</span>}
+        </div>
+        {lignes.length === 0 ? (
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, background: "rgba(255,255,255,0.03)", borderRadius: 10, padding: "11px 13px" }}>
+            Je n'ai plus le détail de ce mois dans ton carnet. Soit tu l'avais déclaré avant de recevoir tes AEM, soit les activités ont été modifiées depuis. Le récapitulatif ci-dessus reste celui du jour où tu as déclaré.
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {lignes.map((a, j) => (
+              <div key={j} style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 10, fontSize: 12.5, background: "rgba(255,255,255,0.03)", borderRadius: 9, padding: "9px 12px" }}>
+                <span style={{ color: "#C5D4E3", minWidth: 0 }}>
+                  <strong style={{ color: "#E8F4FF" }}>{a.employeur || "Employeur non précisé"}</strong>
+                  <span style={{ color: "#7E93A8" }}> · {formatDate(a.date)}</span>
+                </span>
+                <span style={{ color: "#9FE1CB", whiteSpace: "nowrap", fontWeight: 600 }}>
+                  {a.type_activite === "heures" ? `${a.nombre} h` : `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}`}
+                  {a.salaire_brut != null && <span style={{ color: "#7E93A8", fontWeight: 400 }}> · {formatEUR(a.salaire_brut)}</span>}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
   }
 
   // Efface les données locales propres à un compte (SIRET, adresse, objectifs...) pour éviter
@@ -9956,17 +10005,29 @@ function AppInner() {
                             </div>
                             {!dernier && <div style={{ width: 2, flex: 1, background: "rgba(93,202,165,0.2)", minHeight: 18 }} />}
                           </div>
-                          {/* Contenu du mois */}
+                          {/* Contenu du mois. Cliquable pour déplier le détail :
+                              même contenu que dans « Mes documents », une seule
+                              fonction pour les deux (renderDetailActualisation). */}
                           <div style={{ flex: 1, paddingBottom: dernier ? 0 : 16 }}>
-                            <div style={{ fontSize: 14, fontWeight: 800, color: "white", marginBottom: 5 }}>{h.label}</div>
-                            {h.declaree && !h.heures && !h.cachets ? (
-                              <div style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-checks" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />Déclarée faite</div>
-                            ) : (
-                              <div style={{ display: "flex", gap: 16 }}>
-                                <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.cachets} cachet{h.cachets > 1 ? "s" : ""}</span>
-                                <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.heures} h</span>
-                              </div>
-                            )}
+                            <button type="button"
+                              onClick={() => setActuDetailOuvert(actuDetailOuvert === h.clef ? null : h.clef)}
+                              aria-expanded={actuDetailOuvert === h.clef}
+                              style={{ width: "100%", background: "none", border: "none", padding: 0, minHeight: 44, cursor: "pointer", fontFamily: "inherit", textAlign: "left", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                              <span style={{ minWidth: 0 }}>
+                                <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "white", marginBottom: 5 }}>{h.label}</span>
+                                {h.declaree && !h.heures && !h.cachets ? (
+                                  <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-checks" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />Déclarée faite</span>
+                                ) : (
+                                  <span style={{ display: "flex", gap: 16 }}>
+                                    <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-ticket" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.cachets} cachet{h.cachets > 1 ? "s" : ""}</span>
+                                    <span style={{ fontSize: 12, color: "#8FB4D8", display: "inline-flex", alignItems: "center", gap: 5 }}><i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 14, color: "#5DCAA5" }} />{h.heures} h</span>
+                                  </span>
+                                )}
+                              </span>
+                              <i className={`ti ${actuDetailOuvert === h.clef ? "ti-chevron-up" : "ti-zoom-in"}`} aria-hidden="true"
+                                style={{ color: actuDetailOuvert === h.clef ? "#5DCAA5" : "#6B8299", fontSize: 16, flexShrink: 0 }} />
+                            </button>
+                            {actuDetailOuvert === h.clef && renderDetailActualisation(h)}
                           </div>
                         </div>
                       );
@@ -10985,14 +11046,31 @@ function AppInner() {
                       Ton historique d'actualisations, une preuve de ta régularité.
                     </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                      {actuHistorique.map((h, i) => (
-                        <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "13px 15px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                          <span style={{ color: "#E8F4FF", fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 9 }}>
-                            <i className="ti ti-circle-check-filled" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 17 }} /> {h.label}
-                          </span>
-                          <span style={{ color: "#8BA5C0", fontSize: 11.5 }}>{h.cachets} cachets · {h.heures}h</span>
-                        </div>
-                      ))}
+                      {actuHistorique.map((h, i) => {
+                        const ouvert = actuDetailOuvert === h.clef;
+                        return (
+                          <div key={i} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${ouvert ? "rgba(93,202,165,0.28)" : "rgba(255,255,255,0.07)"}`, borderRadius: 12, overflow: "hidden" }}>
+                            <button type="button"
+                              onClick={() => setActuDetailOuvert(ouvert ? null : h.clef)}
+                              aria-expanded={ouvert}
+                              style={{ width: "100%", background: "none", border: "none", cursor: "pointer", fontFamily: "inherit", textAlign: "left", padding: "13px 15px", minHeight: 44, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+                              <span style={{ color: "#E8F4FF", fontSize: 13.5, fontWeight: 600, display: "flex", alignItems: "center", gap: 9 }}>
+                                <i className="ti ti-circle-check-filled" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 17 }} /> {h.label}
+                              </span>
+                              <span style={{ color: "#8BA5C0", fontSize: 11.5, display: "flex", alignItems: "center", gap: 9, whiteSpace: "nowrap" }}>
+                                {h.cachets} cachets · {h.heures}h
+                                <i className={`ti ${ouvert ? "ti-chevron-up" : "ti-zoom-in"}`} aria-hidden="true" style={{ color: ouvert ? "#5DCAA5" : "#6B8299", fontSize: 16 }} />
+                              </span>
+                            </button>
+
+                            {ouvert && (
+                              <div style={{ padding: "2px 15px 14px", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+                                {renderDetailActualisation(h)}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </>
                 )
