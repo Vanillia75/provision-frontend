@@ -17,6 +17,7 @@ const VAGUES = [
       { qui: "intermittent", texte: "J'ai trouvé une erreur chez moi au passage, et je la corrige : le plafond de l'allocation journalière que j'utilisais était trop haut. Pour les très gros salaires, j'annonçais plus que la réalité. C'est réparé." },
       { qui: "intermittent", texte: "Ma règle ne change pas d'un pouce : je ne te donne un chiffre que si je l'ai vérifié ailleurs qu'en moi-même. C'est juste que maintenant, j'en ai vérifié beaucoup plus." },
       { qui: "tous", texte: "Nouveau simulateur en accès libre sur montotor.fr/simulateur-allocation-intermittent : calcule ton allocation journalière sans compte et sans email. Tu peux le partager à qui tu veux, même à quelqu'un qui n'a pas l'application. Et contrairement aux autres, il te donne ton NET, pas seulement ton brut." },
+      { qui: "intermittent", texte: "Nouvelle entrée « Simuler une allocation » dans ton menu. Elle s'ouvre déjà remplie avec tes vrais chiffres : tu changes ce que tu veux pour voir l'effet, plus d'heures, un meilleur cachet, l'autre annexe. Ton dossier n'est pas touché, c'est un brouillon." },
     ],
   },
   {
