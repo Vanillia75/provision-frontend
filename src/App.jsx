@@ -954,6 +954,64 @@ function AppInner() {
     );
   }
 
+  // ─────────────────────────────────────────────────────────────────────────
+  //  DÉCOUVERTE DE LA FACTURATION (27/07/2026)
+  //  Constat qui a déclenché ça : 1 auto-entrepreneur sur 22 seulement avait
+  //  fait une facture ou un devis. Pas parce que la fonction est mauvaise, mais
+  //  parce que RIEN ne disait qu'elle existait : le groupe de menu était replié,
+  //  le cockpit muet, et la bannière « payer en ligne » vivait sur la page
+  //  Factures, qu'il fallait donc avoir déjà trouvée. Un cercle fermé.
+  //  Cette carte n'apparaît qu'à quelqu'un qui n'a NI facture NI devis, et elle
+  //  peut être écartée définitivement.
+  // ─────────────────────────────────────────────────────────────────────────
+  function renderDecouverteFacturation() {
+    if (decouverteFactureMasquee) return null;
+    if (invoicesLoading || quotesLoading) return null;      // on attend de savoir
+    if ((invoicesList || []).length > 0) return null;        // elle s'en sert déjà
+    if ((quotesList || []).length > 0) return null;
+    const ecarter = () => {
+      safeStorage.setItem("decouverteFactureMasquee", "1");
+      setDecouverteFactureMasquee(true);
+    };
+    const atout = (icone, texte) => (
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 9, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+        <i className={`ti ${icone}`} aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 15, marginTop: 2, flexShrink: 0 }} />
+        <span>{texte}</span>
+      </div>
+    );
+    return (
+      <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "18px 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+          <HectorTete size={32} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 15, fontWeight: 800, color: "#F8FAFC" }}>Tu factures des clients ?</div>
+            <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 2 }}>Je m'occupe de tout, de l'envoi jusqu'au paiement.</div>
+          </div>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 7, margin: "12px 0 16px" }}>
+          {atout("ti-file-invoice", <>Des <strong style={{ color: "#E8F4FF" }}>factures et devis conformes</strong>, avec toutes les mentions obligatoires, numérotées comme la loi l'exige.</>)}
+          {atout("ti-credit-card", <>Un bouton <strong style={{ color: "#E8F4FF" }}>« Payer en ligne »</strong> sur tes factures : tes clients paient par carte, l'argent arrive sur ton compte. Zéro commission TOTOR.</>)}
+          {atout("ti-bell-ringing", <>Je <strong style={{ color: "#E8F4FF" }}>relance tes impayés</strong> à ta place, au bon moment, sans que tu aies à écrire le message gênant.</>)}
+          {atout("ti-transform", <>Un devis accepté devient une facture <strong style={{ color: "#E8F4FF" }}>en un clic</strong>.</>)}
+        </div>
+        <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+          <button type="button" onClick={() => { setFacturerOpen(true); setNav("factures"); }}
+            style={{ ...S.btnPrimary, whiteSpace: "nowrap" }}>
+            Créer ma première facture →
+          </button>
+          <button type="button" onClick={() => { setFacturerOpen(true); setNav("devis"); }}
+            style={{ background: "transparent", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.2)", borderRadius: 10, padding: "11px 18px", minHeight: 44, fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+            Faire un devis
+          </button>
+          <button type="button" onClick={ecarter}
+            style={{ background: "none", border: "none", color: "#6B8299", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "10px 4px", marginLeft: "auto" }}>
+            Je ne facture pas
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   // Bannière « la ligne TOTOR » pour les non-abonnés : cockpit et Parle à Totor,
   // là où les gens sont, pas au fond des Réglages. Le numéro reste réservé aux
   // abonnés : la bannière vend le service et emmène vers l'abonnement.
@@ -1092,8 +1150,19 @@ function AppInner() {
   const [siretLookupStatus, setSiretLookupStatus] = useState(""); // "", "loading", "success", "error"
   const [siretLookupMessage, setSiretLookupMessage] = useState("");
   const [argentOpen, setArgentOpen] = useState(false);
-  const [prepareOpen, setPrepareOpen] = useState(false);
-  const [facturerOpen, setFacturerOpen] = useState(false);
+  // ⚠️ OUVERTS PAR DÉFAUT depuis le 27/07/2026. Ils étaient repliés, et c'était
+  // LA raison pour laquelle 1 auto-entrepreneur sur 22 seulement avait fait une
+  // facture : un nouveau venu voyait « Facturer ▾ » et « Déclarer ▾ » fermés, et
+  // ne découvrait jamais les factures, les devis ni le simulateur URSSAF.
+  // Ne pas les refermer sans une bonne raison.
+  const [prepareOpen, setPrepareOpen] = useState(true);
+  const [facturerOpen, setFacturerOpen] = useState(true);
+  // La carte de découverte de la facturation peut être écartée : quelqu'un qui
+  // ne facture jamais (salarié en complément, revenus de plateforme…) ne doit
+  // pas la voir tous les jours.
+  const [decouverteFactureMasquee, setDecouverteFactureMasquee] = useState(
+    () => safeStorage.getItem("decouverteFactureMasquee") === "1"
+  );
   const [montantCopie, setMontantCopie] = useState(false);
   const [caCopie, setCaCopie] = useState(false);
   const [declarationPeriode, setDeclarationPeriode] = useState("");
@@ -5041,7 +5110,10 @@ function AppInner() {
   }, [nav, token]);
 
   useEffect(() => {
-    if (nav === "devis" && token) loadQuotes();
+    // "dashboard" inclus depuis le 27/07 : la carte de découverte de la
+    // facturation doit savoir si la personne a DÉJÀ fait un devis, sinon elle
+    // s'afficherait à quelqu'un qui s'en sert déjà.
+    if ((nav === "devis" || nav === "dashboard") && token) loadQuotes();
   }, [nav, token]);
 
 
@@ -13047,6 +13119,17 @@ function AppInner() {
                 </div>
               </div>
             )}
+
+            {/* ═══ DÉCOUVERTE DE LA FACTURATION (27/07) : la porte d'entrée qui
+                manquait. Ne s'affiche qu'à qui n'a ni facture ni devis. ═══ */}
+            {renderDecouverteFacturation()}
+
+            {/* ═══ « Fais-toi payer en ligne » sur le COCKPIT (27/07) : elle ne
+                vivait que sur la page Factures, donc seuls ceux qui l'avaient
+                déjà trouvée apprenaient que ça existait. Ici, uniquement pour
+                qui a DÉJÀ des factures : sinon la carte de découverte ci-dessus
+                le dit déjà, et deux bannières d'affilée, c'est du bruit. ═══ */}
+            {(invoicesList || []).length > 0 && renderBanniereEncaissement()}
 
             {/* ═══ LA PAIE D'HECTOR — le rendez-vous mensuel du salaire lissé. ═══
                 Recommandation seulement (Loi X : badge estimation, base visible) ;
