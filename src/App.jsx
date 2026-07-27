@@ -428,10 +428,15 @@ function AppInner() {
   // Statut AFFICHÉ (avant connexion), piloté par l'URL :
   //   "/" (et inconnu) → "choix" (page de choix pure) · "/intermittent" → landing intermittent
   //   · "/auto-entrepreneur" (et "/ae") → landing AE.
-  const pathToStatut = (p) =>
-    (p === "/auto-entrepreneur" || p === "/ae") ? "auto_entrepreneur"
+  const pathToStatut = (chemin) => {
+    // On retire un « .html » final : en développement Vite sert les pages
+    // multi-entrées à leur nom de fichier, et en production quelqu'un peut
+    // taper l'adresse complète. Les deux doivent ouvrir la même landing.
+    const p = (chemin || "").replace(/\.html$/, "");
+    return (p === "/auto-entrepreneur" || p === "/ae") ? "auto_entrepreneur"
       : p === "/intermittent" ? "intermittent"
       : "choix";
+  };
   const [landingStatut, setLandingStatut] = useState(() => pathToStatut(typeof window !== "undefined" ? window.location.pathname : "/"));
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
@@ -6468,6 +6473,24 @@ function AppInner() {
               Créer mon compte gratuitement <span style={{ fontSize: 18, lineHeight: 1 }}>→</span>
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
+
+            {/* Porte d'entrée sans engagement : quelqu'un qui hésite à créer un
+                compte peut essayer d'abord. VRAI lien (href) et non un bouton :
+                Google ne suit que les href, et c'est ce qui fait remonter la
+                page du simulateur dans l'index. */}
+            <a href="/simulateur-allocation-intermittent"
+              style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, padding: "13px 18px", minHeight: 46, borderRadius: 12, textDecoration: "none", fontFamily: "inherit", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(93,202,165,0.32)" }}>
+              <i className="ti ti-calculator" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
+              <span style={{ display: "block" }}>
+                <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "#E4EDF6", lineHeight: 1.3 }}>
+                  Calcule ton allocation tout de suite <span style={{ color: "#5DCAA5" }}>→</span>
+                </span>
+                <span style={{ display: "block", fontSize: 12, color: "#8BA5C0", marginTop: 2 }}>
+                  Gratuit, sans compte. Et en net, pas seulement en brut.
+                </span>
+              </span>
+            </a>
+
               {badgesBientot}
           </div>
         </section>
