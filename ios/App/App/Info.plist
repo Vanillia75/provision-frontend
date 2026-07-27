@@ -20,6 +20,20 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<!-- Adresse de retour de la connexion Google. Google ouvre Safari pour la
+	     connexion, puis renvoie vers l'app par cette adresse. Sans elle, la
+	     personne resterait bloquee dans Safari.
+	     C'est l'identifiant iOS ecrit a l'envers (REVERSED_CLIENT_ID du fichier
+	     .plist telecharge depuis Google Cloud, client « TOTOR iOS »). -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1008678142157-v41cuhu49lu6be55qdb4mbdpoq8vq8ch</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>ITSAppUsesNonExemptEncryption</key>

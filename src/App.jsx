@@ -194,18 +194,25 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
   );
 }
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
+// Identifiant iOS. Le SDK Google d'Apple exige le sien et refuse l'identifiant
+// web ci-dessus. Conséquence : dans l'appli iPhone, le jeton renvoyé par Google
+// vise CET identifiant, alors que le site et Android visent le web. C'est pour
+// ça que le serveur accepte deux destinataires (variable GOOGLE_AUDIENCES).
+const GOOGLE_CLIENT_ID_IOS = "1008678142157-v41cuhu49lu6be55qdb4mbdpoq8vq8ch.apps.googleusercontent.com";
 
-// Sommes-nous dans l'appli ANDROID ? (jamais sur le web : window.Capacitor
-// n'y existe pas, la fonction renvoie donc false et rien ne change.)
-// Sert au bouton « Continuer avec Google » natif : sur Android il faut passer
-// par les services Google du téléphone, la version web étant refusée en WebView.
-function estAndroidNatif() {
+// Dans quelle appli sommes-nous ? Renvoie "android", "ios", ou "" sur le web
+// (window.Capacitor n'existe pas sur le site, donc rien ne change là-bas).
+// Sert au bouton « Se connecter avec Google » natif : dans les deux applis il
+// faut passer par le système du téléphone, le bouton web étant refusé en WebView.
+function plateformeNative() {
   try {
-    return window.Capacitor?.isNativePlatform?.() === true
-      && window.Capacitor?.getPlatform?.() === "android";
-  } catch { return false; }
+    if (window.Capacitor?.isNativePlatform?.() !== true) return "";
+    return window.Capacitor?.getPlatform?.() || "";
+  } catch { return ""; }
 }
-const EST_ANDROID_NATIF = estAndroidNatif();
+const PLATEFORME_NATIVE = plateformeNative();
+const EST_ANDROID_NATIF = PLATEFORME_NATIVE === "android";
+const EST_MOBILE_NATIF = PLATEFORME_NATIVE === "android" || PLATEFORME_NATIVE === "ios";
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
 // Passe à false une fois la prod validée pour réactiver le bouton de connexion.
@@ -1571,7 +1578,14 @@ function AppInner() {
     setLoading(true);
     try {
       const { SocialLogin } = await import("@capgo/capacitor-social-login");
-      await SocialLogin.initialize({ google: { webClientId: GOOGLE_CLIENT_ID } });
+      // Les deux identifiants sont donnés d'un coup : chaque plateforme prend le
+      // sien et ignore l'autre. Android vise le web, iPhone vise l'iOS.
+      await SocialLogin.initialize({
+        google: {
+          webClientId: GOOGLE_CLIENT_ID,
+          iOSClientId: GOOGLE_CLIENT_ID_IOS,
+        },
+      });
       // ⚠️ NE PAS passer `scopes` : le module exige alors une modification du code
       //    natif et refuse net (« You CANNOT use scopes without modifying the main
       //    activity »). L'email et le profil sont de toute façon fournis par défaut,
@@ -6408,10 +6422,19 @@ function AppInner() {
                     <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                     <p style={S.orDivider}>ou avec un email</p>
                   </>)}
-                  {/* Bouton Google NATIF, uniquement dans l'appli Android : le bouton
-                      web ci-dessus y est refusé par Google (WebView). Sur le site et
-                      sur iPhone, ce bloc ne s'affiche jamais. */}
-                  {EST_ANDROID_NATIF && (
+                  {/* « Se connecter avec Apple » : appli iPhone uniquement.
+                      Placé EN PREMIER, avant Google : Apple exige que sa connexion
+                      soit au moins aussi visible que les autres.
+                      Fond noir + logo : présentation imposée par ses règles. */}
+                  {appleDisponible() && (
+                    <button type="button" onClick={handleAppleSignIn} disabled={loading}
+                      style={{ width: "100%", height: 44, marginBottom: 8, borderRadius: 8, background: "#000", color: "#fff", border: "none", cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif", fontSize: 17, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: loading ? 0.55 : 1 }}>
+                      <span style={{ fontSize: 19, lineHeight: 1, marginTop: -2 }}></span> Se connecter avec Apple
+                    </button>
+                  )}
+                  {/* Bouton Google NATIF, dans les DEUX applis : le bouton web
+                      ci-dessus y est refusé par Google (WebView). Jamais sur le site. */}
+                  {EST_MOBILE_NATIF && (
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
                       <button type="button" onClick={handleGoogleNatif} disabled={loading}
                         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, width: 360, maxWidth: "100%", minHeight: 44, background: "white", color: "#1f1f1f", border: "1px solid #dadce0", borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "inherit", cursor: loading ? "default" : "pointer", opacity: loading ? 0.55 : 1 }}>
@@ -6425,15 +6448,9 @@ function AppInner() {
                       </button>
                     </div>
                   )}
-                  {/* « Se connecter avec Apple » : appli iOS uniquement (remplace Google, indispo en WebView).
-                      Fond noir + logo : presentation imposee par les regles d'Apple. */}
-                  {appleDisponible() && (<>
-                    <button type="button" onClick={handleAppleSignIn} disabled={loading}
-                      style={{ width: "100%", height: 44, borderRadius: 8, background: "#000", color: "#fff", border: "none", cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif", fontSize: 17, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: loading ? 0.55 : 1 }}>
-                      <span style={{ fontSize: 19, lineHeight: 1, marginTop: -2 }}></span> Se connecter avec Apple
-                    </button>
-                    <p style={S.orDivider}>ou avec un email</p>
-                  </>)}
+                  {/* Un seul séparateur, commun aux deux applis (avant, Android n'en
+                      avait aucun et iPhone avait le sien collé au bouton Apple). */}
+                  {IS_NATIVE_APP && (<p style={S.orDivider}>ou avec un email</p>)}
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
                   <PasswordField label={authMode === "register" ? "Mot de passe (8 caractères min.)" : "Mot de passe"} value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
                   {authMode === "register" && (<>
