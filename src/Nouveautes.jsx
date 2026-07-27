@@ -9,6 +9,15 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "28 juillet 2026",
+    titre: "Ton compte Google, et me voilà sur Android",
+    items: [
+      { qui: "tous", texte: "Tu peux maintenant te connecter avec ton compte Google depuis l'application, en un appui, sur Android comme sur iPhone. Plus de mot de passe à retenir." },
+      { qui: "tous", texte: "Et si tu t'étais inscrit avec Google sur le site, tu entres désormais directement dans l'application. Avant, il fallait passer par « Mot de passe oublié » pour s'en fabriquer un : ce détour n'existe plus. Il n'aurait jamais dû exister, désolé pour ceux qui l'ont subi." },
+      { qui: "tous", texte: "Je suis aussi sur le Play Store depuis le 27 juillet. Si tu es sur Android, tu peux m'installer comme une vraie application, au lieu de passer par ton navigateur." },
+    ],
+  },
+  {
     date: "27 juillet 2026",
     titre: "Je sais enfin calculer l'allocation des techniciens",
     items: [
