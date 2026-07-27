@@ -424,6 +424,17 @@ function AppInner() {
       window.history.replaceState({}, "", "/");
     }
   };
+  // Ouvre le simulateur SANS recharger la page. Indispensable dans les applis
+  // iOS et Android : l'adresse n'existe pas dans le paquet embarqué, un vrai
+  // chargement donnerait un ÉCRAN BLANC. Sur le web, c'est aussi plus rapide.
+  const ouvrirSimulateur = (e) => {
+    if (e) e.preventDefault();
+    // En application, le schéma capacitor:// peut refuser pushState : sans
+    // importance, seul l'affichage compte.
+    try { window.history.pushState({}, "", "/simulateur-allocation-intermittent"); } catch { /* rien à faire */ }
+    setLegalPage("simulateur-allocation-intermittent");
+    window.scrollTo(0, 0);
+  };
   const [authMode, setAuthMode] = useState("login");
   // Statut AFFICHÉ (avant connexion), piloté par l'URL :
   //   "/" (et inconnu) → "choix" (page de choix pure) · "/intermittent" → landing intermittent
@@ -6477,8 +6488,12 @@ function AppInner() {
             {/* Porte d'entrée sans engagement : quelqu'un qui hésite à créer un
                 compte peut essayer d'abord. VRAI lien (href) et non un bouton :
                 Google ne suit que les href, et c'est ce qui fait remonter la
-                page du simulateur dans l'index. */}
-            <a href="/simulateur-allocation-intermittent"
+                page du simulateur dans l'index.
+                ⚠️ Le onClick est OBLIGATOIRE : dans les applis iOS et Android,
+                cette adresse n'existe pas dans le paquet embarqué, un vrai
+                chargement donnerait un ÉCRAN BLANC. On garde donc le href pour
+                Google, mais on affiche la page sans quitter l'application. */}
+            <a href="/simulateur-allocation-intermittent" onClick={ouvrirSimulateur}
               style={{ display: "inline-flex", alignItems: "center", gap: 9, marginTop: 18, padding: "13px 18px", minHeight: 46, borderRadius: 12, textDecoration: "none", fontFamily: "inherit", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(93,202,165,0.32)" }}>
               <i className="ti ti-calculator" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
               <span style={{ display: "block" }}>
@@ -6772,8 +6787,8 @@ function AppInner() {
               <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
             ))}
             {/* VRAI lien (et non un bouton) : Google suit les href, pas les onClick.
-                C'est ce qui fait remonter la page du simulateur dans l'index. */}
-            <a href="/simulateur-allocation-intermittent" style={{ color: "#4A6280", fontSize: 12, textDecoration: "none", fontFamily: "inherit" }}>Simulateur d'allocation</a>
+                Le onClick évite l'écran blanc dans les applis, cf. le hero. */}
+            <a href="/simulateur-allocation-intermittent" onClick={ouvrirSimulateur} style={{ color: "#4A6280", fontSize: 12, textDecoration: "none", fontFamily: "inherit" }}>Simulateur d'allocation</a>
             <a href="/guides/" style={{ color: "#4A6280", fontSize: 12, textDecoration: "none", fontFamily: "inherit" }}>Guides</a>
             <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}>Une question ? bonjour@montotor.fr</a>
           </div>
