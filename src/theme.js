@@ -10,6 +10,11 @@ export const PAPER = "#F0F4F8";
 
 export const CSS = `
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+  /* Cockpit intermittent (desktop) : les deux colonnes s'équilibrent TOUTES SEULES
+     (multicolonnes CSS). Chaque carte est insécable et garde son espacement. */
+  @media (min-width: 901px) {
+    .cockpit-masonry > div > * { break-inside: avoid; page-break-inside: avoid; margin-bottom: 16px; }
+  }
   @keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(224,83,61,0.5); } 50% { box-shadow: 0 0 0 6px rgba(224,83,61,0); } }
   @keyframes fadeInDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes shrink { from { width: 100%; } to { width: 0%; } }

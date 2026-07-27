@@ -9,6 +9,29 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "27 juillet 2026",
+    titre: "Je sais enfin calculer l'allocation des techniciens",
+    items: [
+      { qui: "intermittent", texte: "Techniciens et ouvriers du spectacle (annexe 8) : je calcule maintenant votre allocation journalière. Jusqu'ici je me taisais, parce que je n'avais jamais pu vérifier mon calcul sur un vrai dossier de technicien. C'est vérifié : je me suis confronté au simulateur officiel de France Travail sur vingt-quatre situations différentes, et je tombe juste." },
+      { qui: "intermittent", texte: "Je ne me tais plus non plus au-dessus de 60 € par jour. Le calcul des cotisations qui me manquait à ce niveau est percé, y compris la règle qui empêche la CSG de faire descendre ton allocation sous un certain plancher." },
+      { qui: "intermittent", texte: "J'ai trouvé une erreur chez moi au passage, et je la corrige : le plafond de l'allocation journalière que j'utilisais était trop haut. Pour les très gros salaires, j'annonçais plus que la réalité. C'est réparé." },
+      { qui: "intermittent", texte: "Ma règle ne change pas d'un pouce : je ne te donne un chiffre que si je l'ai vérifié ailleurs qu'en moi-même. C'est juste que maintenant, j'en ai vérifié beaucoup plus." },
+      { qui: "tous", texte: "Nouveau simulateur en accès libre sur montotor.fr/simulateur-allocation-intermittent : calcule ton allocation journalière sans compte et sans email. Tu peux le partager à qui tu veux, même à quelqu'un qui n'a pas l'application. Et contrairement aux autres, il te donne ton NET, pas seulement ton brut." },
+      { qui: "intermittent", texte: "Nouvelle entrée « Simuler une allocation » dans ton menu. Elle s'ouvre déjà remplie avec tes vrais chiffres : tu changes ce que tu veux pour voir l'effet, plus d'heures, un meilleur cachet, l'autre annexe. Ton dossier n'est pas touché, c'est un brouillon." },
+      { qui: "intermittent", texte: "Tes actualisations passées se déplient : tape sur une ligne de ton historique et tu revois exactement ce que tu avais déclaré ce mois-là, employeur par employeur, avec la date à laquelle tu l'as fait. Sur l'écran Actualisation comme dans Mes documents." },
+    ],
+  },
+  {
+    date: "26 juillet 2026",
+    titre: "Ton classeur, et tes différés comptés",
+    items: [
+      { qui: "intermittent", texte: "Nouvel onglet « Mon classeur » dans Mes documents : dépose tes contrats, bulletins de paie et certificats Congés Spectacles, je les range par employeur. Plus besoin de fouiller la boîte mail de la production le jour où on te les réclame." },
+      { qui: "intermittent", texte: "Les différés d'indemnisation (congés payés, salaires) entrent enfin dans l'estimation de ton mois : tu recopies ce qu'il te reste depuis ta notification, je déduis les bons jours et je te dis ce qu'il restera après." },
+      { qui: "intermittent", texte: "Dans « Mes AEM », chaque ligne a maintenant son bouton « Voir » : le document original s'il est conservé, sinon tout ce que j'en ai retenu (employeur, période, cachets, brut), avec la modification à un clic." },
+      { qui: "intermittent", texte: "Ton compteur d'heures actuel s'affiche en grand sur le cockpit, à côté de ce qu'il te reste à faire." },
+    ],
+  },
+  {
     date: "24 juillet 2026",
     titre: "Ton prochain renouvellement, projeté",
     items: [

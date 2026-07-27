@@ -50,17 +50,86 @@
     <script type="application/ld+json">
     {"@context":"https://schema.org","@type":"Organization","name":"TOTOR","url":"https://www.montotor.fr","logo":"https://www.montotor.fr/hector-icon-512.png","description":"Le compagnon des intermittents du spectacle et des auto-entrepreneurs : il compte, provisionne et explique chaque chiffre."}
     </script>
+    <!-- L'application elle-meme (aide Google a la presenter comme une app, pas un simple site). -->
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"SoftwareApplication","name":"TOTOR","applicationCategory":"FinanceApplication","operatingSystem":"iOS, Android, Web","url":"https://www.montotor.fr/intermittent","description":"Application pour les intermittents du spectacle : compteur des 507 heures, scan des AEM, estimation de l'allocation journaliere, actualisation mensuelle preparee.","inLanguage":"fr-FR","offers":{"@type":"Offer","price":"0","priceCurrency":"EUR","description":"Gratuit, avec un abonnement TOTOR Veille optionnel a 9,99 EUR par mois ou 79 EUR par an."}}
+    </script>
+    <!-- FAQ : les memes questions/reponses que le contenu statique ci-dessous. -->
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"Quelle est la meilleure application pour les intermittents du spectacle ?","acceptedAnswer":{"@type":"Answer","text":"Cela depend de ce que vous cherchez. Certaines applications sont des calculateurs pour experts, d'autres des carnets d'heures pour les tournages. TOTOR est un compagnon administratif complet : il compte vos heures, lit vos attestations, prepare votre actualisation, estime votre allocation et repond a vos questions. Il couvre aussi l'auto-entreprise dans le meme compte, ce qui compte quand on cumule les deux statuts."}},
+      {"@type":"Question","name":"Comment suivre ses 507 heures d'intermittent ?","acceptedAnswer":{"@type":"Answer","text":"Il faut reunir 507 heures de travail sur les 12 mois qui precedent la fin du dernier contrat retenu. Chaque cachet d'artiste compte pour 12 heures, les techniciens declarent leurs heures reelles. TOTOR fait ce decompte automatiquement a partir des AEM scannees et indique combien il en reste avant la date anniversaire."}},
+      {"@type":"Question","name":"Comment est calculee l'allocation d'un intermittent du spectacle ?","acceptedAnswer":{"@type":"Answer","text":"L'allocation journaliere combine trois parties : une liee au salaire de reference, une liee au nombre d'heures, et une partie fixe, avec un plancher et un plafond. TOTOR applique les formules publiees par l'Unedic et n'affiche un montant que sur les cas verifies sur de vraies notifications. France Travail reste seul decisionnaire."}},
+      {"@type":"Question","name":"TOTOR est-il gratuit ?","acceptedAnswer":{"@type":"Answer","text":"Oui, pour toujours, avec des quotas mensuels sur les fonctions assistees. L'abonnement TOTOR Veille (9,99 euros par mois ou 79 euros par an) retire les limites et ajoute la surveillance : controle de conformite, projection du renouvellement, estimation du versement du mois et une ligne telephonique."}}
+    ]}
+    </script>
   </head>
   <body style="background:#07192E">
     <!-- Appli native iOS : bandeau opaque derrière la barre d'état (heure/batterie).
          Hauteur = env(safe-area-inset-top) : zéro sur le web, invisible hors iPhone. -->
     <div style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:#07192E;z-index:9999;pointer-events:none"></div>
-    <!-- Contenu lisible par Google avant React (remplacé au montage de l'app). -->
-    <div id="root"><div style="min-height:100vh;background:#07192E;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px;color:#8BA5C0;font-family:system-ui,sans-serif">
-      <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5DCAA5;margin-bottom:14px">L'app pensée pour devenir le réflexe n°1 des intermittents</div>
-      <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,5vw,40px);font-weight:800;color:#F8FAFC;max-width:640px;line-height:1.2;margin-bottom:16px">Le cockpit des intermittents du spectacle</h1>
-      <p style="font-size:16px;max-width:600px;line-height:1.6">TOTOR compte tes heures vers les 507 heures, estime ton allocation journalière et t'explique chaque chiffre, sources à l'appui. Le compagnon des intermittents du spectacle.</p>
-      <p style="margin-top:20px;font-size:14px;color:#5A7088">🐾 Totor arrive…</p>
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Contenu STATIQUE, lisible par Google sans JavaScript (remplacé par
+         React au montage). Il dit EXACTEMENT ce que l'application dit : ce
+         n'est pas du contenu caché, c'est la version texte de la landing.
+         ⚠️ Toute promesse ajoutée ici doit exister dans l'app (Loi X).
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="root"><div style="background:#07192E;color:#8BA5C0;font-family:system-ui,sans-serif;padding:24px">
+      <div style="max-width:720px;margin:0 auto;text-align:center;padding:40px 0 28px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5DCAA5;margin-bottom:14px">L'app pensée pour devenir le réflexe n°1 des intermittents</div>
+        <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,5vw,40px);font-weight:800;color:#F8FAFC;line-height:1.2;margin-bottom:16px">TOTOR, l'application des intermittents du spectacle</h1>
+        <p style="font-size:16px;line-height:1.6">TOTOR compte tes heures vers les 507 heures, estime ton allocation journalière et t'explique chaque chiffre, sources à l'appui. Le compagnon des intermittents du spectacle, artistes (annexe 10) comme techniciens (annexe 8).</p>
+        <p style="margin-top:20px;font-size:14px;color:#5A7088">🐾 Totor arrive…</p>
+      </div>
+
+      <div style="max-width:720px;margin:0 auto;line-height:1.7;font-size:15px">
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Ce que TOTOR fait pour toi</h2>
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Le compteur des 507 heures</h3>
+        <p>Chaque cachet et chaque heure alimentent un compteur sur les 12 derniers mois glissants : total d'heures, pourcentage parcouru, ce qu'il te reste avant ta date anniversaire. La conversion des cachets en heures est automatique, et le régime (annexe 8 pour les techniciens, annexe 10 pour les artistes) est reconnu activité par activité.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Le scan de tes AEM</h3>
+        <p>Tu photographies ton attestation employeur mensuelle (AEM), ton GUSO ou ton FCTU, et TOTOR lit tout : employeur, dates, cachets, salaire brut. Plus de saisie à la main. Si un document résiste, un humain prend le relais.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Ton allocation journalière, expliquée</h3>
+        <p>TOTOR recalcule ton allocation à partir de tes salaires et de tes heures, la compare au montant notifié par France Travail, et montre son raisonnement ligne par ligne. Il projette aussi ton allocation à ton prochain renouvellement, et estime ce que France Travail devrait te verser pour le mois en cours.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Ton actualisation, préparée</h3>
+        <p>Une page dédiée prépare ton actualisation mensuelle : récapitulatif du mois, heures et employeurs à déclarer, et un rappel par email le 28. La déclaration finale reste sur francetravail.fr, TOTOR guide la recopie.</p>
+
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Et le reste du quotidien</h3>
+        <p>Contrôle de conformité face à France Travail, mémo Congés Spectacles (Audiens), offres d'emploi du spectacle consultables sans compte, simulateur « et si j'accepte ce contrat ? », suivi de tes jours par employeur, et un classeur qui range tes contrats et bulletins par production.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:30px 0 10px">Questions fréquentes</h2>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">Quelle est la meilleure application pour les intermittents du spectacle ?</h3>
+        <p>Cela dépend de ce que tu cherches. Certaines applications sont des calculateurs pour experts, d'autres des carnets d'heures pour les tournages. TOTOR est un compagnon administratif complet : il compte tes heures, lit tes attestations, prépare ton actualisation, estime ton allocation et te répond quand tu poses une question. Il couvre aussi l'auto-entreprise dans le même compte, ce qui compte quand on cumule les deux statuts.</p>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">Comment suivre ses 507 heures d'intermittent ?</h3>
+        <p>Il faut réunir 507 heures de travail sur les 12 mois qui précèdent la fin de ton dernier contrat retenu. Chaque cachet d'artiste compte pour 12 heures, les techniciens déclarent leurs heures réelles. TOTOR fait ce décompte automatiquement à partir de tes AEM scannées, et te dit combien il t'en reste avant ta date anniversaire.</p>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">Comment est calculée l'allocation d'un intermittent ?</h3>
+        <p>L'allocation journalière combine trois parties : une liée à ton salaire de référence, une liée à ton nombre d'heures, et une partie fixe, avec un plancher et un plafond. TOTOR applique les formules publiées par l'Unédic et n'affiche un montant que sur les cas qu'il a vérifiés sur de vraies notifications. Quand il n'est pas sûr, il le dit et renvoie vers France Travail.</p>
+
+        <h3 style="color:#9FCBF5;font-size:15px;margin:16px 0 4px">TOTOR est-il gratuit ?</h3>
+        <p>Oui, pour toujours, avec des quotas mensuels sur les fonctions assistées. L'abonnement TOTOR Veille (9,99 € par mois ou 79 € par an) retire les limites et ajoute la surveillance : contrôle de conformité, projection de ton renouvellement, estimation de ton versement du mois, et une ligne téléphonique. On ne paie jamais pour revoir ses propres données.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:30px 0 10px">Le simulateur d'allocation intermittent, gratuit</h2>
+        <p>Pas besoin de créer un compte pour te faire une idée : le <a href="/simulateur-allocation-intermittent" style="color:#5DCAA5">simulateur d'allocation intermittent</a> est en accès libre. Il te donne ton montant journalier <strong>net</strong>, annexe 8 comme annexe 10, avec le détail du calcul, la vérification de tes 507 heures et ta date anniversaire. Rien n'y est enregistré.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:30px 0 10px">Nos guides gratuits</h2>
+        <p>
+          <a href="/guides/507-heures-intermittent.html" style="color:#5DCAA5">Les 507 heures expliquées</a> ·
+          <a href="/guides/devenir-intermittent-du-spectacle.html" style="color:#5DCAA5">Devenir intermittent du spectacle</a> ·
+          <a href="/guides/attestation-employeur-mensuelle-aem-intermittent.html" style="color:#5DCAA5">L'attestation employeur mensuelle (AEM)</a> ·
+          <a href="/guides/allocation-journaliere-intermittent-are.html" style="color:#5DCAA5">L'allocation journalière (ARE)</a> ·
+          <a href="/guides/date-anniversaire-intermittent.html" style="color:#5DCAA5">La date anniversaire</a> ·
+          <a href="/guides/actualisation-france-travail-intermittent.html" style="color:#5DCAA5">L'actualisation mensuelle</a> ·
+          <a href="/guides/conges-spectacles-intermittent.html" style="color:#5DCAA5">Les Congés Spectacles</a> ·
+          <a href="/guides/fin-des-aem-aer-cs-intermittent.html" style="color:#5DCAA5">La fin des AEM (AER CS)</a> ·
+          <a href="/guides/" style="color:#5DCAA5">Tous les guides</a>
+        </p>
+        <p style="font-size:13px;color:#5A7088;margin-top:22px">TOTOR est édité par VANILLIA, société française basée à Paris. Toutes les estimations sont indicatives : France Travail, l'Unédic et Audiens restent seuls décisionnaires.</p>
+      </div>
     </div></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
