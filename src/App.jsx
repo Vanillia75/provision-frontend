@@ -6203,6 +6203,19 @@ function AppInner() {
     // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
     // Format : { texte: "…", prenom: "…", metier: "…" }
     const TEMOIGNAGES = [
+      // Alunal — avis PUBLIC 5/5 laissé sur l'App Store le 24/07/2026 (« PARFAIT ! »),
+      // récupéré via le flux RSS Apple. EXTRAIT, coupes marquées par […], aucun mot
+      // ajouté ni modifié.
+      // ⚠️ DEUX PHRASES RETIRÉES VOLONTAIREMENT : elle écrivait « on peut appeler
+      // facilement un vrai humain au téléphone ». C'est FAUX, la ligne est tenue par
+      // l'assistant vocal. Sur l'App Store ce sont ses mots ; recopié ici ce serait
+      // NOTRE promesse commerciale. On ne publie pas une promesse qu'on ne tient pas.
+      {
+        texte: "Vraiment, il y a tout ce dont j’ai besoin. Je suis intermittente. […] Ça scan mes aem, ça calcule tout, y compris sur que me doit France Travail. Je peux anticiper et faire des simulations. C’est super précis. […] Belle ergo et Totor est trop chou.",
+        prenom: "Alunal",
+        metier: "sur l'App Store",
+        note: 5,
+      },
       // Héloïse — avis reçu le 13/07/2026 par le circuit /avis, consentement
       // publication OUI (prénom + métier). Citation VERBATIM, jamais retouchée.
       // note : donnée par email à Camille (5/5, réponse au Reply-To, preuve conservée).
@@ -6945,16 +6958,16 @@ function AppInner() {
                 <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
               </div>
               {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: isMobile ? 14 : 18 }}>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 14, alignItems: "stretch" }}>
                 {TEMOIGNAGES.map((t, i) => (
-                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: isMobile ? "20px 18px" : "26px 26px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: isMobile ? "16px 15px" : "18px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
                     {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
                     {t.note >= 1 && (
                       <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
                         {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
                       </div>
                     )}
-                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 15 : 16.5, color: "#C9D8E8", lineHeight: 1.6, fontStyle: "italic", margin: "0 0 12px" }}>« {t.texte} »</p>
+                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 13.5 : 14, color: "#C9D8E8", lineHeight: 1.55, fontStyle: "italic", margin: "0 0 10px" }}>« {t.texte} »</p>
                     <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
                   </div>
                 ))}
@@ -7025,7 +7038,9 @@ function AppInner() {
 
         {/* ===== FOOTER ===== */}
         <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", gap: 16 }}>
+          {/* flexWrap : sans lui, les 8 liens restaient sur UNE ligne de 673 px
+              et faisaient defiler tout le landing lateralement sur mobile. */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 16, rowGap: 10 }}>
             {[
               { page: "nouveautes", label: "Nouveautés" },
               { page: "mentions", label: "Mentions légales" },
