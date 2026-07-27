@@ -56,10 +56,16 @@ function LigneDetail({ intitule, valeur, fort, vert }) {
   );
 }
 
-export function SimulateurPublic({ onBack, onInscription }) {
-  const [annexe, setAnnexe] = useState("annexe10");
-  const [heures, setHeures] = useState("");
-  const [salaire, setSalaire] = useState("");
+// dansLApp : rendu à l'intérieur de l'espace intermittent connecté. On enlève
+//   alors l'habillage de page publique (le grand titre, le contenu explicatif
+//   écrit pour Google, l'invitation à s'inscrire) et on garde l'outil.
+// initial : les vrais chiffres de la personne, pour que l'écran s'ouvre déjà
+//   rempli. Retaper ce que Totor sait déjà n'aurait aucun sens : ici l'outil
+//   sert à tester une AUTRE situation que la sienne.
+export function SimulateurPublic({ onBack, onInscription, initial, dansLApp }) {
+  const [annexe, setAnnexe] = useState(initial?.annexe === "annexe8" ? "annexe8" : "annexe10");
+  const [heures, setHeures] = useState(initial?.heures != null ? String(initial.heures) : "");
+  const [salaire, setSalaire] = useState(initial?.salaire != null ? String(initial.salaire) : "");
   const [avance, setAvance] = useState(false);
   const [hEnseignement, setHEnseignement] = useState("");
   const [hFormation, setHFormation] = useState("");
@@ -106,30 +112,51 @@ export function SimulateurPublic({ onBack, onInscription }) {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
-      <style>{CSS}</style>
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
+    <div style={dansLApp ? undefined : { minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
+      {!dansLApp && <style>{CSS}</style>}
+      <div style={dansLApp ? undefined : { maxWidth: 720, margin: "0 auto" }}>
 
-        {onBack && (
+        {onBack && !dansLApp && (
           <button type="button" onClick={onBack}
             style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", minHeight: 40, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", marginBottom: 24 }}>
             ← Retour
           </button>
         )}
 
-        <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: VERT, marginBottom: 10 }}>Gratuit, sans compte</div>
-        <h1 style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 12px" }}>
-          Simulateur d'allocation intermittent du spectacle
-        </h1>
-        <p style={{ fontSize: 14.5, color: "#8BA5C0", lineHeight: 1.7, margin: "0 0 10px", maxWidth: 620 }}>
-          Calcule ton allocation journalière (ARE) en annexe 8 ou annexe 10, à partir de tes heures
-          et de tes salaires bruts des 12 derniers mois.
-        </p>
-        <p style={{ fontSize: 14.5, color: "#C5D4E3", lineHeight: 1.7, margin: "0 0 26px", maxWidth: 620 }}>
-          <strong style={{ color: VERT }}>Ici tu vois ton NET, pas seulement ton brut.</strong>{" "}
-          La plupart des simulateurs s'arrêtent au montant brut. Je déduis pour toi la retraite
-          complémentaire et la CSG, écrêtement compris, et je te montre le détail du calcul.
-        </p>
+        {dansLApp ? (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
+              <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <i className="ti ti-coins" aria-hidden="true" style={{ color: VERT, fontSize: 22 }} />
+              </div>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Simuler une allocation 🐾</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Change un chiffre, je recalcule tout.</div>
+              </div>
+            </div>
+            <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.7, margin: "0 0 22px" }}>
+              {initial?.heures != null
+                ? <>J'ai déjà mis <strong style={{ color: "#C5D4E3" }}>tes chiffres à toi</strong>. Modifie ce que tu veux pour voir l'effet : plus d'heures, un meilleur cachet, l'autre annexe. Ton dossier réel n'est pas touché, c'est un brouillon.</>
+                : <>Entre des heures et des salaires pour voir ce que ça donnerait. Ton dossier réel n'est pas touché, c'est un brouillon.</>}
+            </p>
+          </>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, fontWeight: 700, letterSpacing: "1.5px", textTransform: "uppercase", color: VERT, marginBottom: 10 }}>Gratuit, sans compte</div>
+            <h1 style={{ fontFamily: SERIF, fontSize: 32, fontWeight: 800, color: "white", lineHeight: 1.2, margin: "0 0 12px" }}>
+              Simulateur d'allocation intermittent du spectacle
+            </h1>
+            <p style={{ fontSize: 14.5, color: "#8BA5C0", lineHeight: 1.7, margin: "0 0 10px", maxWidth: 620 }}>
+              Calcule ton allocation journalière (ARE) en annexe 8 ou annexe 10, à partir de tes heures
+              et de tes salaires bruts des 12 derniers mois.
+            </p>
+            <p style={{ fontSize: 14.5, color: "#C5D4E3", lineHeight: 1.7, margin: "0 0 26px", maxWidth: 620 }}>
+              <strong style={{ color: VERT }}>Ici tu vois ton NET, pas seulement ton brut.</strong>{" "}
+              La plupart des simulateurs s'arrêtent au montant brut. Je déduis pour toi la retraite
+              complémentaire et la CSG, écrêtement compris, et je te montre le détail du calcul.
+            </p>
+          </>
+        )}
 
         {/* ── Le formulaire ─────────────────────────────────────────────── */}
         <form onSubmit={calculer} style={carte}>
@@ -319,7 +346,8 @@ export function SimulateurPublic({ onBack, onInscription }) {
               </div>
             )}
 
-            {/* L'invitation, sans forcer */}
+            {/* L'invitation, sans forcer. Inutile pour quelqu'un déjà connecté. */}
+            {!dansLApp && (
             <div style={{ ...carte, background: "rgba(55,138,221,0.08)", borderColor: "rgba(55,138,221,0.28)" }}>
               <h2 style={{ fontFamily: SERIF, fontSize: 20, fontWeight: 700, color: "white", margin: "0 0 10px", lineHeight: 1.3 }}>
                 Et ton mois prochain, il ressemble à quoi ?
@@ -337,6 +365,7 @@ export function SimulateurPublic({ onBack, onInscription }) {
                 </button>
               )}
             </div>
+            )}
 
             <p style={{ fontSize: 11.5, color: "#7E93A8", lineHeight: 1.7, margin: "0 0 24px" }}>
               {res.avertissement}
@@ -344,7 +373,9 @@ export function SimulateurPublic({ onBack, onInscription }) {
           </>
         )}
 
-        {/* ── Contenu explicatif (utile aux gens, et lu par Google) ──────── */}
+        {/* ── Contenu explicatif (utile aux gens, et lu par Google). Dans
+             l'application, c'est du bruit : la page « Comprendre » est là. ── */}
+        {!dansLApp && (<>
         <div style={carte}>
           <h2 style={{ fontFamily: SERIF, fontSize: 22, fontWeight: 700, color: "white", margin: "0 0 14px", lineHeight: 1.3 }}>
             Comment se calcule l'allocation d'un intermittent ?
@@ -389,6 +420,7 @@ export function SimulateurPublic({ onBack, onInscription }) {
           Une question, une erreur, un cas que je ne gère pas ?{" "}
           <a href="mailto:bonjour@montotor.fr" style={{ color: VERT, fontWeight: 700, textDecoration: "none" }}>bonjour@montotor.fr</a>
         </p>
+        </>)}
       </div>
     </div>
   );

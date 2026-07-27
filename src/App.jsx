@@ -7984,6 +7984,7 @@ function AppInner() {
       { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
       { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
+      { id: "simulateur", icon: "ti-coins", label: "Simuler une allocation", dispo: true },
       { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
@@ -9977,6 +9978,23 @@ function AppInner() {
                 </div>
               )}
               </>)}
+
+              {/* ═══ SIMULER UNE ALLOCATION (27/07, demande Camille) ═══
+                   Le MÊME outil que la page publique, mais pré-rempli avec les
+                   vrais chiffres de la personne : retaper ce que Totor sait
+                   déjà n'aurait aucun sens. Ici il sert à tester une AUTRE
+                   situation (plus d'heures, un meilleur cachet, l'autre annexe)
+                   sans toucher au dossier réel. */}
+              {interNav === "simulateur" && (
+                <SimulateurPublic
+                  dansLApp
+                  initial={{
+                    annexe: profile?.annexe_allocation || null,
+                    heures: profile?.heures_reference ?? null,
+                    salaire: profile?.salaire_reference ?? null,
+                  }}
+                />
+              )}
 
               {/* ═══ PAGE CENTRE DE CALCUL TOTOR — conversationnel ═══ */}
               {interNav === "calcul" && (<>
