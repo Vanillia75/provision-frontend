@@ -185,6 +185,18 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
 }
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
+// Sommes-nous dans l'appli ANDROID ? (jamais sur le web : window.Capacitor
+// n'y existe pas, la fonction renvoie donc false et rien ne change.)
+// Sert au bouton « Continuer avec Google » natif : sur Android il faut passer
+// par les services Google du téléphone, la version web étant refusée en WebView.
+function estAndroidNatif() {
+  try {
+    return window.Capacitor?.isNativePlatform?.() === true
+      && window.Capacitor?.getPlatform?.() === "android";
+  } catch { return false; }
+}
+const EST_ANDROID_NATIF = estAndroidNatif();
+
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
 // Passe à false une fois la prod validée pour réactiver le bouton de connexion.
 // Connexion bancaire : la disponibilité est désormais décidée par le serveur
@@ -1508,6 +1520,45 @@ function AppInner() {
       .then(data => { clearLocalAccountData(); safeStorage.setItem("token", data.token); setToken(data.token); })
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  CONNEXION GOOGLE DANS L'APP ANDROID (27/07/2026, retour de Camille)
+  //  Google REFUSE son bouton web à l'intérieur d'une WebView : dans les applis
+  //  natives il était donc masqué. Conséquence absurde, restée invisible
+  //  jusqu'ici : sur Android, le système de Google, on ne pouvait PAS se
+  //  connecter avec Google. Les gens n'avaient que l'email, quand iPhone avait
+  //  « Se connecter avec Apple ».
+  //  Solution : passer par les services Google du téléphone (pas une page web).
+  //  Le jeton demandé vise notre identifiant WEB (`serverClientId`), donc le
+  //  serveur ne change pas d'un octet : /auth/google le vérifie déjà.
+  //  Le module est chargé À LA DEMANDE : le site web ne l'embarque jamais.
+  // ─────────────────────────────────────────────────────────────────────────
+  async function handleGoogleNatif() {
+    setError("");
+    setLoading(true);
+    try {
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
+      await SocialLogin.initialize({ google: { webClientId: GOOGLE_CLIENT_ID } });
+      const res = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
+      const jeton = res?.result?.idToken;
+      if (!jeton) throw new Error("Google n'a pas renvoyé de jeton. Réessaie, ou crée ton compte avec un email.");
+      const data = await apiFetch("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential: jeton, gclid: safeStorage.getItem("gclid") || null }),
+      });
+      clearLocalAccountData();
+      safeStorage.setItem("token", data.token);
+      setToken(data.token);
+    } catch (err) {
+      // L'utilisateur qui ferme la fenêtre Google n'a pas à voir une erreur.
+      const m = String(err?.message || "");
+      if (!/cancel|canceled|cancelled|annul/i.test(m)) {
+        setError(m || "La connexion Google n'a pas abouti. Tu peux aussi utiliser ton email.");
+      }
+    } finally {
+      setLoading(false);
+    }
   }
 
   // « Se connecter avec Apple » sur le web : même fin de parcours que Google.
@@ -6063,6 +6114,23 @@ function AppInner() {
                   {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
                   {error && <div style={S.errorBanner}>{error}</div>}
                   <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
+                  {/* Bouton Google NATIF, uniquement dans l'appli Android : le bouton
+                      web ci-dessus y est refusé par Google (WebView). Sur le site et
+                      sur iPhone, ce bloc ne s'affiche jamais. */}
+                  {EST_ANDROID_NATIF && (
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                      <button type="button" onClick={handleGoogleNatif} disabled={loading}
+                        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, width: 360, maxWidth: "100%", minHeight: 44, background: "white", color: "#1f1f1f", border: "1px solid #dadce0", borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "inherit", cursor: loading ? "default" : "pointer", opacity: loading ? 0.55 : 1 }}>
+                        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.9 6.1C12.2 13.2 17.6 9.5 24 9.5z" />
+                          <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.1 5.5c4.2-3.8 6.6-9.5 6.6-16.2z" />
+                          <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.4s.3-3 .8-4.4l-7.9-6.1C.9 17 0 20.4 0 24s.9 7 2.5 10.2l7.9-5.5z" />
+                          <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.5 2.1-8.8 2.1-6.4 0-11.8-3.7-13.6-8.9l-7.9 5.5C6.4 42.6 14.6 48 24 48z" />
+                        </svg>
+                        {authMode === "login" ? "Se connecter avec Google" : "Continuer avec Google"}
+                      </button>
+                    </div>
+                  )}
                   {/* Apple sur le web : indispensable pour qui a créé son compte
                       depuis l'iPhone avec Apple (ces gens n'ont pas de mot de passe). */}
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
