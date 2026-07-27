@@ -6419,11 +6419,45 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 03 — impayés (aperçu mail de relance) ===== */}
+          {/* ===== 03 — facturation + paiement en ligne (27/07, retour Camille :
+                 la landing racontait les impayés sans jamais dire COMMENT on se
+                 fait payer). C'est le plus gros atout du produit AE, il n'était
+                 nulle part sur la page. ===== */}
           <section style={secShell}>
             <div style={secGrid}>
               <div>
                 <div style={numFantome}>03</div>
+                <h2 style={titreSec}>TOTOR fait tes factures.<br />Tes clients les paient <span style={{ color: "#5DCAA5" }}>en ligne</span>.</h2>
+                <p style={texteSec}>Factures et devis aux normes en deux minutes. Ton client clique, paie par carte, et l'argent arrive sur ton compte. Zéro commission TOTOR.</p>
+              </div>
+              <div style={demoFondu}>
+                {/* Aperçu d'une facture telle que la reçoit le client */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, paddingBottom: 12, borderBottom: "1px solid rgba(255,255,255,0.07)", marginBottom: 14 }}>
+                  <i className="ti ti-file-invoice" aria-hidden="true" style={{ fontSize: 16, color: "#5DCAA5" }} />
+                  <span style={{ fontSize: 12.5, color: "#8BA5C0" }}>Facture 2024-042 · Studio Marie</span>
+                </div>
+                <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 12, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13.5, color: "#B5D4F4" }}>Création de site vitrine</span>
+                  <span style={{ fontSize: 22, fontWeight: 800, color: "#EAF2FB", whiteSpace: "nowrap" }}>900,00 €</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#6B8299", marginBottom: 16 }}>Échéance le 15 septembre · TVA non applicable, art. 293 B du CGI</div>
+                <div style={{ background: "#5DCAA5", color: "#04342C", borderRadius: 10, padding: "13px 18px", textAlign: "center", fontSize: 14.5, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                  <i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 17 }} />
+                  Payer en ligne
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 14, fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+                  <i className="ti ti-circle-check-filled" aria-hidden="true" style={{ fontSize: 15, color: "#5DCAA5", flexShrink: 0 }} />
+                  <span>Payée par carte le 12 septembre. Trois jours avant l'échéance, sans que tu aies eu à relancer.</span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          {/* ===== 04 — impayés (aperçu mail de relance) ===== */}
+          <section style={secShell}>
+            <div style={secGrid}>
+              <div>
+                <div style={numFantome}>04</div>
                 <h2 style={titreSec}>TOTOR veille sur<br />tes <span style={{ color: "#5DCAA5" }}>impayés</span>.</h2>
                 <p style={texteSec}>Une facture en retard ? Il relance ton client à ta place, un email pro, signé de ton nom, jamais de spam.</p>
               </div>
@@ -6443,11 +6477,11 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 04 — chat AE ===== */}
+          {/* ===== 05 — chat AE ===== */}
           <section style={secShell}>
             <div style={secGrid}>
               <div>
-                <div style={numFantome}>04</div>
+                <div style={numFantome}>05</div>
                 <h2 style={titreSec}>TOTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
                 <p style={texteSec}>Pose ta question en langage naturel. Il te répond clairement, avec le raisonnement.</p>
               </div>
@@ -6475,10 +6509,10 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 05 — Je veille sur toi (identique à l'intermittent, mot pour mot) ===== */}
+          {/* ===== 06 — Je veille sur toi (identique à l'intermittent, mot pour mot) ===== */}
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "58px 22px" : "104px 48px" }}>
             <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
-              <div style={{ ...numFantome, margin: "0 0 6px" }}>05</div>
+              <div style={{ ...numFantome, margin: "0 0 6px" }}>06</div>
               <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
                 {[
@@ -6492,7 +6526,7 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 06 — pont inverse vers l'intermittent ===== */}
+          {/* ===== 07 — pont inverse vers l'intermittent ===== */}
           <section style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "48px 22px" : "64px 48px" }}>
             <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(55,138,221,0.06))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
               <div style={{ marginBottom: 14 }}><i className="ti ti-masks-theater" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
