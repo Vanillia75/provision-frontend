@@ -128,8 +128,11 @@ export function NouveautesPage({ onBack, statut }) {
     .map(v => ({ ...v, items: visibles ? v.items.filter(i => visibles.includes(i.qui)) : v.items }))
     .filter(v => v.items.length > 0);
 
+  // Le haut réserve la barre d'état de l'iPhone : sans ça, le bouton Retour passe
+  // DESSOUS et on ne peut plus sortir de la page autrement qu'en relançant l'app
+  // (constaté par le Mac le 27/07/2026).
   return (
-    <div style={{ minHeight: "100vh", background: "#07192E", padding: "32px 20px" }}>
+    <div style={{ minHeight: "100vh", background: "#07192E", padding: "calc(32px + env(safe-area-inset-top, 0px)) 20px 32px" }}>
       <style>{CSS}</style>
       <div style={{ maxWidth: 720, margin: "0 auto" }}>
         <button onClick={onBack} style={{ background: "none", border: "none", color: "#B5D4F4", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", marginBottom: 20, padding: "6px 2px", display: "flex", alignItems: "center", gap: 6 }}>
