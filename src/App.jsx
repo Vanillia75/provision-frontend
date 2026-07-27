@@ -117,13 +117,16 @@ const IS_NATIVE_APP = isNativeApp();
 // téléchargement au lancement (1er octobre). Réutilisable : landings + page abonnement.
 // Lien réel vers la fiche App Store (app publiée le 15/07/2026, bundle fr.montotor.ios).
 const URL_APP_STORE = "https://apps.apple.com/fr/app/totor/id6789915732";
+// Fiche Google Play : app PUBLIÉE le 27/07/2026 (paquet fr.montotor.android).
+// Vérifié en direct le jour même : la fiche répond et affiche bien « TOTOR ».
+const URL_GOOGLE_PLAY = "https://play.google.com/store/apps/details?id=fr.montotor.android";
 
 function BadgesBientot({ centre }) {
   // Jamais dans une app native (absurde d'annoncer les stores DANS l'app). Web uniquement.
   try { if (window.Capacitor?.isNativePlatform?.()) return null; } catch {}
   const pill = { display: "inline-flex", alignItems: "center", gap: 9, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 11, padding: "9px 15px" };
-  // iOS est EN LIGNE, Android encore en examen : un seul badge est cliquable.
-  // Ne pas repasser Google en « disponible » avant sa publication réelle.
+  // Les DEUX magasins sont en ligne depuis le 27/07/2026 : les deux badges sont
+  // cliquables. (Avant cette date, Google était un badge mort « Bientôt sur ».)
   const pillLive = { ...pill, background: "rgba(93,202,165,0.10)", border: "1px solid rgba(93,202,165,0.45)", textDecoration: "none", cursor: "pointer" };
   return (
     <div style={{ marginTop: 20, textAlign: centre ? "center" : "left" }}>
@@ -136,13 +139,13 @@ function BadgesBientot({ centre }) {
             <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FFFFFF" }}>l'App Store</div>
           </div>
         </a>
-        <div style={pill}>
-          <i className="ti ti-brand-google-play" aria-hidden="true" style={{ fontSize: 21, color: "#E6EDF5" }} />
+        <a href={URL_GOOGLE_PLAY} target="_blank" rel="noopener noreferrer" style={pillLive}>
+          <i className="ti ti-brand-google-play" aria-hidden="true" style={{ fontSize: 21, color: "#5DCAA5" }} />
           <div style={{ lineHeight: 1.15, textAlign: "left" }}>
-            <div style={{ fontSize: 9.5, color: "#8BA5C0" }}>Bientôt sur</div>
-            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>Google Play</div>
+            <div style={{ fontSize: 9.5, color: "#5DCAA5", fontWeight: 600 }}>Disponible sur</div>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FFFFFF" }}>Google Play</div>
           </div>
-        </div>
+        </a>
       </div>
     </div>
   );
@@ -191,6 +194,18 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
   );
 }
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
+
+// Sommes-nous dans l'appli ANDROID ? (jamais sur le web : window.Capacitor
+// n'y existe pas, la fonction renvoie donc false et rien ne change.)
+// Sert au bouton « Continuer avec Google » natif : sur Android il faut passer
+// par les services Google du téléphone, la version web étant refusée en WebView.
+function estAndroidNatif() {
+  try {
+    return window.Capacitor?.isNativePlatform?.() === true
+      && window.Capacitor?.getPlatform?.() === "android";
+  } catch { return false; }
+}
+const EST_ANDROID_NATIF = estAndroidNatif();
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
 // Passe à false une fois la prod validée pour réactiver le bouton de connexion.
@@ -1538,6 +1553,51 @@ function AppInner() {
       .catch(err => setError(err.message))
       .finally(() => setLoading(false));
   }
+
+  // ─────────────────────────────────────────────────────────────────────────
+  //  CONNEXION GOOGLE DANS L'APP ANDROID (27/07/2026, retour de Camille)
+  //  Google REFUSE son bouton web à l'intérieur d'une WebView : dans les applis
+  //  natives il était donc masqué. Conséquence absurde, restée invisible
+  //  jusqu'ici : sur Android, le système de Google, on ne pouvait PAS se
+  //  connecter avec Google. Les gens n'avaient que l'email, quand iPhone avait
+  //  « Se connecter avec Apple ».
+  //  Solution : passer par les services Google du téléphone (pas une page web).
+  //  Le jeton demandé vise notre identifiant WEB (`serverClientId`), donc le
+  //  serveur ne change pas d'un octet : /auth/google le vérifie déjà.
+  //  Le module est chargé À LA DEMANDE : le site web ne l'embarque jamais.
+  // ─────────────────────────────────────────────────────────────────────────
+  async function handleGoogleNatif() {
+    setError("");
+    setLoading(true);
+    try {
+      const { SocialLogin } = await import("@capgo/capacitor-social-login");
+      await SocialLogin.initialize({ google: { webClientId: GOOGLE_CLIENT_ID } });
+      const res = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
+      const jeton = res?.result?.idToken;
+      if (!jeton) throw new Error("Google n'a pas renvoyé de jeton. Réessaie, ou crée ton compte avec un email.");
+      const data = await apiFetch("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ credential: jeton, gclid: safeStorage.getItem("gclid") || null }),
+      });
+      clearLocalAccountData();
+      safeStorage.setItem("token", data.token);
+      setToken(data.token);
+    } catch (err) {
+      // L'utilisateur qui ferme la fenêtre Google n'a pas à voir une erreur.
+      const m = String(err?.message || "");
+      if (!/cancel|canceled|cancelled|annul/i.test(m)) {
+        setError(m || "La connexion Google n'a pas abouti. Tu peux aussi utiliser ton email.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ⚠️ La version WEB de « Se connecter avec Apple » (qui vient de main) a été
+  //    RETIRÉE ici à la fusion du 27/07 : cette branche a déjà sa propre version
+  //    NATIVE plus haut, qui parle à `./appleAuth` au lieu de `./appleAuthWeb`.
+  //    Les garder toutes les deux créait un doublon de nom et une référence à
+  //    `AppleAnnule`, qui n'existe pas sur cette branche. Attrapé par npm run check.
 
   useEffect(() => { safeStorage.setItem("objectifAnnuel", objectifAnnuel); }, [objectifAnnuel]);
   useEffect(() => {
@@ -6337,14 +6397,32 @@ function AppInner() {
                   <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte"}</h2>
                   {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
                   {error && <div style={S.errorBanner}>{error}</div>}
-                  {/* Connexion Google : WEB uniquement. En natif (WebView), Google refuse l'auth :
-                      on masque le bouton ET le séparateur pour un écran de connexion propre. */}
+                  {/* Connexion Google WEB : refusee par Google a l'interieur d'une
+                      WebView, on la masque donc dans les applis natives, separateur
+                      compris, pour un ecran de connexion propre. */}
                   {!IS_NATIVE_APP && (<>
                     <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                     <p style={S.orDivider}>ou avec un email</p>
                   </>)}
+                  {/* Bouton Google NATIF, uniquement dans l'appli Android : le bouton
+                      web ci-dessus y est refusé par Google (WebView). Sur le site et
+                      sur iPhone, ce bloc ne s'affiche jamais. */}
+                  {EST_ANDROID_NATIF && (
+                    <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+                      <button type="button" onClick={handleGoogleNatif} disabled={loading}
+                        style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, width: 360, maxWidth: "100%", minHeight: 44, background: "white", color: "#1f1f1f", border: "1px solid #dadce0", borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "inherit", cursor: loading ? "default" : "pointer", opacity: loading ? 0.55 : 1 }}>
+                        <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+                          <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.6 30.2 0 24 0 14.6 0 6.4 5.4 2.5 13.2l7.9 6.1C12.2 13.2 17.6 9.5 24 9.5z" />
+                          <path fill="#4285F4" d="M46.1 24.6c0-1.6-.1-3.1-.4-4.6H24v9.1h12.4c-.5 2.9-2.2 5.3-4.6 6.9l7.1 5.5c4.2-3.8 6.6-9.5 6.6-16.2z" />
+                          <path fill="#FBBC05" d="M10.4 28.7c-.5-1.4-.8-2.9-.8-4.4s.3-3 .8-4.4l-7.9-6.1C.9 17 0 20.4 0 24s.9 7 2.5 10.2l7.9-5.5z" />
+                          <path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.1-5.5c-2 1.3-4.5 2.1-8.8 2.1-6.4 0-11.8-3.7-13.6-8.9l-7.9 5.5C6.4 42.6 14.6 48 24 48z" />
+                        </svg>
+                        {authMode === "login" ? "Se connecter avec Google" : "Continuer avec Google"}
+                      </button>
+                    </div>
+                  )}
                   {/* « Se connecter avec Apple » : appli iOS uniquement (remplace Google, indispo en WebView).
-                      Fond noir + logo  : présentation imposée par les règles d'Apple. */}
+                      Fond noir + logo : presentation imposee par les regles d'Apple. */}
                   {appleDisponible() && (<>
                     <button type="button" onClick={handleAppleSignIn} disabled={loading}
                       style={{ width: "100%", height: 44, borderRadius: 8, background: "#000", color: "#fff", border: "none", cursor: "pointer", fontFamily: "-apple-system, BlinkMacSystemFont, system-ui, sans-serif", fontSize: 17, fontWeight: 500, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, opacity: loading ? 0.55 : 1 }}>
@@ -9415,11 +9493,19 @@ function AppInner() {
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Ceinture de sécurité posée le 27/07 : minWidth:0 sur le libellé et
+                      flexShrink:0 sur le statut. Par défaut un élément flex a
+                      min-width:auto et refuse de se rétrécir : un libellé long
+                      pousserait alors le statut hors de la carte. ⚠️ Mesuré à 414 px :
+                      il n'y a AUCUN débordement aujourd'hui (Camille l'a confirmé sur
+                      son iPhone), c'est purement préventif pour un futur libellé plus
+                      long. Le texte coupé sur les captures du 26/07 venait de l'outil
+                      de capture, pas de l'application. */}
                   {checklist.lignes.map(l => (
                     <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
-                      <span style={{ fontSize: 16 }}>{l.badge}</span>
-                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
-                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{l.badge}</span>
+                      <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
+                      <span style={{ fontSize: 11, color: l.coul, flexShrink: 0, textAlign: "right" }}>{l.statut}</span>
                     </div>
                   ))}
                 </div>
