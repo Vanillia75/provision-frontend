@@ -1540,7 +1540,11 @@ function AppInner() {
     try {
       const { SocialLogin } = await import("@capgo/capacitor-social-login");
       await SocialLogin.initialize({ google: { webClientId: GOOGLE_CLIENT_ID } });
-      const res = await SocialLogin.login({ provider: "google", options: { scopes: ["email", "profile"] } });
+      // ⚠️ NE PAS passer `scopes` : le module exige alors une modification du code
+      //    natif et refuse net (« You CANNOT use scopes without modifying the main
+      //    activity »). L'email et le profil sont de toute façon fournis par défaut,
+      //    et c'est tout ce dont /auth/google a besoin.
+      const res = await SocialLogin.login({ provider: "google", options: {} });
       const jeton = res?.result?.idToken;
       if (!jeton) throw new Error("Google n'a pas renvoyé de jeton. Réessaie, ou crée ton compte avec un email.");
       const data = await apiFetch("/auth/google", {
