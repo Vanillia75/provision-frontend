@@ -185,17 +185,24 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
 }
 const GOOGLE_CLIENT_ID = "1008678142157-vnr5cogc1rvhvenemcahi373adnvvpln.apps.googleusercontent.com";
 
-// Sommes-nous dans l'appli ANDROID ? (jamais sur le web : window.Capacitor
-// n'y existe pas, la fonction renvoie donc false et rien ne change.)
-// Sert au bouton « Continuer avec Google » natif : sur Android il faut passer
-// par les services Google du téléphone, la version web étant refusée en WebView.
-function estAndroidNatif() {
+// Identifiant iOS. Le SDK Google d'Apple exige le sien et refuse l'identifiant
+// web ci-dessus. Conséquence : dans l'appli iPhone, le jeton renvoyé par Google
+// vise CET identifiant, alors que le site et Android visent le web. C'est pour
+// ça que le serveur accepte deux destinataires (variable GOOGLE_AUDIENCES).
+const GOOGLE_CLIENT_ID_IOS = "1008678142157-v41cuhu49lu6be55qdb4mbdpoq8vq8ch.apps.googleusercontent.com";
+
+// Dans quelle appli sommes-nous ? Renvoie "android", "ios", ou "" sur le web
+// (window.Capacitor n'existe pas sur le site, donc rien ne change là-bas).
+// Sert au bouton « Se connecter avec Google » natif : dans les deux applis il
+// faut passer par le système du téléphone, le bouton web étant refusé en WebView.
+function plateformeNative() {
   try {
-    return window.Capacitor?.isNativePlatform?.() === true
-      && window.Capacitor?.getPlatform?.() === "android";
-  } catch { return false; }
+    if (window.Capacitor?.isNativePlatform?.() !== true) return "";
+    return window.Capacitor?.getPlatform?.() || "";
+  } catch { return ""; }
 }
-const EST_ANDROID_NATIF = estAndroidNatif();
+const PLATEFORME_NATIVE = plateformeNative();
+const EST_MOBILE_NATIF = PLATEFORME_NATIVE === "android" || PLATEFORME_NATIVE === "ios";
 
 // Connexion bancaire encore en validation production (ticket Powens PCS-75254).
 // Passe à false une fois la prod validée pour réactiver le bouton de connexion.
@@ -1539,7 +1546,14 @@ function AppInner() {
     setLoading(true);
     try {
       const { SocialLogin } = await import("@capgo/capacitor-social-login");
-      await SocialLogin.initialize({ google: { webClientId: GOOGLE_CLIENT_ID } });
+      // Les deux identifiants sont donnés d'un coup : chaque plateforme prend le
+      // sien et ignore l'autre. Android vise le web, iPhone vise l'iOS.
+      await SocialLogin.initialize({
+        google: {
+          webClientId: GOOGLE_CLIENT_ID,
+          iOSClientId: GOOGLE_CLIENT_ID_IOS,
+        },
+      });
       // ⚠️ NE PAS passer `scopes` : le module exige alors une modification du code
       //    natif et refuse net (« You CANNOT use scopes without modifying the main
       //    activity »). L'email et le profil sont de toute façon fournis par défaut,
@@ -6121,7 +6135,7 @@ function AppInner() {
                   {/* Bouton Google NATIF, uniquement dans l'appli Android : le bouton
                       web ci-dessus y est refusé par Google (WebView). Sur le site et
                       sur iPhone, ce bloc ne s'affiche jamais. */}
-                  {EST_ANDROID_NATIF && (
+                  {EST_MOBILE_NATIF && (
                     <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
                       <button type="button" onClick={handleGoogleNatif} disabled={loading}
                         style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, width: 360, maxWidth: "100%", minHeight: 44, background: "white", color: "#1f1f1f", border: "1px solid #dadce0", borderRadius: 8, fontSize: 15, fontWeight: 600, fontFamily: "inherit", cursor: loading ? "default" : "pointer", opacity: loading ? 0.55 : 1 }}>
