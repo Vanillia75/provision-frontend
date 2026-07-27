@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/hector-icon-180.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#07192E" />
+    <title>Simulateur allocation intermittent du spectacle — gratuit, sans compte | TOTOR</title>
+    <meta name="description" content="Calcule ton allocation journalière d'intermittent (annexe 8 ou annexe 10) gratuitement et sans inscription. Montant NET, pas seulement brut : retraite complémentaire et CSG déduites, détail du calcul affiché." />
+    <link rel="canonical" href="https://www.montotor.fr/simulateur-allocation-intermittent" />
+
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Totor" />
+
+    <!-- Open Graph : apercu lors du partage (WhatsApp, Instagram, Facebook, LinkedIn) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://www.montotor.fr/simulateur-allocation-intermittent" />
+    <meta property="og:title" content="Simulateur allocation intermittent du spectacle — gratuit, sans compte" />
+    <meta property="og:description" content="Ton allocation journalière en annexe 8 ou 10, en NET et pas seulement en brut. Gratuit, sans inscription, rien n'est enregistré." />
+    <meta property="og:image" content="https://www.montotor.fr/totor-banniere.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:site_name" content="TOTOR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Simulateur allocation intermittent du spectacle — gratuit, sans compte" />
+    <meta name="twitter:description" content="Ton allocation journalière en annexe 8 ou 10, en NET et pas seulement en brut. Gratuit, sans inscription." />
+    <meta name="twitter:image" content="https://www.montotor.fr/totor-banniere.png" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont/dist/tabler-icons.min.css" rel="stylesheet" />
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"Organization","name":"TOTOR","url":"https://www.montotor.fr","logo":"https://www.montotor.fr/hector-icon-512.png","description":"Le compagnon des intermittents du spectacle et des auto-entrepreneurs : il compte, provisionne et explique chaque chiffre."}
+    </script>
+    <!-- L'outil lui-meme : un simulateur en acces libre. -->
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"WebApplication","name":"Simulateur d'allocation intermittent du spectacle","applicationCategory":"FinanceApplication","operatingSystem":"Web","url":"https://www.montotor.fr/simulateur-allocation-intermittent","description":"Calcul gratuit et sans inscription de l'allocation journaliere (ARE) des intermittents du spectacle, annexes 8 et 10. Affiche le montant net apres retraite complementaire et CSG, avec le detail du calcul.","inLanguage":"fr-FR","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"EUR"},"featureList":["Calcul de l'allocation journaliere annexe 8 et annexe 10","Montant net apres retraite complementaire et CSG","Detail des trois parties du calcul","Verification des 507 heures","Franchise conges payes","Date anniversaire des droits"]}
+    </script>
+    <script type="application/ld+json">
+    {"@context":"https://schema.org","@type":"FAQPage","mainEntity":[
+      {"@type":"Question","name":"Comment calculer son allocation d'intermittent du spectacle ?","acceptedAnswer":{"@type":"Answer","text":"L'allocation journaliere des annexes 8 et 10 additionne trois parties : une part calculee sur les salaires bruts des 12 derniers mois, une part calculee sur les heures travaillees, et une part fixe. Un plancher et un plafond s'appliquent. Il faut ensuite deduire la retraite complementaire puis la CSG et la CRDS pour obtenir le montant net."}},
+      {"@type":"Question","name":"Le simulateur est-il gratuit et faut-il creer un compte ?","acceptedAnswer":{"@type":"Answer","text":"Le simulateur est entierement gratuit et ne demande ni compte, ni adresse email. Aucune des informations saisies n'est enregistree : elles servent au calcul puis disparaissent."}},
+      {"@type":"Question","name":"Quelle difference entre l'allocation brute et l'allocation nette ?","acceptedAnswer":{"@type":"Answer","text":"L'allocation brute est le montant avant retenues. France Travail retient d'abord une cotisation de retraite complementaire, puis la CSG et la CRDS. Ces retenues ne peuvent pas faire descendre l'allocation sous un plancher legal : si l'allocation est deja sous ce plancher, aucune CSG n'est prelevee, et si elle est juste au-dessus, la retenue est reduite pour y ramener. La plupart des simulateurs n'affichent que le brut."}},
+      {"@type":"Question","name":"Quelle est la difference entre l'annexe 8 et l'annexe 10 ?","acceptedAnswer":{"@type":"Answer","text":"L'annexe 10 couvre les artistes du spectacle : comediens, musiciens, danseurs, circassiens. Chaque cachet y compte pour 12 heures. L'annexe 8 couvre les techniciens et ouvriers du spectacle : regisseurs, eclairagistes, ingenieurs du son, machinistes, habilleuses, monteurs, dont les heures sont comptees reellement. Les deux demandent 507 heures sur 12 mois, mais leurs formules de calcul different."}},
+      {"@type":"Question","name":"Les heures de formation comptent-elles pour les 507 heures ?","acceptedAnswer":{"@type":"Answer","text":"Oui, les heures de formation suivie et d'enseignement dispense sont assimilees a du travail pour atteindre les 507 heures, dans la limite de 338 heures au total, dont 70 heures maximum d'enseignement. En revanche elles n'augmentent jamais le montant de l'allocation, qui ne se calcule que sur les heures et salaires de travail."}}
+    ]}
+    </script>
+  </head>
+  <body style="background:#07192E">
+    <!-- ═══════════════════════════════════════════════════════════════════
+         Contenu STATIQUE, lisible par Google sans JavaScript (remplacé par
+         React au montage). Il dit EXACTEMENT ce que l'outil fait : ce n'est
+         pas du contenu caché, c'est la version texte de la page.
+         ⚠️ Toute promesse ajoutée ici doit exister dans l'app (Loi X).
+         ═══════════════════════════════════════════════════════════════════ -->
+    <div id="root"><div style="background:#07192E;color:#8BA5C0;font-family:system-ui,sans-serif;padding:24px">
+      <div style="max-width:720px;margin:0 auto;padding:40px 0 28px">
+        <div style="font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:#5DCAA5;margin-bottom:14px">Gratuit, sans compte</div>
+        <h1 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,5vw,40px);font-weight:800;color:#F8FAFC;line-height:1.2;margin-bottom:16px">Simulateur d'allocation intermittent du spectacle</h1>
+        <p style="font-size:16px;line-height:1.6">Calcule ton allocation journalière (ARE) en annexe 8 ou annexe 10, à partir de tes heures et de tes salaires bruts des 12 derniers mois. Sans inscription, sans adresse email, et rien de ce que tu tapes n'est enregistré.</p>
+        <p style="font-size:16px;line-height:1.6;margin-top:14px;color:#C5D4E3"><strong style="color:#5DCAA5">Ici tu vois ton NET, pas seulement ton brut.</strong> La plupart des simulateurs s'arrêtent au montant brut. TOTOR déduit la retraite complémentaire et la CSG, écrêtement compris, et montre le détail du calcul.</p>
+        <p style="margin-top:20px;font-size:14px;color:#5A7088">🐾 Totor arrive…</p>
+      </div>
+
+      <div style="max-width:720px;margin:0 auto;line-height:1.7;font-size:15px">
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Comment se calcule l'allocation d'un intermittent ?</h2>
+        <p>L'allocation journalière des annexes 8 et 10 n'est pas un pourcentage de ton salaire. Elle additionne trois parts : une part calculée sur tes <strong>salaires bruts</strong> des 12 derniers mois, une part calculée sur tes <strong>heures travaillées</strong>, et une part fixe. C'est pour ça que travailler plus d'heures au même tarif fait monter ton allocation, et qu'un gros cachet isolé ne la fait pas exploser. Un plancher garantit un minimum, un plafond limite le maximum.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Du brut au net : ce que les autres simulateurs ne montrent pas</h2>
+        <p>Sur le montant obtenu, France Travail retient d'abord une <strong>cotisation de retraite complémentaire</strong>, puis la <strong>CSG et la CRDS</strong>. Mais ces retenues ne peuvent pas faire descendre ton allocation sous un plancher légal : si tu es déjà en dessous, tu ne paies rien du tout, et si tu es juste au-dessus, la retenue est rabotée pour t'y ramener exactement. C'est cette règle d'écrêtement que la plupart des simulateurs ignorent, et c'est pourquoi ils s'arrêtent au brut.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Annexe 8 ou annexe 10 : laquelle est la tienne ?</h2>
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Annexe 10, les artistes</h3>
+        <p>Comédiens, musiciens, danseurs, chanteurs, circassiens, artistes de complément. Chaque cachet compte pour 12 heures dans le décompte des 507 heures, qu'il soit isolé ou groupé.</p>
+        <h3 style="color:#5DCAA5;font-size:16px;margin:18px 0 6px">Annexe 8, les techniciens et ouvriers</h3>
+        <p>Régisseurs, éclairagistes, ingénieurs du son, machinistes, habilleuses, maquilleuses, décorateurs, monteurs, cadreurs. Les heures sont comptées réellement, telles qu'elles figurent sur les attestations employeur.</p>
+        <p>Les deux annexes demandent <strong>507 heures sur les 12 mois</strong> précédant la fin du dernier contrat retenu, mais leurs formules de calcul et leurs planchers sont différents. C'est pourquoi le simulateur te demande de choisir.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Formation et enseignement : ça compte, mais pas partout</h2>
+        <p>Les heures de <strong>formation suivie</strong> et d'<strong>enseignement dispensé</strong> sont assimilées à du travail pour atteindre les 507 heures, dans la limite de 338 heures au total, dont 70 heures maximum d'enseignement. En revanche, elles n'augmentent jamais le montant de ton allocation : celui-ci ne se calcule que sur tes heures et salaires de travail. Le simulateur applique cette distinction.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Franchises et date anniversaire</h2>
+        <p>Avant ton premier versement, des <strong>franchises</strong> décalent le début de ton indemnisation : une franchise congés payés, calculée sur tes jours travaillés, et une franchise salaires selon tes revenus de la période. Tes droits sont ensuite ouverts jusqu'à la <strong>date anniversaire</strong>, fixée 12 mois après la fin de contrat retenue. Le simulateur te donne les deux.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">D'où viennent ces chiffres ?</h2>
+        <p>Des formules publiées par France Travail et l'Unédic. Pour être sûr de ne pas raconter n'importe quoi, le calcul de TOTOR a été confronté au simulateur officiel de France Travail sur vingt-quatre situations, couvrant les deux annexes, de 2 000 à un million d'euros de salaire de référence. Cette confrontation a même révélé une erreur dans nos propres paramètres, qui a été corrigée. Cette estimation reste indicative : <strong>seule ta notification France Travail fait foi</strong>.</p>
+
+        <h2 style="color:#F8FAFC;font-size:21px;margin:26px 0 10px">Et ton mois prochain ?</h2>
+        <p>Ce simulateur te donne ton montant par jour. Ce qui compte vraiment, c'est ce que tu toucheras à la fin du mois : cela dépend de tes contrats, de tes jours non indemnisables et de tes franchises. <a href="/intermittent" style="color:#5DCAA5">TOTOR</a> suit tes 507 heures, lit tes AEM en photo, prépare ton actualisation et calcule ton mois tout seul. Tu peux aussi consulter les <a href="/guides" style="color:#5DCAA5">guides intermittents</a> ou la page <a href="/nouveautes" style="color:#5DCAA5">nouveautés</a>.</p>
+      </div>
+    </div></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

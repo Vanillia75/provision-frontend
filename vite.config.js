@@ -62,6 +62,9 @@ export default defineConfig(() => {
           main: path.resolve(process.cwd(), "index.html"),
           intermittent: path.resolve(process.cwd(), "intermittent.html"),
           "auto-entrepreneur": path.resolve(process.cwd(), "auto-entrepreneur.html"),
+          // Simulateur en accès libre : porte d'entrée SEO (« simulateur
+          // allocation intermittent »), avec son propre titre et son contenu.
+          "simulateur-allocation-intermittent": path.resolve(process.cwd(), "simulateur-allocation-intermittent.html"),
         },
       },
     },

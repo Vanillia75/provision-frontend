@@ -8,6 +8,8 @@ import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiq
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { LegalPageView } from "./LegalPage";
 import { NouveautesPage } from "./Nouveautes";
+import MontantInput from "./MontantInput";
+import { SimulateurPublic } from "./SimulateurPublic";
 import { PourquoiHector } from "./PourquoiHector";
 import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
@@ -224,7 +226,8 @@ const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "
 
 
 // ============================================================================
-//  MontantInput — champ de saisie de MONTANT (€) avec séparateur de milliers.
+//  MontantInput — DÉMÉNAGÉ le 27/07/2026 dans src/MontantInput.jsx (voir plus bas).
+//  Le pavé d'explication complet est parti avec lui.
 //  - Affichage FR pendant la frappe : "8787850" → "8 787 850" (espace insécable).
 //  - Valeur STOCKÉE propre : `onChange` renvoie un nombre-string sans espaces
 //    ("8787850" / "1234.56"), drop-in des `setX(e.target.value)` existants.
@@ -235,63 +238,10 @@ const MOIS = ["Jan", "Fév", "Mar", "Avr", "Mai", "Jun", "Jul", "Aoû", "Sep", "
 // ============================================================================
 const NBSP = " ";
 
-function MontantInput({ value, onChange, decimales = false, style, ...rest }) {
-  const ref = useRef(null);
-  const caretDigits = useRef(null);   // nb de chiffres à gauche du curseur à restaurer
-  const caretAfterSep = useRef(false); // le curseur était juste après la virgule
-
-  const toDisplay = (clean) => {
-    if (clean == null || clean === "") return "";
-    const [ent, dec] = String(clean).split(".");
-    const e = (ent || "").replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
-    return dec != null ? `${e},${dec}` : e;
-  };
-
-  const handleChange = (e) => {
-    const el = e.target;
-    const pos = el.selectionStart ?? el.value.length;
-    const left = el.value.slice(0, pos);
-    caretDigits.current = (left.match(/\d/g) || []).length;
-    caretAfterSep.current = /[.,]$/.test(left);
-
-    let raw = el.value.replace(/[^\d.,]/g, "").replace(/,/g, ".");
-    if (decimales) {
-      const i = raw.indexOf(".");
-      if (i !== -1) raw = raw.slice(0, i + 1) + raw.slice(i + 1).replace(/\./g, "").slice(0, 2);
-    } else {
-      raw = raw.replace(/\./g, "");
-    }
-    onChange(raw);
-  };
-
-  useLayoutEffect(() => {
-    if (caretDigits.current == null || !ref.current) return;
-    const disp = ref.current.value;
-    let seen = 0, pos = 0;
-    while (pos < disp.length && seen < caretDigits.current) {
-      if (/\d/.test(disp[pos])) seen++;
-      pos++;
-    }
-    if (caretAfterSep.current) {
-      const c = disp.indexOf(",");
-      if (c !== -1) pos = c + 1;
-    }
-    ref.current.setSelectionRange(pos, pos);
-    caretDigits.current = null;
-  });
-
-  return (
-    <input
-      ref={ref}
-      type="text"
-      inputMode={decimales ? "decimal" : "numeric"}
-      value={toDisplay(value)}
-      onChange={handleChange}
-      style={style}
-      {...rest}
-    />
-  );
-}
+// Le corps de MontantInput a été sorti dans src/MontantInput.jsx le 27/07/2026,
+// pour que le simulateur public puisse s'en servir sans importer tout App.jsx
+// (ce qui créerait une boucle d'imports). Il est réimporté en haut de ce fichier.
+// Règle maison inchangée : TOUT nouveau champ € passe par lui.
 
 
 function HectorTete({ size = 32 }) {
@@ -457,14 +407,20 @@ function AppInner() {
   // utile pour les liens demandés par les stores, Enable Banking, etc. Le vercel.json
   // renvoie déjà toute adresse vers l'app ; ici on ouvre la bonne page selon l'URL.
   const [legalPage, setLegalPage] = useState(() => {
-    const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes"].includes(p) ? p : null;
+    // On retire aussi un « .html » final : en développement Vite sert les pages
+    // multi-entrées à leur nom de fichier, et en production quelqu'un peut taper
+    // l'adresse complète à la main. Les deux doivent ouvrir la même page.
+    const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").replace(/\.html$/, "").toLowerCase();
+    return ["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes", "simulateur-allocation-intermittent", "simulateur"].includes(p) ? p : null;
   });
   // Ferme une page légale : revient à l'app ET nettoie l'adresse si on y était arrivé en direct.
   const fermerLegal = () => {
     setLegalPage(null);
-    const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").toLowerCase();
-    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes"].includes(p)) {
+    // On retire aussi un « .html » final : en développement Vite sert les pages
+    // multi-entrées à leur nom de fichier, et en production quelqu'un peut taper
+    // l'adresse complète à la main. Les deux doivent ouvrir la même page.
+    const p = (window.location.pathname || "").replace(/^\/+|\/+$/g, "").replace(/\.html$/, "").toLowerCase();
+    if (["confidentialite", "cgu", "mentions", "contact", "suppression-compte", "nouveautes", "simulateur-allocation-intermittent", "simulateur"].includes(p)) {
       window.history.replaceState({}, "", "/");
     }
   };
@@ -502,9 +458,13 @@ function AppInner() {
     return () => window.removeEventListener("popstate", applyFromPath);
   }, [token]);
 
-  // SEO : title + meta description + canonical adaptés aux 3 pages.
+  // SEO : title + meta description + canonical adaptés aux pages publiques.
   useEffect(() => {
     if (token) return;
+    // Les pages qui ont leur PROPRE fichier HTML (titre et description écrits à
+    // la main) gardent le leur : sans ce garde-fou, React les écrasait au montage
+    // et l'onglet affichait le titre de la page d'accueil. Piège déjà rencontré.
+    if (legalPage) return;
     const meta = document.querySelector('meta[name="description"]');
     const setCanonical = (path) => {
       let l = document.querySelector('link[rel="canonical"]');
@@ -524,7 +484,7 @@ function AppInner() {
       if (meta) meta.setAttribute("content", "TOTOR, ton compagnon au quotidien : intermittent du spectacle ou auto-entrepreneur, il compte, provisionne et t'explique chaque chiffre. Choisis ton profil, il s'occupe du reste.");
       setCanonical("/");
     }
-  }, [landingStatut, token]);
+  }, [landingStatut, token, legalPage]);
   // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
   const [interShowAuth, setInterShowAuth] = useState(false);
   // Cockpit intermittent (Brique 5) : état calculé renvoyé par /intermittent/cockpit
@@ -5824,6 +5784,20 @@ function AppInner() {
   if (legalPage === "nouveautes") {
     return <NouveautesPage onBack={fermerLegal} statut={profile?.statut || null} />;
   }
+  // Simulateur en accès libre (porte d'entrée SEO). Deux adresses mènent ici :
+  // la longue, riche en mots-clés pour Google, et la courte pour la dire à l'oral.
+  if (legalPage === "simulateur-allocation-intermittent" || legalPage === "simulateur") {
+    return (
+      <SimulateurPublic
+        onBack={fermerLegal}
+        onInscription={() => {
+          setLegalPage(null);
+          window.history.replaceState({}, "", "/intermittent");
+          chooseLandingStatut("intermittent");
+        }}
+      />
+    );
+  }
   if (legalPage) {
     return <LegalPageView page={legalPage} onBack={fermerLegal} />;
   }
@@ -6774,6 +6748,9 @@ function AppInner() {
             ].map(l => (
               <button key={l.page} type="button" style={{ background: "none", border: "none", color: "#4A6280", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }} onClick={() => setLegalPage(l.page)}>{l.label}</button>
             ))}
+            {/* VRAI lien (et non un bouton) : Google suit les href, pas les onClick.
+                C'est ce qui fait remonter la page du simulateur dans l'index. */}
+            <a href="/simulateur-allocation-intermittent" style={{ color: "#4A6280", fontSize: 12, textDecoration: "none", fontFamily: "inherit" }}>Simulateur d'allocation</a>
             <a href="/guides/" style={{ color: "#4A6280", fontSize: 12, textDecoration: "none", fontFamily: "inherit" }}>Guides</a>
             <a href="mailto:bonjour@montotor.fr" style={{ color: "#5DCAA5", fontSize: 12, fontWeight: 600, textDecoration: "none", fontFamily: "inherit" }}>Une question ? bonjour@montotor.fr</a>
           </div>

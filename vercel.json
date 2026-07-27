@@ -9,6 +9,8 @@
     { "source": "/guides/", "destination": "/guides/index.html" },
     { "source": "/intermittent", "destination": "/intermittent.html" },
     { "source": "/auto-entrepreneur", "destination": "/auto-entrepreneur.html" },
+    { "source": "/simulateur-allocation-intermittent", "destination": "/simulateur-allocation-intermittent.html" },
+    { "source": "/simulateur", "destination": "/simulateur-allocation-intermittent.html" },
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "headers": [
