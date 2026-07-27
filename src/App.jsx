@@ -9121,11 +9121,19 @@ function AppInner() {
                   </div>
                 )}
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                  {/* Ceinture de sécurité posée le 27/07 : minWidth:0 sur le libellé et
+                      flexShrink:0 sur le statut. Par défaut un élément flex a
+                      min-width:auto et refuse de se rétrécir : un libellé long
+                      pousserait alors le statut hors de la carte. ⚠️ Mesuré à 414 px :
+                      il n'y a AUCUN débordement aujourd'hui (Camille l'a confirmé sur
+                      son iPhone), c'est purement préventif pour un futur libellé plus
+                      long. Le texte coupé sur les captures du 26/07 venait de l'outil
+                      de capture, pas de l'application. */}
                   {checklist.lignes.map(l => (
                     <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
-                      <span style={{ fontSize: 16 }}>{l.badge}</span>
-                      <div style={{ flex: 1, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
-                      <span style={{ fontSize: 11, color: l.coul }}>{l.statut}</span>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{l.badge}</span>
+                      <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
+                      <span style={{ fontSize: 11, color: l.coul, flexShrink: 0, textAlign: "right" }}>{l.statut}</span>
                     </div>
                   ))}
                 </div>
