@@ -9366,10 +9366,19 @@ function AppInner() {
                   </div>
                 </div>
                 {/* Totor détouré par-dessus la carte : oreilles hors cadre, poitrail
-                    fondu (alpha dans l'image). Sous le badge/titre (zIndex 1 < 2). */}
+                    fondu (alpha dans l'image). Sous le badge/titre (zIndex 1 < 2).
+                    ⚠️ Le fondu incrusté dans l'image NE SUFFIT PAS. L'image est carrée
+                    (900×900) et affichée en « cover » calée en haut : dès que la carte
+                    est plus LARGE que haute (tablette, grand écran, émulateur), le
+                    recadrage ne montre que le haut de l'image et coupe le museau NET,
+                    avant d'atteindre son fondu. Le dégradé de la carte, lui, est peint
+                    DESSOUS (zIndex plus bas) : il ne peut rien y faire.
+                    D'où ce masque, appliqué à l'image elle-même : il fond toujours,
+                    quelle que soit la largeur. Il démarre tard (72 %) pour ne pas
+                    manger le visage sur les écrans étroits, où l'image entière tient. */}
                 <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block" }} />
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block", WebkitMaskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)" }} />
                 </div>
                 {!isMobile && blocMois}
                 {!isMobile && blocVerdict}
