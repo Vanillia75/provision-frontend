@@ -6238,6 +6238,29 @@ function AppInner() {
     // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
     // Format : { texte: "…", prenom: "…", metier: "…" }
     const TEMOIGNAGES = [
+      // Julien Garcia — avis PUBLIC 5/5 laissé sur GOOGLE PLAY le 28/07/2026, relevé
+      // par Camille dans la Play Console (version 1.1.7). Citation VERBATIM.
+      // Placé en TÊTE pour une raison précise : c'était le SEUL avis d'auto-entrepreneur.
+      // Les cinq autres témoignages étaient tous des intermittents, alors que la section
+      // s'affiche aussi sur la vitrine auto-entrepreneur. Quelqu'un qui vient pour sa
+      // micro-entreprise ne lisait que des histoires de cachets et de 507 heures.
+      // Seuls les cinq ⭐ de fin sont retirés : c'est une note, pas une phrase, et la
+      // carte affiche déjà les étoiles.
+      {
+        texte: "Depuis le temps qu'on l'attendait sur le playstore Très bon outil qui m'aide beaucoup au jour le jour. Recommande fortement pour tout auto entrepreneur !!!",
+        prenom: "Julien Garcia",
+        metier: "sur Google Play",
+        note: 5,
+      },
+      // Jean-Paul Prt — avis PUBLIC 5/5 sur GOOGLE PLAY le 28/07/2026 (version 1.1.7).
+      // Citation VERBATIM, guillemets intérieurs compris : c'est lui qui cite sa propre
+      // phrase, on ne la lui retire pas.
+      {
+        texte: "Application au Top. Plus de Stress à chaque fin de mois ! \"Je souhaite à chacun d'avoir un TOTOR dans sa vie\" 😊",
+        prenom: "Jean-Paul Prt",
+        metier: "sur Google Play",
+        note: 5,
+      },
       // Alunal — avis PUBLIC 5/5 laissé sur l'App Store le 24/07/2026 (« PARFAIT ! »),
       // récupéré via le flux RSS Apple. EXTRAIT, coupes marquées par […], aucun mot
       // ajouté ni modifié.
