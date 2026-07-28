@@ -8989,13 +8989,25 @@ function AppInner() {
                   return (
                     <div style={shell}>
                       {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
-                        Avec TOTOR Veille, j'estime <strong style={{ color: "#C8E0F5" }}>ce que France Travail te versera pour le mois en cours</strong> : jours indemnisés, jours déduits par tes contrats, montant net. Mis à jour à chaque activité saisie.
+                      {/* VERROU DISCRET, pas un deuxieme bouton vert.
+                          La carte « Ton prochain renouvellement », juste a cote, porte
+                          deja l'offre avec son bouton plein. Deux gros boutons verts
+                          identiques a la suite faisaient passer le cockpit pour une
+                          page de vente, et surtout ils ecrasaient les VRAIES actions
+                          (ajouter un contrat, scanner une AEM), qui ont la meme
+                          couleur. Une seule offre visible : celle du renouvellement,
+                          la question centrale de l'app. Ici, meme presentation que le
+                          radar acompte cote auto-entrepreneur : cadenas + lien. */}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                        <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>🔒</span>
+                        <span style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                          J'estime aussi <strong style={{ color: "#C8E0F5" }}>ce que France Travail te versera ce mois-ci</strong> : jours indemnisés, jours déduits par tes contrats, montant net.{" "}
+                          <button type="button" onClick={() => setInterNav("abonnement")}
+                            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                            Débloquer
+                          </button>
+                        </span>
                       </div>
-                      <button type="button" onClick={() => setInterNav("abonnement")}
-                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        Découvrir TOTOR Veille
-                      </button>
                     </div>
                   );
                 }
