@@ -1038,7 +1038,7 @@ function AppInner() {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: "#F8FAFC" }}>Tu factures des clients ?</div>
             <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 2 }}>Je m'occupe de tout, de l'envoi jusqu'au paiement.</div>
-          <i className={`ti ti-chevron-${factureOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#7FB8F0", flexShrink: 0 }} />
+          <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className={`ti ti-chevron-${factureOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#C8E0F5" }} /></span>
           </div>
         </div>
         {factureOuverte && (<>
@@ -8737,23 +8737,27 @@ function AppInner() {
 
           {/* L'écran Veille (vitrine plein écran occasionnelle) + murmure (gratuits) */}
           {interNav !== "abonnement" && ecranVeilleModal}
-          {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
 
-          {/* ─── Vérification d'email : masquée sur la vitrine de vente ─── */}
+          {/* Bandeau email masqué sur l'écran d'abonnement : vitrine de vente, pas onboarding. */}
+          {/* Une SEULE ligne : le lien est dans la phrase, pas un bouton a cote.
+              Avant, le bouton borde passait a la ligne sur un ecran etroit et le
+              bandeau prenait deux fois la hauteur, juste au-dessus de la carte de
+              Totor. C'est un rappel, pas une tache : il ne doit pas peser autant
+              qu'une action. */}
           {!emailVerified && interNav !== "abonnement" && (
-            <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between", flexWrap: "wrap", background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 12, padding: "11px 16px", marginBottom: 16 }}>
-              <span style={{ fontSize: 13, color: "#B5D4F4", display: "flex", alignItems: "center", gap: 8, lineHeight: 1.4 }}>
-                <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 16, flexShrink: 0 }} />
-                Vérifie ton adresse email : c'est là que je t'enverrai tes rappels d'actualisation.
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.22)", borderRadius: 12, padding: "10px 14px", marginBottom: 12 }}>
+              <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 15, color: "#9FCBF5", flexShrink: 0, marginTop: 2 }} />
+              <span style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                Vérifie ton adresse email, c'est là que je t'enverrai tes rappels d'actualisation.{" "}
+                {resendVerifStatus === "sent" ? (
+                  <strong style={{ color: "#5DCAA5" }}>Email envoyé, clique le lien dedans.</strong>
+                ) : (
+                  <button onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}
+                    style={{ background: "none", border: "none", padding: 0, color: "#9FCBF5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                    {resendVerifStatus === "sending" ? "Envoi…" : "M'envoyer le lien"}
+                  </button>
+                )}
               </span>
-              {resendVerifStatus === "sent" ? (
-                <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>✓ Email envoyé, clique le lien dedans</span>
-              ) : (
-                <button onClick={handleResendVerification} disabled={resendVerifStatus === "sending"}
-                  style={{ background: "transparent", border: "1px solid rgba(159,203,245,0.35)", color: "#9FCBF5", borderRadius: 8, padding: "8px 14px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                  {resendVerifStatus === "sending" ? "Envoi…" : "M'envoyer le lien"}
-                </button>
-              )}
             </div>
           )}
 
@@ -9159,32 +9163,6 @@ function AppInner() {
                 )}
               </div>
 
-              {/* ═══ RAPPEL D'ACTUALISATION DATÉ — présence au bon moment (fenêtre 28 → ~15).
-                  Date volontairement approximative (« ~15 ») : le calendrier exact varie selon
-                  France Travail — approximation assumée, jamais une promesse (Loi I). ═══ */}
-              {actuOuverte && !dejaActualise && (() => {
-                const moisSuivant = new Date(moisDecl.getFullYear(), moisDecl.getMonth() + 1, 1);
-                const nomMoisDecl = moisDecl.toLocaleDateString("fr-FR", { month: "long" });
-                const nomMoisLimite = moisSuivant.toLocaleDateString("fr-FR", { month: "long" });
-                return (
-                  <div style={{ background: "#0a1322", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 14, padding: "13px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: 220, fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>
-                      {(interActivites || []).length === 0
-                        ? <>🐾 Tu es déjà indemnisé·e par France Travail ? Ton actualisation de <strong>{nomMoisDecl}</strong> est alors à faire avant le <strong>~15 {nomMoisLimite}</strong>, je peux te la préparer.</>
-                        : <>🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong>, je te l'ai préparée.</>}
-                    </div>
-                    <button type="button" onClick={() => setInterNav("actu")}
-                      style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                      Voir mon récap →
-                    </button>
-                    <button type="button" onClick={declarerActualise}
-                      style={{ background: "transparent", color: "#8FB4D8", border: "1px solid rgba(143,180,216,0.3)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                      Je me suis actualisé·e
-                    </button>
-                  </div>
-                );
-              })()}
-
               {(() => {
                 // Rééquilibrage des colonnes (déplacement pur) : Progression (frise) + Congés
                 // Spectacles passent SOUS Totor à gauche en DESKTOP (comble le vide) ; en mobile
@@ -9562,7 +9540,7 @@ function AppInner() {
                   {!checklist.vide && (
                     <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700, marginLeft: "auto" }}>{checklist.faits} / {checklist.total}</div>
                   )}
-                  <i className={`ti ti-chevron-${planOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#6B8299", flexShrink: 0 }} />
+                  <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className={`ti ti-chevron-${planOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#B5D4F4" }} /></span>
                 </div>
                 {planOuvert && checklist.vide && (
                   <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
@@ -9731,14 +9709,10 @@ function AppInner() {
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
                 {!isMobile && blocPAS}
-                {blocPlanReperes}
-                </div>
-
-
-
-                {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
-                <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
-
+                {/* La date de renouvellement arrive JUSTE apres Totor : c'est la
+                    premiere chose dont il a besoin pour repondre a la question de
+                    l'app. Elle etait plus bas, apres le rappel d'actualisation et
+                    le plan, alors qu'elle les conditionne tous les deux. */}
               {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
               <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
                 {!anniversaireEdit && c.date_anniversaire && (
@@ -9895,6 +9869,45 @@ function AppInner() {
                   </div>
                 )}
               </div>
+
+                {/* Le rappel d'actualisation vivait AU-DESSUS de la carte de Totor.
+                    Avec le bandeau email et le murmure d'abonnement, ca faisait trois
+                    blocs a lire avant la moindre image. Il descend juste APRES Totor :
+                    toujours visible des le deuxieme ecran, car il est date et il compte,
+                    mais il ne passe plus devant. */}
+              {/* ═══ RAPPEL D'ACTUALISATION DATÉ — présence au bon moment (fenêtre 28 → ~15).
+                  Date volontairement approximative (« ~15 ») : le calendrier exact varie selon
+                  France Travail — approximation assumée, jamais une promesse (Loi I). ═══ */}
+              {actuOuverte && !dejaActualise && (() => {
+                const moisSuivant = new Date(moisDecl.getFullYear(), moisDecl.getMonth() + 1, 1);
+                const nomMoisDecl = moisDecl.toLocaleDateString("fr-FR", { month: "long" });
+                const nomMoisLimite = moisSuivant.toLocaleDateString("fr-FR", { month: "long" });
+                return (
+                  <div style={{ background: "#0a1322", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 14, padding: "13px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ flex: 1, minWidth: 220, fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>
+                      {(interActivites || []).length === 0
+                        ? <>🐾 Tu es déjà indemnisé·e par France Travail ? Ton actualisation de <strong>{nomMoisDecl}</strong> est alors à faire avant le <strong>~15 {nomMoisLimite}</strong>, je peux te la préparer.</>
+                        : <>🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong>, je te l'ai préparée.</>}
+                    </div>
+                    <button type="button" onClick={() => setInterNav("actu")}
+                      style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                      Voir mon récap →
+                    </button>
+                    <button type="button" onClick={declarerActualise}
+                      style={{ background: "transparent", color: "#8FB4D8", border: "1px solid rgba(143,180,216,0.3)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
+                      Je me suis actualisé·e
+                    </button>
+                  </div>
+                );
+              })()}
+
+                {blocPlanReperes}
+                </div>
+
+
+
+                {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
+                <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* ══ ALLOCATION JOURNALIÈRE — recalculée, encadrée par la Loi X ══
                    Un chiffre affiché = un chiffre validé sur un vrai courrier. Sinon,
@@ -10162,7 +10175,7 @@ function AppInner() {
                     <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
                   </div>
                   <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Quand pourrais-tu renouveler ?</div>
-                  <i className={`ti ti-chevron-${projectionOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#6B8299", flexShrink: 0, marginLeft: "auto" }} />
+                  <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: "auto" }}><i className={`ti ti-chevron-${projectionOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#B5D4F4" }} /></span>
                 </div>
                 {projectionOuverte && (<>
                 <div style={{ fontSize: 11.5, color: "#7E97B3", marginBottom: 14, lineHeight: 1.45 }}>
@@ -10212,6 +10225,12 @@ function AppInner() {
               {isMobile && blocPAS}
 
                 {/* Action + bannière ligne comblent le bas de la colonne droite. */}
+                {/* Le murmure « je pourrais veiller pour toi » etait le TOUT PREMIER
+                    bloc du cockpit, avant meme le bonjour et la carte de Totor.
+                    Un argumentaire d'abonnement en position 1, sur un compte vide,
+                    poussait tout le reste vers le bas. Il rejoint les autres blocs
+                    de fin de cockpit. */}
+                {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
                 {blocActionLigne}
                 </div>{/* ── fin colonne droite ── */}
               </div>
