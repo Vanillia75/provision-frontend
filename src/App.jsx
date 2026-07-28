@@ -696,6 +696,20 @@ function AppInner() {
   const [bankLoading, setBankLoading] = useState(false);
   const [bankSyncing, setBankSyncing] = useState(false);
   const [bankCardOpen, setBankCardOpen] = useState(false); // carte connexion bancaire repliée par défaut (accordéon)
+  // Cartes repliables du cockpit intermittent (demande de Camille le 28/07 :
+  // « ici faudrait pouvoir l'ouvrir ou le fermer, il faut que ce soit pratique »).
+  // OUVERTES par défaut : on ne cache rien a quelqu'un qui decouvre. Mais si la
+  // personne replie, ca RESTE replie a la visite suivante : c'est elle qui decide
+  // une fois pour toutes, on ne lui redemande pas chaque matin.
+  const [planOuvert, setPlanOuvert] = useState(() => safeStorage.getItem("plan_replie") !== "1");
+  const [projectionOuverte, setProjectionOuverte] = useState(() => safeStorage.getItem("projection_repliee") !== "1");
+  const basculerPlan = () => setPlanOuvert(o => { safeStorage.setItem("plan_replie", o ? "1" : "0"); return !o; });
+  const basculerProjection = () => setProjectionOuverte(o => { safeStorage.setItem("projection_repliee", o ? "1" : "0"); return !o; });
+  // Carte de decouverte de la facturation (cockpit auto-entrepreneur), meme
+  // principe. A ne pas confondre avec « Je ne facture pas », qui la fait
+  // disparaitre POUR DE BON : replier, c'est juste « pas maintenant ».
+  const [factureOuverte, setFactureOuverte] = useState(() => safeStorage.getItem("decouverte_facture_repliee") !== "1");
+  const basculerFacture = () => setFactureOuverte(o => { safeStorage.setItem("decouverte_facture_repliee", o ? "1" : "0"); return !o; });
   const [bankDispo, setBankDispo] = useState(false);       // décidé par le serveur (bêta restreinte Enable Banking)
   const [bankBanqueNom, setBankBanqueNom] = useState(null); // nom + fin d'IBAN de la banque reliée
   const [bankIbanFin, setBankIbanFin] = useState(null);
@@ -1003,13 +1017,20 @@ function AppInner() {
     );
     return (
       <div style={{ background: "linear-gradient(100deg, #0d2440, #12365c)", border: "1px solid #378ADD", borderRadius: 14, padding: "18px 20px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10 }}>
+        {/* Entete cliquable : replier n'est PAS « Je ne facture pas ».
+            Ce dernier ecarte la carte pour de bon ; replier veut juste dire
+            « pas maintenant », et le choix est retenu d'une visite a l'autre. */}
+        <div onClick={basculerFacture} role="button" tabIndex={0}
+          onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); basculerFacture(); } }}
+          style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: factureOuverte ? 10 : 0, cursor: "pointer" }}>
           <HectorTete size={32} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 15, fontWeight: 800, color: "#F8FAFC" }}>Tu factures des clients ?</div>
             <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 2 }}>Je m'occupe de tout, de l'envoi jusqu'au paiement.</div>
+          <i className={`ti ti-chevron-${factureOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#7FB8F0", flexShrink: 0 }} />
           </div>
         </div>
+        {factureOuverte && (<>
         <div style={{ display: "flex", flexDirection: "column", gap: 7, margin: "12px 0 16px" }}>
           {atout("ti-file-invoice", <>Des <strong style={{ color: "#E8F4FF" }}>factures et devis conformes</strong>, avec toutes les mentions obligatoires, numérotées comme la loi l'exige.</>)}
           {atout("ti-credit-card", <>Un bouton <strong style={{ color: "#E8F4FF" }}>« Payer en ligne »</strong> sur tes factures : tes clients paient par carte, l'argent arrive sur ton compte. Zéro commission TOTOR.</>)}
@@ -1030,6 +1051,7 @@ function AppInner() {
             Je ne facture pas
           </button>
         </div>
+        </>)}
       </div>
     );
   }
@@ -9231,19 +9253,24 @@ function AppInner() {
                   <>
               {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+                <div onClick={basculerPlan} role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); basculerPlan(); } }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: planOuvert ? 14 : 0, cursor: "pointer" }}>
                   <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Mon plan avec toi</div>
                   {/* Loi VIII : sur compte neuf (checklist.vide = nbActs===0, réutilisé), pas de score/bulletin.
-                      Le « X / 5 » n'apparaît qu'une fois le parcours commencé (progression méritée). */}
+                      Le « X / 5 » n'apparaît qu'une fois le parcours commencé (progression méritée).
+                      Il reste visible carte REPLIÉE : c'est le résumé qui justifie de ne pas l'ouvrir. */}
                   {!checklist.vide && (
-                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700 }}>{checklist.faits} / {checklist.total}</div>
+                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700, marginLeft: "auto" }}>{checklist.faits} / {checklist.total}</div>
                   )}
+                  <i className={`ti ti-chevron-${planOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#6B8299", flexShrink: 0 }} />
                 </div>
-                {checklist.vide && (
+                {planOuvert && checklist.vide && (
                   <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
                     🐾 On commence ensemble. Ajoute ton premier contrat, je m'occupe de suivre tes heures.
                   </div>
                 )}
+                {planOuvert && (
                 <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                   {/* Ceinture de sécurité posée le 27/07 : minWidth:0 sur le libellé et
                       flexShrink:0 sur le statut. Par défaut un élément flex a
@@ -9261,6 +9288,7 @@ function AppInner() {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
 
               {/* Alerte détection d'erreurs (seulement si Totor a repéré quelque chose) */}
@@ -9828,12 +9856,16 @@ function AppInner() {
               {/* ═══ PROJECTION : "Quand pourrais-je renouveler ?" ═══ */}
               {projection.dispo && (
               <div style={{ background: "linear-gradient(160deg,#0d2440,#0a1322)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "18px 20px 20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                <div onClick={basculerProjection} role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); basculerProjection(); } }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, cursor: "pointer" }}>
                   <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                     <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
                   </div>
                   <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Quand pourrais-tu renouveler ?</div>
+                  <i className={`ti ti-chevron-${projectionOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 17, color: "#6B8299", flexShrink: 0, marginLeft: "auto" }} />
                 </div>
+                {projectionOuverte && (<>
                 <div style={{ fontSize: 11.5, color: "#7E97B3", marginBottom: 14, lineHeight: 1.45 }}>
                   Des estimations, pas des certitudes, elles dépendent de ce qui va se passer.
                 </div>
@@ -9873,6 +9905,7 @@ function AppInner() {
                     🐾 Ajoute ta date de renouvellement ci-dessus pour affiner ces estimations.
                   </div>
                 )}
+                </>)}
               </div>
               )}
               {isMobile && blocFrise}
@@ -13740,8 +13773,6 @@ function AppInner() {
               </div>
             ))}
 
-            {renderBanniereLigneTotor()}
-
             {/* ── TOTOR UNIFIÉ : écrire librement OU décision rapide ── */}
             <div style={{ background: "linear-gradient(135deg, #0a1322 0%, #10233f 100%)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "20px 22px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 14 }}>
@@ -14157,6 +14188,13 @@ function AppInner() {
             )}
 
 
+
+            {/* La banniere de la ligne TOTOR vit ICI, tout en bas du cockpit.
+                Elle etait juste sous les messages de Totor, donc pratiquement en
+                haut : un argumentaire d'abonnement passait avant les factures, la
+                tresorerie et les previsions, c'est-a-dire avant ce que la personne
+                est venue faire. Meme deplacement que cote intermittent. */}
+            {renderBanniereLigneTotor()}
           </div>
         )}
 
