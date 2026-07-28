@@ -6308,6 +6308,39 @@ function AppInner() {
         note: 5,
       },
     ];
+    // Les temoignages s'affichent sur LES DEUX vitrines. Ils ne vivaient que sur
+    // celle des intermittents : un visiteur auto-entrepreneur n'avait donc aucune
+    // preuve sociale sous les yeux, ni note ni avis. Corrige le 28/07/2026, le jour
+    // ou le premier avis d'auto-entrepreneur est arrive (Julien Garcia, Google Play).
+    // FONCTION de rendu, pas une const : du JSX garde dans une const eager a deja
+    // coute un ecran blanc sur ce projet. Elle n'est appelee que dans la garde.
+    const renderTemoignages = () => (
+          <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
+            <div style={{ maxWidth: 980, margin: "0 auto" }}>
+              {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
+              <div style={{ textAlign: "center", marginBottom: isMobile ? 26 : 36 }}>
+                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
+              </div>
+              {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 14, alignItems: "stretch" }}>
+                {TEMOIGNAGES.map((t, i) => (
+                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: isMobile ? "16px 15px" : "18px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
+                    {t.note >= 1 && (
+                      <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
+                        {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
+                      </div>
+                    )}
+                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 13.5 : 14, color: "#C9D8E8", lineHeight: 1.55, fontStyle: "italic", margin: "0 0 10px" }}>« {t.texte} »</p>
+                    <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+    );
+
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
     const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
@@ -6735,6 +6768,9 @@ function AppInner() {
             </div>
           </section>
 
+        {/* Les avis, juste avant le pied de page, sur les DEUX vitrines. */}
+        {TEMOIGNAGES.length > 0 && renderTemoignages()}
+
           {/* ===== FOOTER ===== */}
           <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", gap: 16 }}>
@@ -7006,34 +7042,6 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== TÉMOIGNAGES (uniquement de vraies citations — section invisible tant que vide) ===== */}
-        {TEMOIGNAGES.length > 0 && (
-          <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
-            <div style={{ maxWidth: 980, margin: "0 auto" }}>
-              {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
-              <div style={{ textAlign: "center", marginBottom: isMobile ? 26 : 36 }}>
-                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
-              </div>
-              {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 14, alignItems: "stretch" }}>
-                {TEMOIGNAGES.map((t, i) => (
-                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: isMobile ? "16px 15px" : "18px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
-                    {t.note >= 1 && (
-                      <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
-                        {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
-                      </div>
-                    )}
-                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 13.5 : 14, color: "#C9D8E8", lineHeight: 1.55, fontStyle: "italic", margin: "0 0 10px" }}>« {t.texte} »</p>
-                    <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* ===== 07 — Et j'aide aussi ta micro-entreprise ===== */}
         <section style={secShell}>
           <div style={secGrid}>
@@ -7093,6 +7101,9 @@ function AppInner() {
             <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>
           </div>
         </section>
+
+          {/* Les avis, juste avant le pied de page, sur les DEUX vitrines. */}
+          {TEMOIGNAGES.length > 0 && renderTemoignages()}
 
         {/* ===== FOOTER ===== */}
         <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
