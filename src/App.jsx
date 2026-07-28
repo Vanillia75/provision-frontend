@@ -1239,9 +1239,15 @@ function AppInner() {
   const [showRetraitTout, setShowRetraitTout] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(() => typeof window !== "undefined" && window.innerWidth <= 900);
+  // Seuil SEPARE, uniquement pour la mise en colonnes du cockpit. « isMobile »
+  // sert a beaucoup d'autres choses (menu en tiroir, tailles de police) et
+  // reste a 900. Mais des 620 px il y a la place pour DEUX colonnes de cartes :
+  // en dessous de ce seuil les cartes s'empilaient a l'infini sur les grands
+  // telephones et les tablettes, ce qui donnait un cockpit interminable.
+  const [deuxColonnes, setDeuxColonnes] = useState(() => typeof window !== "undefined" && window.innerWidth >= 620);
 
   useEffect(() => {
-    function handleResize() { setIsMobile(window.innerWidth <= 900); }
+    function handleResize() { setIsMobile(window.innerWidth <= 900); setDeuxColonnes(window.innerWidth >= 620); }
     window.addEventListener("resize", handleResize);
     handleResize();
     return () => window.removeEventListener("resize", handleResize);
@@ -9262,14 +9268,19 @@ function AppInner() {
                   </>
                 );
                 return (<>
-                {isMobile && blocActionLigne}
-                {isMobile && blocPlanReperes}
-              <div className="cockpit-masonry" style={isMobile ? { marginBottom: 16 } : { columnCount: 2, columnGap: 16, marginBottom: 16 }}>
+                {/* Sur mobile, « ta prochaine action », la banniere de la ligne TOTOR et
+                    « Mon plan avec toi » remontaient ICI, tout en haut, avant meme la
+                    carte de Totor. Sur un compte vide ca donnait sept blocs a lire avant
+                    la moindre image, tous du meme poids, et deux d'entre eux repetaient
+                    le compteur 507 h. Ils descendent maintenant au meme endroit que sur
+                    ordinateur : le plan juste apres Totor, l'action et la ligne tout en
+                    bas. Meme ordre partout, une chose a la fois. */}
+              <div className="cockpit-masonry" style={deuxColonnes ? { columnCount: 2, columnGap: 16, marginBottom: 16 } : { marginBottom: 16 }}>
 
                 {/* ───────── COLONNE GAUCHE : Totor (la star) ─────────
                      Desktop : display block, les cartes coulent dans le multicolonnes
                      (équilibrage automatique) ; mobile : pile flex classique. */}
-                <div style={isMobile ? { display: "flex", flexDirection: "column", gap: 16 } : { display: "block" }}>
+                <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
                 {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
                     les oreilles dépassent du cadre (même signature que la carte AE ;
                     l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
@@ -9324,15 +9335,11 @@ function AppInner() {
                       </div>
                     )}
 
-                    {/* Invitation à renseigner la date anniversaire si absente */}
-                    {!c.date_anniversaire && (
-                      <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 10, padding: "11px 13px" }}>
-                        <i className="ti ti-calendar-question" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
-                        <div style={{ fontSize: 12, color: "#D6E8FA", lineHeight: 1.45 }}>
-                          Renseigne ta <strong>date de renouvellement</strong> pour que je te dise si tu vas renouveler tes droits, pas juste où tu en es aujourd'hui.
-                        </div>
-                      </div>
-                    )}
+                    {/* L'invitation à renseigner la date vivait ICI. Retirée le 28/07 :
+                        la carte juste en dessous demande EXACTEMENT la même chose, avec
+                        son champ de saisie, sous l'autre nom (« date anniversaire »).
+                        Deux noms pour un seul champ, on croyait qu'on demandait deux
+                        dates. Une seule demande, celle qui a le bouton. */}
 
                     {/* Comparaison mois-à-mois (le chien remarque) */}
                     {coach.compa && (
@@ -9385,13 +9392,13 @@ function AppInner() {
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
                 {!isMobile && blocPAS}
-                {!isMobile && blocPlanReperes}
+                {blocPlanReperes}
                 </div>
 
 
 
                 {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
-                <div style={isMobile ? { display: "flex", flexDirection: "column", gap: 16 } : { display: "block" }}>
+                <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
 
               {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
               <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
@@ -9423,21 +9430,42 @@ function AppInner() {
                     </button>
                   </div>
                 )}
-                {!anniversaireEdit && !c.date_anniversaire && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
-                      <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5 }}>
-                        Renseigne ta date anniversaire pour que Totor te prévienne avant ton renouvellement.
-                        <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton renouvellement.</span>
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
-                      style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                      Ajouter
-                    </button>
+                {/* Tant que la date manque : UN choix, deux colonnes.
+                    Avant, c'etaient deux paragraphes empiles (« renseigne ta date »,
+                    puis « tu as ton attestation ? »), qui donnaient l'impression de
+                    deux corvees a faire l'une apres l'autre. Ce sont en realite DEUX
+                    CHEMINS VERS LA MEME CHOSE : soit tu tapes la date, soit tu deposes
+                    ton attestation et Totor la lit. Cote a cote, ca se lit en un coup
+                    d'oeil et ca occupe la largeur au lieu d'allonger la page. */}
+                {!anniversaireEdit && !c.date_anniversaire && !areExtrait && (<>
+                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
+                    Donne-moi ta <strong style={{ color: "#FAE3B6" }}>date de renouvellement</strong> et je te préviendrai avant l'échéance.
+                    <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton dossier. Deux façons, au choix.</span>
                   </div>
-                )}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
+                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je la connais</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Tu la saisis, c'est réglé en dix secondes.</div>
+                      <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
+                        style={{ width: "100%", background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Saisir la date
+                      </button>
+                    </div>
+                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+                      <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
+                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je ne la connais pas</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Dépose ton attestation, je lis la date ET ton montant journalier.</div>
+                      <label style={{ width: "100%", boxSizing: "border-box", background: areUploading ? "rgba(250,199,117,0.4)" : "transparent", border: "1px solid rgba(250,199,117,0.55)", color: "#FAE3B6", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 14 }} />
+                        {areUploading ? "Lecture…" : "Importer mon ARE"}
+                        <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                          style={{ display: "none" }} />
+                      </label>
+                    </div>
+                  </div>
+                  {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
+                </>)}
                 {anniversaireEdit && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                     <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
@@ -9453,8 +9481,11 @@ function AppInner() {
                   </div>
                 )}
 
-                {/* ── Import attestation ARE : Totor lit la date anniversaire + le montant (ne calcule rien) ── */}
-                {!anniversaireEdit && (
+                {/* ── Import attestation ARE : Totor lit la date anniversaire + le montant (ne calcule rien) ──
+                    Quand la date manque, l'import est deja propose dans le choix a deux
+                    colonnes ci-dessus : ce bloc ne sert plus qu'a l'ecran de verification
+                    de ce qui a ete lu, et au re-import quand une date existe deja. */}
+                {!anniversaireEdit && (c.date_anniversaire || areExtrait) && (
                   <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(250,199,117,0.15)" }}>
                     {areExtrait ? (
                       // Écran de vérification : ce que Totor a lu, éditable avant enregistrement.
@@ -9837,7 +9868,7 @@ function AppInner() {
               {isMobile && blocPAS}
 
                 {/* Action + bannière ligne comblent le bas de la colonne droite. */}
-                {!isMobile && blocActionLigne}
+                {blocActionLigne}
                 </div>{/* ── fin colonne droite ── */}
               </div>
                 </>);
