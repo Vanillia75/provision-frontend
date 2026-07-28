@@ -2601,9 +2601,16 @@ function AppInner() {
   })() : null;
 
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
+  // ⚠️ Le titre et l'entrée de menu disent « TOTOR Veille », PAS « Abonnement ».
+  // Le 28/07/2026, deux personnes ont écrit à l'aide le même jour parce qu'elles
+  // cherchaient « Abonnement » dans l'appli, où l'entrée s'appelle « TOTOR Veille »
+  // (contrainte App Store 3.1.1 : ça doit ressembler à une fonction, pas à une
+  // boutique). Le site portait l'autre nom : deux noms pour une seule rubrique,
+  // donc des gens qui repartent en croyant qu'on ne peut pas s'abonner. On unifie
+  // sur le nom de la marque, celui que l'App Store nous impose de garder.
   const renderAbonnement = (onBack) => (
     <div>
-      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
+      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>TOTOR Veille</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
 
       {profile?.is_premium ? (() => {
         const estStripe = profile?.premium_source === "stripe";
@@ -8281,7 +8288,7 @@ function AppInner() {
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
       { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
-      { id: "abonnement", icon: "ti-crown", label: "Abonnement", dispo: true },
+      { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille", dispo: true },
     ];
     const interSidebar = (
       <div style={{ width: 220, flexShrink: 0, background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
@@ -13241,7 +13248,7 @@ function AppInner() {
         {[
           { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
-          { id: "abonnement", icon: "ti-crown", label: "Abonnement" },
+          { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
