@@ -6238,6 +6238,16 @@ function AppInner() {
     // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
     // Format : { texte: "…", prenom: "…", metier: "…" }
     const TEMOIGNAGES = [
+      // Poisson bulle — avis PUBLIC 5/5 laissé sur l'APP STORE le 30/07/2026
+      // (version 1.1.6), récupéré au caractère près via le flux RSS Apple.
+      // Citation VERBATIM, y compris « l'historique des mes employeurs » :
+      // la coquille est de la personne, on ne corrige pas les gens qu'on cite.
+      {
+        texte: "Enfin une appli qui clarifie et personnalise le système d’intermittence ! Il y a tout. Mes cachets, le nombre d’heures restant à faire, le montant net de ce que je vais toucher, un scan des AEM, l’historique des mes employeurs, etc.  C’est génial ! Bravo aux développeurs !",
+        prenom: "Poisson bulle",
+        metier: "sur l'App Store",
+        note: 5,
+      },
       // Julien Garcia — avis PUBLIC 5/5 laissé sur GOOGLE PLAY le 28/07/2026, relevé
       // par Camille dans la Play Console (version 1.1.7). Citation VERBATIM.
       // Placé en TÊTE pour une raison précise : c'était le SEUL avis d'auto-entrepreneur.
