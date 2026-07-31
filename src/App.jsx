@@ -8697,7 +8697,10 @@ function AppInner() {
                     if (!dup) return null;
                     return (
                       <div style={{ marginTop: 14, background: "rgba(240,180,70,0.10)", border: "1px solid rgba(240,180,70,0.45)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#F2C879", lineHeight: 1.55 }}>
-                        <strong style={{ color: "#FFD98A" }}>⚠️ Doublon possible.</strong> Tu as déjà {dup.employeur ? `« ${dup.employeur} »` : "une AEM"} au {fmtDate(dup.date)}{dup.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(dup.salaire_brut)} € brut` : ""} dans ta liste. Si c'est la même, clique sur « {aemQueue.length > 0 ? "Passer" : "Annuler"} » pour ne pas la compter deux fois.
+                        <strong style={{ color: "#FFD98A" }}>⚠️ Doublon possible.</strong> Tu as déjà {dup.employeur ? `« ${dup.employeur} »` : "une AEM"} au {fmtDate(dup.date)}{dup.nombre != null ? ` · ${dup.nombre} ${dup.type_activite === "heures" ? "h" : (dup.nombre > 1 ? "cachets" : "cachet")}` : ""}{dup.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(dup.salaire_brut)} € brut` : ""} dans ta liste.
+                        <span style={{ display: "block", marginTop: 6 }}>
+                          Si c'est la même, clique sur « {aemQueue.length > 0 ? "Passer" : "Annuler"} » pour ne pas la compter deux fois. <strong style={{ color: "#FFD98A" }}>Si ce sont deux contrats différents le même jour, enregistre quand même</strong> : c'est fréquent, et je ne te le redemanderai plus pour cette ligne.
+                        </span>
                       </div>
                     );
                   })()}
