@@ -9,6 +9,14 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "4 août 2026",
+    titre: "Vérifié au centime sur un vrai versement",
+    items: [
+      { qui: "intermittent", texte: "Le juge que j'attendais est passé : un premier décompte réel de France Travail sur un mois travaillé. Mon estimation du mois tombait au centime près, jours déduits compris. J'avais promis de me caler sur les premiers relevés : c'est fait, et je n'ai rien eu à corriger." },
+      { qui: "intermittent", texte: "Ma règle ne bouge pas pour autant : ce que j'affiche reste une estimation, et seul le versement de France Travail fait foi. Mais tu sais maintenant que je compte comme eux." },
+    ],
+  },
+  {
     date: "28 juillet 2026",
     titre: "Ton compte Google, et me voilà sur Android",
     items: [

@@ -9185,7 +9185,7 @@ function AppInner() {
                     </div>
 
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
-                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ton premier relevé de situation me servira à me caler au centime : partage-le et je vérifie. Seul le versement de France Travail fait foi.
+                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ce calcul a été vérifié au centime sur de vrais versements. Seul le versement de France Travail fait foi.
                     </div>
                   </div>
                 );
@@ -9763,7 +9763,7 @@ function AppInner() {
                          Sans « juste en dessous » : la carte vit à gauche en desktop, plus bas en mobile. */}
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(93,202,165,0.15)", lineHeight: 1.55 }}>
                       <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Et ton versement du mois ?</strong><br />
-                      Regarde la carte « Ton mois » sur ton cockpit : elle estime ce que France Travail te versera pour le mois en cours. Et je me calerai au centime sur ton premier relevé de situation. 🐾
+                      Regarde la carte « Ton mois » sur ton cockpit : elle estime ce que France Travail te versera pour le mois en cours. Un calcul déjà vérifié au centime sur de vrais versements. 🐾
                     </div>
 
                     <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
