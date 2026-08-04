@@ -43,7 +43,7 @@ Les présentes mentions légales sont soumises au droit français. En cas de lit
 
 const CGU_MD = `# Conditions générales d'utilisation (CGU)
 
-**Dernière mise à jour : 20 juin 2026**
+**Dernière mise à jour : 4 août 2026**
 
 ## 1. Objet
 
@@ -58,7 +58,9 @@ TOTOR propose, à la date des présentes :
 - l'estimation du montant des cotisations sociales à provisionner, sur la base des informations renseignées par l'utilisateur ;
 - le suivi des revenus encaissés et des factures clients ;
 - le suivi des frais professionnels ;
-- des simulateurs (achat, rémunération, fiscalité) ;
+- l'émission et l'envoi de factures et de devis, la signature de devis en ligne et l'encaissement en ligne des factures (article 5) ;
+- pour les intermittents du spectacle : le suivi des heures et cachets (saisie ou lecture d'attestations) et des estimations indicatives d'allocation, France Travail restant seul décisionnaire ;
+- des simulateurs (achat, rémunération, fiscalité, allocation) ;
 - un assistant conversationnel basé sur l'intelligence artificielle ;
 - la recherche d'informations d'entreprise via le répertoire Sirene de l'INSEE.
 
@@ -70,11 +72,21 @@ L'accès à TOTOR nécessite la création d'un compte (par email/mot de passe ou
 
 Un utilisateur ne peut créer qu'un compte correspondant à sa propre identité ou à celle de l'entreprise qu'il représente légalement.
 
-## 4. Tarifs
+## 4. Tarifs et abonnement
 
-À la date des présentes, TOTOR est proposé gratuitement, dans une version bêta. VANILLIA se réserve la possibilité d'introduire ultérieurement des offres payantes ; les utilisateurs en seront informés préalablement, et aucune modification tarifaire ne sera appliquée rétroactivement sans consentement.
+TOTOR propose une version gratuite et un abonnement payant, « TOTOR Veille », qui débloque des fonctionnalités supplémentaires. Les prix en vigueur sont affichés dans l'application et sur le site au moment de la souscription.
 
-## 5. Obligations de l'utilisateur
+Selon la plateforme, le paiement de l'abonnement est traité par Stripe (site web) ou par l'App Store d'Apple / Google Play (applications mobiles). L'abonnement se gère et se résilie à tout moment depuis le portail de gestion Stripe (souscription sur le site) ou les réglages d'abonnement du store concerné (souscription dans une application), la résiliation prenant effet à la fin de la période en cours. Une période d'essai gratuite peut être proposée sur les applications mobiles ; à défaut de résiliation avant son terme, l'abonnement payant démarre automatiquement.
+
+Aucune modification tarifaire ne sera appliquée rétroactivement, et toute évolution des prix sera annoncée préalablement.
+
+## 5. Encaissement en ligne et signature des devis
+
+**Encaissement en ligne.** TOTOR permet à l'utilisateur d'activer un encaissement en ligne pour ses factures, opéré par Stripe. L'utilisateur crée à cette fin son propre compte auprès de Stripe et en accepte les conditions. Les paiements de ses clients (carte bancaire, prélèvement SEPA) sont encaissés **directement sur ce compte Stripe** : les fonds ne transitent jamais par VANILLIA, qui n'est pas prestataire de services de paiement et ne prélève aucune commission sur ces encaissements. Les frais de traitement de Stripe s'appliquent selon la grille tarifaire de Stripe et restent à la charge de l'utilisateur. La relation de paiement (traitement, remboursements, litiges et contestations éventuelles) relève de l'utilisateur, de son client et de Stripe ; VANILLIA n'y est pas partie. Le statut « payée » d'une facture est mis à jour dans TOTOR sur notification de Stripe, à titre informatif : l'utilisateur reste seul responsable de sa comptabilité et du suivi effectif de ses encaissements.
+
+**Signature de devis en ligne.** L'utilisateur peut envoyer à son client un lien de lecture et d'acceptation d'un devis. L'acceptation par le client (« Bon pour accord ») constitue une signature électronique simple au sens du règlement européen eIDAS ; TOTOR conserve un fichier de preuve (horodatage, adresse email, adresse IP, empreinte numérique du document et copie scellée du devis) mis à la disposition de l'utilisateur. Il appartient à l'utilisateur de vérifier l'identité de son client et l'adéquation de ce niveau de signature à ses enjeux contractuels.
+
+## 6. Obligations de l'utilisateur
 
 L'utilisateur s'engage à :
 
@@ -83,23 +95,23 @@ L'utilisateur s'engage à :
 - ne pas extraire ou réutiliser massivement les données ou le code de l'application ;
 - ne renseigner que des données qu'il a le droit de communiquer (ses propres données ou celles de son entreprise).
 
-## 6. Disponibilité du service
+## 7. Disponibilité du service
 
-TOTOR étant en version bêta, VANILLIA ne garantit pas une disponibilité continue du service. Des interruptions, bugs ou pertes de données ponctuelles peuvent survenir. L'utilisateur est invité à conserver une copie de ses documents importants (factures, justificatifs) en dehors de l'application.
+VANILLIA s'efforce d'assurer la meilleure disponibilité possible du service, sans garantir une disponibilité continue. Des interruptions, bugs ou pertes de données ponctuelles peuvent survenir. L'utilisateur est invité à conserver une copie de ses documents importants (factures, justificatifs) en dehors de l'application.
 
-## 7. Responsabilité
+## 8. Responsabilité
 
 VANILLIA met en œuvre des moyens raisonnables pour assurer l'exactitude des calculs proposés, sans garantir l'absence totale d'erreur. La responsabilité de VANILLIA ne saurait être engagée en cas de dommage résultant d'une décision prise par l'utilisateur sur la seule base des informations fournies par TOTOR, ou en cas d'interruption du service.
 
-## 8. Résiliation
+## 9. Résiliation
 
 L'utilisateur peut supprimer son compte à tout moment depuis l'application ou en en faisant la demande à bonjour@montotor.fr. VANILLIA se réserve le droit de suspendre ou supprimer un compte en cas de manquement aux présentes CGU.
 
-## 9. Modification des CGU
+## 10. Modification des CGU
 
 VANILLIA peut modifier les présentes CGU à tout moment. Les utilisateurs seront informés de toute modification substantielle. La poursuite de l'utilisation de TOTOR après modification vaut acceptation des nouvelles CGU.
 
-## 10. Droit applicable
+## 11. Droit applicable
 
 Les présentes CGU sont soumises au droit français. Tout litige relève, à défaut de résolution amiable, des tribunaux français compétents.
 
@@ -110,7 +122,7 @@ Pour toute question relative aux présentes CGU : bonjour@montotor.fr
 
 const CONFIDENTIALITE_MD = `# Politique de confidentialité
 
-**Dernière mise à jour : 19 juillet 2026**
+**Dernière mise à jour : 4 août 2026**
 
 La présente politique explique comment VANILLIA (SARL), éditrice de TOTOR, collecte, utilise et protège les données personnelles des utilisateurs, conformément au Règlement Général sur la Protection des Données (RGPD) et à la loi Informatique et Libertés.
 
@@ -128,6 +140,7 @@ Contact pour toute question relative à vos données : **bonjour@montotor.fr**
 - Données financières : revenus encaissés, factures clients (montants, dates, noms de clients), frais professionnels, solde bancaire déclaratif, objectifs financiers
 - Contenu des échanges avec l'assistant conversationnel (IA)
 - Documents importés : factures, attestations employeur mensuelles (AEM), attestations France Travail et justificatifs (PDF, images ou photos) téléversés pour extraction automatique de données
+- Preuve d'acceptation d'un devis en ligne (si l'utilisateur envoie un devis à signer) : horodatage, adresse email et adresse IP du signataire, empreinte numérique du document et copie scellée du devis, conservées comme preuve à la disposition de l'utilisateur
 
 ### 2.2 Données collectées automatiquement
 
@@ -146,6 +159,7 @@ TOTOR n'utilise pas de cookies publicitaires ni de traceurs tiers à des fins de
 | Sécurité, prévention de la fraude | Intérêt légitime |
 | Amélioration du service | Intérêt légitime |
 | Mesure de l'efficacité de nos propres publicités (le cas échéant) | Intérêt légitime |
+| Preuve de l'acceptation en ligne d'un devis (horodatage, IP, email du signataire) | Intérêt légitime (constitution de preuve) |
 
 ## 4. Destinataires des données et sous-traitants
 
@@ -156,7 +170,7 @@ Vos données peuvent être transmises aux prestataires techniques suivants, stri
 - **Cloudflare** : stockage sécurisé des documents que vous importez (attestations, justificatifs) et des sauvegardes chiffrées de la base.
 - **Anthropic** : modèle d'intelligence artificielle qui répond à l'assistant conversationnel ET qui lit automatiquement les documents et photos que vous importez (factures, attestations) pour en extraire les informations. Les messages échangés et le contenu des documents importés lui sont transmis (États-Unis). Ces contenus sont transmis à Anthropic dans le seul but de produire la réponse ou l'extraction que vous demandez : ils ne sont **pas utilisés pour entraîner ses modèles**, et leur usage est strictement limité à la fourniture du service (usage limité). L'IA n'intervient que lorsque vous choisissez d'utiliser l'assistant ou d'importer un document : vous gardez le contrôle de ce qui lui est envoyé.
 - **Resend** : envoi des emails du service (vérification d'adresse, rappels d'échéance, relances de factures) (États-Unis).
-- **Stripe** : traitement des paiements de l'abonnement. Vos coordonnées bancaires de paiement sont saisies directement chez Stripe et ne transitent jamais par nos serveurs (États-Unis et Irlande).
+- **Stripe** : traitement des paiements de l'abonnement et, si vous activez l'encaissement en ligne, des paiements de vos propres factures via votre compte Stripe. Dans les deux cas, les coordonnées bancaires sont saisies directement chez Stripe et les fonds comme les numéros de carte ne transitent jamais par nos serveurs (États-Unis et Irlande).
 - **Enable Banking** : connexion bancaire optionnelle, en lecture seule, uniquement si vous l'activez, pour synchroniser votre solde. Prestataire agréé dans l'Union européenne (Finlande). Vos identifiants bancaires ne transitent jamais par nos serveurs.
 - **Sentry** : diagnostic technique des erreurs de l'application, sans vos données financières ni votre identité (hébergé dans l'Union européenne).
 - **Google** : authentification, uniquement si vous choisissez la connexion via Google (États-Unis).
