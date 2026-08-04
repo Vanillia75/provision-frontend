@@ -10,7 +10,6 @@ import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
 import { SimulateurPublic } from "./SimulateurPublic";
 import { PourquoiHector } from "./PourquoiHector";
-import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
 import { etatCaisse, journalCaisse, initCaisse, chargerProduitsVeille, acheterVeille, restaurerAchats } from "./revenuecatClient";
@@ -621,6 +620,9 @@ function AppInner() {
   // Mini-simulateur de la carte : « et si j'ajoute N cachets à X € ? »
   const [projSimCachets, setProjSimCachets] = useState("");
   const [projSimBrut, setProjSimBrut] = useState("");
+  // « € par cachet » ou « € au total » (retour réel du 04/08 : des cachets à des
+  // prix différents, c'est le total qui compte, pas un tarif uniforme).
+  const [projSimMode, setProjSimMode] = useState("cachet");
   const [projSimResult, setProjSimResult] = useState(null);
   const [projSimLoading, setProjSimLoading] = useState(false);
   // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
@@ -2897,9 +2899,16 @@ function AppInner() {
   };
 
   // Vitrine d'abonnement réutilisable (auto-entrepreneur ET intermittent). onBack = retour.
+  // ⚠️ Le titre et l'entrée de menu disent « TOTOR Veille », PAS « Abonnement ».
+  // Le 28/07/2026, deux personnes ont écrit à l'aide le même jour parce qu'elles
+  // cherchaient « Abonnement » dans l'appli, où l'entrée s'appelle « TOTOR Veille »
+  // (contrainte App Store 3.1.1 : ça doit ressembler à une fonction, pas à une
+  // boutique). Le site portait l'autre nom : deux noms pour une seule rubrique,
+  // donc des gens qui repartent en croyant qu'on ne peut pas s'abonner. On unifie
+  // sur le nom de la marque, celui que l'App Store nous impose de garder.
   const renderAbonnement = (onBack) => IS_NATIVE_APP ? renderDecouverteVeille() : (
     <div>
-      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>Abonnement</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
+      <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}><div><h1 style={S.pageTitle}>TOTOR Veille</h1><p style={S.pageSub}>🐶 Je m'occupe de ce qui te prend du temps. Tu te concentres sur ce qui compte.</p></div></div>
 
       {profile?.is_premium ? (() => {
         const estStripe = profile?.premium_source === "stripe";
@@ -3083,88 +3092,6 @@ function AppInner() {
       <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
     </div>
   );
-
-  // ── Carnet de bord de Totor ("Ce que j'ai appris") — visible par TOUS (gratuit inclus). ──
-  // Lit le fichier statique CARNET (édité à la main). 3 cartes "en_cours" max, + encart
-  // "Cette semaine, j'ai appris…" pour les "termine" datés de moins de 7 jours.
-  const renderCarnet = () => {
-    const metier = profile?.statut === "intermittent" ? "intermittent" : "auto";
-    const visible = (pub) => !pub || pub === "tous" || pub === metier;   // jamais le jargon de l'autre métier
-    const joursDepuis = (d) => Math.max(0, Math.floor((Date.now() - new Date(d + "T00:00:00").getTime()) / 86400000));
-    const fmtJour = (d) => new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-    const majTexte = (j) => (j <= 0 ? "aujourd'hui" : j === 1 ? "hier" : `il y a ${j} jours`);
-
-    // Cartes en cours : on ne garde que les entrées visibles pour ce métier, 3 cartes max.
-    const cartes = (CARNET.enCours || [])
-      .map(c => ({ ...c, entrees: (c.entrees || []).filter(e => visible(e.public)).sort((a, b) => b.date.localeCompare(a.date)) }))
-      .filter(c => c.entrees.length)
-      .sort((a, b) => b.entrees[0].date.localeCompare(a.entrees[0].date))
-      .slice(0, 3);
-
-    // Appris récemment : visible pour ce métier ET daté de moins de 7 jours.
-    const appris = (CARNET.apprisRecemment || [])
-      .filter(e => visible(e.public) && joursDepuis(e.date) <= 7)
-      .sort((a, b) => b.date.localeCompare(a.date));
-
-    return (
-      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: "#0a1322", border: "1.5px solid rgba(55,138,221,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-            <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-notebook" fallbackColor="#378ADD" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>🐶 Ce que j'ai appris</h1>
-            <p style={{ fontSize: 13, color: "#8BA5C0", margin: "3px 0 0", lineHeight: 1.5 }}>Mes progrès récents, pour mieux veiller sur toi. Je grandis un peu chaque semaine. 🐾</p>
-          </div>
-        </div>
-
-        {cartes.length === 0 ? (
-          <div style={{ ...S.card, textAlign: "center", color: "#8BA5C0", fontSize: 13, padding: "28px 20px" }}>
-            🐶 Je couve de nouvelles idées… reviens bientôt voir ce que j'apprends pour toi.
-          </div>
-        ) : cartes.map((card, ci) => {
-          const j = joursDepuis(card.entrees[0].date);
-          return (
-            <div key={ci} style={{ ...S.card, marginBottom: 14, borderLeft: `3px solid ${ACCENT}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#5DCAA5", flexShrink: 0, boxShadow: "0 0 0 4px rgba(93,202,165,0.15)" }} />
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#E6EDF5" }}>{card.titre}</span>
-                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", borderRadius: 6, padding: "2px 8px" }}>en cours</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {card.entrees.map((e, ei) => (
-                  <div key={ei} style={{ display: "flex", gap: 10 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: ei === 0 ? ACCENT : "rgba(255,255,255,0.25)", flexShrink: 0, marginTop: 6 }} />
-                    <div>
-                      <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 1 }}>{fmtJour(e.date)}</div>
-                      <div style={{ fontSize: 13.5, color: "#C4D2E0", lineHeight: 1.5 }}>{e.texte}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ fontSize: 11.5, color: "#6B8299", marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
-                📅 Dernière mise à jour : {majTexte(j)}
-              </div>
-            </div>
-          );
-        })}
-
-        {appris.length > 0 && (
-          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "16px 18px", marginTop: 6 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#5DCAA5", marginBottom: 10 }}>🐶 Cette semaine, j'ai appris…</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {appris.map((e, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, fontSize: 13.5, color: "#C4D2E0", lineHeight: 1.45 }}>
-                  <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span>
-                  <span>{e.texte}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Jauge de quota — côté GRATUIT uniquement. Lit profile.quotas[type] = { used, limit }.
   // Masquée si abonné (pas de limite) OU si la limite est neutralisée (> 100, ex. 9999).
@@ -4575,10 +4502,14 @@ function AppInner() {
     setProjSimLoading(true);
     setProjSimResult(null);
     try {
-      const brut = projSimBrut !== "" ? parseFloat(String(projSimBrut).replace(",", ".")) : null;
+      const brutSaisi = projSimBrut !== "" ? parseFloat(String(projSimBrut).replace(",", ".")) : null;
+      // Le moteur raisonne par cachet : en mode « total », on divise simplement.
+      const brut = brutSaisi != null && !isNaN(brutSaisi) ? (projSimMode === "total" ? brutSaisi / n : brutSaisi) : null;
       const q = `?cachets_sup=${n}` + (brut != null && !isNaN(brut) ? `&brut_cachet=${brut}` : "");
       const d = await apiFetch(`/intermittent/projection-aj${q}`);
-      setProjSimResult(d && d.simulation ? d.simulation : { erreur: true });
+      setProjSimResult(d && d.simulation
+        ? { ...d.simulation, mode: projSimMode, total_saisi: projSimMode === "total" && brut != null ? brutSaisi : null }
+        : { erreur: true });
     } catch {
       setProjSimResult({ erreur: true });
     } finally {
@@ -6520,6 +6451,39 @@ function AppInner() {
     // (accord écrit de la personne, prénom seul). Vide = la section n'existe pas.
     // Format : { texte: "…", prenom: "…", metier: "…" }
     const TEMOIGNAGES = [
+      // Poisson bulle — avis PUBLIC 5/5 laissé sur l'APP STORE le 30/07/2026
+      // (version 1.1.6), récupéré au caractère près via le flux RSS Apple.
+      // Citation VERBATIM, y compris « l'historique des mes employeurs » :
+      // la coquille est de la personne, on ne corrige pas les gens qu'on cite.
+      {
+        texte: "Enfin une appli qui clarifie et personnalise le système d’intermittence ! Il y a tout. Mes cachets, le nombre d’heures restant à faire, le montant net de ce que je vais toucher, un scan des AEM, l’historique des mes employeurs, etc.  C’est génial ! Bravo aux développeurs !",
+        prenom: "Poisson bulle",
+        metier: "sur l'App Store",
+        note: 5,
+      },
+      // Julien Garcia — avis PUBLIC 5/5 laissé sur GOOGLE PLAY le 28/07/2026, relevé
+      // par Camille dans la Play Console (version 1.1.7). Citation VERBATIM.
+      // Placé en TÊTE pour une raison précise : c'était le SEUL avis d'auto-entrepreneur.
+      // Les cinq autres témoignages étaient tous des intermittents, alors que la section
+      // s'affiche aussi sur la vitrine auto-entrepreneur. Quelqu'un qui vient pour sa
+      // micro-entreprise ne lisait que des histoires de cachets et de 507 heures.
+      // Seuls les cinq ⭐ de fin sont retirés : c'est une note, pas une phrase, et la
+      // carte affiche déjà les étoiles.
+      {
+        texte: "Depuis le temps qu'on l'attendait sur le playstore Très bon outil qui m'aide beaucoup au jour le jour. Recommande fortement pour tout auto entrepreneur !!!",
+        prenom: "Julien Garcia",
+        metier: "sur Google Play",
+        note: 5,
+      },
+      // Jean-Paul Prt — avis PUBLIC 5/5 sur GOOGLE PLAY le 28/07/2026 (version 1.1.7).
+      // Citation VERBATIM, guillemets intérieurs compris : c'est lui qui cite sa propre
+      // phrase, on ne la lui retire pas.
+      {
+        texte: "Application au Top. Plus de Stress à chaque fin de mois ! \"Je souhaite à chacun d'avoir un TOTOR dans sa vie\" 😊",
+        prenom: "Jean-Paul Prt",
+        metier: "sur Google Play",
+        note: 5,
+      },
       // Alunal — avis PUBLIC 5/5 laissé sur l'App Store le 24/07/2026 (« PARFAIT ! »),
       // récupéré via le flux RSS Apple. EXTRAIT, coupes marquées par […], aucun mot
       // ajouté ni modifié.
@@ -6567,6 +6531,39 @@ function AppInner() {
         note: 5,
       },
     ];
+    // Les temoignages s'affichent sur LES DEUX vitrines. Ils ne vivaient que sur
+    // celle des intermittents : un visiteur auto-entrepreneur n'avait donc aucune
+    // preuve sociale sous les yeux, ni note ni avis. Corrige le 28/07/2026, le jour
+    // ou le premier avis d'auto-entrepreneur est arrive (Julien Garcia, Google Play).
+    // FONCTION de rendu, pas une const : du JSX garde dans une const eager a deja
+    // coute un ecran blanc sur ce projet. Elle n'est appelee que dans la garde.
+    const renderTemoignages = () => (
+          <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
+            <div style={{ maxWidth: 980, margin: "0 auto" }}>
+              {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
+              <div style={{ textAlign: "center", marginBottom: isMobile ? 26 : 36 }}>
+                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
+              </div>
+              {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 14, alignItems: "stretch" }}>
+                {TEMOIGNAGES.map((t, i) => (
+                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: isMobile ? "16px 15px" : "18px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
+                    {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
+                    {t.note >= 1 && (
+                      <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
+                        {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
+                      </div>
+                    )}
+                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 13.5 : 14, color: "#C9D8E8", lineHeight: 1.55, fontStyle: "italic", margin: "0 0 10px" }}>« {t.texte} »</p>
+                    <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+    );
+
     // Widget « sombre sans bordure marquée » (maquette) : panneau discret, fondu dans le noir.
     const demoFondu = { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 16, padding: isMobile ? "18px 16px" : "22px 24px" };
     const sousPanel = { background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.045)", borderRadius: 12, padding: isMobile ? "15px 15px" : "16px 16px" };
@@ -7001,6 +6998,9 @@ function AppInner() {
             </div>
           </section>
 
+        {/* Les avis, juste avant le pied de page, sur les DEUX vitrines. */}
+        {TEMOIGNAGES.length > 0 && renderTemoignages()}
+
           {/* ===== FOOTER ===== */}
           <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 16 }}>
@@ -7272,34 +7272,6 @@ function AppInner() {
           </div>
         </section>
 
-        {/* ===== TÉMOIGNAGES (uniquement de vraies citations — section invisible tant que vide) ===== */}
-        {TEMOIGNAGES.length > 0 && (
-          <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "52px 22px" : "88px 48px" }}>
-            <div style={{ maxWidth: 980, margin: "0 auto" }}>
-              {/* Note App Store réelle (5,0 au 23/07/2026) : à ne garder que tant qu'elle est vraie. */}
-              <div style={{ textAlign: "center", marginBottom: isMobile ? 26 : 36 }}>
-                <div style={{ fontFamily: SERIF, fontSize: isMobile ? 22 : 28, fontWeight: 700, color: "white" }}>5,0 <span aria-hidden="true" style={{ color: "#FAC775", fontSize: isMobile ? 17 : 21, letterSpacing: 2 }}>★★★★★</span></div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginTop: 4 }}>la note de TOTOR sur l'App Store</div>
-              </div>
-              {/* Côte à côte (2 colonnes) sur ordinateur, empilés sur mobile. */}
-              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "repeat(3, 1fr)", gap: isMobile ? 12 : 14, alignItems: "stretch" }}>
-                {TEMOIGNAGES.map((t, i) => (
-                  <div key={i} style={{ textAlign: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: isMobile ? "16px 15px" : "18px 16px", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                    {/* Étoiles : affichées UNIQUEMENT si la personne a réellement donné une note. */}
-                    {t.note >= 1 && (
-                      <div aria-label={`Note : ${t.note} sur 5`} style={{ fontSize: 14, letterSpacing: 3, color: "#FAC775", marginBottom: 10 }}>
-                        {"★".repeat(Math.min(5, t.note))}<span style={{ color: "rgba(255,255,255,0.15)" }}>{"★".repeat(Math.max(0, 5 - t.note))}</span>
-                      </div>
-                    )}
-                    <p style={{ fontFamily: SERIF, fontSize: isMobile ? 13.5 : 14, color: "#C9D8E8", lineHeight: 1.55, fontStyle: "italic", margin: "0 0 10px" }}>« {t.texte} »</p>
-                    <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700 }}>{t.prenom}<span style={{ color: "#8BA5C0", fontWeight: 400 }}>, {t.metier}</span></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </section>
-        )}
-
         {/* ===== 07 — Et j'aide aussi ta micro-entreprise ===== */}
         <section style={secShell}>
           <div style={secGrid}>
@@ -7359,6 +7331,9 @@ function AppInner() {
             {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
           </div>
         </section>
+
+          {/* Les avis, juste avant le pied de page, sur les DEUX vitrines. */}
+          {TEMOIGNAGES.length > 0 && renderTemoignages()}
 
         {/* ===== FOOTER ===== */}
         <footer style={{ borderTop: "1px solid rgba(255,255,255,0.07)", padding: "24px 40px", display: "flex", flexWrap: "wrap", gap: 16, alignItems: "center", justifyContent: "space-between" }}>
@@ -8576,10 +8551,9 @@ function AppInner() {
       { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
-      { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
-      // Appli native (App Store 3.1.1) : l'écran devient une DÉCOUVERTE de TOTOR Veille,
-      // sans prix ni achat (le paiement vit sur le web). Sur le web : abonnement normal.
-      { id: "abonnement", icon: IS_NATIVE_APP ? "ti-paw" : "ti-crown", label: IS_NATIVE_APP ? "TOTOR Veille" : "Abonnement", dispo: true },
+      // Appli native (App Store 3.1.1) : l'écran reste une DÉCOUVERTE de TOTOR Veille.
+      // Nom unifié « TOTOR Veille » web ET natif (décision 28/07, voir renderAbonnement).
+      { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille", dispo: true },
     ];
     const interSidebar = (
       // Fond OPAQUE (correction revue) + safe-area du natif : les deux réunis.
@@ -8728,7 +8702,7 @@ function AppInner() {
           </button>
         </nav>
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement" || interNav === "carnet") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
 
           {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
           {!pwaDismissed && (
@@ -8945,7 +8919,10 @@ function AppInner() {
                     if (!dup) return null;
                     return (
                       <div style={{ marginTop: 14, background: "rgba(240,180,70,0.10)", border: "1px solid rgba(240,180,70,0.45)", borderRadius: 10, padding: "12px 14px", fontSize: 12.5, color: "#F2C879", lineHeight: 1.55 }}>
-                        <strong style={{ color: "#FFD98A" }}>⚠️ Doublon possible.</strong> Tu as déjà {dup.employeur ? `« ${dup.employeur} »` : "une AEM"} au {fmtDate(dup.date)}{dup.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(dup.salaire_brut)} € brut` : ""} dans ta liste. Si c'est la même, clique sur « {aemQueue.length > 0 ? "Passer" : "Annuler"} » pour ne pas la compter deux fois.
+                        <strong style={{ color: "#FFD98A" }}>⚠️ Doublon possible.</strong> Tu as déjà {dup.employeur ? `« ${dup.employeur} »` : "une AEM"} au {fmtDate(dup.date)}{dup.nombre != null ? ` · ${dup.nombre} ${dup.type_activite === "heures" ? "h" : (dup.nombre > 1 ? "cachets" : "cachet")}` : ""}{dup.salaire_brut ? ` · ${new Intl.NumberFormat("fr-FR").format(dup.salaire_brut)} € brut` : ""} dans ta liste.
+                        <span style={{ display: "block", marginTop: 6 }}>
+                          Si c'est la même, clique sur « {aemQueue.length > 0 ? "Passer" : "Annuler"} » pour ne pas la compter deux fois. <strong style={{ color: "#FFD98A" }}>Si ce sont deux contrats différents le même jour, enregistre quand même</strong> : c'est fréquent, et je ne te le redemanderai plus pour cette ligne.
+                        </span>
                       </div>
                     );
                   })()}
@@ -9128,6 +9105,52 @@ function AppInner() {
                   </div>
                 </div>
               </div>
+
+              {/* ═══ TON BRIEFING DU JOUR — la promesse du carnet (28/06), enfin réelle.
+                   Composé uniquement de données déjà calculées ailleurs (Loi X : rien de
+                   nouveau), 3 lignes max, priorité : à faire > à surveiller > tout va bien. ═══ */}
+              {(() => {
+                const items = [];
+                if (actuOuverte && !dejaActualise) {
+                  items.push({ ic: "📋", tx: <>Ton <strong style={{ color: "#C8E0F5" }}>actualisation</strong> est ouverte : je te l'ai préparée, il n'y a plus qu'à recopier.</>, cible: "actu", lib: "Voir" });
+                }
+                if (aemManquantes.length > 0) {
+                  items.push({ ic: "📄", tx: <>Il me manque l'AEM de <strong style={{ color: "#C8E0F5" }}>{aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""}</strong> : réclame-la, ou scanne-la dès qu'elle arrive.</>, cible: "mesaem", lib: "Mes AEM" });
+                }
+                const contratsAVenir = (interActivites || []).filter(a => {
+                  if (!a.date) return false;
+                  const ecart = (new Date(a.date + "T12:00:00") - Date.now()) / 86400000;
+                  return ecart >= 0 && ecart <= 7;
+                }).length;
+                if (contratsAVenir > 0) {
+                  items.push({ ic: "🗓️", tx: <><strong style={{ color: "#C8E0F5" }}>{contratsAVenir} contrat{contratsAVenir > 1 ? "s" : ""}</strong> dans les 7 prochains jours. Belle semaine en vue.</>, cible: "activites", lib: "Voir" });
+                }
+                const dateJour = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+                return (
+                  <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 18px", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: items.length ? 8 : 4 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>☀️ Ton briefing du jour</span>
+                      <span style={{ fontSize: 11, color: "#5A7798" }}>{dateJour}</span>
+                    </div>
+                    {items.length === 0 ? (
+                      <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                        Rien d'urgent aujourd'hui. Tu es à <strong style={{ color: "#C8E0F5" }}>{calc.heures} h</strong> (objectif {calc.seuil}). Va créer, je veille. 🐾
+                      </div>
+                    ) : items.slice(0, 3).map((it, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "5px 0", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                        <span style={{ flexShrink: 0 }}>{it.ic}</span>
+                        <span style={{ flex: 1 }}>
+                          {it.tx}{" "}
+                          <button type="button" onClick={() => setInterNav(it.cible)}
+                            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                            {it.lib} →
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
 
               {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══ */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
@@ -9315,7 +9338,17 @@ function AppInner() {
                     <div style={shell}>
                       {tete}
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Pour estimer ton versement du mois, il me faut ta <strong style={{ color: "#C8E0F5" }}>notification France Travail</strong> : renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière », et je te donne le chiffre.
+                        Pour estimer ton versement du mois, deux chemins au choix : <strong style={{ color: "#C8E0F5" }}>importe ton attestation France Travail</strong> (bouton « Importer mon ARE » sur le cockpit, je lis ton taux officiel dedans), ou renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière ». Et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false && em.raison === "annexe_manquante") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        J'ai déjà <strong style={{ color: "#C8E0F5" }}>ton taux officiel</strong> (merci pour ton attestation !). Il me manque juste ton <strong style={{ color: "#C8E0F5" }}>annexe</strong> (8 technicien·ne ou 10 artiste) : indique-la dans la carte « Ton allocation journalière », ou ajoute un contrat du mois et je la déduis toute seule.
                       </div>
                     </div>
                   );
@@ -9349,7 +9382,7 @@ function AppInner() {
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
-                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour.
+                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour{em.taux_source === "officiel" ? <> (<strong style={{ color: "#9FE1CB" }}>ton taux officiel</strong>, importé de ton attestation)</> : null}.
                       {em.jours_travailles > 0
                         ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
                         : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
@@ -9430,7 +9463,7 @@ function AppInner() {
                     </div>
 
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
-                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ton premier relevé de situation me servira à me caler au centime : partage-le et je vérifie. Seul le versement de France Travail fait foi.
+                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ce calcul a été vérifié au centime sur de vrais versements. Seul le versement de France Travail fait foi.
                     </div>
                   </div>
                 );
@@ -10008,7 +10041,7 @@ function AppInner() {
                          Sans « juste en dessous » : la carte vit à gauche en desktop, plus bas en mobile. */}
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(93,202,165,0.15)", lineHeight: 1.55 }}>
                       <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Et ton versement du mois ?</strong><br />
-                      Regarde la carte « Ton mois » sur ton cockpit : elle estime ce que France Travail te versera pour le mois en cours. Et je me calerai au centime sur ton premier relevé de situation. 🐾
+                      Regarde la carte « Ton mois » sur ton cockpit : elle estime ce que France Travail te versera pour le mois en cours. Un calcul déjà vérifié au centime sur de vrais versements. 🐾
                     </div>
 
                     <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
@@ -10131,10 +10164,20 @@ function AppInner() {
                         « c'est le nombre de cachets PLUS combien ils sont payés qui décide ») */}
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(55,138,221,0.18)" }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#C8E0F5", marginBottom: 8 }}>Et si j'ajoute… ?</div>
+                      {/* Deux façons de donner le montant : par cachet, ou le TOTAL sur la
+                          période (les cachets n'ont pas tous le même prix). */}
+                      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                        {[["cachet", "€ par cachet"], ["total", "€ au total"]].map(([m, lib]) => (
+                          <button key={m} type="button" onClick={() => setProjSimMode(m)}
+                            style={{ background: projSimMode === m ? "rgba(55,138,221,0.25)" : "transparent", border: `1px solid ${projSimMode === m ? "#378ADD" : "#1e3a5f"}`, borderRadius: 999, padding: "4px 12px", fontSize: 11.5, fontWeight: 700, color: projSimMode === m ? "#C8E0F5" : "#8FB4D8", cursor: "pointer", fontFamily: "inherit" }}>
+                            {lib}
+                          </button>
+                        ))}
+                      </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                         <input type="number" min="1" max="200" value={projSimCachets} onChange={e => setProjSimCachets(e.target.value)} placeholder="Nb cachets"
                           style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={`€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
+                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={projSimMode === "total" ? "€ au total (tous cachets)" : `€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
                           style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                         <button type="button" disabled={projSimLoading || !projSimCachets} onClick={lancerSimulationAj}
                           style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: projSimLoading || !projSimCachets ? "default" : "pointer", fontFamily: "inherit", opacity: projSimLoading || !projSimCachets ? 0.6 : 1 }}>
@@ -10146,7 +10189,14 @@ function AppInner() {
                           {projSimResult.erreur
                             ? "La simulation n'a pas répondu, réessaie dans un instant."
                             : projSimResult.affichable
-                              ? <>Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} à {formatEUR(projSimResult.brut_cachet)}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}</>
+                              ? <>
+                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
+                                  {projSimResult.brut_cachet > 0 && (
+                                    <div style={{ marginTop: 6, color: "#CBB3E8" }}>
+                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{formatEUR(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
+                                    </div>
+                                  )}
+                                </>
                               : <>Je n'arrive pas à chiffrer ce lot précisément, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. Ce que je peux te dire de sûr : ça monte. 🐾</>}
                         </div>
                       )}
@@ -12617,7 +12667,6 @@ function AppInner() {
               </>)}
 
               {/* ═══ PAGE RÉGLAGES ═══ */}
-              {interNav === "carnet" && renderCarnet()}
               {interNav === "trouver-heures" && <TrouverDesHeures />}
               {interNav === "abonnement" && renderAbonnement(() => setInterNav("cockpit"))}
               {interNav === "reglages" && (<>
@@ -13538,10 +13587,10 @@ function AppInner() {
         {/* ─── Le reste : la vie de Totor et le compte. Rien n'est supprimé. ─── */}
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 4px" }} />
         {[
-          { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
           // Appli native (App Store 3.1.1) : découverte de TOTOR Veille, sans prix ni achat.
-          { id: "abonnement", icon: IS_NATIVE_APP ? "ti-paw" : "ti-crown", label: IS_NATIVE_APP ? "TOTOR Veille" : "Abonnement" },
+          // Nom unifié « TOTOR Veille » web ET natif (décision 28/07).
+          { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille" },
         ].map(item => (
           <button key={item.id} style={{ ...S.navItem, ...(nav === item.id ? S.navItemActive : {}) }} onClick={() => { setNav(item.id); setMobileMenuOpen(false); }}>
             <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 18, flexShrink: 0 }} />
@@ -13653,6 +13702,46 @@ function AppInner() {
             )}
 
             {renderHeroHector()}
+
+            {/* ═══ TON BRIEFING DU JOUR — jumeau AE du briefing intermittent (même
+                 promesse du carnet, mêmes règles : données déjà calculées, 3 lignes max). ═══ */}
+            {(() => {
+              const items = [];
+              if (periodeUrssafADeclarer && !urssafDeclarationFaite) {
+                items.push({ ic: "📋", tx: <>Ta <strong style={{ color: "#C8E0F5" }}>déclaration URSSAF de {periodeUrssafADeclarer.label}</strong> est à faire : je te l'ai préparée.</>, cible: "declaration", lib: "Voir" });
+              }
+              const mtn = new Date();
+              const aujourdHui = `${mtn.getFullYear()}-${String(mtn.getMonth() + 1).padStart(2, "0")}-${String(mtn.getDate()).padStart(2, "0")}`;
+              const enRetard = (invoicesList || []).filter(inv => inv.statut === "impayee" || (inv.statut === "envoyee" && inv.date_echeance && inv.date_echeance < aujourdHui)).length;
+              if (enRetard > 0) {
+                items.push({ ic: "💶", tx: <><strong style={{ color: "#C8E0F5" }}>{enRetard} facture{enRetard > 1 ? "s" : ""} en retard</strong> de paiement : tu peux relancer en un clic.</>, cible: "factures", lib: "Factures" });
+              }
+              const dateJour = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+              return (
+                <div style={{ ...S.card, padding: "14px 18px", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: items.length ? 8 : 4 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>☀️ Ton briefing du jour</span>
+                    <span style={{ fontSize: 11, color: "#5A7798" }}>{dateJour}</span>
+                  </div>
+                  {items.length === 0 ? (
+                    <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                      Rien d'urgent aujourd'hui. Tout est en ordre de mon côté. Va créer, je veille. 🐾
+                    </div>
+                  ) : items.slice(0, 3).map((it, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "5px 0", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                      <span style={{ flexShrink: 0 }}>{it.ic}</span>
+                      <span style={{ flex: 1 }}>
+                        {it.tx}{" "}
+                        <button type="button" onClick={() => setNav(it.cible)}
+                          style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                          {it.lib} →
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* ═══ RAPPEL DE DÉCLARATION URSSAF — présence au bon moment (miroir de la
                 bannière d'actualisation intermittent). Repliée dès que l'utilisateur dit
@@ -16863,7 +16952,6 @@ function AppInner() {
         )}
 
 
-        {nav === "carnet" && renderCarnet()}
         {nav === "abonnement" && renderAbonnement(() => setNav("dashboard"))}
         </div>
       </main>

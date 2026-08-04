@@ -9,6 +9,20 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "4 août 2026",
+    titre: "Vérifié au centime sur un vrai versement",
+    items: [
+      { qui: "intermittent", texte: "Le juge que j'attendais est passé : un premier décompte réel de France Travail sur un mois travaillé. Mon estimation du mois tombait au centime près, jours déduits compris. J'avais promis de me caler sur les premiers relevés : c'est fait, et je n'ai rien eu à corriger." },
+      { qui: "intermittent", texte: "Ma règle ne bouge pas pour autant : ce que j'affiche reste une estimation, et seul le versement de France Travail fait foi. Mais tu sais maintenant que je compte comme eux." },
+      { qui: "intermittent", texte: "La carte « Ton mois » se sert maintenant de ton taux officiel : si tu as importé ton attestation France Travail, je ne te redemande plus ton salaire de référence, je calcule directement avec le taux qu'ils te paient. Merci à celle qui m'a fait remarquer que je réclamais des chiffres qu'on m'avait déjà donnés." },
+      { qui: "intermittent", texte: "Le simulateur « Et si j'ajoute des cachets » accepte le total en euros : tes cachets n'ont pas tous le même prix, alors donne-moi juste le nombre et le total, je me débrouille. Et il te dit aussi ce que ces cachets ajouteraient à tes Congés Spectacles." },
+      { qui: "intermittent", texte: "« Simuler une allocation » parle enfin cachets : tu peux saisir en cachets ou en heures, comme tu penses. 1 cachet = 12 heures, comme partout." },
+      { qui: "intermittent", texte: "Et quand tu me demandes un calcul dans le chat, je te donne maintenant le chemin exact vers le bon écran, au lieu de te renvoyer vaguement vers le cockpit. Désolé pour les détours." },
+      { qui: "intermittent", texte: "☀️ Ton briefing du jour est arrivé sur ton cockpit : actualisation ouverte, AEM manquantes, contrats de la semaine... je te dis chaque jour ce qu'il y a à faire. Et quand tout va bien, je te le dis aussi." },
+      { qui: "ae", texte: "☀️ Ton briefing du jour est arrivé sur ton cockpit : déclaration URSSAF à préparer, factures en retard... je te dis chaque jour ce qu'il y a à faire. Et quand tout va bien, je te le dis aussi." },
+    ],
+  },
+  {
     date: "28 juillet 2026",
     titre: "Ton compte Google, et me voilà sur Android",
     items: [

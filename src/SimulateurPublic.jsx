@@ -65,6 +65,11 @@ function LigneDetail({ intitule, valeur, fort, vert }) {
 export function SimulateurPublic({ onBack, onInscription, initial, dansLApp }) {
   const [annexe, setAnnexe] = useState(initial?.annexe === "annexe8" ? "annexe8" : "annexe10");
   const [heures, setHeures] = useState(initial?.heures != null ? String(initial.heures) : "");
+  // Saisie en heures OU en cachets (retour réel du 04/08 : « on ne pense pas
+  // toujours en heures, on pense en cachets »). 1 cachet artiste = 12 h, la
+  // même conversion que partout dans l'app.
+  const [saisieMode, setSaisieMode] = useState("heures");
+  const [cachets, setCachets] = useState("");
   const [salaire, setSalaire] = useState(initial?.salaire != null ? String(initial.salaire) : "");
   const [avance, setAvance] = useState(false);
   const [hEnseignement, setHEnseignement] = useState("");
@@ -76,7 +81,8 @@ export function SimulateurPublic({ onBack, onInscription, initial, dansLApp }) {
   const [erreur, setErreur] = useState("");
   const [charge, setCharge] = useState(false);
 
-  const pret = Number(heures) > 0 && Number(salaire) > 0;
+  const heuresEffectives = saisieMode === "cachets" ? (Number(cachets) || 0) * 12 : Number(heures);
+  const pret = heuresEffectives > 0 && Number(salaire) > 0;
 
   async function calculer(e) {
     e.preventDefault();
@@ -90,7 +96,7 @@ export function SimulateurPublic({ onBack, onInscription, initial, dansLApp }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           annexe,
-          heures: Number(heures),
+          heures: heuresEffectives,
           salaire_reference: Number(salaire),
           heures_enseignement: Number(hEnseignement) || 0,
           heures_formation: Number(hFormation) || 0,
@@ -187,9 +193,30 @@ export function SimulateurPublic({ onBack, onInscription, initial, dansLApp }) {
 
           <div style={{ display: "flex", gap: 14, flexWrap: "wrap", marginBottom: 16 }}>
             <div style={{ flex: "1 1 200px" }}>
-              <label style={label} htmlFor="simu-heures">Heures travaillées sur 12 mois</label>
-              <MontantInput id="simu-heures" value={heures} onChange={setHeures}
-                placeholder="507" style={champ} />
+              <div style={{ display: "flex", gap: 6, marginBottom: 6 }}>
+                {[["heures", "En heures"], ["cachets", "En cachets"]].map(([m, lib]) => (
+                  <button key={m} type="button" onClick={() => setSaisieMode(m)}
+                    style={{ background: saisieMode === m ? "rgba(55,138,221,0.25)" : "transparent", border: `1px solid ${saisieMode === m ? BLEU : "rgba(255,255,255,0.14)"}`, borderRadius: 999, padding: "3px 11px", fontSize: 11.5, fontWeight: 700, color: saisieMode === m ? "#C5D4E3" : "#8BA5C0", cursor: "pointer", fontFamily: "inherit" }}>
+                    {lib}
+                  </button>
+                ))}
+              </div>
+              {saisieMode === "cachets" ? (
+                <>
+                  <label style={label} htmlFor="simu-cachets">Cachets sur 12 mois</label>
+                  <MontantInput id="simu-cachets" value={cachets} onChange={setCachets}
+                    placeholder="43" style={champ} />
+                  <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 5 }}>
+                    = {(Number(cachets) || 0) * 12} h (1 cachet artiste = 12 h)
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label style={label} htmlFor="simu-heures">Heures travaillées sur 12 mois</label>
+                  <MontantInput id="simu-heures" value={heures} onChange={setHeures}
+                    placeholder="507" style={champ} />
+                </>
+              )}
             </div>
             <div style={{ flex: "1 1 200px" }}>
               <label style={label} htmlFor="simu-salaire">Salaire de référence brut (€)</label>
