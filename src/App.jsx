@@ -6063,6 +6063,31 @@ function AppInner() {
               <i className="ti ti-arrow-left" aria-hidden="true" /> Retour
             </button>
             <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 20px" }}><Logo size={34} dark /></div>
+            {/* En NATIF : la promesse remplace la vitrine qu'on vient de sauter (un seul écran,
+                textes par métier), avec la réassurance AVANT le formulaire. Invisible sur le web. */}
+            {estNatif() && !forgotMode && (
+              <div style={{ textAlign: "center", margin: "0 0 18px" }}>
+                <div style={{ fontSize: 18.5, fontWeight: 800, color: "white", lineHeight: 1.3 }}>
+                  {landingStatut === "auto_entrepreneur"
+                    ? "Tu sais enfin ce que tu peux vraiment dépenser."
+                    : "TOTOR t'aide à garder le cap sur tes 507 h."}
+                </div>
+                <div style={{ fontSize: 13.5, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>
+                  {landingStatut === "auto_entrepreneur"
+                    ? "Tes factures, tes échéances URSSAF et ton argent disponible, rassemblés."
+                    : "Tes heures, tes AEM et une estimation claire de ce que France Travail devrait te verser."}
+                </div>
+                <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 700, marginTop: 10 }}>
+                  Commence gratuitement, sans carte bancaire. L'abonnement est facultatif.
+                </div>
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ fontSize: 12, color: "#8BA5C0", cursor: "pointer" }}>Pourquoi un compte ?</summary>
+                  <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>
+                    Ton compte sauvegarde tes heures, tes documents et tes factures, et te les fait retrouver sur iPhone, sur Android et sur le site.
+                  </div>
+                </details>
+              </div>
+            )}
             <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box" }}>
               {forgotMode ? (
                 <div>
@@ -6373,8 +6398,11 @@ function AppInner() {
                 Je m'occupe du reste.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => navLanding("intermittent") })}
-                {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => navLanding("auto_entrepreneur") })}
+                {/* En NATIF, la personne a déjà été convaincue par la fiche du store : le choix
+                    du métier mène DIRECTEMENT à l'inscription (la vitrine reste le récit du web).
+                    Constat Apple Ads du 04/08 + avis convergents : chaque écran en trop perd des gens. */}
+                {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => { navLanding("intermittent"); if (estNatif()) ouvrirAuth("register"); } })}
+                {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => { navLanding("auto_entrepreneur"); if (estNatif()) ouvrirAuth("register"); } })}
               </div>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 18, textAlign: "center" }}>
                 Tu peux changer à tout moment.
