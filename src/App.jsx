@@ -11,7 +11,6 @@ import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
 import { SimulateurPublic } from "./SimulateurPublic";
 import { PourquoiHector } from "./PourquoiHector";
-import { CARNET } from "./carnetHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
 
@@ -2811,88 +2810,6 @@ function AppInner() {
       <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
     </div>
   );
-
-  // ── Carnet de bord de Totor ("Ce que j'ai appris") — visible par TOUS (gratuit inclus). ──
-  // Lit le fichier statique CARNET (édité à la main). 3 cartes "en_cours" max, + encart
-  // "Cette semaine, j'ai appris…" pour les "termine" datés de moins de 7 jours.
-  const renderCarnet = () => {
-    const metier = profile?.statut === "intermittent" ? "intermittent" : "auto";
-    const visible = (pub) => !pub || pub === "tous" || pub === metier;   // jamais le jargon de l'autre métier
-    const joursDepuis = (d) => Math.max(0, Math.floor((Date.now() - new Date(d + "T00:00:00").getTime()) / 86400000));
-    const fmtJour = (d) => new Date(d + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
-    const majTexte = (j) => (j <= 0 ? "aujourd'hui" : j === 1 ? "hier" : `il y a ${j} jours`);
-
-    // Cartes en cours : on ne garde que les entrées visibles pour ce métier, 3 cartes max.
-    const cartes = (CARNET.enCours || [])
-      .map(c => ({ ...c, entrees: (c.entrees || []).filter(e => visible(e.public)).sort((a, b) => b.date.localeCompare(a.date)) }))
-      .filter(c => c.entrees.length)
-      .sort((a, b) => b.entrees[0].date.localeCompare(a.entrees[0].date))
-      .slice(0, 3);
-
-    // Appris récemment : visible pour ce métier ET daté de moins de 7 jours.
-    const appris = (CARNET.apprisRecemment || [])
-      .filter(e => visible(e.public) && joursDepuis(e.date) <= 7)
-      .sort((a, b) => b.date.localeCompare(a.date));
-
-    return (
-      <div style={{ maxWidth: 600, margin: "0 auto" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 18 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 14, background: "#0a1322", border: "1.5px solid rgba(55,138,221,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-            <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-notebook" fallbackColor="#378ADD" />
-          </div>
-          <div>
-            <h1 style={{ fontSize: 20, fontWeight: 800, color: "white", margin: 0 }}>🐶 Ce que j'ai appris</h1>
-            <p style={{ fontSize: 13, color: "#8BA5C0", margin: "3px 0 0", lineHeight: 1.5 }}>Mes progrès récents, pour mieux veiller sur toi. Je grandis un peu chaque semaine. 🐾</p>
-          </div>
-        </div>
-
-        {cartes.length === 0 ? (
-          <div style={{ ...S.card, textAlign: "center", color: "#8BA5C0", fontSize: 13, padding: "28px 20px" }}>
-            🐶 Je couve de nouvelles idées… reviens bientôt voir ce que j'apprends pour toi.
-          </div>
-        ) : cartes.map((card, ci) => {
-          const j = joursDepuis(card.entrees[0].date);
-          return (
-            <div key={ci} style={{ ...S.card, marginBottom: 14, borderLeft: `3px solid ${ACCENT}` }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#5DCAA5", flexShrink: 0, boxShadow: "0 0 0 4px rgba(93,202,165,0.15)" }} />
-                <span style={{ fontSize: 15, fontWeight: 700, color: "#E6EDF5" }}>{card.titre}</span>
-                <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", borderRadius: 6, padding: "2px 8px" }}>en cours</span>
-              </div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {card.entrees.map((e, ei) => (
-                  <div key={ei} style={{ display: "flex", gap: 10 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: "50%", background: ei === 0 ? ACCENT : "rgba(255,255,255,0.25)", flexShrink: 0, marginTop: 6 }} />
-                    <div>
-                      <div style={{ fontSize: 11, color: "#6B8299", marginBottom: 1 }}>{fmtJour(e.date)}</div>
-                      <div style={{ fontSize: 13.5, color: "#C4D2E0", lineHeight: 1.5 }}>{e.texte}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ fontSize: 11.5, color: "#6B8299", marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
-                📅 Dernière mise à jour : {majTexte(j)}
-              </div>
-            </div>
-          );
-        })}
-
-        {appris.length > 0 && (
-          <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 12, padding: "16px 18px", marginTop: 6 }}>
-            <div style={{ fontSize: 14, fontWeight: 700, color: "#5DCAA5", marginBottom: 10 }}>🐶 Cette semaine, j'ai appris…</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {appris.map((e, i) => (
-                <div key={i} style={{ display: "flex", gap: 8, fontSize: 13.5, color: "#C4D2E0", lineHeight: 1.45 }}>
-                  <span style={{ color: "#5DCAA5", flexShrink: 0 }}>✓</span>
-                  <span>{e.texte}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // Jauge de quota — côté GRATUIT uniquement. Lit profile.quotas[type] = { used, limit }.
   // Masquée si abonné (pas de limite) OU si la limite est neutralisée (> 100, ex. 9999).
@@ -8338,7 +8255,6 @@ function AppInner() {
       { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
       { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
       { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
-      { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris", dispo: true },
       { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille", dispo: true },
     ];
     const interSidebar = (
@@ -8487,7 +8403,7 @@ function AppInner() {
           </button>
         </nav>
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement" || interNav === "carnet") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
 
           {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
           {!pwaDismissed && (
@@ -12452,7 +12368,6 @@ function AppInner() {
               </>)}
 
               {/* ═══ PAGE RÉGLAGES ═══ */}
-              {interNav === "carnet" && renderCarnet()}
               {interNav === "trouver-heures" && <TrouverDesHeures />}
               {interNav === "abonnement" && renderAbonnement(() => setInterNav("cockpit"))}
               {interNav === "reglages" && (<>
@@ -13373,7 +13288,6 @@ function AppInner() {
         {/* ─── Le reste : la vie de Totor et le compte. Rien n'est supprimé. ─── */}
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 4px" }} />
         {[
-          { id: "carnet", icon: "ti-notebook", label: "Ce que j'ai appris" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
           { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille" },
         ].map(item => (
@@ -16736,7 +16650,6 @@ function AppInner() {
         )}
 
 
-        {nav === "carnet" && renderCarnet()}
         {nav === "abonnement" && renderAbonnement(() => setNav("dashboard"))}
         </div>
       </main>
