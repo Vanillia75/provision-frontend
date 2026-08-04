@@ -610,6 +610,9 @@ function AppInner() {
   // Mini-simulateur de la carte : « et si j'ajoute N cachets à X € ? »
   const [projSimCachets, setProjSimCachets] = useState("");
   const [projSimBrut, setProjSimBrut] = useState("");
+  // « € par cachet » ou « € au total » (retour réel du 04/08 : des cachets à des
+  // prix différents, c'est le total qui compte, pas un tarif uniforme).
+  const [projSimMode, setProjSimMode] = useState("cachet");
   const [projSimResult, setProjSimResult] = useState(null);
   const [projSimLoading, setProjSimLoading] = useState(false);
   // Salon V2 / PR3 — « Mes AEM » scan sur place : snapshot de victoire (immunisé au closure) + ref de batch.
@@ -4299,10 +4302,14 @@ function AppInner() {
     setProjSimLoading(true);
     setProjSimResult(null);
     try {
-      const brut = projSimBrut !== "" ? parseFloat(String(projSimBrut).replace(",", ".")) : null;
+      const brutSaisi = projSimBrut !== "" ? parseFloat(String(projSimBrut).replace(",", ".")) : null;
+      // Le moteur raisonne par cachet : en mode « total », on divise simplement.
+      const brut = brutSaisi != null && !isNaN(brutSaisi) ? (projSimMode === "total" ? brutSaisi / n : brutSaisi) : null;
       const q = `?cachets_sup=${n}` + (brut != null && !isNaN(brut) ? `&brut_cachet=${brut}` : "");
       const d = await apiFetch(`/intermittent/projection-aj${q}`);
-      setProjSimResult(d && d.simulation ? d.simulation : { erreur: true });
+      setProjSimResult(d && d.simulation
+        ? { ...d.simulation, mode: projSimMode, total_saisi: projSimMode === "total" && brut != null ? brutSaisi : null }
+        : { erreur: true });
     } catch {
       setProjSimResult({ erreur: true });
     } finally {
@@ -9070,7 +9077,17 @@ function AppInner() {
                     <div style={shell}>
                       {tete}
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Pour estimer ton versement du mois, il me faut ta <strong style={{ color: "#C8E0F5" }}>notification France Travail</strong> : renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière », et je te donne le chiffre.
+                        Pour estimer ton versement du mois, deux chemins au choix : <strong style={{ color: "#C8E0F5" }}>importe ton attestation France Travail</strong> (bouton « Importer mon ARE » sur le cockpit, je lis ton taux officiel dedans), ou renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière ». Et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false && em.raison === "annexe_manquante") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        J'ai déjà <strong style={{ color: "#C8E0F5" }}>ton taux officiel</strong> (merci pour ton attestation !). Il me manque juste ton <strong style={{ color: "#C8E0F5" }}>annexe</strong> (8 technicien·ne ou 10 artiste) : indique-la dans la carte « Ton allocation journalière », ou ajoute un contrat du mois et je la déduis toute seule.
                       </div>
                     </div>
                   );
@@ -9104,7 +9121,7 @@ function AppInner() {
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
-                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour.
+                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour{em.taux_source === "officiel" ? <> (<strong style={{ color: "#9FE1CB" }}>ton taux officiel</strong>, importé de ton attestation)</> : null}.
                       {em.jours_travailles > 0
                         ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
                         : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
@@ -9886,10 +9903,20 @@ function AppInner() {
                         « c'est le nombre de cachets PLUS combien ils sont payés qui décide ») */}
                     <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(55,138,221,0.18)" }}>
                       <div style={{ fontSize: 12, fontWeight: 700, color: "#C8E0F5", marginBottom: 8 }}>Et si j'ajoute… ?</div>
+                      {/* Deux façons de donner le montant : par cachet, ou le TOTAL sur la
+                          période (les cachets n'ont pas tous le même prix). */}
+                      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                        {[["cachet", "€ par cachet"], ["total", "€ au total"]].map(([m, lib]) => (
+                          <button key={m} type="button" onClick={() => setProjSimMode(m)}
+                            style={{ background: projSimMode === m ? "rgba(55,138,221,0.25)" : "transparent", border: `1px solid ${projSimMode === m ? "#378ADD" : "#1e3a5f"}`, borderRadius: 999, padding: "4px 12px", fontSize: 11.5, fontWeight: 700, color: projSimMode === m ? "#C8E0F5" : "#8FB4D8", cursor: "pointer", fontFamily: "inherit" }}>
+                            {lib}
+                          </button>
+                        ))}
+                      </div>
                       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
                         <input type="number" min="1" max="200" value={projSimCachets} onChange={e => setProjSimCachets(e.target.value)} placeholder="Nb cachets"
                           style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={`€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
+                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={projSimMode === "total" ? "€ au total (tous cachets)" : `€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
                           style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
                         <button type="button" disabled={projSimLoading || !projSimCachets} onClick={lancerSimulationAj}
                           style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: projSimLoading || !projSimCachets ? "default" : "pointer", fontFamily: "inherit", opacity: projSimLoading || !projSimCachets ? 0.6 : 1 }}>
@@ -9901,7 +9928,14 @@ function AppInner() {
                           {projSimResult.erreur
                             ? "La simulation n'a pas répondu, réessaie dans un instant."
                             : projSimResult.affichable
-                              ? <>Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} à {formatEUR(projSimResult.brut_cachet)}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}</>
+                              ? <>
+                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
+                                  {projSimResult.brut_cachet > 0 && (
+                                    <div style={{ marginTop: 6, color: "#CBB3E8" }}>
+                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{formatEUR(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
+                                    </div>
+                                  )}
+                                </>
                               : <>Je n'arrive pas à chiffrer ce lot précisément, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. Ce que je peux te dire de sûr : ça monte. 🐾</>}
                         </div>
                       )}
