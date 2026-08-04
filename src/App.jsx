@@ -8891,6 +8891,52 @@ function AppInner() {
                 </div>
               </div>
 
+              {/* ═══ TON BRIEFING DU JOUR — la promesse du carnet (28/06), enfin réelle.
+                   Composé uniquement de données déjà calculées ailleurs (Loi X : rien de
+                   nouveau), 3 lignes max, priorité : à faire > à surveiller > tout va bien. ═══ */}
+              {(() => {
+                const items = [];
+                if (actuOuverte && !dejaActualise) {
+                  items.push({ ic: "📋", tx: <>Ton <strong style={{ color: "#C8E0F5" }}>actualisation</strong> est ouverte : je te l'ai préparée, il n'y a plus qu'à recopier.</>, cible: "actu", lib: "Voir" });
+                }
+                if (aemManquantes.length > 0) {
+                  items.push({ ic: "📄", tx: <>Il me manque l'AEM de <strong style={{ color: "#C8E0F5" }}>{aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""}</strong> : réclame-la, ou scanne-la dès qu'elle arrive.</>, cible: "mesaem", lib: "Mes AEM" });
+                }
+                const contratsAVenir = (interActivites || []).filter(a => {
+                  if (!a.date) return false;
+                  const ecart = (new Date(a.date + "T12:00:00") - Date.now()) / 86400000;
+                  return ecart >= 0 && ecart <= 7;
+                }).length;
+                if (contratsAVenir > 0) {
+                  items.push({ ic: "🗓️", tx: <><strong style={{ color: "#C8E0F5" }}>{contratsAVenir} contrat{contratsAVenir > 1 ? "s" : ""}</strong> dans les 7 prochains jours. Belle semaine en vue.</>, cible: "activites", lib: "Voir" });
+                }
+                const dateJour = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+                return (
+                  <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 18px", marginBottom: 12 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: items.length ? 8 : 4 }}>
+                      <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>☀️ Ton briefing du jour</span>
+                      <span style={{ fontSize: 11, color: "#5A7798" }}>{dateJour}</span>
+                    </div>
+                    {items.length === 0 ? (
+                      <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                        Rien d'urgent aujourd'hui. Tu es à <strong style={{ color: "#C8E0F5" }}>{calc.heures} h</strong> (objectif {calc.seuil}). Va créer, je veille. 🐾
+                      </div>
+                    ) : items.slice(0, 3).map((it, i) => (
+                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "5px 0", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                        <span style={{ flexShrink: 0 }}>{it.ic}</span>
+                        <span style={{ flex: 1 }}>
+                          {it.tx}{" "}
+                          <button type="button" onClick={() => setInterNav(it.cible)}
+                            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                            {it.lib} →
+                          </button>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+
               {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══ */}
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
                 {!calc.secu ? (
@@ -13440,6 +13486,46 @@ function AppInner() {
             )}
 
             {renderHeroHector()}
+
+            {/* ═══ TON BRIEFING DU JOUR — jumeau AE du briefing intermittent (même
+                 promesse du carnet, mêmes règles : données déjà calculées, 3 lignes max). ═══ */}
+            {(() => {
+              const items = [];
+              if (periodeUrssafADeclarer && !urssafDeclarationFaite) {
+                items.push({ ic: "📋", tx: <>Ta <strong style={{ color: "#C8E0F5" }}>déclaration URSSAF de {periodeUrssafADeclarer.label}</strong> est à faire : je te l'ai préparée.</>, cible: "declaration", lib: "Voir" });
+              }
+              const mtn = new Date();
+              const aujourdHui = `${mtn.getFullYear()}-${String(mtn.getMonth() + 1).padStart(2, "0")}-${String(mtn.getDate()).padStart(2, "0")}`;
+              const enRetard = (invoicesList || []).filter(inv => inv.statut === "impayee" || (inv.statut === "envoyee" && inv.date_echeance && inv.date_echeance < aujourdHui)).length;
+              if (enRetard > 0) {
+                items.push({ ic: "💶", tx: <><strong style={{ color: "#C8E0F5" }}>{enRetard} facture{enRetard > 1 ? "s" : ""} en retard</strong> de paiement : tu peux relancer en un clic.</>, cible: "factures", lib: "Factures" });
+              }
+              const dateJour = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
+              return (
+                <div style={{ ...S.card, padding: "14px 18px", marginBottom: 16 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: items.length ? 8 : 4 }}>
+                    <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>☀️ Ton briefing du jour</span>
+                    <span style={{ fontSize: 11, color: "#5A7798" }}>{dateJour}</span>
+                  </div>
+                  {items.length === 0 ? (
+                    <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                      Rien d'urgent aujourd'hui. Tout est en ordre de mon côté. Va créer, je veille. 🐾
+                    </div>
+                  ) : items.slice(0, 3).map((it, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "5px 0", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                      <span style={{ flexShrink: 0 }}>{it.ic}</span>
+                      <span style={{ flex: 1 }}>
+                        {it.tx}{" "}
+                        <button type="button" onClick={() => setNav(it.cible)}
+                          style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                          {it.lib} →
+                        </button>
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
             {/* ═══ RAPPEL DE DÉCLARATION URSSAF — présence au bon moment (miroir de la
                 bannière d'actualisation intermittent). Repliée dès que l'utilisateur dit

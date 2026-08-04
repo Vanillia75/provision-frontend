@@ -19,9 +19,9 @@ export const CARNET = {
   // ── Fonctionnalités en cours d'apprentissage (valables pour les deux métiers) ──
   enCours: [
     {
-      titre: "Mon briefing du matin",
+      titre: "Tes Congés Spectacles dans mes simulations",
       entrees: [
-        { date: "2026-06-28", public: "tous", texte: "J'apprends à te résumer l'essentiel chaque matin : ce que tu peux faire, ce qu'il te reste à régler. Bientôt prêt." },
+        { date: "2026-08-04", public: "intermittent", texte: "Une intermittente m'a demandé de te dire aussi ce que tes futurs cachets ajouteraient à tes Congés Spectacles. C'est commencé : chaque simulation te le dit déjà en gros. J'apprends à l'affiner, saison par saison." },
       ],
     },
     {
@@ -37,6 +37,8 @@ export const CARNET = {
   // ── Avancées terminées récemment → encart "Cette semaine, j'ai appris…" ──
   apprisRecemment: [
     // Communes (les deux métiers)
+    { date: "2026-08-04", public: "tous", texte: "Mon briefing du jour est arrivé sur ton cockpit : ce qu'il y a à faire, ce qui peut attendre, et quand tout va bien, je te le dis aussi. Promis fin juin, tenu." },
+    { date: "2026-08-04", public: "intermittent", texte: "Un vrai versement France Travail est tombé, et mon estimation du mois était juste au centime près. Je m'entraînais depuis des semaines pour ça." },
     { date: "2026-06-28", public: "tous", texte: "À me mettre à jour tout seul, pour que tu aies toujours ma dernière version." },
     { date: "2026-06-27", public: "tous", texte: "À te montrer clairement ce qu'il te reste chaque mois." },
     { date: "2026-06-26", public: "tous", texte: "À te laisser m'offrir à tes proches, pour qu'ils profitent de moi eux aussi." },

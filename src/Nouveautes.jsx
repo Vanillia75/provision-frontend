@@ -18,6 +18,8 @@ const VAGUES = [
       { qui: "intermittent", texte: "Le simulateur « Et si j'ajoute des cachets » accepte le total en euros : tes cachets n'ont pas tous le même prix, alors donne-moi juste le nombre et le total, je me débrouille. Et il te dit aussi ce que ces cachets ajouteraient à tes Congés Spectacles." },
       { qui: "intermittent", texte: "« Simuler une allocation » parle enfin cachets : tu peux saisir en cachets ou en heures, comme tu penses. 1 cachet = 12 heures, comme partout." },
       { qui: "intermittent", texte: "Et quand tu me demandes un calcul dans le chat, je te donne maintenant le chemin exact vers le bon écran, au lieu de te renvoyer vaguement vers le cockpit. Désolé pour les détours." },
+      { qui: "intermittent", texte: "☀️ Ton briefing du jour est arrivé sur ton cockpit : actualisation ouverte, AEM manquantes, contrats de la semaine... je te dis chaque jour ce qu'il y a à faire. Et quand tout va bien, je te le dis aussi." },
+      { qui: "ae", texte: "☀️ Ton briefing du jour est arrivé sur ton cockpit : déclaration URSSAF à préparer, factures en retard... je te dis chaque jour ce qu'il y a à faire. Et quand tout va bien, je te le dis aussi." },
     ],
   },
   {
