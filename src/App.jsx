@@ -142,6 +142,9 @@ function BadgesBientot({ centre }) {
 }
 
 function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
+  // Jamais dans l'app native : proposer d'« installer Totor » à qui est DÉJÀ
+  // dans l'app serait absurde (vu en simulation native le 05/08).
+  if (estNatif()) return null;
   if (isStandalonePWA()) return null;
   if (!pwaPrompt && !isIOSDevice()) return null; // rien à proposer sur desktop classique
   return (
@@ -151,7 +154,7 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
           <img src="/hector-icon-192.png" alt="Totor" style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Installe Totor sur ton téléphone</div>
-            <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil. <span style={{ color: "#8BA5C0" }}>(En attendant l'app sur les stores)</span></div>
+            <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil.</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
