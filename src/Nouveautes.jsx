@@ -130,7 +130,6 @@ const VAGUES = [
       { qui: "ae", texte: "Tes cotisations provisionnées à chaque encaissement : tu vois ton disponible réel, pas un solde trompeur." },
       { qui: "tous", texte: "« Parle à Totor » : tu poses ta question, je réponds avec tes chiffres à toi." },
       { qui: "tous", texte: "L'aide qui connaît ton écran : la pastille « Totor · aide », toujours là, jamais décomptée de ton quota." },
-      { qui: "tous", texte: "La page « Ce que j'ai appris » : tout ce que je sais faire, métier par métier." },
     ],
   },
 ];
