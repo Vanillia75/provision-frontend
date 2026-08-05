@@ -12596,7 +12596,7 @@ function AppInner() {
             img: "/hector-1.png",
             timerLabel: "LE COCKPIT · TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
-            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot au gardien.",
+            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot jusqu'au palier « 507 ».",
             items: [
               { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
               { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
@@ -12744,7 +12744,7 @@ function AppInner() {
             title: "Simule avant de décider.",
             sub: "TOTOR met à ta disposition 4 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
             items: [
-              { icon: "ti-cash", text: "Mode Salaire : combien puis-je me verser ce mois ?" },
+              { icon: "ti-cash", text: "Ma paie : combien puis-je me verser ce mois ?" },
               { icon: "ti-shopping-cart", text: "Mode Achat : puis-je me permettre cette dépense ?" },
               { icon: "ti-target", text: "Simulateur fiscal + Mes tarifs, facture au juste prix" },
             ],
@@ -16739,7 +16739,7 @@ function AppInner() {
             img: "/hector-1.png",
             timerLabel: "LE COCKPIT · TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
-            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot au gardien.",
+            sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot jusqu'au palier « 507 ».",
             items: [
               { icon: "ti-gauge", text: "Ton total d'heures en direct, sur la fenêtre de 12 mois" },
               { icon: "ti-ticket", text: "Tes cachets convertis et additionnés automatiquement" },
@@ -16887,7 +16887,7 @@ function AppInner() {
             title: "Simule avant de décider.",
             sub: "TOTOR met à ta disposition 4 outils de simulation pour prendre les bonnes décisions : combien te verser, si tu peux te permettre un achat, combien facturer pour vivre correctement.",
             items: [
-              { icon: "ti-cash", text: "Mode Salaire : combien puis-je me verser ce mois ?" },
+              { icon: "ti-cash", text: "Ma paie : combien puis-je me verser ce mois ?" },
               { icon: "ti-shopping-cart", text: "Mode Achat : puis-je me permettre cette dépense ?" },
               { icon: "ti-target", text: "Simulateur fiscal + Mes tarifs, facture au juste prix" },
             ],
