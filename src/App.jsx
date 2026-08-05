@@ -6579,6 +6579,15 @@ function AppInner() {
         metier: "sur l'App Store",
         note: 5,
       },
+      // Fabiolajauffret — avis PUBLIC 5/5 laissé sur l'App Store (« Merci ! ») le
+      // 03/08/2026 (version 1.1.6), relevé par Camille le 05/08 dans App Store Connect.
+      // Citation VERBATIM, jamais retouchée.
+      {
+        texte: "Super pratique, je peux plus m'en passer 💗",
+        prenom: "Fabiolajauffret",
+        metier: "sur l'App Store",
+        note: 5,
+      },
     ];
     // Les temoignages s'affichent sur LES DEUX vitrines. Ils ne vivaient que sur
     // celle des intermittents : un visiteur auto-entrepreneur n'avait donc aucune
@@ -14615,12 +14624,12 @@ function AppInner() {
                 <div style={{ background: "#0d2440", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, color: ACCENT, marginBottom: 6 }}>📊 Plafond auto-entrepreneur</div>
                   <div style={{ fontSize: 11, color: "#8BA5C0", marginBottom: 8 }}>
-                    {formatEUR(estimateData?.ca_annuel || 0)} encaissés sur {formatEUR(estimateData?.plafond || 77700)} max
+                    {formatEUR(estimateData?.ca_annuel || 0)} encaissés sur {formatEUR(estimateData?.plafond || 83600)} max
                   </div>
                   <div style={{ height: 4, background: "#1e3a5f", borderRadius: 999, marginBottom: 10 }}>
-                    <div style={{ height: "100%", background: ACCENT, borderRadius: 999, width: `${Math.min(100, Math.round(((estimateData?.ca_annuel || 0) / (estimateData?.plafond || 77700)) * 100))}%`, transition: "width 0.4s" }} />
+                    <div style={{ height: "100%", background: ACCENT, borderRadius: 999, width: `${Math.min(100, Math.round(((estimateData?.ca_annuel || 0) / (estimateData?.plafond || 83600)) * 100))}%`, transition: "width 0.4s" }} />
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(Math.max(0, (estimateData?.plafond || 77700) - (estimateData?.ca_annuel || 0)))}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, color: ACCENT }}>{formatEUR(Math.max(0, (estimateData?.plafond || 83600) - (estimateData?.ca_annuel || 0)))}</div>
                   <div style={{ fontSize: 10, color: "#6B8299", marginBottom: 8 }}>encore encaissables avant le plafond</div>
                   <button onClick={() => setNav("simulateur")} style={{ background: "none", border: "none", color: ACCENT, fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "8px 6px", textAlign: "left", minHeight: 44, display: "inline-flex", alignItems: "center" }}>Voir le simulateur fiscal →</button>
                 </div>
