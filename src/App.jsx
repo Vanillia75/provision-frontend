@@ -6296,6 +6296,15 @@ function AppInner() {
         metier: "sur l'App Store",
         note: 5,
       },
+      // Fabiolajauffret — avis PUBLIC 5/5 laissé sur l'App Store (« Merci ! ») le
+      // 03/08/2026 (version 1.1.6), relevé par Camille le 05/08 dans App Store Connect.
+      // Citation VERBATIM, jamais retouchée.
+      {
+        texte: "Super pratique, je peux plus m'en passer 💗",
+        prenom: "Fabiolajauffret",
+        metier: "sur l'App Store",
+        note: 5,
+      },
     ];
     // Les temoignages s'affichent sur LES DEUX vitrines. Ils ne vivaient que sur
     // celle des intermittents : un visiteur auto-entrepreneur n'avait donc aucune
