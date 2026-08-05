@@ -527,6 +527,9 @@ function AppInner() {
   }, [landingStatut, token, legalPage]);
   // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
   const [interShowAuth, setInterShowAuth] = useState(false);
+  // En natif, le formulaire email est replié derrière « Continuer avec un e-mail »
+  // (avis convergents 05/08 : deux boutons d'un geste d'abord, les champs ensuite).
+  const [emailDeplie, setEmailDeplie] = useState(false);
   // Cockpit intermittent (Brique 5) : état calculé renvoyé par /intermittent/cockpit
   const [interCockpit, setInterCockpit] = useState(null);
   const [interCockpitLoading, setInterCockpitLoading] = useState(false);
@@ -6047,7 +6050,7 @@ function AppInner() {
   // « /auto-entrepreneur » → landing AE (sœur jumelle, même DA). CTA → même écran d'auth plein écran.
   if (!token) {
     // L'inscription/connexion est un écran plein écran (hors du récit) : le bouton y mène.
-    const ouvrirAuth = (mode) => { setAuthMode(mode); setInterShowAuth(true); window.scrollTo({ top: 0 }); };
+    const ouvrirAuth = (mode) => { setAuthMode(mode); setEmailDeplie(false); setInterShowAuth(true); window.scrollTo({ top: 0 }); };
     // Navigation croisée entre les 2 vitrines : met à jour l'URL (SEO / partage / retour) + l'état.
     const navLanding = (statut) => {
       const path = statut === "auto_entrepreneur" ? "/auto-entrepreneur" : "/intermittent";
@@ -6075,17 +6078,17 @@ function AppInner() {
                     ? "Tu sais enfin ce que tu peux vraiment dépenser."
                     : "TOTOR t'aide à garder le cap sur tes 507 h."}
                 </div>
-                <div style={{ fontSize: 13.5, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>
+                <div style={{ fontSize: 13.5, color: "#B5D4F4", marginTop: 6, lineHeight: 1.5 }}>
                   {landingStatut === "auto_entrepreneur"
                     ? "Tes factures, tes échéances URSSAF et ton argent disponible, rassemblés."
-                    : "Tes heures, tes AEM et une estimation claire de ce que France Travail devrait te verser."}
+                    : "Tes heures, tes cachets, tes AEM et une estimation claire de ce que France Travail devrait te verser."}
                 </div>
                 <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 700, marginTop: 10 }}>
-                  Commence gratuitement, sans carte bancaire. L'abonnement est facultatif.
+                  Gratuit, sans carte bancaire.
                 </div>
                 <details style={{ marginTop: 8 }}>
-                  <summary style={{ fontSize: 12, color: "#8BA5C0", cursor: "pointer" }}>Pourquoi un compte ?</summary>
-                  <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>
+                  <summary style={{ fontSize: 12.5, color: "#C8E0F5", cursor: "pointer" }}>Pourquoi j'ai besoin d'un compte ?</summary>
+                  <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 6, lineHeight: 1.5 }}>
                     Ton compte sauvegarde tes heures, tes documents et tes factures, et te les fait retrouver sur iPhone, sur Android et sur le site.
                   </div>
                 </details>
@@ -6137,7 +6140,11 @@ function AppInner() {
                     </div>
                   )}
                   {/* Apple sur le web : indispensable pour qui a créé son compte
-                      depuis l'iPhone avec Apple (ces gens n'ont pas de mot de passe). */}
+                      depuis l'iPhone avec Apple (ces gens n'ont pas de mot de passe).
+                      ⚠️ ORDRE EN NATIF (branche ios-capacitor, à tenir au merge) :
+                      APPLE EN PREMIER sur iOS (règle App Store 4.8, rappel Camille
+                      05/08), GOOGLE EN PREMIER sur Android. L'ordre ci-dessous est
+                      celui du WEB uniquement. */}
                   <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
                     <button type="button" onClick={handleAppleSignIn} disabled={loading}
                             style={{ ...STYLE_BOUTON_APPLE, opacity: loading ? 0.55 : 1 }}>
@@ -6147,6 +6154,14 @@ function AppInner() {
                       {authMode === "login" ? "Se connecter avec Apple" : "Continuer avec Apple"}
                     </button>
                   </div>
+                  {/* En natif, à l'inscription, les champs email sont repliés : deux boutons
+                      d'un geste d'abord (Apple/Google), le formulaire seulement si demandé. */}
+                  {estNatif() && authMode === "register" && !emailDeplie ? (
+                    <button type="button" onClick={() => setEmailDeplie(true)}
+                      style={{ ...S.btnPrimary, background: "white", color: "#0A2540", border: "1.5px solid #D3DEE8", marginTop: 2 }}>
+                      Continuer avec un e-mail
+                    </button>
+                  ) : (<>
                   <p style={S.orDivider}>ou avec un email</p>
                   <label style={S.label}>Email<input style={S.input} type="email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required /></label>
                   <PasswordField label={authMode === "register" ? "Mot de passe (8 caractères min.)" : "Mot de passe"} value={authPassword} onChange={e => setAuthPassword(e.target.value)} autoComplete={authMode === "register" ? "new-password" : "current-password"} />
@@ -6160,7 +6175,7 @@ function AppInner() {
                       faute de bouton Google natif. Retiré le 28/07/2026, décision de
                       Camille : les DEUX applis ont désormais leur bouton Google, le
                       détour n'a plus de raison d'être. */}
-                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
+                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : (estNatif() ? "Créer mon compte" : "Créer mon compte gratuitement")}</button>
                   {authMode === "register" && (
                     <p style={{ fontSize: 11, color: "#8595a8", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
                       En créant ton compte, tu acceptes les{" "}
@@ -6169,10 +6184,22 @@ function AppInner() {
                       <button type="button" onClick={() => setLegalPage("confidentialite")} style={{ background: "none", border: "none", color: "#5a7ea6", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>politique de confidentialité</button>.
                     </p>
                   )}
+                  </>)}
                   <p style={S.switchAuth}>{authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}<button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button></p>
                 </form>
               )}
             </div>
+            {/* La vitrine n'est plus un péage, mais elle reste à un clic pour les hésitants. */}
+            {estNatif() && (
+              <div style={{ textAlign: "center", marginTop: 16 }}>
+                <button type="button" onClick={() => setInterShowAuth(false)}
+                  style={{ background: "none", border: "none", color: "#C8E0F5", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}>
+                  {/* Licence France Travail : la consultation des offres reste libre, sans
+                      compte : le chemin doit être EXPLICITE pour les intermittents. */}
+                  {landingStatut === "auto_entrepreneur" ? "Découvrir TOTOR en détail →" : "Découvrir TOTOR et voir les offres spectacle →"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );
