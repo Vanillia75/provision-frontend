@@ -9,6 +9,14 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "6 août 2026",
+    titre: "Ton compte sous double serrure, et tes données en Europe",
+    items: [
+      { qui: "tous", texte: "La double vérification (2FA) arrive dans tes Réglages : un code à 6 chiffres en plus de ton mot de passe, généré par ton téléphone. Même si quelqu'un vole ton mot de passe, il n'entre pas. Avec 8 codes de secours si tu perds ton téléphone. (Comptes Google et Apple : votre fournisseur la gère déjà, rien à faire.)" },
+      { qui: "tous", texte: "Toutes tes données vivent maintenant en Europe : la base de données a déménagé à Amsterdam, et tes documents étaient déjà stockés en Europe de l'Ouest. C'était important pour moi de te le dire." },
+    ],
+  },
+  {
     date: "4 août 2026",
     titre: "Vérifié au centime sur un vrai versement",
     items: [

@@ -1838,8 +1838,37 @@ function AppInner() {
           ...(authMode === "register" ? { gclid: safeStorage.getItem("gclid") || null } : {}),
         }),
       });
+      if (data.mfa_requise) {
+        // Mot de passe bon, mais la double vérification est active : on passe
+        // à l'écran du code sans ouvrir de session.
+        setMfaToken(data.mfa_token);
+        setMfaCode("");
+        return;
+      }
       clearLocalAccountData();
       safeStorage.setItem("token", data.token);
+      setToken(data.token);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Second temps de la connexion : le code à 6 chiffres (ou un code de secours).
+  async function handleMfaVerify(e) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const data = await apiFetch("/auth/mfa/verify", {
+        method: "POST",
+        body: JSON.stringify({ mfa_token: mfaToken, code: mfaCode }),
+      });
+      clearLocalAccountData();
+      safeStorage.setItem("token", data.token);
+      setMfaToken(null);
+      setMfaCode("");
       setToken(data.token);
     } catch (err) {
       setError(err.message);
@@ -2435,7 +2464,7 @@ function AppInner() {
     activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
     mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
     actu: ["Quand dois-je m'actualiser ?", "Totor s'actualise à ma place ?"],
-    reglages: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
+    reglages: ["C'est quoi la double vérification ?", "Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?"],
   };
   const aideSuggestions = AIDE_SUGGESTIONS[aideEcranCourant]
     || (profile?.statut === "intermittent" ? AIDE_SUGGESTIONS.cockpit : AIDE_SUGGESTIONS.dashboard);
@@ -3141,6 +3170,21 @@ function AppInner() {
   const [pwdMsg, setPwdMsg] = useState("");
   const [pwdErr, setPwdErr] = useState("");
 
+  // ── Double vérification (MFA/TOTP) ──
+  // mfaToken : jeton-palier remis par /auth/login quand le mot de passe est bon
+  // mais qu'il manque le code ; il n'ouvre RIEN d'autre que /auth/mfa/verify.
+  const [mfaToken, setMfaToken] = useState(null);
+  const [mfaCode, setMfaCode] = useState("");
+  // Parcours d'activation dans les réglages : null → "pwd" → "qr" → "codes".
+  // "disable" = le petit formulaire de désactivation.
+  const [mfaEtape, setMfaEtape] = useState(null);
+  const [mfaPwd, setMfaPwd] = useState("");
+  const [mfaSetup, setMfaSetup] = useState(null);
+  const [mfaActivCode, setMfaActivCode] = useState("");
+  const [mfaSecours, setMfaSecours] = useState([]);
+  const [mfaBusy, setMfaBusy] = useState(false);
+  const [mfaErr, setMfaErr] = useState("");
+
   async function handleChangePassword() {
     setPwdErr(""); setPwdMsg("");
     if (pwdNew.length < 8) { setPwdErr("Le nouveau mot de passe doit contenir au moins 8 caractères."); return; }
@@ -3256,6 +3300,170 @@ function AppInner() {
           style={{ marginTop: 14, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: (pwdSaving || vide) ? "default" : "pointer", fontFamily: "inherit", opacity: (pwdSaving || vide) ? 0.6 : 1 }}>
           {pwdSaving ? "…" : "Changer mon mot de passe"}
         </button>
+      </div>
+    );
+  }
+
+  // ── Double vérification : les trois gestes des réglages ──
+  async function mfaDemarrer() {
+    setMfaErr(""); setMfaBusy(true);
+    try {
+      const data = await apiFetch("/auth/mfa/setup", { method: "POST", body: JSON.stringify({ password: mfaPwd }) });
+      setMfaSetup(data);
+      setMfaEtape("qr");
+      setMfaActivCode("");
+    } catch (err) {
+      setMfaErr(err.message || "Impossible de démarrer l'activation.");
+    } finally {
+      setMfaBusy(false);
+    }
+  }
+
+  async function mfaActiver() {
+    setMfaErr(""); setMfaBusy(true);
+    try {
+      const data = await apiFetch("/auth/mfa/activate", { method: "POST", body: JSON.stringify({ code: mfaActivCode }) });
+      setMfaSecours(data.codes_secours || []);
+      setMfaEtape("codes");
+      setMfaPwd(""); setMfaActivCode(""); setMfaSetup(null);
+      setProfile(prev => (prev ? { ...prev, mfa_enabled: true } : prev));
+    } catch (err) {
+      setMfaErr(err.message || "Code refusé, réessaie.");
+    } finally {
+      setMfaBusy(false);
+    }
+  }
+
+  async function mfaCouper() {
+    setMfaErr(""); setMfaBusy(true);
+    try {
+      await apiFetch("/auth/mfa/disable", { method: "POST", body: JSON.stringify({ password: mfaPwd, code: mfaActivCode }) });
+      setMfaEtape(null);
+      setMfaPwd(""); setMfaActivCode("");
+      setProfile(prev => (prev ? { ...prev, mfa_enabled: false } : prev));
+    } catch (err) {
+      setMfaErr(err.message || "Impossible de désactiver.");
+    } finally {
+      setMfaBusy(false);
+    }
+  }
+
+  // Carte « Double vérification » réutilisée dans les deux écrans Réglages,
+  // même architecture que renderChangePassword (fonction appelée dans la garde,
+  // jamais de JSX gardé dans une const eager).
+  function renderMfa(dark = true) {
+    const champ = { width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+    const bouton = (actif) => ({ marginTop: 12, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: actif ? "pointer" : "default", fontFamily: "inherit", opacity: actif ? 1 : 0.6 });
+    const lien = { background: "none", border: "none", color: "#8BA5C0", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline", marginTop: 10 };
+    const carte = dark
+      ? { background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }
+      : { ...S.card, marginBottom: 16 };
+    const titre = <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🛡️ Double vérification (2FA)</div>;
+
+    // Compte Google/Apple : leur fournisseur gère déjà la double vérification.
+    if (profile?.mfa_disponible === false) {
+      return (
+        <div style={carte}>
+          {titre}
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>Ton compte utilise la connexion Google ou Apple : la double vérification est déjà gérée par eux, il n'y a rien à activer ici.</div>
+        </div>
+      );
+    }
+
+    // Étape « codes de secours » : TOUJOURS testée AVANT l'état « active »,
+    // sinon la carte « ✓ Active » masque les codes juste après l'activation
+    // et l'utilisateur ne les voit jamais (bug attrapé au test réel du 05/08).
+    if (mfaEtape === "codes") {
+      return (
+        <div style={carte}>
+          {titre}
+          <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 8 }}>✓ C'est activé ! Dernière chose, la plus importante :</div>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 10, lineHeight: 1.5 }}>Voici tes <strong style={{ color: "white" }}>codes de secours</strong>. Si tu perds ton téléphone, chacun ouvre ta session une seule fois. <strong style={{ color: "white" }}>Ils ne seront plus jamais affichés</strong> : copie-les dans un endroit sûr maintenant.</div>
+          <div style={{ fontFamily: "Consolas, monospace", fontSize: 14, color: "white", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "12px 14px", lineHeight: 1.9, letterSpacing: 1, maxWidth: 300 }}>
+            {mfaSecours.map(c => <div key={c}>{c}</div>)}
+          </div>
+          <button type="button" onClick={() => { navigator.clipboard?.writeText(mfaSecours.join("\n")); }} style={{ ...bouton(true), background: "#378ADD", color: "white", marginRight: 10 }}>Copier les codes</button>
+          <button type="button" onClick={() => { setMfaEtape(null); setMfaSecours([]); }} style={bouton(true)}>J'ai rangé mes codes</button>
+        </div>
+      );
+    }
+
+    // Active : état + désactivation possible.
+    if (profile?.mfa_enabled) {
+      return (
+        <div style={carte}>
+          {titre}
+          <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 6 }}>✓ Active. Ta connexion demande ton mot de passe PUIS un code à 6 chiffres.</div>
+          {mfaEtape === "disable" ? (
+            <div style={{ maxWidth: 380 }}>
+              <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, display: "block", marginTop: 8 }}>Ton mot de passe
+                <input type="password" autoComplete="current-password" value={mfaPwd} onChange={e => setMfaPwd(e.target.value)} style={champ} />
+              </label>
+              <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, display: "block", marginTop: 10 }}>Un code (application ou code de secours)
+                <input type="text" inputMode="numeric" autoComplete="one-time-code" value={mfaActivCode} onChange={e => setMfaActivCode(e.target.value)} style={champ} />
+              </label>
+              {mfaErr && <div style={{ fontSize: 12.5, color: "#F09595", marginTop: 10 }}>{mfaErr}</div>}
+              <button type="button" onClick={mfaCouper} disabled={mfaBusy || !mfaPwd || !mfaActivCode} style={{ ...bouton(!mfaBusy && mfaPwd && mfaActivCode), background: "#E8896B", color: "#3A1608" }}>
+                {mfaBusy ? "…" : "Désactiver la double vérification"}
+              </button>
+              <div><button type="button" style={lien} onClick={() => { setMfaEtape(null); setMfaErr(""); setMfaPwd(""); setMfaActivCode(""); }}>Annuler</button></div>
+            </div>
+          ) : (
+            <button type="button" style={lien} onClick={() => { setMfaEtape("disable"); setMfaErr(""); }}>Désactiver…</button>
+          )}
+        </div>
+      );
+    }
+
+    // Étape « QR » : scanner puis confirmer avec un premier code.
+    if (mfaEtape === "qr" && mfaSetup) {
+      return (
+        <div style={carte}>
+          {titre}
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 10, lineHeight: 1.5 }}>Scanne ce QR code avec ton application d'authentification (Google Authenticator, Microsoft Authenticator, Authy...), puis entre le code à 6 chiffres qu'elle affiche.</div>
+          <div style={{ background: "white", borderRadius: 10, padding: 10, display: "inline-block" }}>
+            <img src={mfaSetup.qr} alt="QR code d'activation" style={{ width: 160, height: 160, display: "block" }} />
+          </div>
+          <details style={{ marginTop: 8 }}>
+            <summary style={{ fontSize: 12, color: "#8BA5C0", cursor: "pointer" }}>Impossible de scanner ? Entre la clé à la main</summary>
+            <div style={{ fontFamily: "Consolas, monospace", fontSize: 12.5, color: "white", marginTop: 6, wordBreak: "break-all" }}>{mfaSetup.secret}</div>
+          </details>
+          <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, display: "block", marginTop: 12, maxWidth: 200 }}>Le code affiché
+            <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={6} placeholder="123456" value={mfaActivCode} onChange={e => setMfaActivCode(e.target.value)} style={champ} />
+          </label>
+          {mfaErr && <div style={{ fontSize: 12.5, color: "#F09595", marginTop: 10 }}>{mfaErr}</div>}
+          <button type="button" onClick={mfaActiver} disabled={mfaBusy || mfaActivCode.length !== 6} style={bouton(!mfaBusy && mfaActivCode.length === 6)}>
+            {mfaBusy ? "…" : "Activer"}
+          </button>
+          <div><button type="button" style={lien} onClick={() => { setMfaEtape(null); setMfaErr(""); setMfaSetup(null); }}>Annuler</button></div>
+        </div>
+      );
+    }
+
+    // Étape « mot de passe » : on confirme l'identité avant de générer le secret.
+    if (mfaEtape === "pwd") {
+      return (
+        <div style={carte}>
+          {titre}
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 8, lineHeight: 1.5 }}>Confirme ton mot de passe pour commencer.</div>
+          <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, display: "block", maxWidth: 380 }}>Ton mot de passe
+            <input type="password" autoComplete="current-password" value={mfaPwd} onChange={e => setMfaPwd(e.target.value)} style={champ} />
+          </label>
+          {mfaErr && <div style={{ fontSize: 12.5, color: "#F09595", marginTop: 10 }}>{mfaErr}</div>}
+          <button type="button" onClick={mfaDemarrer} disabled={mfaBusy || !mfaPwd} style={bouton(!mfaBusy && !!mfaPwd)}>
+            {mfaBusy ? "…" : "Continuer"}
+          </button>
+          <div><button type="button" style={lien} onClick={() => { setMfaEtape(null); setMfaErr(""); setMfaPwd(""); }}>Annuler</button></div>
+        </div>
+      );
+    }
+
+    // Repos : la proposition.
+    return (
+      <div style={carte}>
+        {titre}
+        <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 4, lineHeight: 1.5 }}>Un code à 6 chiffres en plus de ton mot de passe, généré par une application sur ton téléphone. Même si quelqu'un vole ton mot de passe, il n'entre pas.</div>
+        <button type="button" onClick={() => { setMfaEtape("pwd"); setMfaErr(""); setMfaPwd(""); }} style={bouton(true)}>Activer</button>
       </div>
     );
   }
@@ -6375,7 +6583,19 @@ function AppInner() {
               </div>
             )}
             <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box" }}>
-              {forgotMode ? (
+              {mfaToken ? (
+                <form onSubmit={handleMfaVerify}>
+                  <h2 style={{ ...S.authTitle, marginBottom: 8 }}>Vérification en deux étapes</h2>
+                  <p style={{ fontSize: 13, color: "#6B7A8D", marginBottom: 16, lineHeight: 1.6 }}>Ton mot de passe est bon. Entre maintenant le <strong>code à 6 chiffres</strong> de ton application d'authentification (ou un de tes codes de secours).</p>
+                  {error && <div style={S.errorBanner}>{error}</div>}
+                  <label style={S.label}>Code
+                    <input style={{ ...S.input, fontSize: 20, letterSpacing: 4, textAlign: "center" }} type="text" inputMode="numeric" autoComplete="one-time-code" autoFocus
+                      placeholder="123456" value={mfaCode} onChange={e => setMfaCode(e.target.value)} required />
+                  </label>
+                  <button style={S.btnPrimary} type="submit" disabled={loading || !mfaCode.trim()}>{loading ? "…" : "Valider"}</button>
+                  <p style={S.switchAuth}><button type="button" style={S.linkBtn} onClick={() => { setMfaToken(null); setMfaCode(""); setError(""); }}>← Revenir à la connexion</button></p>
+                </form>
+              ) : forgotMode ? (
                 <div>
                   <h2 style={{ ...S.authTitle, marginBottom: 16 }}>Mot de passe oublié</h2>
                   {forgotStatus === "sent" ? (
@@ -12768,6 +12988,7 @@ function AppInner() {
 
               {renderCodeVocal()}
               {renderChangePassword()}
+              {renderMfa()}
 
               {/* Une question ? — le contact humain, bien visible */}
               <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
@@ -16764,6 +16985,7 @@ function AppInner() {
 
             {renderCodeVocal(false)}
             {renderChangePassword(false)}
+            {renderMfa(false)}
 
             <div style={{ ...S.card, marginTop: 14 }}>
               <div style={S.cardTitle}>💬 Une question ?</div>
