@@ -161,7 +161,7 @@ function InstallBanner({ pwaPrompt, onInstall, onDismiss, showHelp, compact }) {
           <img src="/hector-icon-192.png" alt="Totor" style={{ width: 36, height: 36, borderRadius: 9, flexShrink: 0 }} />
           <div>
             <div style={{ fontSize: 13, fontWeight: 700, color: "white" }}>Installe Totor sur ton téléphone</div>
-            <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil. <span style={{ color: "#8BA5C0" }}>(En attendant l'app sur les stores)</span></div>
+            <div style={{ fontSize: 11.5, color: "#9FCBF5", lineHeight: 1.4 }}>Accès direct depuis ton écran d'accueil.</div>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -535,6 +535,9 @@ function AppInner() {
   }, [landingStatut, token, legalPage]);
   // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
   const [interShowAuth, setInterShowAuth] = useState(false);
+  // En natif, le formulaire email est replié derrière « Continuer avec un e-mail »
+  // (avis convergents 05/08 : deux boutons d'un geste d'abord, les champs ensuite).
+  const [emailDeplie, setEmailDeplie] = useState(false);
   // Cockpit intermittent (Brique 5) : état calculé renvoyé par /intermittent/cockpit
   const [interCockpit, setInterCockpit] = useState(null);
   const [interCockpitLoading, setInterCockpitLoading] = useState(false);
@@ -6327,7 +6330,7 @@ function AppInner() {
   // « /auto-entrepreneur » → landing AE (sœur jumelle, même DA). CTA → même écran d'auth plein écran.
   if (!token) {
     // L'inscription/connexion est un écran plein écran (hors du récit) : le bouton y mène.
-    const ouvrirAuth = (mode) => { setAuthMode(mode); setInterShowAuth(true); window.scrollTo({ top: 0 }); };
+    const ouvrirAuth = (mode) => { setAuthMode(mode); setEmailDeplie(false); setInterShowAuth(true); window.scrollTo({ top: 0 }); };
     // Navigation croisée entre les 2 vitrines : met à jour l'URL (SEO / partage / retour) + l'état.
     const navLanding = (statut) => {
       const path = statut === "auto_entrepreneur" ? "/auto-entrepreneur" : "/intermittent";
@@ -6346,6 +6349,31 @@ function AppInner() {
               <i className="ti ti-arrow-left" aria-hidden="true" /> Retour
             </button>
             <div style={{ display: "flex", justifyContent: "center", margin: "8px 0 20px" }}><Logo size={34} dark /></div>
+            {/* En NATIF : la promesse remplace la vitrine qu'on vient de sauter (un seul écran,
+                textes par métier), avec la réassurance AVANT le formulaire. Invisible sur le web. */}
+            {estNatif() && !forgotMode && (
+              <div style={{ textAlign: "center", margin: "0 0 18px" }}>
+                <div style={{ fontSize: 18.5, fontWeight: 800, color: "white", lineHeight: 1.3 }}>
+                  {landingStatut === "auto_entrepreneur"
+                    ? "Tu sais enfin ce que tu peux vraiment dépenser."
+                    : "TOTOR t'aide à garder le cap sur tes 507 h."}
+                </div>
+                <div style={{ fontSize: 13.5, color: "#B5D4F4", marginTop: 6, lineHeight: 1.5 }}>
+                  {landingStatut === "auto_entrepreneur"
+                    ? "Tes factures, tes échéances URSSAF et ton argent disponible, rassemblés."
+                    : "Tes heures, tes cachets, tes AEM et une estimation claire de ce que France Travail devrait te verser."}
+                </div>
+                <div style={{ fontSize: 12.5, color: "#5DCAA5", fontWeight: 700, marginTop: 10 }}>
+                  Gratuit, sans carte bancaire.
+                </div>
+                <details style={{ marginTop: 8 }}>
+                  <summary style={{ fontSize: 12.5, color: "#C8E0F5", cursor: "pointer" }}>Pourquoi j'ai besoin d'un compte ?</summary>
+                  <div style={{ fontSize: 12, color: "#B5D4F4", marginTop: 6, lineHeight: 1.5 }}>
+                    Ton compte sauvegarde tes heures, tes documents et tes factures, et te les fait retrouver sur iPhone, sur Android et sur le site.
+                  </div>
+                </details>
+              </div>
+            )}
             <div style={{ background: "white", borderRadius: 16, padding: isMobile ? "24px 20px" : "32px 28px", boxSizing: "border-box" }}>
               {forgotMode ? (
                 <div>
@@ -6406,6 +6434,15 @@ function AppInner() {
                       </button>
                     </div>
                   )}
+                  {/* En natif, à l'inscription, les champs email sont repliés : les boutons
+                      d'un geste d'abord (Apple/Google natifs ci-dessus), le formulaire
+                      seulement si demandé (avis convergents du 05/08). */}
+                  {estNatif() && authMode === "register" && !emailDeplie ? (
+                    <button type="button" onClick={() => setEmailDeplie(true)}
+                      style={{ ...S.btnPrimary, background: "white", color: "#0A2540", border: "1.5px solid #D3DEE8", marginTop: 2 }}>
+                      Continuer avec un e-mail
+                    </button>
+                  ) : (<>
                   {/* Un seul séparateur, commun aux deux applis (avant, Android n'en
                       avait aucun et iPhone avait le sien collé au bouton Apple). */}
                   {IS_NATIVE_APP && (<p style={S.orDivider}>ou avec un email</p>)}
@@ -6421,7 +6458,7 @@ function AppInner() {
                       faute de bouton Google natif. Retiré le 28/07/2026, décision de
                       Camille : les DEUX applis ont désormais leur bouton Google, le
                       détour n'a plus de raison d'être. */}
-                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : "Créer mon compte gratuitement"}</button>
+                  <button style={{ ...S.btnPrimary, background: "#5DCAA5", color: "#07192E", opacity: (loading || (authMode === "register" && authPassword !== authPasswordConfirm)) ? 0.55 : 1 }} type="submit" disabled={loading || (authMode === "register" && authPassword !== authPasswordConfirm)}>{loading ? "…" : authMode === "login" ? "Se connecter" : (estNatif() ? "Créer mon compte" : "Créer mon compte gratuitement")}</button>
                   {authMode === "register" && (
                     <p style={{ fontSize: 11, color: "#8595a8", textAlign: "center", margin: "10px 0 0", lineHeight: 1.5 }}>
                       En créant ton compte, tu acceptes les{" "}
@@ -6430,10 +6467,22 @@ function AppInner() {
                       <button type="button" onClick={() => setLegalPage("confidentialite")} style={{ background: "none", border: "none", color: "#5a7ea6", fontSize: 11, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>politique de confidentialité</button>.
                     </p>
                   )}
+                  </>)}
                   <p style={S.switchAuth}>{authMode === "login" ? "Pas encore de compte ?" : "Déjà inscrit ?"}{" "}<button type="button" style={S.linkBtn} onClick={() => setAuthMode(authMode === "login" ? "register" : "login")}>{authMode === "login" ? "Créer un compte" : "Se connecter"}</button></p>
                 </form>
               )}
             </div>
+            {/* La vitrine n'est plus un péage, mais elle reste à un clic pour les hésitants. */}
+            {estNatif() && (
+              <div style={{ textAlign: "center", marginTop: 16 }}>
+                <button type="button" onClick={() => setInterShowAuth(false)}
+                  style={{ background: "none", border: "none", color: "#C8E0F5", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", textUnderlineOffset: 3 }}>
+                  {/* Licence France Travail : la consultation des offres reste libre, sans
+                      compte : le chemin doit être EXPLICITE pour les intermittents. */}
+                  {landingStatut === "auto_entrepreneur" ? "Découvrir TOTOR en détail →" : "Découvrir TOTOR et voir les offres spectacle →"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       );
@@ -6669,8 +6718,11 @@ function AppInner() {
                 Je m'occupe du reste.
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-                {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => navLanding("intermittent") })}
-                {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => navLanding("auto_entrepreneur") })}
+                {/* En NATIF, la personne a déjà été convaincue par la fiche du store : le choix
+                    du métier mène DIRECTEMENT à l'inscription (la vitrine reste le récit du web).
+                    Constat Apple Ads du 04/08 + avis convergents : chaque écran en trop perd des gens. */}
+                {carte({ icon: "ti-ticket", titre: "Intermittent du spectacle", sous: "Tes heures, tes cachets, tes droits.", promesse: "Je veille.", reprendre: dernier === "intermittent", onClick: () => { navLanding("intermittent"); if (estNatif()) ouvrirAuth("register"); } })}
+                {carte({ icon: "ti-briefcase", titre: "Auto-entrepreneur", sous: "Ce que tu peux vraiment dépenser,", promesse: "sans surprise URSSAF.", reprendre: dernier === "auto_entrepreneur", onClick: () => { navLanding("auto_entrepreneur"); if (estNatif()) ouvrirAuth("register"); } })}
               </div>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 18, textAlign: "center" }}>
                 Tu peux changer à tout moment.
