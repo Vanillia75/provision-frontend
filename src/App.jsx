@@ -12874,7 +12874,7 @@ function AppInner() {
         // Parcours dédié intermittent du spectacle (le côté "507h / cachets / AEM").
         const wtStepsIntermittent = [
           {
-            img: "/totor-tete.webp?v=2",
+            img: "/totor-chiot.webp?v=1",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es, sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
@@ -12886,7 +12886,7 @@ function AppInner() {
             next: "Découvrir",
           },
           {
-            img: "/hector-1.png",
+            img: "/totor-attentif.webp?v=5",
             timerLabel: "LE COCKPIT · TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
             sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot jusqu'au palier « 507 ».",
@@ -12898,7 +12898,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-2.png",
+            img: "/totor-vigilant.webp?v=5",
             timerLabel: "LA DATE ANNIVERSAIRE",
             title: "Je veille sur ton renouvellement.",
             sub: "La date anniversaire, c'est le jour où France Travail réexamine tes droits. Renseigne-la une fois, et je te montre en permanence combien de jours il te reste, et si tu es dans les temps pour avoir tes 507h avant. Plus jamais pris(e) de court.",
@@ -12910,7 +12910,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-3.png",
+            img: "/totor-aboie.webp?v=1",
             timerLabel: "MES ACTIVITÉS",
             title: "Ajoute un contrat en quelques secondes.",
             sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Totor, pour démarrer ton compteur au bon endroit.",
@@ -12922,7 +12922,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-4.png",
+            img: "/totor-alerte.webp?v=5",
             timerLabel: "MES AEM",
             title: "Photographie ton AEM, je lis tout.",
             sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Dans « Mes AEM », prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Plusieurs attestations dans un seul fichier ? Je les détecte toutes. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
@@ -12934,7 +12934,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-5.png",
+            img: "/totor-vigilant.webp?v=5",
             timerLabel: "L'ACTUALISATION",
             title: "Chaque mois, ton récap prêt à recopier.",
             sub: "Au moment de t'actualiser auprès de France Travail, je te prépare le récap du mois écoulé : tes employeurs, tes cachets, tes heures, ton brut. Un mode guidé t'accompagne champ par champ pour recopier sans erreur, et je te signale s'il manque une AEM.",
@@ -12946,7 +12946,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-1.png",
+            img: "/totor-attentif.webp?v=5",
             timerLabel: "LE CALCUL DES HEURES",
             title: "Pose-moi tes questions.",
             sub: "« Combien me manque-t-il ? », « Si j'accepte ce contrat ? », « Et si je fais une pause ? ». Je réponds avec tes vrais chiffres, jamais à l'aveugle. Et avec le champ « Que se passe-t-il si… », tu me poses n'importe quel scénario en langage normal et je le calcule.",
@@ -12958,7 +12958,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-2.png",
+            img: "/totor-aboie.webp?v=1",
             timerLabel: "PARLE À TOTOR",
             title: "Ton expert du régime, dispo 24h/24.",
             sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Totor ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
@@ -12970,7 +12970,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-3.png",
+            img: "/totor-serein.webp?v=5",
             timerLabel: "COMPRENDRE & MES DOCUMENTS",
             title: "Pour ne plus jamais te sentir perdu(e).",
             sub: "Dans « Comprendre », des fiches claires t'expliquent l'essentiel : les 507h, les annexes, la clause de rattrapage, les congés spectacles. Et dans « Mes documents », je te génère un récapitulatif de tes revenus à présenter à un proprio ou une banque, et je range tes AEM et actualisations.",
@@ -12982,7 +12982,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-6.png",
+            img: "/totor-clin-oeil.webp?v=1",
             timerLabel: "LA CONFIANCE",
             title: "Je te montre toujours mon raisonnement.",
             sub: "Sur chaque calcul, un badge te dit à quel point tu peux t'y fier, et un bouton « Pourquoi ? » t'explique mon raisonnement, avec les règles officielles sur lesquelles je m'appuie. Tu n'as jamais à me croire sur parole. Commence par déclarer un contrat ou scanner une AEM, et c'est parti !",
@@ -12996,7 +12996,7 @@ function AppInner() {
         ];
         const wtStepsAuto = [
           {
-            img: "/totor-tete.webp?v=2",
+            img: "/totor-chiot.webp?v=1",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser, sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
@@ -17020,7 +17020,7 @@ function AppInner() {
         // Parcours dédié intermittent du spectacle (le côté "507h / cachets / AEM").
         const wtStepsIntermittent = [
           {
-            img: "/totor-tete.webp?v=2",
+            img: "/totor-chiot.webp?v=1",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je suis là pour veiller sur ton régime intermittent. Mon job : compter tes heures vers tes 507h, veiller sur ta date anniversaire, et te dire où tu en es, sans que tu aies à sortir la calculatrice. En 2 minutes, je te montre tout ce que je sais faire.",
@@ -17032,7 +17032,7 @@ function AppInner() {
             next: "Découvrir",
           },
           {
-            img: "/hector-1.png",
+            img: "/totor-attentif.webp?v=5",
             timerLabel: "LE COCKPIT · TON COMPTEUR 507H",
             title: "Tes 507h, toujours à jour.",
             sub: "C'est ta page d'accueil. Je convertis tes cachets en heures (1 cachet = 12h), j'additionne tout sur les 12 derniers mois glissants, et je te montre où tu en es vers les 507h qui ouvrent tes droits. Totor grandit visuellement avec ta progression, du chiot jusqu'au palier « 507 ».",
@@ -17044,7 +17044,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-2.png",
+            img: "/totor-vigilant.webp?v=5",
             timerLabel: "LA DATE ANNIVERSAIRE",
             title: "Je veille sur ton échéance.",
             sub: "La date anniversaire, c'est le jour où France Travail réexamine tes droits. Renseigne-la une fois, et je te montre en permanence combien de jours il te reste, et si tu es dans les temps pour avoir tes 507h avant. Plus jamais pris(e) de court.",
@@ -17056,7 +17056,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-3.png",
+            img: "/totor-aboie.webp?v=1",
             timerLabel: "MES ACTIVITÉS",
             title: "Ajoute un contrat en quelques secondes.",
             sub: "Dans « Mes activités », chaque cachet ou période d'heures se déclare en un instant : la date, l'employeur, le nombre. Tu peux aussi reporter d'un coup les heures que tu avais déjà faites avant d'arriver sur Totor, pour démarrer ton compteur au bon endroit.",
@@ -17068,7 +17068,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-4.png",
+            img: "/totor-alerte.webp?v=5",
             timerLabel: "MES AEM",
             title: "Photographie ton AEM, je lis tout.",
             sub: "L'AEM, c'est l'attestation que ton employeur t'envoie après chaque contrat. Dans « Mes AEM », prends-la en photo (ou PDF) : je lis l'employeur, les cachets, les heures et le salaire brut, et je remplis tout pour toi. Plusieurs attestations dans un seul fichier ? Je les détecte toutes. Tu n'as plus qu'à vérifier. Tes documents sont rangés en sécurité.",
@@ -17080,7 +17080,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-5.png",
+            img: "/totor-vigilant.webp?v=5",
             timerLabel: "L'ACTUALISATION",
             title: "Chaque mois, ton récap prêt à recopier.",
             sub: "Au moment de t'actualiser auprès de France Travail, je te prépare le récap du mois écoulé : tes employeurs, tes cachets, tes heures, ton brut. Un mode guidé t'accompagne champ par champ pour recopier sans erreur, et je te signale s'il manque une AEM.",
@@ -17092,7 +17092,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-1.png",
+            img: "/totor-attentif.webp?v=5",
             timerLabel: "LE CALCUL DES HEURES",
             title: "Pose-moi tes questions.",
             sub: "« Combien me manque-t-il ? », « Si j'accepte ce contrat ? », « Et si je fais une pause ? ». Je réponds avec tes vrais chiffres, jamais à l'aveugle. Et avec le champ « Que se passe-t-il si… », tu me poses n'importe quel scénario en langage normal et je le calcule.",
@@ -17104,7 +17104,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-2.png",
+            img: "/totor-aboie.webp?v=1",
             timerLabel: "PARLE À TOTOR",
             title: "Ton expert du régime, dispo 24h/24.",
             sub: "Une question sur les annexes 8 et 10, la clause de rattrapage, les congés spectacles, ta date anniversaire ? Écris-moi dans « Parle à Totor ». Je connais ton régime en profondeur et je t'explique tout simplement, sans jargon. Et je peux te dire si tu dois accepter un contrat qu'on te propose.",
@@ -17116,7 +17116,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-3.png",
+            img: "/totor-serein.webp?v=5",
             timerLabel: "COMPRENDRE & MES DOCUMENTS",
             title: "Pour ne plus jamais te sentir perdu(e).",
             sub: "Dans « Comprendre », des fiches claires t'expliquent l'essentiel : les 507h, les annexes, la clause de rattrapage, les congés spectacles. Et dans « Mes documents », je te génère un récapitulatif de tes revenus à présenter à un proprio ou une banque, et je range tes AEM et actualisations.",
@@ -17128,7 +17128,7 @@ function AppInner() {
             next: "Suivant",
           },
           {
-            img: "/hector-6.png",
+            img: "/totor-clin-oeil.webp?v=1",
             timerLabel: "LA CONFIANCE",
             title: "Je te montre toujours mon raisonnement.",
             sub: "Sur chaque calcul, un badge te dit à quel point tu peux t'y fier, et un bouton « Pourquoi ? » t'explique mon raisonnement, avec les règles officielles sur lesquelles je m'appuie. Tu n'as jamais à me croire sur parole. Commence par déclarer un contrat ou scanner une AEM, et c'est parti !",
@@ -17142,7 +17142,7 @@ function AppInner() {
         ];
         const wtStepsAuto = [
           {
-            img: "/totor-tete.webp?v=2",
+            img: "/totor-chiot.webp?v=1",
             timerLabel: "BIENVENUE SUR TOTOR",
             title: "Bonjour, moi c'est TOTOR.",
             sub: "Je vais t'aider à savoir exactement ce que tu peux dépenser, sans mauvaise surprise. En 2 minutes, tu vas comprendre comment je calcule tes charges, prépare tes devis et protège ta trésorerie.",
