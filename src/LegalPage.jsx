@@ -47,7 +47,7 @@ const CGU_MD = `# Conditions générales d'utilisation (CGU)
 
 ## 1. Objet
 
-Les présentes CGU encadrent l'accès et l'utilisation de l'application TOTOR, éditée par VANILLIA (SARL), destinée à aider les indépendants — notamment les auto-entrepreneurs — à estimer leurs cotisations, suivre leurs revenus et dépenses professionnelles, et gérer leurs obligations déclaratives.
+Les présentes CGU encadrent l'accès et l'utilisation de l'application TOTOR, éditée par VANILLIA (SARL), destinée à aider les indépendants, notamment les auto-entrepreneurs, à estimer leurs cotisations, suivre leurs revenus et dépenses professionnelles, et gérer leurs obligations déclaratives.
 
 L'utilisation de TOTOR implique l'acceptation pleine et entière des présentes CGU.
 

@@ -55,7 +55,7 @@ export function PourquoiHector({ onBack }) {
           <p style={pStyle}>Je souhaite à chacun d'avoir un Totor dans sa vie.</p>
           <p style={pStyle}>Si cette application peut vous enlever un peu de ce poids, alors elle porte parfaitement son nom.</p>
 
-          <p style={{ fontSize: 14, color: "#8BA5C0", fontStyle: "italic", margin: "30px 0 0" }}>— Camille, créateur de TOTOR</p>
+          <p style={{ fontSize: 14, color: "#8BA5C0", fontStyle: "italic", margin: "30px 0 0" }}>Camille, créateur de TOTOR</p>
 
           <p style={{ textAlign: "center", fontSize: 15.5, color: "#5DCAA5", fontWeight: 600, margin: "80px 0 0" }}>Merci, mon vieux. 🐾</p>
         </div>

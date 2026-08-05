@@ -226,7 +226,7 @@ export default function TrouverDesHeures({ sansTitre = false, compact = false } 
       {statut === "chargement" && (
         <div style={{ textAlign: "center", padding: "40px 20px", color: TEXTE_DOUX, fontSize: 13.5 }}>
           <div style={{ fontSize: 26, marginBottom: 8 }}>🐾</div>
-          H€CTOR regarde les offres pour toi…
+          Je regarde les offres pour toi…
         </div>
       )}
 
@@ -269,7 +269,7 @@ export default function TrouverDesHeures({ sansTitre = false, compact = false } 
                 ))}
               </div>
             ) : (
-              <div style={{ fontSize: 12.5, color: TEXTE_DOUX, marginTop: 2 }}>Je continue de chercher — reviens un peu plus tard. 🐾</div>
+              <div style={{ fontSize: 12.5, color: TEXTE_DOUX, marginTop: 2 }}>Je continue de chercher, reviens un peu plus tard. 🐾</div>
             )}
           </div>
         );

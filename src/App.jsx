@@ -2343,7 +2343,7 @@ function AppInner() {
     devis: ["Comment faire signer mon devis en ligne ?", "Comment faire un devis ?", "Comment transformer un devis en facture ?"],
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
-    abonnement: ["Que donne le Premium ?", "Comment activer un code ?"],
+    abonnement: ["Que donne TOTOR Veille ?", "Comment activer un code ?"],
     profil: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
     // Mode intermittent (interNav)
     cockpit: ["Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
@@ -2627,7 +2627,7 @@ function AppInner() {
         return (
         <div style={{ ...S.card, maxWidth: 460, margin: "0 auto", textAlign: "center", border: `2px solid ${ACCENT}` }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>{!estStripe ? "🐾" : (enEssai ? "🎁" : "🐶")}</div>
-          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{!estStripe ? "Tu es Membre VIP" : (enEssai ? "Ton essai Premium est en cours" : "Je m'occupe de tout pour toi")}</div>
+          <div style={{ fontSize: 18, fontWeight: 700, color: "#E6EDF5", marginBottom: 6 }}>{!estStripe ? "Tu es Membre VIP" : (enEssai ? "Ton essai TOTOR Veille est en cours" : "Je m'occupe de tout pour toi")}</div>
           {!estStripe && (
             <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "rgba(93,202,165,0.15)", border: "1px solid rgba(93,202,165,0.45)", borderRadius: 999, padding: "5px 13px", marginBottom: 10 }}>
               <span style={{ fontSize: 13 }}>🐾</span>
@@ -2642,7 +2642,7 @@ function AppInner() {
           )}
           <div style={{ fontSize: 13, color: "#8BA5C0", marginBottom: 18, lineHeight: 1.5 }}>
             {!estStripe
-              ? "Tu fais partie des tout premiers à m'avoir fait confiance. Ton Premium est à toi, à vie. Merci. ❤️"
+              ? "Tu fais partie des tout premiers à m'avoir fait confiance. TOTOR Veille est à toi, à vie. Merci. ❤️"
               : (enEssai
                   ? "Tu profites de tout, sans limite. À la fin de l'essai, ton abonnement démarre, tu peux l'annuler avant, sans être prélevé."
                   : "Tu as tout débloqué : scans et échanges avec moi, sans aucune limite. ❤️")}
@@ -3039,7 +3039,7 @@ function AppInner() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = `hector-export-${new Date().toISOString().split("T")[0]}.json`;
+      a.download = `totor-export-${new Date().toISOString().split("T")[0]}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -4147,7 +4147,7 @@ function AppInner() {
       </table>
       <div class="note">
         * Moyenne calculee sur les mois travailles uniquement.<br>
-        Ce document est un recapitulatif personnel etabli a partir des donnees saisies par l'utilisateur dans l'application H&euro;CTOR. Il ne constitue pas une attestation officielle de France Travail, d'un employeur ou de tout autre organisme, et n'a pas de valeur juridique ou fiscale. Pour un document officiel, l'utilisateur doit s'adresser aux organismes competents.
+        Ce document est un recapitulatif personnel etabli a partir des donnees saisies par l'utilisateur dans l'application TOTOR. Il ne constitue pas une attestation officielle de France Travail, d'un employeur ou de tout autre organisme, et n'a pas de valeur juridique ou fiscale. Pour un document officiel, l'utilisateur doit s'adresser aux organismes competents.
       </div>
       </body></html>`;
     const w = window.open("", "_blank");
@@ -4628,7 +4628,7 @@ function AppInner() {
         throw new Error(body.detail || "Impossible de générer le PDF");
       }
       const blob = await res.blob();
-      ouvrirOuTelechargerPdf(blob, `facture-${inv.numero || "hector"}.pdf`,
+      ouvrirOuTelechargerPdf(blob, `facture-${inv.numero || "totor"}.pdf`,
         "Ta facture est téléchargée, regarde tes notifications 🐾");
     } catch (err) {
       setError(err.message);
@@ -4649,7 +4649,7 @@ function AppInner() {
         throw new Error(body.detail || "Impossible de générer le PDF");
       }
       const blob = await res.blob();
-      ouvrirOuTelechargerPdf(blob, `devis-${q.numero || "hector"}.pdf`,
+      ouvrirOuTelechargerPdf(blob, `devis-${q.numero || "totor"}.pdf`,
         "Ton devis est téléchargé, regarde tes notifications 🐾");
     } catch (err) {
       setError(err.message);
@@ -7321,7 +7321,7 @@ function AppInner() {
           <style>{CSS}</style>
           <div style={{ maxWidth: 460, width: "100%", textAlign: "center" }}>
             <div className="hector-breathe" style={{ width: 70, height: 70, borderRadius: "50%", background: "#0a1322", border: "2px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", margin: "0 auto 18px" }}>
-              <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
+              <NiveauImage src="/totor-serein.webp" fallbackIcon="ti-movie" fallbackColor="#5DCAA5" />
             </div>
             <h1 style={{ fontSize: 23, fontWeight: 800, color: "white", margin: "0 0 8px", lineHeight: 1.3 }}>Bonjour, moi c'est Totor. À partir d'ici, je m'occupe de toi.</h1>
             <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 24px", lineHeight: 1.5 }}>Une petite info et c'est parti, ensuite c'est moi qui compte pour toi.</p>
@@ -7529,7 +7529,7 @@ function AppInner() {
       if (palierSuivant && heuresAvantSuivant <= 24) {
         return [
           `Plus que ${heuresAvantSuivant}h et j'atteins « ${palierSuivant.nom} ». On y est presque !`,
-          `Encore un petit effort — ${cachetsAvantSuivant} cachet${cachetsAvantSuivant > 1 ? "s" : ""} et je grandis. 🐾`,
+          `Encore un petit effort : ${cachetsAvantSuivant} cachet${cachetsAvantSuivant > 1 ? "s" : ""} et je grandis. 🐾`,
           "Je sens qu'on approche. Continue, ne lâche rien.",
         ];
       }
@@ -7752,7 +7752,7 @@ function AppInner() {
       let titreAmber, phraseAmber;
       if (manque <= 24) {
         titreAmber = "Tu y es presque";
-        phraseAmber = `Plus que ${manque} heure${manque > 1 ? "s" : ""} — tu touches au but. Encore un petit effort. 🐾`;
+        phraseAmber = `Plus que ${manque} heure${manque > 1 ? "s" : ""} : tu touches au but. Encore un petit effort. 🐾`;
       } else if (manque <= 72) {
         titreAmber = "En bonne voie";
         phraseAmber = `Tu avances bien : ${manque} heures à faire. Continue comme ça, je surveille le reste. 🐾`;
@@ -8068,7 +8068,7 @@ function AppInner() {
       const sansContrat = (c && c.projection_disponible)
         ? {
             label: "Sans nouveau contrat",
-            valeur: c.projection_plancher_securise ? `${c.projection_plancher_heures}h — ça passe` : "renouvellement compromis",
+            valeur: c.projection_plancher_securise ? `${c.projection_plancher_heures}h, ça passe` : "renouvellement compromis",
             ok: !!c.projection_plancher_securise,
             note: c.projection_plancher_securise ? null : `il manquerait ${c.projection_plancher_manquant}h`,
           }
@@ -8520,7 +8520,7 @@ function AppInner() {
               {false && (
               <div style={{ display: "flex", alignItems: "center", gap: 14, marginBottom: 24 }}>
                 <div style={{ width: 56, height: 56, borderRadius: 14, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/hector-clap.png" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
+                  <NiveauImage src="/totor-serein.webp" fallbackIcon="ti-movie" fallbackColor="#3a5169" />
                 </div>
                 <div>
                   <div style={{ fontSize: 13, color: "#5DCAA5", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>{etatLabels[c.hector_etat] || "Totor veille"}</div>
@@ -8735,7 +8735,7 @@ function AppInner() {
                     {aems.length === 0 ? (
                       <div style={{ textAlign: "center", padding: "36px 24px 30px", background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14 }}>
                         <div style={{ fontSize: 34, marginBottom: 12 }}>🐾</div>
-                        <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}><strong style={{ color: "white" }}>On commence ici.</strong> Scanne ta première AEM — je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
+                        <div style={{ fontSize: 14.5, color: "#B5D4F4", lineHeight: 1.6, maxWidth: 440, margin: "0 auto" }}><strong style={{ color: "white" }}>On commence ici.</strong> Scanne ta première AEM : je lis tout (employeur, cachets, heures) et je la range dans ton compteur.</div>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "14px auto 0" }}><strong style={{ color: "#B5D4F4" }}>Où les trouver ?</strong> Tes employeurs te remettent une AEM après chaque contrat de travail. Tu les retrouves aussi dans ton espace personnel France Travail.</div>
                         <div style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>🔒 Ton document reste privé : conservé en sécurité, jamais partagé, supprimable à tout moment. Et si tu as déjà saisi un contrat à la main, scanne quand même, <strong style={{ color: "#9FE1CB" }}>je repère les doublons</strong>.</div>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>
@@ -8747,7 +8747,7 @@ function AppInner() {
                       <>
                         {/* Totaux en cachets ET en heures (retour testeuse 24/07 : « un cachet, c'est une journée » — son unité mentale) */}
                         <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
-                          <strong style={{ color: "#C8E0F5" }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}{(() => { const tc = aems.reduce((s, x) => s + ((x.type_activite === "cachet_isole" || x.type_activite === "cachet_groupe" || x.type_activite === "cachet") ? (parseFloat(x.nombre) || 0) : 0), 0); const th = Math.round(aems.reduce((s, x) => s + heuresDe(x), 0)); return ` · ${tc} cachet${tc > 1 ? "s" : ""} · ${th} h`; })()}</strong>. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button> — et ton document original est conservé : tu peux le rouvrir à tout moment.</div>
+                          <strong style={{ color: "#C8E0F5" }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}{(() => { const tc = aems.reduce((s, x) => s + ((x.type_activite === "cachet_isole" || x.type_activite === "cachet_groupe" || x.type_activite === "cachet") ? (parseFloat(x.nombre) || 0) : 0), 0); const th = Math.round(aems.reduce((s, x) => s + heuresDe(x), 0)); return ` · ${tc} cachet${tc > 1 ? "s" : ""} · ${th} h`; })()}</strong>. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button>. Ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
                             <Fragment key={a.id || i}>
@@ -9439,7 +9439,7 @@ function AppInner() {
                       <div style={{ marginTop: 12, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 10, padding: "11px 13px" }}>
                         <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
                         <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
-                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé</strong>{c.jours_allonges > 0 ? <> et ta période de recherche est <strong style={{ color: "#FCE0A8" }}>allongée de {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""}</strong> (fractionnement)</> : null}. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong> — vérifie avec eux.
+                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé</strong>{c.jours_allonges > 0 ? <> et ta période de recherche est <strong style={{ color: "#FCE0A8" }}>allongée de {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""}</strong> (fractionnement)</> : null}. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong>, vérifie avec eux.
                         </div>
                       </div>
                     )}
@@ -11585,7 +11585,7 @@ function AppInner() {
                   </button>
                 </div>
                 <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", lineHeight: 1.5, marginTop: 10 }}>
-                  Totor connaît ton régime en profondeur. Pour le montant exact de ton allocation, il te guidera vers le simulateur officiel de France Travail.
+                  Totor connaît ton régime en profondeur et sait estimer ton allocation journalière, quelle que soit ton annexe. Seule France Travail fait foi pour le montant officiel.
                 </div>
                 {interChat.length > 0 && (
                   <div style={{ textAlign: "center", marginTop: 6 }}>
