@@ -1186,6 +1186,10 @@ function AppInner() {
   // sans compte, comme les offres spectacle de la landing intermittent. Une
   // capture d'écran figée n'aurait convaincu personne.
   const [marchesLanding, setMarchesLanding] = useState(null);
+  // La landing en montre 3 : six d'affilee mangeaient un ecran entier pour une
+  // section qui n'est pas l'argument principal. Trois suffisent a prouver que
+  // c'est reel, le reste se deplie pour qui veut voir.
+  const [marchesLandingOuvert, setMarchesLandingOuvert] = useState(false);
   // ⚠️ Ce useEffect DOIT rester ici, sous la déclaration de marchesLanding.
   //  Il était plus haut dans le fichier au premier essai : son tableau de
   //  dépendances est lu PENDANT le rendu, donc il lisait marchesLanding avant
@@ -7158,7 +7162,7 @@ function AppInner() {
                 <p style={texteSec}>Mairies, musées, hôpitaux, offices de tourisme : quand ils cherchent un indépendant, ils sont obligés de le publier. Sauf que c'est écrit pour des acheteurs professionnels. Je vais les chercher et je te les traduis.</p>
               </div>
               <div style={{ maxWidth: 720, margin: isMobile ? "26px auto 0" : "36px auto 0", background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: isMobile ? "18px 14px" : "26px 26px" }}>
-                {marchesLanding.opportunites.map(o => (
+                {(marchesLandingOuvert ? marchesLanding.opportunites : marchesLanding.opportunites.slice(0, 3)).map(o => (
                   <a key={o.id} href={o.lien} target="_blank" rel="noopener noreferrer"
                     style={{ display: "block", textDecoration: "none", background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
                     <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", marginBottom: 5 }}>
@@ -7169,6 +7173,16 @@ function AppInner() {
                     {o.limite_le && <div style={{ fontSize: 12, color: "#FAC775", fontWeight: 600, marginTop: 4 }}>À répondre avant le {formatDate(String(o.limite_le).slice(0, 10))}</div>}
                   </a>
                 ))}
+                {marchesLanding.opportunites.length > 3 && (
+                  <button type="button" onClick={() => setMarchesLandingOuvert(o => !o)}
+                    aria-expanded={marchesLandingOuvert}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.04)", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 10, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                    {marchesLandingOuvert
+                      ? "Replier"
+                      : `Voir ${marchesLanding.opportunites.length - 3} autres consultations`}
+                    <i className={`ti ${marchesLandingOuvert ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 15 }} />
+                  </button>
+                )}
                 <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 11.5, color: "#8BA5C0", textAlign: "center", lineHeight: 1.55 }}>
                   De vraies consultations, publiées ces dernières semaines. Consultables librement, sans compte.<br />{marchesLanding.attribution}
                 </div>
