@@ -7111,7 +7111,7 @@ function AppInner() {
                 <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 12, padding: "16px 18px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#5DCAA5", marginBottom: 7 }}>1<sup>er</sup> septembre 2026</div>
                   <div style={{ fontSize: 14.5, color: "#EAF2FB", fontWeight: 700, marginBottom: 6 }}>Tu dois pouvoir en recevoir</div>
-                  <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>C'est tout. Recevoir, pas émettre. Tes clients professionnels commencent à t'envoyer leurs factures dans un format électronique, et il faut que tu puisses les lire.</div>
+                  <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>Recevoir, pas émettre. Pour ça, une seule démarche : choisir une plateforme agréée par l'État, dans la <a href="https://www.impots.gouv.fr/facturation-electronique-et-plateformes-agreees" target="_blank" rel="noopener noreferrer" style={{ color: "#5DCAA5", textDecoration: "underline" }}>liste officielle</a>. C'est la seule chose à faire avant septembre.</div>
                 </div>
                 <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 12, padding: "16px 18px" }}>
                   <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#FAC775", marginBottom: 7 }}>1<sup>er</sup> septembre 2027</div>
@@ -7120,7 +7120,7 @@ function AppInner() {
                 </div>
               </div>
               <p style={{ fontSize: isMobile ? 13.5 : 14.5, color: "#B5D4F4", lineHeight: 1.65, margin: 0 }}>
-                Un point que beaucoup ignorent, et je préfère te le dire franchement&nbsp;: être en franchise de TVA ne te dispense de rien. La réforme s'applique aussi aux micro-entreprises. La bonne nouvelle, c'est que tu n'as rien à faire&nbsp;: je m'occupe de la mise en conformité de tes factures, elle arrivera dans l'application avant l'échéance, et tu continueras à cliquer sur le même bouton qu'aujourd'hui.
+                Un point que beaucoup ignorent, et je préfère te le dire franchement&nbsp;: être en franchise de TVA ne te dispense de rien. La réforme s'applique aussi aux micro-entreprises. Et TOTOR n'est pas lui-même une plateforme agréée, ce n'est pas son métier&nbsp;: le mien, c'est de te faire tes factures. Pour l'échéance de 2027, tu continueras à les faire ici exactement comme aujourd'hui, et je m'occuperai de les envoyer au bon format par une plateforme agréée. Rien à changer dans tes habitudes.
               </p>
             </div>
           </section>
