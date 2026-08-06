@@ -9,6 +9,17 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "7 août 2026",
+    titre: "Je vais te chercher des missions chez les collectivités",
+    items: [
+      { qui: "ae", texte: "Nouvelle entrée dans ton menu : « Trouver des missions ». Les mairies, les musées, les hôpitaux, les offices de tourisme et les régions font appel à des indépendants comme toi, et ils sont obligés de publier quand ils cherchent quelqu'un. Le problème, c'est que ces annonces sont écrites pour des acheteurs professionnels, dans un langage auquel personne ne comprend rien. Je vais les chercher et je te les traduis." },
+      { qui: "ae", texte: "Tu filtres par métier (photo et vidéo, graphisme, communication, formation, web, événementiel) et par département. Pour chaque consultation ouverte, je te donne qui cherche, quoi, et jusqu'à quand tu peux répondre, avec le lien vers l'annonce officielle." },
+      { qui: "ae", texte: "Et je te montre aussi une carte au trésor : les commandes déjà signées près de chez toi, avec leur montant. Ce ne sont pas des offres, ce sont des indices. Depuis avril 2026, sous 60 000 €, un acheteur public choisit son prestataire directement sans publier d'annonce : ces missions là ne s'affichent nulle part, elles se décrochent en allant se présenter. Encore faut-il savoir à qui." },
+      { qui: "ae", texte: "Un mot d'honnêteté : il paraît quelques annonces par mois et par métier, pas des dizaines par jour. C'est une veille, pas une place de marché. Repasse de temps en temps plutôt que de guetter, et ne compte pas dessus pour remplir ton mois." },
+      { qui: "ae", texte: "Tout vient de sources publiques de l'État (le BOAMP et les données essentielles de la commande publique). Je ne transmets rien de toi à personne pour aller les chercher." },
+    ],
+  },
+  {
     date: "6 août 2026",
     titre: "Ton compte sous double serrure, et tes données en Europe",
     items: [

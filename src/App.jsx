@@ -6,6 +6,7 @@ import { connexionApple, AppleAnnule, STYLE_BOUTON_APPLE } from "./appleAuthWeb"
 import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./regles_intermittent";
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
+import { DEPARTEMENTS, libelleDepartement } from "./departements";
 import { LegalPageView } from "./LegalPage";
 import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
@@ -761,6 +762,14 @@ function AppInner() {
   const [activiteModal, setActiviteModal] = useState(false);
   const [activiteSaving, setActiviteSaving] = useState(false);
   const [estimateData, setEstimateData] = useState(null);
+  // ── Marchés publics (cockpit AE) : opportunités ouvertes + acheteurs à démarcher.
+  //    Chargés À LA DEMANDE et jamais au montage : deux sources publiques
+  //    externes, on ne ralentit pas l'ouverture du cockpit pour ça.
+  const [marchesData, setMarchesData] = useState(null);
+  const [marchesLoading, setMarchesLoading] = useState(false);
+  const [marchesOuvert, setMarchesOuvert] = useState(false);
+  const [marchesDept, setMarchesDept] = useState("");
+  const [marchesMetiers, setMarchesMetiers] = useState([]); // univers cochés, vide = tous
   const [projectionData, setProjectionData] = useState(null); // projection trésorerie (carte "mois prochain")
   const [projDetailOpen, setProjDetailOpen] = useState(false); // détail de la projection replié par défaut
   const [incomeList, setIncomeList] = useState([]);
@@ -2372,6 +2381,7 @@ function AppInner() {
     devis: ["Comment faire signer mon devis en ligne ?", "Comment faire un devis ?", "Comment transformer un devis en facture ?"],
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
+    marches: ["C'est quoi un marché public ?", "Ces gros montants, c'est ce que je toucherais ?", "Comment je réponds à une consultation ?"],
     abonnement: ["Que donne TOTOR Veille ?", "Comment activer un code ?"],
     profil: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
     // Mode intermittent (interNav)
@@ -3184,6 +3194,190 @@ function AppInner() {
         {titre}
         <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 4, lineHeight: 1.5 }}>Un code à 6 chiffres en plus de ton mot de passe, généré par une application sur ton téléphone. Même si quelqu'un vole ton mot de passe, il n'entre pas.</div>
         <button type="button" onClick={() => { setMfaEtape("pwd"); setMfaErr(""); setMfaPwd(""); }} style={bouton(true)}>Activer</button>
+      </div>
+    );
+  }
+
+  // ─── MARCHÉS PUBLICS (cockpit AE) ────────────────────────────────────────
+  //  Deux services dans une seule carte : les opportunités ouvertes (rares) et
+  //  les acheteurs à démarcher (permanents). Chargement à la demande.
+  async function chargerMarches(dept, metiers, depuisLe = 0) {
+    setMarchesLoading(true);
+    try {
+      const p = new URLSearchParams();
+      if (dept) p.set("departement", dept);
+      const choisis = metiers === undefined ? marchesMetiers : metiers;
+      if (choisis && choisis.length) p.set("univers", choisis.join(","));
+      if (depuisLe > 0) p.set("depuis_le", String(depuisLe));
+      const q = p.toString() ? `?${p.toString()}` : "";
+      const data = await apiFetch(`/marches-publics${q}`);
+      // « Voir la suite » empile, un changement de filtre repart de zéro.
+      setMarchesData(prev => (depuisLe > 0 && prev && prev.opportunites)
+        ? { ...data, opportunites: [...prev.opportunites, ...(data.opportunites || [])] }
+        : data);
+      if (data.departement && !marchesDept) setMarchesDept(data.departement);
+    } catch (err) {
+      if (depuisLe === 0) setMarchesData({ erreur: true });
+    } finally {
+      setMarchesLoading(false);
+    }
+  }
+
+  // Petit appel depuis le cockpit : la rubrique vit dans le menu, mais sans
+  // cette porte personne ne la trouverait (leçon du menu « Facturer » replié,
+  // qui cachait la facturation à 21 auto-entrepreneurs sur 22).
+  function renderAppelMarches() {
+    return (
+      <div style={{ ...S.card, marginBottom: 16, display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ flex: "1 1 240px", minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 3 }}>🏛️ Trouver des missions</div>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+            Les mairies, musées et offices de tourisme achètent de la photo, du graphisme, de la vidéo et de la formation. Je te montre ce qui est ouvert et qui achète près de chez toi.
+          </div>
+        </div>
+        <button type="button" onClick={() => setNav("marches")}
+          style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}>
+          Voir
+        </button>
+      </div>
+    );
+  }
+
+  // ─── La rubrique complète « Trouver des missions » ────────────────────────
+  function renderMarchesPage() {
+    // Premier affichage de la rubrique : on va chercher les données.
+    if (!marchesData && !marchesLoading) chargerMarches(marchesDept, marchesMetiers);
+    const d = marchesData || {};
+    const opps = d.opportunites || [];
+    const acheteurs = d.acheteurs || [];
+    const univers = d.univers_disponibles || [];
+    const tousMetiers = marchesMetiers.length === 0;
+
+    const basculerMetier = (cle) => {
+      const suivant = marchesMetiers.includes(cle)
+        ? marchesMetiers.filter(x => x !== cle)
+        : [...marchesMetiers, cle];
+      setMarchesMetiers(suivant);
+      chargerMarches(marchesDept, suivant);
+    };
+
+    const pastille = (actif) => ({
+      background: actif ? "#5DCAA5" : "rgba(255,255,255,0.05)",
+      color: actif ? "#04342C" : "#C5D4E3",
+      border: `1px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.12)"}`,
+      borderRadius: 999, padding: "6px 14px", fontSize: 12.5,
+      fontWeight: actif ? 700 : 500, cursor: "pointer", fontFamily: "inherit",
+    });
+
+    return (
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 6px" }}>🏛️ Trouver des missions</h1>
+        <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 18px" }}>
+          Les collectivités, musées, hôpitaux et offices de tourisme font appel à des indépendants. Leurs consultations sont publiques, mais illisibles quand on n'est pas acheteur professionnel. Je te les traduis.
+        </p>
+
+        {/* Les filtres : métier et département */}
+        <div style={{ ...S.card, marginBottom: 16 }}>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 8 }}>Ton métier</div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            <button type="button" style={pastille(tousMetiers)}
+              onClick={() => { setMarchesMetiers([]); chargerMarches(marchesDept, []); }}>Tous</button>
+            {univers.map(u => (
+              <button key={u.cle} type="button" style={pastille(marchesMetiers.includes(u.cle))}
+                onClick={() => basculerMetier(u.cle)}>{u.libelle}</button>
+            ))}
+          </div>
+          <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 8 }}>Où tu cherches</div>
+          <select value={marchesDept}
+            onChange={e => { setMarchesDept(e.target.value); chargerMarches(e.target.value, marchesMetiers); }}
+            style={{ width: "100%", maxWidth: 320, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", cursor: "pointer" }}>
+            <option value="">Partout en France</option>
+            {DEPARTEMENTS.map(([code, nom]) => (
+              <option key={code} value={code}>{code} · {nom}</option>
+            ))}
+          </select>
+        </div>
+
+        {marchesLoading && <div style={{ fontSize: 13, color: "#8BA5C0", padding: "10px 0" }}>🐾 Je regarde les avis publiés…</div>}
+
+        {!marchesLoading && d.erreur && (
+          <div style={{ ...S.card, fontSize: 13, color: "#8BA5C0", lineHeight: 1.5 }}>
+            Je n'arrive pas à joindre le registre public en ce moment. Je réessaierai tout à l'heure.
+          </div>
+        )}
+
+        {!marchesLoading && !d.erreur && (
+          <>
+            {/* ── 1. Les consultations ouvertes ── */}
+            <div style={{ fontSize: 15, fontWeight: 800, color: "white", marginBottom: 4 }}>Ce qui est ouvert en ce moment</div>
+            <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 12 }}>
+              Des consultations auxquelles tu peux répondre.{(d.total || 0) > 0 ? ` J'en ai trouvé ${d.total} sur les 45 derniers jours.` : ""} Il en paraît quelques-unes par mois, alors reviens de temps en temps plutôt que de guetter.
+            </div>
+            {opps.length === 0 ? (
+              <div style={{ ...S.card, marginBottom: 24, fontSize: 13, color: "#8BA5C0", lineHeight: 1.6 }}>
+                Rien d'ouvert {marchesDept ? `en ${libelleDepartement(marchesDept).split(" · ")[1] || marchesDept}` : "en France"} pour ce métier en ce moment. Ce n'est pas une panne : le rythme est de quelques annonces par mois. Élargis le département ou coche « Tous » pour voir plus large.
+              </div>
+            ) : (
+              <div style={{ marginBottom: 24 }}>
+                {opps.map(o => (
+                  <a key={o.id} href={o.lien} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "block", textDecoration: "none", ...S.card, marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, marginBottom: 6, alignItems: "flex-start" }}>
+                      <div style={{ fontSize: 13.5, color: "white", fontWeight: 600, lineHeight: 1.4 }}>{o.objet}</div>
+                      <span style={{ fontSize: 10.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap" }}>{o.univers_libelle}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.5 }}>
+                      {o.acheteur}{o.departement ? ` · département ${o.departement}` : ""}
+                      {o.petit_marche ? " · petit marché, procédure allégée" : ""}
+                    </div>
+                    {o.limite_le && (
+                      <div style={{ fontSize: 12, color: "#F5B942", fontWeight: 600, marginTop: 5 }}>
+                        À répondre avant le {formatDate(String(o.limite_le).slice(0, 10))}
+                      </div>
+                    )}
+                  </a>
+                ))}
+                {(d.reste || 0) > 0 && (
+                  <button type="button" disabled={marchesLoading}
+                    onClick={() => chargerMarches(marchesDept, marchesMetiers, (d.opportunites || []).length)}
+                    style={{ width: "100%", background: "rgba(255,255,255,0.05)", color: "#C5D4E3", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 10, padding: "11px 16px", fontSize: 13, fontWeight: 600, cursor: marchesLoading ? "default" : "pointer", fontFamily: "inherit" }}>
+                    {marchesLoading ? "…" : `Voir la suite (${d.reste} autre${d.reste > 1 ? "s" : ""})`}
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* ── 2. La carte au trésor ── */}
+            {acheteurs.length > 0 && (
+              <>
+                <div style={{ fontSize: 15, fontWeight: 800, color: "white", marginBottom: 4 }}>Qui achète ton métier près de chez toi</div>
+                <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 12 }}>
+                  Ces commandes sont <strong style={{ color: "#C8E0F5" }}>déjà passées</strong>, ce ne sont pas des offres. Elles te disent qui, près de chez toi, a un budget pour ton métier. Et depuis avril 2026, sous 60 000 €, un acheteur public choisit son prestataire directement, sans publier d'annonce : ces missions là, c'est en allant te présenter que tu les décrocheras.
+                </div>
+                {acheteurs.map((a, i) => (
+                  <div key={i} style={{ ...S.card, marginBottom: 10 }}>
+                    <div style={{ fontSize: 13.5, color: "white", fontWeight: 700, lineHeight: 1.35, marginBottom: 5 }}>{a.acheteur}</div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 8 }}>{a.objet}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10, alignItems: "baseline", fontSize: 12 }}>
+                      {a.montant != null && (
+                        <span style={{ color: "#C5D4E3" }}>
+                          Commande de <strong style={{ color: "#5DCAA5", fontSize: 13.5 }}>{formatEUR(a.montant)}</strong>
+                          {a.duree_mois ? <span style={{ color: "#8BA5C0" }}> étalée sur {a.duree_mois} mois</span> : null}
+                        </span>
+                      )}
+                      {a.notifie_le && <span style={{ color: "#5A7088" }}>signée le {formatDate(a.notifie_le)}</span>}
+                    </div>
+                  </div>
+                ))}
+                <div style={{ fontSize: 11.5, color: "#5A7088", lineHeight: 1.5, marginTop: 6 }}>
+                  Ces montants sont ceux du marché signé avec le prestataire retenu, souvent pour plusieurs années et plusieurs missions. Ce n'est pas ce que tu toucherais : c'est l'ordre de grandeur de ce que cet acheteur consacre à ton métier.
+                </div>
+              </>
+            )}
+
+            <div style={{ fontSize: 10.5, color: "#5A7088", marginTop: 18, lineHeight: 1.4 }}>{d.attribution || ""}</div>
+          </>
+        )}
       </div>
     );
   }
@@ -13576,6 +13770,7 @@ function AppInner() {
         {/* ─── Le reste : la vie de Totor et le compte. Rien n'est supprimé. ─── */}
         <div style={{ borderTop: "1px solid rgba(255,255,255,0.08)", margin: "8px 0 4px" }} />
         {[
+          { id: "marches", icon: "ti-building-bank", label: "Trouver des missions" },
           { id: "conseils", icon: "ti-star", label: "Conseils" },
           { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille" },
         ].map(item => (
@@ -13754,6 +13949,11 @@ function AppInner() {
             {/* ═══ DÉCOUVERTE DE LA FACTURATION (27/07) : la porte d'entrée qui
                 manquait. Ne s'affiche qu'à qui n'a ni facture ni devis. ═══ */}
             {renderDecouverteFacturation()}
+
+            {/* ═══ MARCHÉS PUBLICS : les opportunités ouvertes et les acheteurs
+                à démarcher. Repliée par défaut, chargée seulement au clic (deux
+                sources publiques externes, on ne ralentit pas le cockpit). ═══ */}
+            {renderAppelMarches()}
 
             {/* ═══ « Fais-toi payer en ligne » sur le COCKPIT (27/07) : elle ne
                 vivait que sur la page Factures, donc seuls ceux qui l'avaient
@@ -16765,6 +16965,11 @@ function AppInner() {
             </p>
           </div>
         )}
+
+        {/* « Trouver des missions » : marchés publics ouverts + acheteurs à
+            démarcher. Le chargement part à l'ouverture de la rubrique, jamais
+            avant (deux sources publiques externes). */}
+        {nav === "marches" && renderMarchesPage()}
 
         {nav === "conseils" && (
           <div>
