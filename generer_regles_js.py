@@ -144,10 +144,13 @@ def js_valeur_objet(d):
 
 
 def trouver_py():
-    # cherche le .py ici, puis dans un éventuel dossier backend monté
+    # ⚠️ LE BACKEND FAIT FOI, ET IL EST CHERCHÉ EN PREMIER (inversé le 06/08/2026).
+    # Avant, une copie oubliée à la racine du front passait devant : la relancer
+    # aurait réécrit les règles avec le plafond d'allocation périmé (174,80 € au
+    # lieu de 155,77 €) et SUPPRIMÉ le plancher net CSG. Trouvé par les tests.
     for chemin in [
-        os.path.join(ICI, "regles_intermittent.py"),
         os.path.join(ICI, "..", "provision-backend", "regles_intermittent.py"),
+        os.path.join(ICI, "regles_intermittent.py"),
     ]:
         if os.path.isfile(chemin):
             return chemin
@@ -155,13 +158,10 @@ def trouver_py():
 
 
 def cibles_js():
-    # écrit le .js là où il doit vivre : racine et/ou src/
-    cibles = []
-    for sous in ["", "src"]:
-        d = os.path.join(ICI, sous)
-        if os.path.isdir(d) or sous == "":
-            cibles.append(os.path.join(d, "regles_intermittent.js"))
-    return cibles
+    # UNE seule cible : src/, le seul endroit d'où l'application importe les règles.
+    # (Avant le 06/08/2026, une copie était aussi écrite à la racine : elle ne
+    # servait à rien, personne ne l'importait, et elle finissait par diverger.)
+    return [os.path.join(ICI, "src", "regles_intermittent.js")]
 
 
 def main():

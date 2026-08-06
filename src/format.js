@@ -12,9 +12,26 @@ export function formatEUR(n) {
   return new Intl.NumberFormat("fr-FR", { style: "currency", currency: "EUR", minimumFractionDigits: hasDecimals ? 2 : 0, maximumFractionDigits: hasDecimals ? 2 : 0 }).format(val);
 }
 
+// ⚠️ RÈGLE DES DATES CIVILES (posée le 06/08/2026, après trois bugs trouvés par
+// les tests). Une date "AAAA-MM-JJ" est une date de CALENDRIER : le 6 août est le
+// 6 août, où qu'on soit. Or `new Date("2026-08-06")` la lit comme minuit à
+// Greenwich, ce qui la décale ensuite dans le fuseau de l'utilisateur :
+//   aux Antilles et en Polynésie, toutes les dates reculaient d'un jour ;
+//   en métropole, une activité du jour saisie avant 2 h du matin passait pour
+//   FUTURE et disparaissait du compteur des 507 heures.
+// Ce lecteur ramène toute date civile à minuit LOCAL. C'est le pendant de la
+// règle qui interdit déjà toISOString dans l'autre sens.
+export function lireDateCivile(d) {
+  if (typeof d === "string") {
+    const m = d.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  }
+  return new Date(d);
+}
+
 export function formatDate(d) {
   if (!d) return "—";
-  return new Date(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+  return lireDateCivile(d).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -51,7 +68,7 @@ export function heuresDe(activite) {
 export function formatPeriode(a, court = true) {
   if (!a || !a.date) return "";
   const fmt = (iso) => {
-    const d = new Date(iso);
+    const d = lireDateCivile(iso);
     if (isNaN(d)) return iso;
     return court
       ? String(d.getDate()).padStart(2, "0") + "/" + String(d.getMonth() + 1).padStart(2, "0")
@@ -105,16 +122,23 @@ export function historiqueEmployeur(activites, nomEmployeur, typeActivite) {
 // contredire le compteur officiel renvoyé par le backend.
 export function heuresFenetre(activites, aujourdhui = new Date()) {
   const fenetreJours = valeurDe("periodeReferenceJours") || 365;
+  // Fenêtre en jours CIVILS : on compare des journées entières, pas des instants.
+  // Sans cela, une activité du jour saisie à 0 h 30 était jugée future (sa date
+  // civile vaut minuit local, or l'heure courante était plus tôt dans la journée
+  // UTC) et ses heures disparaissaient du compteur jusqu'à 2 h du matin.
+  const finDeJournee = new Date(aujourdhui);
+  finDeJournee.setHours(23, 59, 59, 999);
   const borneBasse = new Date(aujourdhui);
   borneBasse.setDate(borneBasse.getDate() - fenetreJours);
+  borneBasse.setHours(0, 0, 0, 0);
   // Plafond de 338h PARTAGÉ formation + enseignement (jumeau de _compter_sur_fenetre) ;
   // l'enseignement a en plus son sous-plafond propre de 70h.
   const plafondPartage = valeurDe("formationPlafondNouvelleAdmission") || 338;
   const plafondEnseignement = valeurDe("enseignementPlafond") || 70;
   let formationRetenue = 0, enseignementRetenue = 0;
   return (activites || []).reduce((s, a) => {
-    const d = new Date(a.date);
-    if (isNaN(d) || d < borneBasse || d > aujourdhui) return s;
+    const d = lireDateCivile(a.date);
+    if (isNaN(d) || d < borneBasse || d > finDeJournee) return s;
     let h = heuresDe(a);
     if (a.type_activite === "formation") {
       h = Math.min(h, Math.max(0, plafondPartage - (formationRetenue + enseignementRetenue)));

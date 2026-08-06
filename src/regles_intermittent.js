@@ -187,7 +187,7 @@ export const REGLES = {
     version: "2026.07",
     dateAppli: "2026",
     verifie: true,
-    commentaire: "⚠️ VALEUR CORRIGÉE le 27/07/2026. On avait 174,80 € (guide France Travail p.11, daté du 01/01/2024) : ce chiffre est périmé ou ne concerne pas les annexes 8/10. Sans cette correction, un artiste très bien payé aurait vu une allocation SUPÉRIEURE à la réalité. Revalorisé périodiquement : revérifier sur le simulateur au rituel de janvier.",
+    commentaire: "⚠️ VALEUR CORRIGÉE le 27/07/2026. On avait 174,80 € (guide France Travail p.11, daté du 01/01/2024) : ce chiffre est PÉRIMÉ ou ne concerne pas les annexes 8/10. Le simulateur officiel plafonne à 155,77 €, et notre formule colle au centime jusqu'à 300 000 € de salaire de référence (153,70 contre 153,71). Sans cette correction, un artiste très bien payé (au-delà d'environ 306 500 € sur la période) aurait vu une allocation SUPÉRIEURE à la réalité : exactement ce que la Loi X interdit. Revalorisé périodiquement : revérifier sur le simulateur au rituel de janvier.",
   },
 
   allocationRetenueRetraiteComp: {
@@ -197,17 +197,17 @@ export const REGLES = {
     version: "2026.07",
     dateAppli: "en vigueur",
     verifie: true,
-    commentaire: "AJ ≤ 31,96 € : aucune retenue. 31,96 < AJ ≤ 60 € : retenue 0,93 % × SJM. AJ > 60 € : s'ajoutent CSG et CRDS (cf. allocationCsgCrds).",
+    commentaire: "AJ ≤ 31,96 € : aucune retenue. Au-delà : retenue 0,93 % × SJM, EXACTE au centime sur les 14 cas du simulateur officiel (27/07/2026), y compris à 91,72 € de retenue. Quand ce qui reste dépasse 60 €, s'ajoutent CSG et CRDS, elles-mêmes écrêtées (cf. allocationCsgCrds et allocationPlancherNetCsg).",
   },
 
   allocationCsgCrds: {
     valeur: { csgPlein: 0.062, csgReduit: 0.038, crds: 0.005, assiette: 0.9825 },
     libelle: "CSG/CRDS sur l'allocation journalière",
-    source: "Guide France Travail p.12 (taux) ; assiette 98,25 % CONFIRMÉE le 2026-07-27 contre le simulateur officiel France Travail, 14 cas, annexes 8 et 10, écart 0,00 €.",
+    source: "Guide France Travail p.12 (taux) ; assiette 98,25 % CONFIRMÉE le 2026-07-27 contre le simulateur officiel France Travail (simucalcul.pole-emploi-services.fr), 11 cas, annexes 8 et 10, écart 0,00 €.",
     version: "2026.07",
     dateAppli: "en vigueur",
     verifie: true,
-    commentaire: "Taux 6,2 % (CSG) + 0,5 % (CRDS) = 6,7 %, appliqués sur 98,25 % de l'allocation APRÈS retenue retraite complémentaire (et non avant). Le résultat est ensuite écrêté : voir allocationPlancherNetCsg.",
+    commentaire: "Taux 6,2 % (CSG) + 0,5 % (CRDS) = 6,7 %, appliqués sur 98,25 % de l'allocation APRÈS retenue retraite complémentaire (et non avant : vérifié, 71,45 x 98,25 % x 6,7 % = 4,70 € exactement ce qu'annonce France Travail). Le résultat est ensuite ÉCRÊTÉ par allocationPlancherNetCsg : voir cette entrée.",
   },
 
   allocationPlancherNetCsg: {
@@ -217,7 +217,7 @@ export const REGLES = {
     version: "2026.07",
     dateAppli: "2026",
     verifie: true,
-    commentaire: "Règle : on calcule la CSG théorique, puis on la rabote de façon que le net ne tombe jamais sous 62,00 €. Si l'allocation brute est déjà sous ce plancher, la retenue est de ZÉRO. ÉVOLUE AVEC LE SMIC : à revérifier au rituel de janvier, sur le simulateur.",
+    commentaire: "Règle : on calcule la CSG théorique, puis on la RABOTE de façon que le net ne tombe jamais sous 62,00 €. Si l'allocation brute est déjà sous ce plancher, la retenue est de ZÉRO (vérifié : brute 60,55 € et 61,91 € donnent CSG 0,00 €). C'est ce qui explique le cas réel n°2 (plancher plus bas cette année-là). ÉVOLUE AVEC LE SMIC : à revérifier au rituel de janvier, sur le simulateur.",
   },
 
   pmssMensuel: {
