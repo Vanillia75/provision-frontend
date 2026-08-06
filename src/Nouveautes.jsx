@@ -17,6 +17,8 @@ const VAGUES = [
       { qui: "ae", texte: "Et je te montre aussi une carte au trésor : les commandes déjà signées près de chez toi, avec leur montant. Ce ne sont pas des offres, ce sont des indices. Depuis avril 2026, sous 60 000 €, un acheteur public choisit son prestataire directement sans publier d'annonce : ces missions là ne s'affichent nulle part, elles se décrochent en allant se présenter. Encore faut-il savoir à qui." },
       { qui: "ae", texte: "Un mot d'honnêteté : il paraît quelques annonces par mois et par métier, pas des dizaines par jour. C'est une veille, pas une place de marché. Repasse de temps en temps plutôt que de guetter, et ne compte pas dessus pour remplir ton mois." },
       { qui: "ae", texte: "Tout vient de sources publiques de l'État (le BOAMP et les données essentielles de la commande publique). Je ne transmets rien de toi à personne pour aller les chercher." },
+      { qui: "ae", texte: "Autre chose, et celle-là je te la dois : vous êtes nombreux à vous inquiéter de la facture électronique et de l'échéance du 1er septembre 2026. Deux obligations différentes partent de cette même date, d'où la panique. Le 1er septembre 2026, il faut seulement être capable de RECEVOIR une facture électronique. Émettre les tiennes, ce sera le 1er septembre 2027, et pas avant." },
+      { qui: "ae", texte: "Une chose que beaucoup ignorent et que je préfère te dire franchement : être en franchise de TVA ne te dispense de rien, la réforme s'applique aussi aux micro-entreprises. Mais tu n'as rien à préparer de ton côté. Je m'occupe de la mise en conformité de tes factures, elle sera là avant l'échéance, et tu cliqueras sur le même bouton qu'aujourd'hui." },
     ],
   },
   {

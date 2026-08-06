@@ -526,6 +526,21 @@ function AppInner() {
       setCanonical("/");
     }
   }, [landingStatut, token, legalPage]);
+
+  // Vitrine « Trouver des missions » de la landing AE : on va chercher de vrais
+  // marchés publics, sans compte. Endpoint public, mis en cache côté serveur.
+  // Si la source est indisponible, la section ne s'affiche simplement pas :
+  // mieux vaut une page plus courte qu'une promesse vide.
+  useEffect(() => {
+    if (landingStatut !== "auto_entrepreneur" || token || marchesLanding) return;
+    let vivant = true;
+    fetch(`${API_BASE}/marches-publics/public`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (vivant && d && d.opportunites && d.opportunites.length) setMarchesLanding(d); })
+      .catch(() => { /* silencieux : la landing ne doit jamais dépendre d'une source externe */ });
+    return () => { vivant = false; };
+  }, [landingStatut, token, marchesLanding]);
+
   // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
   const [interShowAuth, setInterShowAuth] = useState(false);
   // En natif, le formulaire email est replié derrière « Continuer avec un e-mail »
@@ -1181,6 +1196,10 @@ function AppInner() {
   const [vatNumber, setVatNumber] = useState(""); // brouillon du n° TVA (sauvé au blur)
   const [simCaLanding, setSimCaLanding] = useState("3000");
   const [simActLanding, setSimActLanding] = useState(String(getRegime("services").tauxCotisations));
+  // Vitrine « Trouver des missions » de la landing AE : de VRAIS marchés publics,
+  // sans compte, comme les offres spectacle de la landing intermittent. Une
+  // capture d'écran figée n'aurait convaincu personne.
+  const [marchesLanding, setMarchesLanding] = useState(null);
   // Simulateur cachets→heures de la landing intermittent
   const [simCachetsLanding, setSimCachetsLanding] = useState("5");
   const [simModeLanding, setSimModeLanding] = useState("cachets"); // "heures" ou "cachets" (1 cachet = 12h)
@@ -2377,7 +2396,7 @@ function AppInner() {
     revenus: ["Je peux saisir des mois passés ?", "Facturé ou encaissé : je note quoi ?"],
     frais: ["Comment scanner une facture de dépense ?", "Mes frais changent quoi dans mes chiffres ?"],
     salaire: ["Comment marche la Paie de Totor ?", "C'est quoi prudent, recommandé, maximum ?"],
-    factures: ["Comment me faire payer en ligne ?", "Comment marchent les relances automatiques ?", "Comment marquer une facture payée ?"],
+    factures: ["La facture électronique, je dois faire quoi ?", "Comment me faire payer en ligne ?", "Comment marchent les relances automatiques ?"],
     devis: ["Comment faire signer mon devis en ligne ?", "Comment faire un devis ?", "Comment transformer un devis en facture ?"],
     declaration: ["D'où vient le chiffre à recopier ?", "Et si j'ai oublié un encaissement ?"],
     echeances: ["C'est quoi cette échéance URSSAF ?", "Pourquoi ce montant est marqué ~ ?"],
@@ -7064,6 +7083,40 @@ function AppInner() {
                 </div>
               </div>
             </div>
+
+            {/* ── La facture électronique, expliquée calmement ──
+                 Ajouté le 07/08/2026 : beaucoup d'auto-entrepreneurs paniquent en
+                 croyant qu'ils doivent tout changer au 1er septembre 2026. C'est
+                 faux, et la confusion vient de ce que deux obligations portent la
+                 même date de départ. On sépare les deux, avec les vraies dates.
+                 ⚠️ Ne JAMAIS écrire que la franchise de TVA dispense : elle ne
+                 dispense pas (un micro-entrepreneur reste assujetti à la TVA). */}
+            <div style={{ maxWidth: 720, margin: isMobile ? "34px auto 0" : "48px auto 0", background: "rgba(55,138,221,0.07)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 18, padding: isMobile ? "24px 20px" : "32px 34px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <i className="ti ti-shield-check" aria-hidden="true" style={{ fontSize: 24, color: "#5DCAA5", flexShrink: 0 }} />
+                <h3 style={{ fontFamily: SERIF, fontSize: isMobile ? 21 : 26, fontWeight: 700, color: "white", margin: 0, lineHeight: 1.25 }}>
+                  La facture électronique&nbsp;? Respire.
+                </h3>
+              </div>
+              <p style={{ fontSize: isMobile ? 14.5 : 15.5, color: "#B5D4F4", lineHeight: 1.65, margin: "0 0 18px" }}>
+                Tu as sûrement entendu parler du 1<sup>er</sup> septembre 2026 et tu t'es dit que tu allais devoir tout changer. Non. Deux obligations différentes portent cette même date de départ, et une seule te concerne maintenant.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: 14, marginBottom: 18 }}>
+                <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 12, padding: "16px 18px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#5DCAA5", marginBottom: 7 }}>1<sup>er</sup> septembre 2026</div>
+                  <div style={{ fontSize: 14.5, color: "#EAF2FB", fontWeight: 700, marginBottom: 6 }}>Tu dois pouvoir en recevoir</div>
+                  <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>C'est tout. Recevoir, pas émettre. Tes clients professionnels commencent à t'envoyer leurs factures dans un format électronique, et il faut que tu puisses les lire.</div>
+                </div>
+                <div style={{ background: "rgba(0,0,0,0.22)", borderRadius: 12, padding: "16px 18px" }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase", color: "#FAC775", marginBottom: 7 }}>1<sup>er</sup> septembre 2027</div>
+                  <div style={{ fontSize: 14.5, color: "#EAF2FB", fontWeight: 700, marginBottom: 6 }}>Tu devras en émettre</div>
+                  <div style={{ fontSize: 13, color: "#8BA5C0", lineHeight: 1.55 }}>Là seulement tes propres factures devront partir au format électronique. Tu as donc plus d'un an devant toi, et d'ici là c'est mon problème, pas le tien.</div>
+                </div>
+              </div>
+              <p style={{ fontSize: isMobile ? 13.5 : 14.5, color: "#B5D4F4", lineHeight: 1.65, margin: 0 }}>
+                Un point que beaucoup ignorent, et je préfère te le dire franchement&nbsp;: être en franchise de TVA ne te dispense de rien. La réforme s'applique aussi aux micro-entreprises. La bonne nouvelle, c'est que tu n'as rien à faire&nbsp;: je m'occupe de la mise en conformité de tes factures, elle arrivera dans l'application avant l'échéance, et tu continueras à cliquer sur le même bouton qu'aujourd'hui.
+              </p>
+            </div>
           </section>
 
           {/* ===== 04 — impayés (aperçu mail de relance) ===== */}
@@ -7090,11 +7143,45 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 05 — chat AE ===== */}
+          {/* ===== 05 — trouver des missions (marchés publics) =====
+                 Le pendant exact de la section « prochaines heures » de la landing
+                 intermittent : de VRAIES données, consultables sans compte. La
+                 section disparaît si la source publique est indisponible, plutôt
+                 que d'afficher une promesse vide. */}
+          {marchesLanding && (
+            <section style={secShell}>
+              <div style={{ maxWidth: 720, margin: "0 auto" }}>
+                <div style={numFantome}>05</div>
+                <h2 style={titreSec}>TOTOR veille aussi sur<br />tes <span style={{ color: "#5DCAA5" }}>prochaines missions</span>.</h2>
+                <p style={texteSec}>Mairies, musées, hôpitaux, offices de tourisme : quand ils cherchent un indépendant, ils sont obligés de le publier. Sauf que c'est écrit pour des acheteurs professionnels. Je vais les chercher et je te les traduis.</p>
+              </div>
+              <div style={{ maxWidth: 720, margin: isMobile ? "26px auto 0" : "36px auto 0", background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 18, padding: isMobile ? "18px 14px" : "26px 26px" }}>
+                {marchesLanding.opportunites.map(o => (
+                  <a key={o.id} href={o.lien} target="_blank" rel="noopener noreferrer"
+                    style={{ display: "block", textDecoration: "none", background: "rgba(0,0,0,0.22)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "14px 16px", marginBottom: 10 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, alignItems: "flex-start", marginBottom: 5 }}>
+                      <span style={{ fontSize: 13.5, color: "#EAF2FB", fontWeight: 600, lineHeight: 1.4 }}>{o.objet}</span>
+                      <span style={{ fontSize: 10.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", borderRadius: 999, padding: "3px 9px", whiteSpace: "nowrap", flexShrink: 0 }}>{o.univers_libelle}</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.5 }}>{o.acheteur}</div>
+                    {o.limite_le && <div style={{ fontSize: 12, color: "#FAC775", fontWeight: 600, marginTop: 4 }}>À répondre avant le {formatDate(String(o.limite_le).slice(0, 10))}</div>}
+                  </a>
+                ))}
+                <div style={{ marginTop: 14, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", fontSize: 11.5, color: "#8BA5C0", textAlign: "center", lineHeight: 1.55 }}>
+                  De vraies consultations, publiées ces dernières semaines. Consultables librement, sans compte.<br />{marchesLanding.attribution}
+                </div>
+              </div>
+              <p style={{ fontFamily: SERIF, fontSize: isMobile ? 18 : 22, color: "#EAF2FB", lineHeight: 1.5, textAlign: "center", maxWidth: 720, margin: isMobile ? "34px auto 0" : "48px auto 0" }}>
+                Dans l'application, tu filtres par métier et par département. Et je te montre aussi <span style={{ color: "#5DCAA5" }}>qui achète ton métier près de chez toi</span>, pour les missions qui ne s'annoncent nulle part.
+              </p>
+            </section>
+          )}
+
+          {/* ===== 06 — chat AE ===== */}
           <section style={secShell}>
             <div style={secGrid}>
               <div>
-                <div style={numFantome}>05</div>
+                <div style={numFantome}>{marchesLanding ? "06" : "05"}</div>
                 <h2 style={titreSec}>TOTOR <span style={{ color: "#5DCAA5" }}>répond</span><br />quand tu as une question.</h2>
                 <p style={texteSec}>Pose ta question en langage naturel. Il te répond clairement, avec le raisonnement.</p>
               </div>
@@ -7122,10 +7209,10 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 06 — Je veille sur toi (identique à l'intermittent, mot pour mot) ===== */}
+          {/* ===== 07 — Je veille sur toi (identique à l'intermittent, mot pour mot) ===== */}
           <section style={{ borderTop: "1px solid rgba(255,255,255,0.05)", padding: isMobile ? "58px 22px" : "104px 48px" }}>
             <div style={{ maxWidth: 720, margin: "0 auto", textAlign: "center" }}>
-              <div style={{ ...numFantome, margin: "0 0 6px" }}>06</div>
+              <div style={{ ...numFantome, margin: "0 0 6px" }}>{marchesLanding ? "07" : "06"}</div>
               <h2 style={{ ...titreSec, fontSize: isMobile ? 30 : 46, margin: "0 0 30px" }}>Je veille sur toi.<br />Tu peux me faire confiance.</h2>
               <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
                 {[
@@ -7139,7 +7226,7 @@ function AppInner() {
             </div>
           </section>
 
-          {/* ===== 07 — pont inverse vers l'intermittent ===== */}
+          {/* ===== 08 — pont inverse vers l'intermittent ===== */}
           <section style={{ maxWidth: 720, margin: "0 auto", padding: isMobile ? "48px 22px" : "64px 48px" }}>
             <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.1), rgba(55,138,221,0.06))", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 18, padding: isMobile ? "30px 24px" : "38px 40px", textAlign: "center" }}>
               <div style={{ marginBottom: 14 }}><i className="ti ti-masks-theater" aria-hidden="true" style={{ fontSize: 42, color: "#5DCAA5" }} /></div>
