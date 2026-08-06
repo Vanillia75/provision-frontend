@@ -9,9 +9,11 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
-    date: "7 août 2026",
-    titre: "Je vais te chercher des missions chez les collectivités",
+    date: "6 août 2026",
+    titre: "Des missions à aller chercher, et ton compte sous double serrure",
     items: [
+      { qui: "tous", texte: "La double vérification (2FA) arrive dans tes Réglages : un code à 6 chiffres en plus de ton mot de passe, généré par ton téléphone. Même si quelqu'un vole ton mot de passe, il n'entre pas. Avec 8 codes de secours si tu perds ton téléphone. (Comptes Google et Apple : votre fournisseur la gère déjà, rien à faire.)" },
+      { qui: "tous", texte: "Toutes tes données vivent maintenant en Europe : la base de données a déménagé à Amsterdam, et tes documents étaient déjà stockés en Europe de l'Ouest. C'était important pour moi de te le dire." },
       { qui: "ae", texte: "Nouvelle entrée dans ton menu : « Trouver des missions ». Les mairies, les musées, les hôpitaux, les offices de tourisme et les régions font appel à des indépendants comme toi, et ils sont obligés de publier quand ils cherchent quelqu'un. Le problème, c'est que ces annonces sont écrites pour des acheteurs professionnels, dans un langage auquel personne ne comprend rien. Je vais les chercher et je te les traduis." },
       { qui: "ae", texte: "Tu filtres par métier (photo et vidéo, graphisme, communication, formation, web, événementiel) et par département. Pour chaque consultation ouverte, je te donne qui cherche, quoi, et jusqu'à quand tu peux répondre, avec le lien vers l'annonce officielle." },
       { qui: "ae", texte: "Et je te montre aussi une carte au trésor : les commandes déjà signées près de chez toi, avec leur montant. Ce ne sont pas des offres, ce sont des indices. Depuis avril 2026, sous 60 000 €, un acheteur public choisit son prestataire directement sans publier d'annonce : ces missions là ne s'affichent nulle part, elles se décrochent en allant se présenter. Encore faut-il savoir à qui." },
@@ -19,14 +21,6 @@ const VAGUES = [
       { qui: "ae", texte: "Tout vient de sources publiques de l'État (le BOAMP et les données essentielles de la commande publique). Je ne transmets rien de toi à personne pour aller les chercher." },
       { qui: "ae", texte: "Autre chose, et celle-là je te la dois : vous êtes nombreux à vous inquiéter de la facture électronique et de l'échéance du 1er septembre 2026. Deux obligations différentes partent de cette même date, d'où la panique. Le 1er septembre 2026, il faut seulement être capable de RECEVOIR une facture électronique. Émettre les tiennes, ce sera le 1er septembre 2027, et pas avant." },
       { qui: "ae", texte: "Une chose que beaucoup ignorent et que je préfère te dire franchement : être en franchise de TVA ne te dispense de rien, la réforme s'applique aussi aux micro-entreprises. Mais tu n'as rien à préparer de ton côté. Je m'occupe de la mise en conformité de tes factures, elle sera là avant l'échéance, et tu cliqueras sur le même bouton qu'aujourd'hui." },
-    ],
-  },
-  {
-    date: "6 août 2026",
-    titre: "Ton compte sous double serrure, et tes données en Europe",
-    items: [
-      { qui: "tous", texte: "La double vérification (2FA) arrive dans tes Réglages : un code à 6 chiffres en plus de ton mot de passe, généré par ton téléphone. Même si quelqu'un vole ton mot de passe, il n'entre pas. Avec 8 codes de secours si tu perds ton téléphone. (Comptes Google et Apple : votre fournisseur la gère déjà, rien à faire.)" },
-      { qui: "tous", texte: "Toutes tes données vivent maintenant en Europe : la base de données a déménagé à Amsterdam, et tes documents étaient déjà stockés en Europe de l'Ouest. C'était important pour moi de te le dire." },
     ],
   },
   {

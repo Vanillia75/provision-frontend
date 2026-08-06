@@ -1194,7 +1194,7 @@ function AppInner() {
   //  Il était plus haut dans le fichier au premier essai : son tableau de
   //  dépendances est lu PENDANT le rendu, donc il lisait marchesLanding avant
   //  sa déclaration. Resultat : « Cannot access before initialization », et
-  //  l'app entiere tombait sur l'ecran d'erreur, en production, le 07/08/2026.
+  //  l'app entiere tombait sur l'ecran d'erreur, en production, le 06/08/2026.
   //  ESLint ne l'attrape pas (la regle no-use-before-define est desactivee).
   //  Regle generale : un useEffect se place TOUJOURS apres les etats qu'il cite.
   useEffect(() => {
@@ -7091,7 +7091,7 @@ function AppInner() {
             </div>
 
             {/* ── La facture électronique, expliquée calmement ──
-                 Ajouté le 07/08/2026 : beaucoup d'auto-entrepreneurs paniquent en
+                 Ajouté le 06/08/2026 : beaucoup d'auto-entrepreneurs paniquent en
                  croyant qu'ils doivent tout changer au 1er septembre 2026. C'est
                  faux, et la confusion vient de ce que deux obligations portent la
                  même date de départ. On sépare les deux, avec les vraies dates.
