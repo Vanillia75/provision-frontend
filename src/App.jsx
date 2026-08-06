@@ -527,20 +527,6 @@ function AppInner() {
     }
   }, [landingStatut, token, legalPage]);
 
-  // Vitrine « Trouver des missions » de la landing AE : on va chercher de vrais
-  // marchés publics, sans compte. Endpoint public, mis en cache côté serveur.
-  // Si la source est indisponible, la section ne s'affiche simplement pas :
-  // mieux vaut une page plus courte qu'une promesse vide.
-  useEffect(() => {
-    if (landingStatut !== "auto_entrepreneur" || token || marchesLanding) return;
-    let vivant = true;
-    fetch(`${API_BASE}/marches-publics/public`)
-      .then(r => (r.ok ? r.json() : null))
-      .then(d => { if (vivant && d && d.opportunites && d.opportunites.length) setMarchesLanding(d); })
-      .catch(() => { /* silencieux : la landing ne doit jamais dépendre d'une source externe */ });
-    return () => { vivant = false; };
-  }, [landingStatut, token, marchesLanding]);
-
   // Landing intermittent : l'écran d'auth (inscription/connexion) est plein écran, hors du récit.
   const [interShowAuth, setInterShowAuth] = useState(false);
   // En natif, le formulaire email est replié derrière « Continuer avec un e-mail »
@@ -1200,6 +1186,22 @@ function AppInner() {
   // sans compte, comme les offres spectacle de la landing intermittent. Une
   // capture d'écran figée n'aurait convaincu personne.
   const [marchesLanding, setMarchesLanding] = useState(null);
+  // ⚠️ Ce useEffect DOIT rester ici, sous la déclaration de marchesLanding.
+  //  Il était plus haut dans le fichier au premier essai : son tableau de
+  //  dépendances est lu PENDANT le rendu, donc il lisait marchesLanding avant
+  //  sa déclaration. Resultat : « Cannot access before initialization », et
+  //  l'app entiere tombait sur l'ecran d'erreur, en production, le 07/08/2026.
+  //  ESLint ne l'attrape pas (la regle no-use-before-define est desactivee).
+  //  Regle generale : un useEffect se place TOUJOURS apres les etats qu'il cite.
+  useEffect(() => {
+    if (landingStatut !== "auto_entrepreneur" || token || marchesLanding) return;
+    let vivant = true;
+    fetch(`${API_BASE}/marches-publics/public`)
+      .then(r => (r.ok ? r.json() : null))
+      .then(d => { if (vivant && d && d.opportunites && d.opportunites.length) setMarchesLanding(d); })
+      .catch(() => { /* silencieux : la landing ne doit jamais dépendre d'une source externe */ });
+    return () => { vivant = false; };
+  }, [landingStatut, token, marchesLanding]);
   // Simulateur cachets→heures de la landing intermittent
   const [simCachetsLanding, setSimCachetsLanding] = useState("5");
   const [simModeLanding, setSimModeLanding] = useState("cachets"); // "heures" ou "cachets" (1 cachet = 12h)
@@ -17608,8 +17610,12 @@ export default Sentry.withErrorBoundary(AppInner, {
   onError: tenterAutoRecuperation,
   fallback: ({ resetError }) => (
     <div style={{ minHeight: "100vh", background: "#07192E", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16, padding: 24, textAlign: "center", fontFamily: "sans-serif" }}>
-      <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>Totor a eu un petit souci 🐾</p>
-      <p style={{ fontSize: 14, color: "#8BA5C0", maxWidth: 380 }}>Quelque chose a coincé de mon côté, j'ai prévenu l'équipe automatiquement. Recharge la page, je reviens tout de suite.</p>
+      {/* Le ton compte : ce que voit l'utilisateur ici, c'est TOTOR en train de
+          se mettre à jour, pas une app cassée. On ne ment pas (on ne dit pas que
+          tout va bien), mais on ne l'inquiète pas non plus pour quelque chose
+          qu'il ne peut pas résoudre et dont il n'est pas responsable. */}
+      <p style={{ fontSize: 18, fontWeight: 600, color: "#E6EDF5" }}>TOTOR fait une mise à jour 🐾</p>
+      <p style={{ fontSize: 14, color: "#8BA5C0", maxWidth: 380 }}>Je reviens tout de suite. Recharge la page dans quelques instants, tout sera là, et tes données n'ont pas bougé.</p>
       <button onClick={() => { resetError(); window.location.reload(); }} style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>
         Recharger la page
       </button>
