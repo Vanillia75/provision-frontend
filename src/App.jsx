@@ -9559,6 +9559,163 @@ function AppInner() {
               </div>
               )}
 
+              {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
+              <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
+                {!anniversaireEdit && c.date_anniversaire && (
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <i className="ti ti-calendar-clock" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
+                      <div>
+                        <div style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Date anniversaire</div>
+                        <div style={{ fontSize: 14, color: "white", fontWeight: 600, marginTop: 1 }}>
+                          {c.jours_avant_anniversaire != null && c.jours_avant_anniversaire >= 0
+                            ? `Dans ${c.jours_avant_anniversaire} jour${c.jours_avant_anniversaire > 1 ? "s" : ""}`
+                            : "Renouvellement dépassé"}
+                          <span style={{ color: "#8BA5C0", fontWeight: 400, fontSize: 12 }}> · {c.date_anniversaire}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#9A8050", marginTop: 3, fontStyle: "italic" }}>
+                          C'est la date à laquelle France Travail étudie ton renouvellement.
+                        </div>
+                        {c.montant_journalier != null && (
+                          <div style={{ fontSize: 12.5, color: "#9FE1CB", marginTop: 6, fontWeight: 600 }}>
+                            💶 Allocation journalière : {c.montant_journalier} €
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireEdit(true); }}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
+                      Modifier
+                    </button>
+                  </div>
+                )}
+                {/* Tant que la date manque : UN choix, deux colonnes.
+                    Avant, c'etaient deux paragraphes empiles (« renseigne ta date »,
+                    puis « tu as ton attestation ? »), qui donnaient l'impression de
+                    deux corvees a faire l'une apres l'autre. Ce sont en realite DEUX
+                    CHEMINS VERS LA MEME CHOSE : soit tu tapes la date, soit tu deposes
+                    ton attestation et Totor la lit. Cote a cote, ca se lit en un coup
+                    d'oeil et ca occupe la largeur au lieu d'allonger la page. */}
+                {!anniversaireEdit && !c.date_anniversaire && !areExtrait && (<>
+                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
+                    Donne-moi ta <strong style={{ color: "#FAE3B6" }}>date de renouvellement</strong> et je te préviendrai avant l'échéance.
+                    <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton dossier. Deux façons, au choix.</span>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
+                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je la connais</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Tu la saisis, c'est réglé en dix secondes.</div>
+                      <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
+                        style={{ width: "100%", background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Saisir la date
+                      </button>
+                    </div>
+                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
+                      <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
+                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je ne la connais pas</div>
+                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Dépose ton attestation, je lis la date ET ton montant journalier.</div>
+                      <label style={{ width: "100%", boxSizing: "border-box", background: areUploading ? "rgba(250,199,117,0.4)" : "transparent", border: "1px solid rgba(250,199,117,0.55)", color: "#FAE3B6", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                        <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 14 }} />
+                        {areUploading ? "Lecture…" : "Importer mon ARE"}
+                        <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                          style={{ display: "none" }} />
+                      </label>
+                    </div>
+                  </div>
+                  {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
+                </>)}
+                {anniversaireEdit && (
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
+                      style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
+                      style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1 }}>
+                      {anniversaireSaving ? "…" : "Enregistrer"}
+                    </button>
+                    <button type="button" onClick={() => setAnniversaireEdit(false)}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                      Annuler
+                    </button>
+                  </div>
+                )}
+
+                {/* ── Import attestation ARE : Totor lit la date anniversaire + le montant (ne calcule rien) ──
+                    Quand la date manque, l'import est deja propose dans le choix a deux
+                    colonnes ci-dessus : ce bloc ne sert plus qu'a l'ecran de verification
+                    de ce qui a ete lu, et au re-import quand une date existe deja. */}
+                {!anniversaireEdit && (c.date_anniversaire || areExtrait) && (
+                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(250,199,117,0.15)" }}>
+                    {areExtrait ? (
+                      // Écran de vérification : ce que Totor a lu, éditable avant enregistrement.
+                      <div>
+                        <div style={{ fontSize: 12.5, color: "#FAE3B6", fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 7 }}>
+                          <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 16 }} /> Voici ce que j'ai lu sur ton attestation
+                        </div>
+                        <div style={{ fontSize: 11.5, color: "#9A8050", marginBottom: 12, fontStyle: "italic" }}>Vérifie et corrige si besoin, je n'affiche que ce que France Travail a écrit, je ne calcule rien.</div>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Date anniversaire</label>
+                            <input type="date" value={areExtrait.date_anniversaire} onChange={e => setAreExtrait({ ...areExtrait, date_anniversaire: e.target.value })}
+                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Montant journalier (€)</label>
+                            <input type="text" inputMode="text" value={areExtrait.montant_journalier} onChange={e => setAreExtrait({ ...areExtrait, montant_journalier: e.target.value })}
+                              placeholder="ex : 52,30"
+                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                          </div>
+                        </div>
+                        {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
+                        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                          <button type="button" disabled={areSaving} onClick={handleConfirmARE}
+                            style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: areSaving ? "default" : "pointer", fontFamily: "inherit", opacity: areSaving ? 0.6 : 1 }}>
+                            {areSaving ? "Enregistrement…" : "C'est bon, enregistre"}
+                          </button>
+                          <button type="button" onClick={() => { setAreExtrait(null); setAreError(""); }}
+                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    ) : (c && c.montant_journalier != null) ? (
+                      // Loi VIII : l'ARE est déjà importée (Totor connaît le montant journalier)
+                      // → on ne redemande plus. Encart discret, réimport possible si besoin.
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                          <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
+                          <div style={{ fontSize: 12.5, color: "#9FE1CB", fontWeight: 600 }}>Attestation importée</div>
+                        </div>
+                        <label style={{ background: "transparent", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                          <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 13 }} />
+                          {areUploading ? "Lecture…" : "Réimporter"}
+                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                            style={{ display: "none" }} />
+                        </label>
+                      </div>
+                    ) : (
+                      // Bouton d'import (upload PDF/photo de l'attestation ARE).
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20, flexShrink: 0 }} />
+                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                            Tu as ton attestation France Travail ?
+                            <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 2 }}>Glisse-la, je lis ta date anniversaire et ton montant journalier pour toi.</span>
+                          </div>
+                        </div>
+                        <label style={{ background: areUploading ? "rgba(250,199,117,0.4)" : "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
+                          <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 15 }} />
+                          {areUploading ? "Lecture…" : "Importer mon ARE"}
+                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                            style={{ display: "none" }} />
+                        </label>
+                      </div>
+                    )}
+                    {areError && !areExtrait && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
+                  </div>
+                )}
+              </div>
+
               {(() => {
                 // Rééquilibrage des colonnes (déplacement pur) : Progression (frise) + Congés
                 // Spectacles passent SOUS Totor à gauche en DESKTOP (comble le vide) ; en mobile
@@ -10119,162 +10276,6 @@ function AppInner() {
                     premiere chose dont il a besoin pour repondre a la question de
                     l'app. Elle etait plus bas, apres le rappel d'actualisation et
                     le plan, alors qu'elle les conditionne tous les deux. */}
-              {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
-              <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
-                {!anniversaireEdit && c.date_anniversaire && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <i className="ti ti-calendar-clock" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
-                      <div>
-                        <div style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Date anniversaire</div>
-                        <div style={{ fontSize: 14, color: "white", fontWeight: 600, marginTop: 1 }}>
-                          {c.jours_avant_anniversaire != null && c.jours_avant_anniversaire >= 0
-                            ? `Dans ${c.jours_avant_anniversaire} jour${c.jours_avant_anniversaire > 1 ? "s" : ""}`
-                            : "Renouvellement dépassé"}
-                          <span style={{ color: "#8BA5C0", fontWeight: 400, fontSize: 12 }}> · {c.date_anniversaire}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: "#9A8050", marginTop: 3, fontStyle: "italic" }}>
-                          C'est la date à laquelle France Travail étudie ton renouvellement.
-                        </div>
-                        {c.montant_journalier != null && (
-                          <div style={{ fontSize: 12.5, color: "#9FE1CB", marginTop: 6, fontWeight: 600 }}>
-                            💶 Allocation journalière : {c.montant_journalier} €
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireEdit(true); }}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                      Modifier
-                    </button>
-                  </div>
-                )}
-                {/* Tant que la date manque : UN choix, deux colonnes.
-                    Avant, c'etaient deux paragraphes empiles (« renseigne ta date »,
-                    puis « tu as ton attestation ? »), qui donnaient l'impression de
-                    deux corvees a faire l'une apres l'autre. Ce sont en realite DEUX
-                    CHEMINS VERS LA MEME CHOSE : soit tu tapes la date, soit tu deposes
-                    ton attestation et Totor la lit. Cote a cote, ca se lit en un coup
-                    d'oeil et ca occupe la largeur au lieu d'allonger la page. */}
-                {!anniversaireEdit && !c.date_anniversaire && !areExtrait && (<>
-                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
-                    Donne-moi ta <strong style={{ color: "#FAE3B6" }}>date de renouvellement</strong> et je te préviendrai avant l'échéance.
-                    <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton dossier. Deux façons, au choix.</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
-                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
-                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je la connais</div>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Tu la saisis, c'est réglé en dix secondes.</div>
-                      <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
-                        style={{ width: "100%", background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        Saisir la date
-                      </button>
-                    </div>
-                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
-                      <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
-                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je ne la connais pas</div>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Dépose ton attestation, je lis la date ET ton montant journalier.</div>
-                      <label style={{ width: "100%", boxSizing: "border-box", background: areUploading ? "rgba(250,199,117,0.4)" : "transparent", border: "1px solid rgba(250,199,117,0.55)", color: "#FAE3B6", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                        <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 14 }} />
-                        {areUploading ? "Lecture…" : "Importer mon ARE"}
-                        <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
-                          style={{ display: "none" }} />
-                      </label>
-                    </div>
-                  </div>
-                  {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
-                </>)}
-                {anniversaireEdit && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
-                      style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                    <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
-                      style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1 }}>
-                      {anniversaireSaving ? "…" : "Enregistrer"}
-                    </button>
-                    <button type="button" onClick={() => setAnniversaireEdit(false)}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                      Annuler
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Import attestation ARE : Totor lit la date anniversaire + le montant (ne calcule rien) ──
-                    Quand la date manque, l'import est deja propose dans le choix a deux
-                    colonnes ci-dessus : ce bloc ne sert plus qu'a l'ecran de verification
-                    de ce qui a ete lu, et au re-import quand une date existe deja. */}
-                {!anniversaireEdit && (c.date_anniversaire || areExtrait) && (
-                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(250,199,117,0.15)" }}>
-                    {areExtrait ? (
-                      // Écran de vérification : ce que Totor a lu, éditable avant enregistrement.
-                      <div>
-                        <div style={{ fontSize: 12.5, color: "#FAE3B6", fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 7 }}>
-                          <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 16 }} /> Voici ce que j'ai lu sur ton attestation
-                        </div>
-                        <div style={{ fontSize: 11.5, color: "#9A8050", marginBottom: 12, fontStyle: "italic" }}>Vérifie et corrige si besoin, je n'affiche que ce que France Travail a écrit, je ne calcule rien.</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <div>
-                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Date anniversaire</label>
-                            <input type="date" value={areExtrait.date_anniversaire} onChange={e => setAreExtrait({ ...areExtrait, date_anniversaire: e.target.value })}
-                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Montant journalier (€)</label>
-                            <input type="text" inputMode="text" value={areExtrait.montant_journalier} onChange={e => setAreExtrait({ ...areExtrait, montant_journalier: e.target.value })}
-                              placeholder="ex : 52,30"
-                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                          </div>
-                        </div>
-                        {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
-                        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                          <button type="button" disabled={areSaving} onClick={handleConfirmARE}
-                            style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: areSaving ? "default" : "pointer", fontFamily: "inherit", opacity: areSaving ? 0.6 : 1 }}>
-                            {areSaving ? "Enregistrement…" : "C'est bon, enregistre"}
-                          </button>
-                          <button type="button" onClick={() => { setAreExtrait(null); setAreError(""); }}
-                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                            Annuler
-                          </button>
-                        </div>
-                      </div>
-                    ) : (c && c.montant_journalier != null) ? (
-                      // Loi VIII : l'ARE est déjà importée (Totor connaît le montant journalier)
-                      // → on ne redemande plus. Encart discret, réimport possible si besoin.
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                          <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
-                          <div style={{ fontSize: 12.5, color: "#9FE1CB", fontWeight: 600 }}>Attestation importée</div>
-                        </div>
-                        <label style={{ background: "transparent", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                          <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 13 }} />
-                          {areUploading ? "Lecture…" : "Réimporter"}
-                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
-                            style={{ display: "none" }} />
-                        </label>
-                      </div>
-                    ) : (
-                      // Bouton d'import (upload PDF/photo de l'attestation ARE).
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20, flexShrink: 0 }} />
-                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
-                            Tu as ton attestation France Travail ?
-                            <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 2 }}>Glisse-la, je lis ta date anniversaire et ton montant journalier pour toi.</span>
-                          </div>
-                        </div>
-                        <label style={{ background: areUploading ? "rgba(250,199,117,0.4)" : "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
-                          <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 15 }} />
-                          {areUploading ? "Lecture…" : "Importer mon ARE"}
-                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
-                            style={{ display: "none" }} />
-                        </label>
-                      </div>
-                    )}
-                    {areError && !areExtrait && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
-                  </div>
-                )}
-              </div>
 
                 {/* Le rappel d'actualisation vivait AU-DESSUS de la carte de Totor.
                     Avec le bandeau email et le murmure d'abonnement, ca faisait trois

@@ -213,11 +213,11 @@ export const REGLES = {
   allocationPlancherNetCsg: {
     valeur: 62.0,
     libelle: "Plancher net : la CSG/CRDS ne peut pas faire descendre l'allocation sous ce montant",
-    source: "Déduit puis VÉRIFIÉ au centime le 2026-07-27 sur le simulateur officiel France Travail : trois allocations brutes différentes (63,27 / 64,64 / 65,99 €) donnent toutes un net de 62,00 € exactement. Correspond au SMIC brut mensuel / 30.",
+    source: "Déduit puis VÉRIFIÉ au centime le 2026-07-27 sur le simulateur officiel France Travail : trois allocations brutes différentes (63,27 / 64,64 / 65,99 €) donnent toutes un net de 62,00 € exactement. SMIC brut mensuel ÷ 30, arrondi à l'euro (1 867,02 ÷ 30 = 62,23 → 62 depuis le 01/06/2026).",
     version: "2026.07",
-    dateAppli: "2026",
+    dateAppli: "2026-06-01",
     verifie: true,
-    commentaire: "Règle : on calcule la CSG théorique, puis on la RABOTE de façon que le net ne tombe jamais sous 62,00 €. Si l'allocation brute est déjà sous ce plancher, la retenue est de ZÉRO (vérifié : brute 60,55 € et 61,91 € donnent CSG 0,00 €). C'est ce qui explique le cas réel n°2 (plancher plus bas cette année-là). ÉVOLUE AVEC LE SMIC : à revérifier au rituel de janvier, sur le simulateur.",
+    commentaire: "Règle : on calcule la CSG théorique, puis on la RABOTE de façon que le net ne tombe jamais sous 62,00 €. Si l'allocation brute est déjà sous ce plancher, la retenue est de ZÉRO (vérifié : brute 60,55 € et 61,91 € donnent CSG 0,00 €). ⚠️ CETTE VALEUR EST CELLE D'AUJOURD'HUI SEULEMENT. Le plancher SUIT LE SMIC : il valait 61,00 € du 01/01/2026 au 31/05/2026 (observé sur deux relevés réels), et est passé à 62,00 € avec la revalorisation du SMIC du 01/06/2026. Pour calculer un mois PASSÉ, ne pas lire cette valeur : appeler plancher_net_csg(date). ÉVOLUE AVEC LE SMIC : à revérifier au rituel de janvier, sur le simulateur.",
   },
 
   pmssMensuel: {
