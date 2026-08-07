@@ -7882,12 +7882,28 @@ function AppInner() {
             <p style={{ fontSize: 12.5, color: "#8BA5C0", margin: "0 0 8px", textAlign: "left" }}>✍️ L'écrire à la main, si tu l'as sous les yeux :</p>
             <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)} style={{ ...S.input, colorScheme: "dark", marginBottom: 22 }} />
 
-            <button type="button" disabled={loading} onClick={finishInterOnboarding} style={{ ...S.btnPrimary, marginBottom: 12 }}>
-              {loading ? "…" : "C'est parti →"}
-            </button>
-            <button type="button" disabled={loading} onClick={finishInterOnboarding} style={{ ...S.linkBtn, fontSize: 13, color: "#8BA5C0" }}>
-              Je le ferai plus tard
-            </button>
+            {/* ⚠️ 06/08/2026 : les DEUX boutons appelaient la même fonction et le bouton vert
+                n'était jamais désactivé. Résultat mesuré sur les comptes réels : 26 inscriptions
+                sur 26 terminées, mais 16 sans date anniversaire. Le gros bouton évident était un
+                « plus tard » déguisé. Il ne s'active donc plus qu'une fois la date connue, et
+                « Je le ferai plus tard » reste la sortie ASSUMÉE, jamais le chemin par défaut. */}
+            {(() => {
+              const aLaDate = !!(anniversaireInput || (areExtrait && areExtrait.date_anniversaire));
+              return (<>
+                <button type="button" disabled={loading || !aLaDate} onClick={finishInterOnboarding}
+                  style={{ ...S.btnPrimary, marginBottom: 12, opacity: (loading || !aLaDate) ? 0.45 : 1, cursor: (loading || !aLaDate) ? "default" : "pointer" }}>
+                  {loading ? "…" : "C'est parti →"}
+                </button>
+                {!aLaDate && (
+                  <p style={{ fontSize: 12, color: "#6B8299", margin: "-6px 0 12px", lineHeight: 1.5 }}>
+                    Importe ton attestation ou écris la date, et le bouton s'allume.
+                  </p>
+                )}
+                <button type="button" disabled={loading} onClick={finishInterOnboarding} style={{ ...S.linkBtn, fontSize: 13, color: "#8BA5C0" }}>
+                  Je le ferai plus tard
+                </button>
+              </>);
+            })()}
           </div>
         </div>
       );
@@ -8248,6 +8264,21 @@ function AppInner() {
       const manque = calc.manque;
       const joursAnniv = calc.aDateAnniv ? calc.joursAnniv : null;
 
+      // ⚪ JE NE SAIS PAS ENCORE (06/08/2026) — aucune activité saisie.
+      //  Sans ce cas, l'utilisateur tombait dans le 🟡 « on le prépare ensemble,
+      //  le renouvellement est encore loin (507 heures) » : une affirmation sur
+      //  SA carrière alors qu'on n'a strictement aucune donnée. Il a peut-être
+      //  déjà 400 h de faites. On ne déduit jamais d'une absence.
+      if ((interActivites || []).length === 0) {
+        return {
+          ton: "neutre", emoji: "🐾", titre: "Faisons connaissance",
+          bg: "rgba(55,138,221,0.08)", bd: "rgba(55,138,221,0.28)", tc: "#8FC3F5", st: "#B5D4F4",
+          // On rappelle l'objectif (un fait du régime, pas une affirmation sur la
+          // personne) sans jamais prétendre savoir où elle en est.
+          phrase: `Mon métier, c'est de compter tes heures vers les ${calc.seuil} qui sécurisent tes droits. Où tu en es, je ne le sais pas encore et je ne vais pas l'inventer : donne-moi tes premiers contrats, et je m'en occupe.`,
+        };
+      }
+
       // 🟢 SÉCURISÉ — seul cas vert : le moteur confirme les droits.
       if (calc.secu) {
         return {
@@ -8554,6 +8585,13 @@ function AppInner() {
     // Priorité : AEM manquante > heures > prêt. (Défini après `anomalies`, qu'il lit.)
     // `suivant` = l'objectif d'après (logique 2 temps : règle l'urgent, puis vise le reste).
     const nextAction = (() => {
+      // Même garde-fou que l'état du héros (06/08/2026) : tant qu'aucune activité
+      // n'existe, la seule action suivante honnête est « donne-moi tes contrats ».
+      // Annoncer « encore 507 h ≈ 43 cachets » à quelqu'un dont on ne sait rien
+      // est une affirmation inventée, pas un conseil.
+      if ((interActivites || []).length === 0) {
+        return { icon: "ti-movie", txt: "Donne-moi tes premiers contrats, et je compte pour toi.", nav: "activites", suivant: null };
+      }
       if (calc.secu) {
         return { icon: "ti-shield-check", txt: "Ton dossier est prêt à préparer.", nav: "attestation", suivant: null };
       }
@@ -8576,6 +8614,10 @@ function AppInner() {
     // 🔵 uniquement. Toujours "tu pourrais", jamais "tu atteindras".
     const projection = (() => {
       if (calc.secu) return { dispo: false };
+      // Même garde-fou (06/08/2026) : sans la moindre activité, projeter revient à
+      // projeter le vide. La carte annonçait « toujours pas suffisant, il faudrait
+      // ~43h/mois » à quelqu'un dont on ignore tout. On se tait plutôt.
+      if ((interActivites || []).length === 0) return { dispo: false };
       const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
       const now = new Date();
       const seuil = calc.seuil;
@@ -9396,6 +9438,19 @@ function AppInner() {
                    nouveau), 3 lignes max, priorité : à faire > à surveiller > tout va bien. ═══ */}
               {(() => {
                 const items = [];
+                // ⚠️ AJOUT DU 06/08/2026 : sur 26 intermittents réels, 20 n'avaient jamais
+                //  saisi d'activité et 16 n'avaient pas de date anniversaire. L'inscription
+                //  ne la réclame qu'une fois, et rien ne la redemandait jamais ensuite : le
+                //  briefing affichait « rien d'urgent » à quelqu'un dont le dossier était
+                //  vide. Ces deux lignes passent EN TÊTE parce qu'elles conditionnent tout
+                //  le reste : sans activités je ne compte rien, sans date anniversaire je ne
+                //  sais pas dire « à temps ou non ».
+                if ((interActivites || []).length === 0) {
+                  items.push({ ic: "🎬", tx: <>Je n'ai encore <strong style={{ color: "#C8E0F5" }}>aucun de tes contrats</strong>. Ajoute-les, ou scanne une AEM, et je compte pour toi.</>, cible: "activites", lib: "Commencer" });
+                }
+                if (interCockpit && !interCockpit.date_anniversaire) {
+                  items.push({ ic: "📅", tx: <>Il me manque ta <strong style={{ color: "#C8E0F5" }}>date anniversaire</strong> : sans elle, je ne peux pas te dire si tu seras à temps pour ton renouvellement.</>, cible: "cockpit", lib: "La renseigner" });
+                }
                 if (actuOuverte && !dejaActualise) {
                   items.push({ ic: "📋", tx: <>Ton <strong style={{ color: "#C8E0F5" }}>actualisation</strong> est ouverte : je te l'ai préparée, il n'y a plus qu'à recopier.</>, cible: "actu", lib: "Voir" });
                 }
@@ -9437,7 +9492,39 @@ function AppInner() {
                 );
               })()}
 
-              {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══ */}
+              {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══
+                   ⚠️ GARDE-FOU DU 06/08/2026, mesuré sur les comptes réels : 20 intermittents
+                   sur 26 n'avaient jamais saisi la moindre activité, et l'app leur annonçait
+                   « tu es à 0 h, plus que 507 h, environ 43 cachets », jauge à 0 %.
+                   C'est FAUX : quelqu'un qui n'a rien saisi a peut-être déjà 400 heures
+                   travaillées. On ne déduit jamais d'une absence. Tant qu'AUCUNE activité
+                   n'existe, on n'affiche donc aucun chiffre et aucune jauge : on dit ce qu'on
+                   sait, c'est-à-dire rien, et on demande. ═══ */}
+              {(interActivites || []).length === 0 ? (
+                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "20px 20px", marginBottom: 12 }}>
+                  <div style={{ fontSize: 17.5, fontWeight: 800, color: "white", lineHeight: 1.35, marginBottom: 8 }}>
+                    Je ne connais pas encore ton historique.
+                  </div>
+                  <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16 }}>
+                    Ce que je fais, une fois que tu m'as donné tes contrats : je compte tes heures sur les 12 mois qui glissent, je te dis en permanence combien il t'en reste avant les <strong style={{ color: "#C8E0F5" }}>{calc.seuil} h</strong>, et je te préviens si le rythme ne suffit pas. Je ne vais pas te dire que tu es à zéro heure aujourd'hui : je n'en sais rien.
+                  </div>
+                  <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
+                    <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); }}
+                      style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7 }}>
+                      <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} />
+                      Ajouter mon premier cachet
+                    </button>
+                    <button type="button" onClick={() => setInterNav("mesaem")}
+                      style={{ background: "transparent", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 10, padding: "11px 18px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7 }}>
+                      <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} />
+                      Scanner une AEM
+                    </button>
+                  </div>
+                  <div style={{ fontSize: 11.5, color: "#5A7798", lineHeight: 1.5, marginTop: 12 }}>
+                    Une AEM scannée, c'est tout un contrat rempli d'un coup. C'est le plus rapide si tu en as sous la main.
+                  </div>
+                </div>
+              ) : (
               <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
                 {!calc.secu ? (
                   <>
@@ -9470,6 +9557,7 @@ function AppInner() {
                   </div>
                 )}
               </div>
+              )}
 
               {(() => {
                 // Rééquilibrage des colonnes (déplacement pur) : Progression (frise) + Congés
