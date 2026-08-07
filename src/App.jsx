@@ -4381,6 +4381,32 @@ function AppInner() {
     const num = (() => { const m = q.match(/(\d+([.,]\d+)?)/); return m ? parseFloat(m[1].replace(",", ".")) : null; })();
     const fmtH = (h) => Math.round(h);
 
+    // ─── Le cachet moyen de la personne, tiré de SES propres saisies ───
+    //  Retour testeuse du 07/08/2026 : « il parle jamais d'alloc quand je fais une
+    //  simu », et sa conclusion logique, « la réponse sera toujours oui prends le
+    //  cachet ». Elle avait raison : l'impact sur l'allocation n'était chiffré que
+    //  si elle TAPAIT un prix dans sa question (« 2 cachets à 150 € »). Personne ne
+    //  devine ça. Tapé sans prix, le simulateur ne parlait que d'heures, donc il ne
+    //  servait plus à rien une fois les 507 h acquises.
+    //  On va donc chercher le prix là où il est déjà : dans ses cachets declarés.
+    //  RÈGLE D'OR RESPECTÉE : ce n'est pas un chiffre invente, c'est SON argent, et
+    //  on dit toujours d'où il vient (« a ton tarif habituel »).
+    const cachetMoyen = (() => {
+      const montants = acts
+        .filter(a => a && a.type_activite !== "autre_salaire" && Number(a.salaire_brut) > 0)
+        .map(a => {
+          const nb = Number(a.nombre) > 0 ? Number(a.nombre) : 1;
+          return Number(a.salaire_brut) / nb;      // brut PAR cachet, pas le total de la ligne
+        })
+        .filter(v => v > 0 && v < 5000);           // borne de sécurité contre une saisie aberrante
+      if (montants.length < 2) return null;        // un seul cachet ne fait pas une habitude
+      const tries = [...montants].sort((x, y) => x - y);
+      const milieu = Math.floor(tries.length / 2);
+      // Médiane et non moyenne : un seul gros cachet ne doit pas tirer l'estimation.
+      const mediane = tries.length % 2 ? tries[milieu] : (tries[milieu - 1] + tries[milieu]) / 2;
+      return Math.round(mediane * 100) / 100;
+    })();
+
     // ─ Scénario 1 : accepter des cachets ─
     if (/(accepte|prends?|fais|ajoute).*(cachet)/.test(q) || (/cachet/.test(q) && /(et si|si je)/.test(q))) {
       const n = num || 1;
@@ -4390,11 +4416,15 @@ function AppInner() {
       // Si la question donne AUSSI le prix (« 2 cachets à 150 € »), on chiffrera
       // l'impact sur l'allocation (retour testeuse 24/07 : cachets + salaire = la vraie décision).
       const prixMatch = q.match(/(\d+(?:[.,]\d+)?)\s*(?:€|euros?)/);
-      const prix = prixMatch ? parseFloat(prixMatch[1].replace(",", ".")) : null;
+      const prixDit = prixMatch ? parseFloat(prixMatch[1].replace(",", ".")) : null;
+      // À défaut de prix dans la question, on prend son tarif habituel (cf. cachetMoyen).
+      const prix = (prixDit && prixDit > 0) ? prixDit : cachetMoyen;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
         text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
-        simulerAj: prix && prix > 0 ? { n, brut: prix } : null,
+        simulerAj: prix && prix > 0 ? { n, brut: prix, estime: !prixDit } : null,
+        // Aucun prix nulle part : on le DEMANDE au lieu de se taire sur l'allocation.
+        demanderPrix: !prix,
       };
     }
     // ─ Scénario 2 : accepter des heures ─
@@ -4479,16 +4509,25 @@ function AppInner() {
           const d = await apiFetch(`/intermittent/projection-aj?cachets_sup=${scenario.simulerAj.n}&brut_cachet=${scenario.simulerAj.brut}`);
           const s = d && d.simulation;
           if (s && s.affichable) {
+            // Quand le prix vient de SON historique et non de sa question, on le dit :
+            // elle doit pouvoir corriger si ce contrat-là n'est pas à son tarif habituel.
+            const source = scenario.simulerAj.estime
+              ? ` (calculé à ton tarif habituel, ${formatEUR(scenario.simulerAj.brut)} le cachet ; dis-moi le vrai prix si celui-ci est différent)`
+              : "";
             texte += formatEUR(s.aj_nette) === formatEUR(projAj.aj_nette)
               // Le plancher absorbe le lot : dire « de X à X » serait vrai mais illisible.
-              ? ` Et côté allocation : ton estimation resterait autour de ${formatEUR(projAj.aj_nette)} par jour, tu es au plancher. À ce niveau, ce contrat joue surtout sur tes heures (valeur 2026, estimation).`
-              : ` Et côté allocation : ton estimation au prochain renouvellement passerait d'environ ${formatEUR(projAj.aj_nette)} à ${formatEUR(s.aj_nette)} par jour (valeur 2026, estimation).`;
+              ? ` Et côté allocation : ton estimation resterait autour de ${formatEUR(projAj.aj_nette)} par jour, tu es au plancher. À ce niveau, ce contrat joue surtout sur tes heures (valeur 2026, estimation).${source}`
+              : ` Et côté allocation : ton estimation au prochain renouvellement passerait d'environ ${formatEUR(projAj.aj_nette)} à ${formatEUR(s.aj_nette)} par jour (valeur 2026, estimation).${source}`;
           } else if (s) {
             texte += ` Et côté allocation : je n'arrive pas à chiffrer ce lot précisément. Ce qui est sûr : ça monte.`;
           }
         } catch { /* l'impact allocation est un bonus : la réponse heures part quand même */ }
       } else if (scenario.simulerAj && projAj && projAj.verrou) {
         texte += ` (Avec TOTOR Veille, je te chiffrerais aussi l'impact sur ton allocation.)`;
+      } else if (scenario.demanderPrix && projAj && projAj.verrou === false && projAj.affichable) {
+        // Je ne connais pas encore son tarif : je le demande plutôt que de me taire
+        // sur la seule chose qui l'intéresse vraiment une fois ses 507 h acquises.
+        texte += ` Dis-moi à combien est le cachet et je te chiffre aussi ce que ça changerait sur ton allocation.`;
       }
       setTimeout(() => {
         setCalcThinking(false);
