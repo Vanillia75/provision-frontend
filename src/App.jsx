@@ -9598,7 +9598,7 @@ function AppInner() {
                     d'oeil et ca occupe la largeur au lieu d'allonger la page. */}
                 {!anniversaireEdit && !c.date_anniversaire && !areExtrait && (<>
                   <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
-                    Donne-moi ta <strong style={{ color: "#FAE3B6" }}>date de renouvellement</strong> et je te préviendrai avant l'échéance.
+                    Donne-moi ta <strong style={{ color: "#FAE3B6" }}>date anniversaire</strong> et je te préviendrai avant l'échéance.
                     <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton dossier. Deux façons, au choix.</span>
                   </div>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
@@ -10638,7 +10638,7 @@ function AppInner() {
 
                 {!calc.aDateAnniv && (
                   <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 12, lineHeight: 1.5, textAlign: "center" }}>
-                    🐾 Ajoute ta date de renouvellement ci-dessus pour affiner ces estimations.
+                    🐾 Ajoute ta date anniversaire ci-dessus pour affiner ces estimations.
                   </div>
                 )}
                 </>)}
