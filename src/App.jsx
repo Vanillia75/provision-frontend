@@ -2498,7 +2498,9 @@ function AppInner() {
   // un bouton de partage explicite pour enregistrer ou envoyer le document.
   const pdfViewerUI = pdfAffiche ? (
     <div style={{ position: "fixed", inset: 0, background: "#07192E", zIndex: 900, display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+      {/* Safe-area du natif : sans ça, la barre (et son bouton Fermer) se glisse
+          SOUS l'encoche de l'iPhone — bouton invisible, vécu par Camille le 15/08. */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "calc(14px + env(safe-area-inset-top, 0px)) 16px 14px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ton document</div>
           <div style={{ fontSize: 11.5, color: "#8BA5C0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pdfAffiche.filename}</div>
@@ -2511,7 +2513,7 @@ function AppInner() {
       </div>
       <iframe src={pdfAffiche.url} title="Aperçu du document"
         style={{ flex: 1, width: "100%", border: "none", background: "#fff" }} />
-      <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+      <div style={{ padding: "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
         <a href={pdfAffiche.url} download={pdfAffiche.filename} target="_blank" rel="noopener noreferrer"
           style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5DCAA5", color: "#04342C", borderRadius: 11, padding: "13px 16px", fontSize: 14.5, fontWeight: 700, textDecoration: "none", minHeight: 48 }}>
           <i className="ti ti-share" aria-hidden="true" style={{ fontSize: 17 }} /> Enregistrer ou partager
