@@ -4080,6 +4080,9 @@ function AppInner() {
         try {
           const form = new FormData();
           form.append("file", await preparerPhoto(file));
+          // On annonce la taille du lot : un document photographié en plusieurs
+          // pages ne doit coûter QU'UN scan, pas un par photo (14/08/2026).
+          if (fichiers.length > 1) form.append("lot_pages", String(fichiers.length));
           const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
           // Le backend renvoie { aems: [...] }. Compatibilité : si un seul objet arrive, on l'emballe.
           const liste = Array.isArray(data?.aems) ? data.aems : (data ? [data] : []);
@@ -4099,11 +4102,15 @@ function AppInner() {
           }
           // Quota atteint : ce n'est pas un document illisible, la modale Premium s'en charge.
           if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") continue;
-          // 422 = document illisible, 429 = pause anti-abus : dans les deux cas le backend
-          // parle avec un message honnête → on l'affiche TEL QUEL (vécu du 23/07 : le
-          // message « réessaie demain » du quota était déguisé en panne technique).
-          if (!premierMessageErreur && (e.status === 422 || e.status === 429) && e.message) premierMessageErreur = e.message;
-          else if (e.status !== 422 && e.status !== 429) erreurTechnique = true;
+          // 422 = document illisible, 429 = pause anti-abus, 400 = format refusé,
+          // 413 = fichier trop lourd : dans TOUS ces cas le backend parle avec un
+          // message honnête → on l'affiche TEL QUEL (vécu du 23/07 : le message
+          // « réessaie demain » du quota était déguisé en panne technique ; et le
+          // 14/08 : « fichier trop lourd » était affiché comme une panne serveur,
+          // ce qui laissait la personne sans aucune piste).
+          const parleClair = [400, 413, 422, 429].includes(e.status);
+          if (!premierMessageErreur && parleClair && e.message) premierMessageErreur = e.message;
+          else if (!parleClair) erreurTechnique = true;
           echecs.push({ name: file.name, file }); // un fichier illisible ne doit pas faire perdre les autres
         }
       }
