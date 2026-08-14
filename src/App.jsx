@@ -8,6 +8,7 @@ import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiq
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { DEPARTEMENTS, libelleDepartement } from "./departements";
 import { preparerPhoto, preparerPhotos } from "./photo";
+import { doitPrendreLaLectureGroupee } from "./scan";
 import { LegalPageView } from "./LegalPage";
 import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
@@ -1451,8 +1452,16 @@ function AppInner() {
     // Timeout de sécurité : si le backend ne répond pas (ex : serveur qui se réveille
     // d'une mise en veille), on coupe au bout de 45s au lieu d'attendre indéfiniment.
     // 45s laisse le temps à Railway de se réveiller, sans bloquer l'utilisateur sans fin.
+    //
+    // ⚠️ SAUF POUR L'ENVOI D'UN FICHIER (14/08/2026). Un scan met 5 à 12 secondes
+    //  côté serveur (mesuré en production), mais sur un téléphone en 4G faible il
+    //  faut D'ABORD envoyer la photo : 2 Mo sur une connexion poussive, et les 45 s
+    //  sont mangées par l'envoi seul. On coupait alors une lecture qui se passait
+    //  bien, en disant « le serveur met du temps à répondre », après avoir déjà
+    //  décompté le scan. Trois minutes pour un envoi de fichier, 45 s pour le reste.
+    const envoiDeFichier = options.body instanceof FormData;
     const ctrl = new AbortController();
-    const timer = setTimeout(() => ctrl.abort(), 45000);
+    const timer = setTimeout(() => ctrl.abort(), envoiDeFichier ? 180000 : 45000);
     let res;
     try {
       res = await fetch(`${API_BASE}${path}`, {
@@ -4114,10 +4123,11 @@ function AppInner() {
           for (const f of await preparerPhotos(fichiers)) formGroupe.append("files", f);
           const dataG = await apiFetch("/intermittent/aem/extract-pages", { method: "POST", body: formGroupe });
           const listeG = Array.isArray(dataG?.aems) ? dataG.aems : [];
-          // On ne remplace le résultat page-par-page que si le groupé fait MIEUX :
-          // autant d'attestations ou plus, et moins de champs vides.
-          const trous = (l) => l.reduce((n, d) => n + (!d.employeur ? 1 : 0) + (!d.metier ? 1 : 0), 0);
-          if (listeG.length >= tousLesForms.length && trous(listeG) < trous(tousLesForms)) {
+          // On ne remplace le résultat page-par-page que si le groupé fait MIEUX.
+          // La règle vit dans src/scan.js pour être vérifiable : elle avait un
+          // défaut qui jetait la lecture groupée quand AUCUNE page n'avait pu
+          // être lue seule, c'est-à-dire précisément quand elle sert le plus.
+          if (doitPrendreLaLectureGroupee(listeG, tousLesForms)) {
             tousLesForms.length = 0;
             for (const d of listeG) tousLesForms.push(toForm(d, fichiers[0].name));
             echecs.length = 0;   // le document entier a été lu : plus d'échec à signaler
