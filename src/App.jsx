@@ -1156,6 +1156,13 @@ function AppInner() {
   // personnalisables ; showSavedToast() garde le comportement historique "enregistré".
   const [savedToast, setSavedToast] = useState(false);
   const [toastContent, setToastContent] = useState({ msg: "Modification enregistrée", icon: "ti-check" });
+  // ⚠️ DÉCLARÉ ICI, TOUT EN HAUT, ET PAS PLUS BAS : pdfViewerUI le lit pendant
+  //  le rendu. Place plus bas, React leve « Cannot access pdfAffiche before
+  //  initialization » et TOUTE l'app tombe. C'est le piege du 06/08/2026, que
+  //  j'ai refait le 13/08 en ecrivant ce visualiseur. Ne jamais le redescendre.
+  // Visualiseur de PDF intégré, utilisé UNIQUEMENT sur iPhone en app native, où
+  // ni la nouvelle fenêtre ni le téléchargement direct ne fonctionnent (13/08/2026).
+  const [pdfAffiche, setPdfAffiche] = useState(null);   // { url, filename }
   const savedToastTimerRef = useRef(null);
   const showToast = (msg = "Modification enregistrée", icon = "ti-check") => {
     setToastContent({ msg, icon });
@@ -2375,6 +2382,37 @@ function AppInner() {
         <div style={{ fontSize: 18, fontWeight: 700, color: "white", marginBottom: 8 }}>Merci ❤️</div>
         <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.55 }}>À partir de maintenant… ce qui te prend du temps, c'est mon problème.</div>
         <div style={{ marginTop: 16, fontSize: 12, color: "#5DCAA5" }}>Activation en cours…</div>
+      </div>
+    </div>
+  ) : null;
+
+  // Visualiseur de PDF plein écran — iPhone uniquement (cf. ouvrirOuTelechargerPdf).
+  // WKWebView sait afficher un PDF dans la page ; il ne sait ni ouvrir un onglet
+  // exploitable, ni honorer un téléchargement. On lui donne donc un cadre, plus
+  // un bouton de partage explicite pour enregistrer ou envoyer le document.
+  const pdfViewerUI = pdfAffiche ? (
+    <div style={{ position: "fixed", inset: 0, background: "#07192E", zIndex: 900, display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "14px 16px", borderBottom: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Ton document</div>
+          <div style={{ fontSize: 11.5, color: "#8BA5C0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{pdfAffiche.filename}</div>
+        </div>
+        <button type="button"
+          onClick={() => { try { URL.revokeObjectURL(pdfAffiche.url); } catch { /* deja libere */ } setPdfAffiche(null); }}
+          style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#C5D4E3", borderRadius: 9, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>
+          Fermer
+        </button>
+      </div>
+      <iframe src={pdfAffiche.url} title="Aperçu du document"
+        style={{ flex: 1, width: "100%", border: "none", background: "#fff" }} />
+      <div style={{ padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
+        <a href={pdfAffiche.url} download={pdfAffiche.filename} target="_blank" rel="noopener noreferrer"
+          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5DCAA5", color: "#04342C", borderRadius: 11, padding: "13px 16px", fontSize: 14.5, fontWeight: 700, textDecoration: "none", minHeight: 48 }}>
+          <i className="ti ti-share" aria-hidden="true" style={{ fontSize: 17 }} /> Enregistrer ou partager
+        </a>
+        <div style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+          Si l'aperçu reste blanc, appuie sur ce bouton : ton iPhone ouvrira le document.
+        </div>
       </div>
     </div>
   ) : null;
@@ -4616,14 +4654,22 @@ function AppInner() {
         Ce document est un recapitulatif personnel etabli a partir des donnees saisies par l'utilisateur dans l'application TOTOR. Il ne constitue pas une attestation officielle de France Travail, d'un employeur ou de tout autre organisme, et n'a pas de valeur juridique ou fiscale. Pour un document officiel, l'utilisateur doit s'adresser aux organismes competents.
       </div>
       </body></html>`;
-    const w = window.open("", "_blank");
+    // ⚠️ CORRIGÉ LE 13/08/2026, signalé par une abonnée depuis son iPhone :
+    //  « Le pdf ne fonctionne pas ». Dans l'app native (Capacitor iOS et Android),
+    //  window.open renvoie une fenêtre NON NULLE mais inexploitable : le document
+    //  qu'on y écrit n'apparaît jamais, et comme l'objet n'est pas null, l'ancien
+    //  code prenait cette branche puis sortait. Résultat : le bouton ne faisait
+    //  RIEN, sans le moindre message. C'est exactement le même piège que celui
+    //  déjà documenté pour les PDF de factures (cf. ouvrirOuTelechargerPdf).
+    //  En natif on va donc DIRECTEMENT à l'iframe, qui, elle, fonctionne.
+    const w = estNatif() ? null : window.open("", "_blank");
     if (w) {
       w.document.write(html);
       w.document.close();
       setTimeout(() => { w.focus(); w.print(); }, 350);
       return;
     }
-    // Popup bloquée (app Android / TWA) : impression via une iframe invisible, sans quitter la page.
+    // App native, ou popup bloquée : impression via une iframe invisible, sans quitter la page.
     const fr = document.createElement("iframe");
     fr.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:none;";
     document.body.appendChild(fr);
@@ -5063,23 +5109,75 @@ function AppInner() {
   // le contexte Android-app et on télécharge directement (le lecteur PDF du téléphone
   // prend le relais), avec un toast dans la voix de Totor — car un téléchargement
   // Android silencieux ressemble à un bug. Ailleurs : nouvel onglet, repli download.
+  // ⚠️ RÉÉCRIT LE 13/08/2026, après « Le pdf ne fonctionne pas » signalé par une
+  //  abonnée depuis son iPhone. Deux règles gravées ici :
+  //
+  //  1. SUR IPHONE, on n'ouvre pas de fenêtre. Dans l'app native (WKWebView),
+  //     window.open renvoie un objet NON NUL mais inutilisable, et l'attribut
+  //     download d'un lien n'est pas honoré. Le seul affichage fiable est un
+  //     visualiseur DANS la page. C'est ce que fait pdfAffiche.
+  //  2. ON NE PEUT JAMAIS FINIR EN SILENCE. Quoi qu'il arrive, l'utilisateur voit
+  //     soit son document, soit un message qui lui dit quoi faire. Un bouton qui
+  //     ne fait rien est le pire des bugs : il fait douter de toute l'app.
   function ouvrirOuTelechargerPdf(blob, filename, toastLabel) {
-    const url = URL.createObjectURL(blob);
-    const isAndroidApp = /Android/.test(navigator.userAgent) &&
-      (window.matchMedia("(display-mode: standalone)").matches || document.referrer.startsWith("android-app://"));
+    let url;
+    try {
+      url = URL.createObjectURL(blob);
+    } catch {
+      setError("Je n'ai pas réussi à préparer le document. Réessaie dans un instant.");
+      return;
+    }
     const telecharger = () => {
       const a = document.createElement("a");
       a.href = url; a.download = filename;
       document.body.appendChild(a); a.click(); a.remove();
     };
-    if (isAndroidApp) {
+    const estIOSNatif = PLATEFORME_NATIVE === "ios";
+    const estAndroidApp = PLATEFORME_NATIVE === "android" ||
+      (/Android/.test(navigator.userAgent) &&
+        (window.matchMedia("(display-mode: standalone)").matches ||
+         document.referrer.startsWith("android-app://")));
+
+    if (estIOSNatif) {
+      // iPhone : visualiseur intégré, avec une sortie de secours visible.
+      setPdfAffiche({ url, filename });
+    } else if (estAndroidApp) {
       telecharger();
       showToast(toastLabel, "ti-download");
     } else {
       const w = window.open(url, "_blank");
-      if (!w) telecharger();
+      if (!w) { telecharger(); showToast(toastLabel, "ti-download"); }
     }
-    setTimeout(() => URL.revokeObjectURL(url), 60000);  // libère la mémoire
+    // On ne libère PAS l'url tant que le visualiseur iPhone l'affiche : il la
+    // relâche lui-même à la fermeture.
+    if (!estIOSNatif) setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  // Récapitulatif de revenus : le serveur fabrique un VRAI PDF (recap_pdf.py) au
+  // lieu de demander au téléphone d'imprimer. window.print() n'existe pas sur
+  // iPhone dans une app : le bouton n'y avait jamais rien fait, en silence.
+  // Signalé le 13/08/2026 par une abonnée. Le calcul, lui, ne bouge pas : c'est
+  // le récapitulatif déjà calculé ici qu'on envoie au serveur, il ne recalcule rien.
+  async function telechargerRecapPdf(recap) {
+    if (loadingPdf || !recap) return;
+    setLoadingPdf(true);
+    setError("");
+    try {
+      const res = await fetch(`${API_BASE}/intermittent/recap-revenus/pdf`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ recap }),
+      });
+      if (!res.ok) throw new Error("generation");
+      const blob = await res.blob();
+      ouvrirOuTelechargerPdf(blob, "recapitulatif-revenus.pdf",
+        "Ton récapitulatif est téléchargé 🐾");
+    } catch {
+      // Jamais de silence : s'il y a un souci, la personne doit le savoir.
+      setError("Je n'ai pas réussi à préparer ton récapitulatif. Réessaie dans un instant, et si ça recommence, écris-moi à bonjour@montotor.fr.");
+    } finally {
+      setLoadingPdf(false);
+    }
   }
 
   async function handleViewInvoicePdf(inv) {
@@ -8975,6 +9073,7 @@ function AppInner() {
         {premiumGateModal}
         {billingSuccessOverlay}
         {updateOverlay}
+        {pdfViewerUI}
         {gameOverlay}
         {aideVivanteUI}
 
@@ -12107,12 +12206,13 @@ function AppInner() {
                   </div>
 
                   {/* Bouton télécharger */}
-                  <button type="button" onClick={() => imprimerRecapRevenus(recapRevenus, profilPrenom, profilNom)}
-                    style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: "15px", fontSize: 15, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
-                    <i className="ti ti-download" aria-hidden="true" style={{ fontSize: 18 }} /> Télécharger en PDF
+                  <button type="button" disabled={loadingPdf} onClick={() => telechargerRecapPdf(recapRevenus)}
+                    style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 12, padding: "15px", fontSize: 15, fontWeight: 700, cursor: loadingPdf ? "default" : "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9, opacity: loadingPdf ? 0.6 : 1, minHeight: 48 }}>
+                    <i className="ti ti-download" aria-hidden="true" style={{ fontSize: 18 }} />
+                    {loadingPdf ? "Je prépare ton document…" : "Télécharger en PDF"}
                   </button>
                   <div style={{ fontSize: 10.5, color: "#5A7088", textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>
-                    Le PDF s'ouvre dans une nouvelle fenêtre. Choisis « Enregistrer en PDF » dans les options d'impression.
+                    Un vrai fichier PDF, que tu peux enregistrer ou envoyer.
                   </div>
                 </>
               )}
@@ -17381,6 +17481,7 @@ function AppInner() {
       {premiumGateModal}
       {billingSuccessOverlay}
       {updateOverlay}
+      {pdfViewerUI}
       {gameOverlay}
       {aideVivanteUI}
       {activiteModalUI}
