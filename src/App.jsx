@@ -8,7 +8,7 @@ import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiq
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { DEPARTEMENTS, libelleDepartement } from "./departements";
 import { preparerPhoto, preparerPhotos } from "./photo";
-import { doitPrendreLaLectureGroupee } from "./scan";
+import { doitPrendreLaLectureGroupee, regrouperParMois } from "./scan";
 import { LegalPageView } from "./LegalPage";
 import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
@@ -4192,21 +4192,20 @@ function AppInner() {
         setReleveError("Je n'ai trouvé aucune période sur ce relevé. Essaie un scan plus net.");
         return;
       }
-      // Chaque période devient un mois pré-rempli, que la personne corrige librement.
+      // Chaque mois devient une ligne pré-remplie, que la personne corrige
+      // librement. Deux périodes d'un même mois (droits ouverts en cours de
+      // mois) sont ADDITIONNÉES : voir regrouperParMois dans src/scan.js.
       setReleveExtrait({
         releve_r2_key: d.releve_r2_key || null,
-        periodes: periodes.map(p => {
-          const ref = p.fin || p.debut || "";
-          return {
-            annee: parseInt(ref.slice(0, 4), 10) || new Date().getFullYear(),
-            mois: parseInt(ref.slice(5, 7), 10) || (new Date().getMonth() + 1),
-            aj_nombre: p.aj_dues != null ? String(p.aj_dues) : "",
-            net_verse: p.net_du != null ? String(p.net_du) : "",
-            jours_travail: p.jours_travail != null ? String(p.jours_travail) : "",
-            jours_franchise_cp: p.jours_franchise_cp != null ? String(p.jours_franchise_cp) : "",
-            jours_franchise_salaires: p.jours_franchise_salaires != null ? String(p.jours_franchise_salaires) : "",
-          };
-        }),
+        periodes: regrouperParMois(periodes).map(p => ({
+          annee: p.annee,
+          mois: p.mois,
+          aj_nombre: p.aj_dues != null ? String(p.aj_dues) : "",
+          net_verse: p.net_du != null ? String(p.net_du) : "",
+          jours_travail: p.jours_travail != null ? String(p.jours_travail) : "",
+          jours_franchise_cp: p.jours_franchise_cp != null ? String(p.jours_franchise_cp) : "",
+          jours_franchise_salaires: p.jours_franchise_salaires != null ? String(p.jours_franchise_salaires) : "",
+        })),
       });
     } catch (e) {
       if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") return;

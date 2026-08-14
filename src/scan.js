@@ -28,6 +28,57 @@ export function trous(liste) {
  *  groupé, pourtant complet, était donc jeté, et la personne voyait « je n'ai
  *  pas réussi à lire ce document » alors que Totor venait de le lire.
  */
+/**
+ * Les périodes d'un relevé de situation, regroupées PAR MOIS.
+ *
+ * ⚠️ Ajouté le 14/08/2026. Un relevé découpe le temps en périodes, et Totor
+ *  range ensuite une ligne par mois. La plupart du temps une période = un mois
+ *  entier, donc tout allait bien. Mais quand les droits s'ouvrent ou reprennent
+ *  en cours de mois, France Travail écrit DEUX périodes dans le même mois
+ *  (« du 1er au 14 » puis « du 15 au 31 »). Chacune devenait une ligne du même
+ *  mois, et la seconde écrasait la première à l'enregistrement : Totor ne
+ *  voyait plus que la moitié du versement et annonçait un écart qui n'existait
+ *  pas. On additionne les deux moitiés, ce qui est la réalité du mois.
+ *
+ *  Les périodes gardent leur ordre d'apparition ; la personne voit le total et
+ *  peut le corriger avant d'enregistrer, comme pour tout le reste.
+ */
+export function regrouperParMois(periodes) {
+  const parMois = new Map();
+  const somme = (a, b) => (a == null && b == null ? null : Number(a || 0) + Number(b || 0));
+
+  for (const p of periodes || []) {
+    const ref = p.fin || p.debut || "";
+    const annee = parseInt(String(ref).slice(0, 4), 10);
+    const mois = parseInt(String(ref).slice(5, 7), 10);
+    if (!annee || !mois) continue;
+    const cle = `${annee}-${mois}`;
+    const deja = parMois.get(cle);
+    if (!deja) {
+      parMois.set(cle, {
+        annee, mois,
+        aj_dues: p.aj_dues ?? null,
+        net_du: p.net_du ?? null,
+        jours_travail: p.jours_travail ?? null,
+        jours_franchise_cp: p.jours_franchise_cp ?? null,
+        jours_franchise_salaires: p.jours_franchise_salaires ?? null,
+      });
+      continue;
+    }
+    deja.aj_dues = somme(deja.aj_dues, p.aj_dues);
+    deja.net_du = somme(deja.net_du, p.net_du);
+    deja.jours_travail = somme(deja.jours_travail, p.jours_travail);
+    deja.jours_franchise_cp = somme(deja.jours_franchise_cp, p.jours_franchise_cp);
+    deja.jours_franchise_salaires = somme(deja.jours_franchise_salaires, p.jours_franchise_salaires);
+  }
+  // Les euros se recollent mal : 915.00 + 446.36 doit donner 1361.36, pas
+  // 1361.3600000000001.
+  for (const m of parMois.values()) {
+    if (m.net_du != null) m.net_du = Math.round(m.net_du * 100) / 100;
+  }
+  return [...parMois.values()];
+}
+
 export function doitPrendreLaLectureGroupee(groupee, pageParPage) {
   const g = groupee || [];
   const p = pageParPage || [];
