@@ -4074,6 +4074,33 @@ function AppInner() {
           echecs.push({ name: file.name, file }); // un fichier illisible ne doit pas faire perdre les autres
         }
       }
+      // ── RECOLLAGE DES PAGES (14/08/2026) ──
+      //  Le cas du Mac, reproduit sur une vraie FCTU TF1 de 3 pages envoyée en
+      //  3 photos : la page 2 donnait le contrat SANS employeur ni métier (ils
+      //  sont écrits sur la page 1), et les pages 1 et 3 étaient déclarées
+      //  illisibles. En réalité, ces fichiers étaient les pages d'UN SEUL
+      //  document. Quand un envoi multiple laisse des fichiers illisibles OU des
+      //  lectures trouées, on retente TOUT le lot en une seule lecture groupée
+      //  (/extract-pages) : le lecteur voit alors le document entier, comme un
+      //  humain qui tourne les pages. Un seul scan est décompté.
+      const aDesTrous = tousLesForms.some(f => !f.employeur || !f.metier);
+      if (fichiers.length > 1 && fichiers.length <= 12 && (echecs.length > 0 || aDesTrous)) {
+        try {
+          const formGroupe = new FormData();
+          for (const f of fichiers) formGroupe.append("files", f);
+          const dataG = await apiFetch("/intermittent/aem/extract-pages", { method: "POST", body: formGroupe });
+          const listeG = Array.isArray(dataG?.aems) ? dataG.aems : [];
+          // On ne remplace le résultat page-par-page que si le groupé fait MIEUX :
+          // autant d'attestations ou plus, et moins de champs vides.
+          const trous = (l) => l.reduce((n, d) => n + (!d.employeur ? 1 : 0) + (!d.metier ? 1 : 0), 0);
+          if (listeG.length >= tousLesForms.length && trous(listeG) < trous(tousLesForms)) {
+            tousLesForms.length = 0;
+            for (const d of listeG) tousLesForms.push(toForm(d, fichiers[0].name));
+            echecs.length = 0;   // le document entier a été lu : plus d'échec à signaler
+          }
+        } catch { /* la lecture groupée est un filet : si elle échoue, le résultat page par page reste */ }
+      }
+
       setAemEchecs(echecs); // fichiers gardés en main pour proposer la lecture humaine
       if (tousLesForms.length === 0) {
         if (echecs.length === 0) return; // tout venait du quota : rien à afficher ici
