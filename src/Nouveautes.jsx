@@ -9,6 +9,16 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "14 août 2026",
+    titre: "Je vérifie tes versements France Travail",
+    items: [
+      { qui: "intermittent", texte: "Nouvelle entrée dans ton menu : « Mes versements ». Scanne ton relevé de situation France Travail, et je compare ce qu'ils t'ont payé à mon propre calcul. Si le compte est bon, je te le dis. S'il manque quelque chose, je te dis combien, pourquoi, et quoi vérifier : un contrat pas saisi, une AEM qui n'est pas arrivée, un taux différent." },
+      { qui: "intermittent", texte: "Comme pour les AEM, rien ne s'enregistre sans toi : je te montre ce que j'ai lu, tu corriges si besoin, tu confirmes. Et seul le versement de France Travail fait foi : je compare et j'explique, je ne conteste rien à ta place." },
+      { qui: "intermittent", texte: "Au passage, si tu déposes un relevé ou une notification de droits dans « Mes AEM », je ne réponds plus « je ne sais pas lire ce document » : je reconnais ce que c'est et je te dis où ça va." },
+      { qui: "intermittent", texte: "Et le scan d'attestations a été durci cette semaine, sur de vrais documents : les contrats d'une journée gardent leur date de fin, les AEM à la police abîmée se lisent quand même, et un document envoyé en plusieurs photos est lu comme un seul document, l'employeur n'est plus perdu en route." },
+    ],
+  },
+  {
     date: "6 août 2026",
     titre: "Des missions à aller chercher, et ton compte sous double serrure",
     items: [

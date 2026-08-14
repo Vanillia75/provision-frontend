@@ -588,6 +588,17 @@ function AppInner() {
   const [allocPourquoiOuvert, setAllocPourquoiOuvert] = useState(false);
   // ─── Scan d'AEM (Coffre à AEM) — OCR Claude Vision ───
   const [aemUploading, setAemUploading] = useState(false);
+  // ── Mes versements (relevés de situation) — 14/08/2026, décision Camille.
+  //  Le relevé dit ce que France Travail a payé ; TOTOR compare à son calcul.
+  //  ⚠️ Déclarés ICI, avant tout usage (pannes du 06/08 et du 13/08 : un état lu
+  //  pendant le rendu avant sa déclaration tue TOUTE l'app).
+  const [relevesData, setRelevesData] = useState(null);      // les mois vérifiés
+  const [relevesLoading, setRelevesLoading] = useState(false);
+  const [releveUploading, setReleveUploading] = useState(false);
+  const [releveError, setReleveError] = useState("");
+  const [releveExtrait, setReleveExtrait] = useState(null);  // { periodes, releve_r2_key } à valider
+  const [releveVerifEnCours, setReleveVerifEnCours] = useState(false);
+  const [releveDetail, setReleveDetail] = useState(null);    // id de la ligne dépliée
   const [aemExtrait, setAemExtrait] = useState(null); // résultat lu, en attente de validation
   const [aemQueue, setAemQueue] = useState([]); // AEM restantes à valider (si le doc en contenait plusieurs)
   const [aemTotal, setAemTotal] = useState(0); // nb total d'AEM détectées dans le document (pour l'indicateur "1/3")
@@ -2451,6 +2462,7 @@ function AppInner() {
     cockpit: ["Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
     activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
     mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
+    versements: ["Où trouver mon relevé de situation ?", "Que veut dire l'écart affiché ?", "Pourquoi vérifier mes versements ?"],
     actu: ["Quand dois-je m'actualiser ?", "Totor s'actualise à ma place ?"],
     reglages: ["C'est quoi la double vérification ?", "Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?"],
   };
@@ -4064,6 +4076,17 @@ function AppInner() {
           if (liste.length === 0) { echecs.push({ name: file.name, file }); continue; }
           for (const d of liste) tousLesForms.push(toForm(d, file.name));
         } catch (e) {
+          // Document France Travail légitime déposé au mauvais endroit (14/08/2026) :
+          // on ORIENTE au lieu de rejeter. Le serveur nous dit ce que c'est.
+          if (e.detail?.code === "document_a_orienter") {
+            if (!premierMessageErreur) {
+              premierMessageErreur = e.detail?.kind === "releve_situation"
+                ? "Ça, c'est ton relevé de situation France Travail. Il a sa place dans « Mes versements » : scanne-le là-bas, et je vérifierai que le compte est bon."
+                : (e.detail?.message || "Ce document a sa place ailleurs dans l'app.");
+            }
+            echecs.push({ name: file.name, file });
+            continue;
+          }
           // Quota atteint : ce n'est pas un document illisible, la modale Premium s'en charge.
           if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") continue;
           // 422 = document illisible, 429 = pause anti-abus : dans les deux cas le backend
@@ -4126,6 +4149,97 @@ function AppInner() {
       setAemUploading(false);
       setAemScanProgress(null);
     }
+  }
+
+  // ─── Mes versements : le relevé se lit, se VALIDE, puis se vérifie ───
+  //  Même règle que les AEM : Totor propose ce qu'il a lu, la personne confirme,
+  //  rien ne s'enregistre sans elle. Le verdict (conforme / écart expliqué) est
+  //  calculé par le serveur avec le MÊME moteur que la carte « Ton mois ».
+  async function chargerReleves() {
+    setRelevesLoading(true);
+    try {
+      const d = await apiFetch("/intermittent/releves");
+      setRelevesData(Array.isArray(d?.releves) ? d.releves : []);
+    } catch {
+      setRelevesData([]);
+    } finally {
+      setRelevesLoading(false);
+    }
+  }
+
+  async function handleScanReleve(file) {
+    if (!file || releveUploading) return;
+    setReleveUploading(true);
+    setReleveError("");
+    setReleveExtrait(null);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const d = await apiFetch("/intermittent/releve/extract", { method: "POST", body: form });
+      const periodes = Array.isArray(d?.periodes) ? d.periodes : [];
+      if (periodes.length === 0) {
+        setReleveError("Je n'ai trouvé aucune période sur ce relevé. Essaie un scan plus net.");
+        return;
+      }
+      // Chaque période devient un mois pré-rempli, que la personne corrige librement.
+      setReleveExtrait({
+        releve_r2_key: d.releve_r2_key || null,
+        periodes: periodes.map(p => {
+          const ref = p.fin || p.debut || "";
+          return {
+            annee: parseInt(ref.slice(0, 4), 10) || new Date().getFullYear(),
+            mois: parseInt(ref.slice(5, 7), 10) || (new Date().getMonth() + 1),
+            aj_nombre: p.aj_dues != null ? String(p.aj_dues) : "",
+            net_verse: p.net_du != null ? String(p.net_du) : "",
+            jours_travail: p.jours_travail != null ? String(p.jours_travail) : "",
+            jours_franchise_cp: p.jours_franchise_cp != null ? String(p.jours_franchise_cp) : "",
+            jours_franchise_salaires: p.jours_franchise_salaires != null ? String(p.jours_franchise_salaires) : "",
+          };
+        }),
+      });
+    } catch (e) {
+      if (e.detail?.code === "quota_gratuit_atteint" || e.detail?.code === "premium_requis") return;
+      setReleveError((e.detail && e.detail.message) || e.message || "Je n'ai pas réussi à lire ce relevé. Essaie un scan plus net.");
+    } finally {
+      setReleveUploading(false);
+    }
+  }
+
+  async function validerReleve() {
+    if (!releveExtrait || releveVerifEnCours) return;
+    setReleveVerifEnCours(true);
+    setReleveError("");
+    try {
+      for (const p of releveExtrait.periodes) {
+        if (p.net_verse === "") continue;       // sans montant net, rien à vérifier
+        await apiFetch("/intermittent/releve/verifier", {
+          method: "POST",
+          body: JSON.stringify({
+            annee: p.annee, mois: p.mois,
+            aj_nombre: p.aj_nombre === "" ? null : p.aj_nombre,
+            net_verse: p.net_verse,
+            jours_travail: p.jours_travail === "" ? null : p.jours_travail,
+            jours_franchise_cp: p.jours_franchise_cp === "" ? null : p.jours_franchise_cp,
+            jours_franchise_salaires: p.jours_franchise_salaires === "" ? null : p.jours_franchise_salaires,
+            releve_r2_key: releveExtrait.releve_r2_key,
+          }),
+        });
+      }
+      setReleveExtrait(null);
+      await chargerReleves();
+    } catch (e) {
+      setReleveError((e.detail && e.detail.message) || e.message || "La vérification a coincé. Réessaie dans un instant.");
+    } finally {
+      setReleveVerifEnCours(false);
+    }
+  }
+
+  async function supprimerReleve(id) {
+    try {
+      await apiFetch(`/intermittent/releves/${id}`, { method: "DELETE" });
+      setReleveDetail(null);
+      await chargerReleves();
+    } catch { /* la liste se rechargera au prochain passage */ }
   }
 
   // ─── Un document que le scan n'a pas su lire → envoi au coffre pour lecture humaine ───
@@ -9038,6 +9152,7 @@ function AppInner() {
       { id: "cockpit", icon: "ti-gauge", label: "Cockpit", dispo: true },
       { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
       { id: "mesaem", icon: "ti-file-check", label: "Mes AEM", dispo: true },
+      { id: "versements", icon: "ti-cash", label: "Mes versements", dispo: true },
       { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
       { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
       { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
@@ -9264,6 +9379,138 @@ function AppInner() {
 
               {/* ═══ MES AEM (V2 / PR3) — scan SUR PLACE + victoire, sans quitter l'écran. Formulaire de
                   validation DUPLIQUÉ de coffre (V1 intacte) ; confirm → handleConfirmAEMMesaem (wrapper). ═══ */}
+              {interNav === "versements" && (() => {
+                if (!relevesData && !relevesLoading) chargerReleves();
+                const MOIS_L = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+                const VERDICTS = {
+                  ok: { ic: "✓", c: "#5DCAA5", lib: "Versement conforme" },
+                  ecart: { ic: "⚠️", c: "#FAC775", lib: "Écart repéré" },
+                  verrou: { ic: "🔒", c: "#8BA5C0", lib: "Vérification avec TOTOR Veille" },
+                  indeterminable: { ic: "…", c: "#8BA5C0", lib: "Pas encore vérifiable" },
+                };
+                const champEdit = (idx, cle, label) => (
+                  <div style={{ flex: "1 1 120px", minWidth: 110 }}>
+                    <label style={{ fontSize: 10.5, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>{label}</label>
+                    <input type="text" inputMode="decimal" value={releveExtrait.periodes[idx][cle]}
+                      onChange={e => {
+                        const suiv = { ...releveExtrait, periodes: releveExtrait.periodes.map((p, i) => i === idx ? { ...p, [cle]: e.target.value } : p) };
+                        setReleveExtrait(suiv);
+                      }}
+                      style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 11px", fontSize: 13.5, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                  </div>
+                );
+                return (
+                  <div>
+                    <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: "0 0 6px" }}>💶 Mes versements</h1>
+                    <p style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, margin: "0 0 18px", maxWidth: 620 }}>
+                      Ton relevé de situation France Travail dit ce qu'ils t'ont payé. Scanne-le : je le compare à mon calcul, et je te dis si le compte est bon.
+                    </p>
+
+                    {/* ── Scanner ── */}
+                    <label style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 9, background: releveUploading ? "rgba(93,202,165,0.4)" : "#5DCAA5", color: "#04342C", borderRadius: 12, padding: "15px", fontSize: 15, fontWeight: 700, cursor: releveUploading ? "default" : "pointer", fontFamily: "inherit", marginBottom: 8, minHeight: 48, boxSizing: "border-box" }}>
+                      <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 18 }} />
+                      {releveUploading ? "Je lis ton relevé…" : "Scanner mon relevé de situation"}
+                      <input type="file" accept="image/*,application/pdf" disabled={releveUploading} style={{ display: "none" }}
+                        onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleScanReleve(f); e.target.value = ""; }} />
+                    </label>
+                    <div style={{ fontSize: 11.5, color: "#5A7088", textAlign: "center", marginBottom: 18, lineHeight: 1.5 }}>
+                      C'est le document « Relevé de situation » de ton espace France Travail (courrier ou PDF). Photo ou PDF, comme tu veux.
+                    </div>
+
+                    {releveError && (
+                      <div style={{ background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.3)", borderRadius: 12, padding: "13px 16px", fontSize: 13, color: "#FAE3B6", lineHeight: 1.55, marginBottom: 14 }}>{releveError}</div>
+                    )}
+
+                    {/* ── Validation de ce que Totor a lu ── */}
+                    {releveExtrait && (
+                      <div style={{ background: "#0d1f38", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: "18px 20px", marginBottom: 18 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 800, color: "#5DCAA5", marginBottom: 4 }}>🐶 Voici ce que j'ai lu</div>
+                        <div style={{ fontSize: 12, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
+                          Vérifie et corrige si besoin : je n'enregistre qu'après ta confirmation, et je n'affiche que ce que France Travail a écrit.
+                        </div>
+                        {releveExtrait.periodes.map((p, idx) => (
+                          <div key={idx} style={{ borderTop: idx > 0 ? "1px solid rgba(255,255,255,0.08)" : "none", paddingTop: idx > 0 ? 14 : 0, marginTop: idx > 0 ? 14 : 0 }}>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "white", marginBottom: 10 }}>
+                              {MOIS_L[(p.mois - 1 + 12) % 12]} {p.annee}
+                            </div>
+                            <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                              {champEdit(idx, "aj_nombre", "Jours indemnisés")}
+                              {champEdit(idx, "net_verse", "Net versé (€)")}
+                              {champEdit(idx, "jours_travail", "Jours travaillés")}
+                              {champEdit(idx, "jours_franchise_cp", "Franchise CP (j)")}
+                              {champEdit(idx, "jours_franchise_salaires", "Franchise salaires (j)")}
+                            </div>
+                          </div>
+                        ))}
+                        <div style={{ display: "flex", gap: 9, flexWrap: "wrap", marginTop: 16 }}>
+                          <button type="button" disabled={releveVerifEnCours} onClick={validerReleve}
+                            style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "12px 20px", fontSize: 14, fontWeight: 700, cursor: releveVerifEnCours ? "default" : "pointer", fontFamily: "inherit", opacity: releveVerifEnCours ? 0.6 : 1, minHeight: 44 }}>
+                            {releveVerifEnCours ? "Je vérifie…" : "C'est bon, vérifie mes versements"}
+                          </button>
+                          <button type="button" onClick={() => setReleveExtrait(null)}
+                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 10, padding: "12px 16px", fontSize: 13.5, cursor: "pointer", fontFamily: "inherit", minHeight: 44 }}>
+                            Annuler
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ── Les mois vérifiés ── */}
+                    {relevesLoading && !relevesData && (
+                      <div style={{ fontSize: 13, color: "#8BA5C0", padding: "8px 0" }}>🐾 Je regarde tes versements…</div>
+                    )}
+                    {relevesData && relevesData.length === 0 && !releveExtrait && (
+                      <div style={{ background: "#0d1f38", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", fontSize: 13, color: "#8BA5C0", lineHeight: 1.6 }}>
+                        Aucun versement vérifié pour l'instant. Scanne ton premier relevé de situation, et je te dirai si France Travail t'a payé juste.
+                      </div>
+                    )}
+                    {relevesData && relevesData.map(r => {
+                      const v = VERDICTS[r.verdict] || VERDICTS.indeterminable;
+                      const ouvert = releveDetail === r.id;
+                      return (
+                        <div key={r.id} style={{ background: "#0d1f38", border: `1px solid ${ouvert ? v.c : "rgba(255,255,255,0.08)"}`, borderRadius: 14, marginBottom: 10, overflow: "hidden" }}>
+                          <button type="button" onClick={() => setReleveDetail(ouvert ? null : r.id)}
+                            style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, background: "transparent", border: "none", padding: "15px 18px", cursor: "pointer", fontFamily: "inherit", textAlign: "left", minHeight: 48 }}>
+                            <span style={{ fontSize: 17, flexShrink: 0 }}>{v.ic}</span>
+                            <span style={{ flex: 1, minWidth: 0 }}>
+                              <span style={{ display: "block", fontSize: 14, fontWeight: 700, color: "white" }}>
+                                {MOIS_L[(r.mois - 1 + 12) % 12]} {r.annee}
+                              </span>
+                              <span style={{ display: "block", fontSize: 11.5, color: v.c }}>{v.lib}</span>
+                            </span>
+                            <span style={{ fontSize: 15, fontWeight: 800, color: "white", whiteSpace: "nowrap" }}>{formatEUR(r.net_verse)}</span>
+                            <i className={`ti ti-chevron-${ouvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#8BA5C0", flexShrink: 0 }} />
+                          </button>
+                          {ouvert && (
+                            <div style={{ padding: "0 18px 16px", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.6 }}>
+                              {r.explication && <div style={{ marginBottom: 10 }}>{r.explication}</div>}
+                              <div style={{ display: "flex", flexWrap: "wrap", gap: "6px 18px", fontSize: 12, color: "#8BA5C0", marginBottom: 12 }}>
+                                {r.aj_nombre != null && <span>{Math.round(r.aj_nombre)} jour{r.aj_nombre > 1 ? "s" : ""} indemnisé{r.aj_nombre > 1 ? "s" : ""}</span>}
+                                {r.taux_net_jour != null && <span>{formatEUR(r.taux_net_jour)} par jour</span>}
+                                {r.attendu_net != null && <span>mon calcul : {formatEUR(r.attendu_net)}</span>}
+                                {r.jours_travail != null && <span>{Math.round(r.jours_travail)} jour{r.jours_travail > 1 ? "s" : ""} travaillé{r.jours_travail > 1 ? "s" : ""}</span>}
+                              </div>
+                              {r.verdict === "verrou" && (
+                                <button type="button" onClick={() => setInterNav("abonnement")}
+                                  style={{ background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.4)", color: "#5DCAA5", borderRadius: 9, padding: "9px 14px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", marginRight: 8 }}>
+                                  Découvrir TOTOR Veille
+                                </button>
+                              )}
+                              <button type="button" onClick={() => supprimerReleve(r.id)}
+                                style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.14)", color: "#8BA5C0", borderRadius: 9, padding: "9px 14px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+                                Supprimer ce mois
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    <div style={{ fontSize: 11, color: "#5A7088", lineHeight: 1.55, marginTop: 14 }}>
+                      Seul le versement de France Travail fait foi : je compare, j'explique, mais je ne conteste rien à ta place. En cas d'écart, la marche à suivre est dans le détail du mois.
+                    </div>
+                  </div>
+                );
+              })()}
               {interNav === "mesaem" && (() => {
                 const aems = (interActivites || []).filter(a => a.aem_recue === true || a.source === "ocr");
                 const dupSig = {};
