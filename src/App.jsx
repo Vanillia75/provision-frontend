@@ -7,6 +7,7 @@ import { valeurDe, tracer, VERSION_REFERENTIEL, moteurHeuresValide } from "./reg
 import { formatEUR, formatDate, heuresDe, formatPeriode, normEmployeur, historiqueEmployeur, heuresFenetre } from "./format";
 import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { DEPARTEMENTS, libelleDepartement } from "./departements";
+import { preparerPhoto, preparerPhotos } from "./photo";
 import { LegalPageView } from "./LegalPage";
 import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
@@ -4069,7 +4070,7 @@ function AppInner() {
         if (fichiers.length > 1) setAemScanProgress({ courant: i + 1, total: fichiers.length });
         try {
           const form = new FormData();
-          form.append("file", file);
+          form.append("file", await preparerPhoto(file));
           const data = await apiFetch("/intermittent/aem/extract", { method: "POST", body: form });
           // Le backend renvoie { aems: [...] }. Compatibilité : si un seul objet arrive, on l'emballe.
           const liste = Array.isArray(data?.aems) ? data.aems : (data ? [data] : []);
@@ -4110,7 +4111,7 @@ function AppInner() {
       if (fichiers.length > 1 && fichiers.length <= 12 && (echecs.length > 0 || aDesTrous)) {
         try {
           const formGroupe = new FormData();
-          for (const f of fichiers) formGroupe.append("files", f);
+          for (const f of await preparerPhotos(fichiers)) formGroupe.append("files", f);
           const dataG = await apiFetch("/intermittent/aem/extract-pages", { method: "POST", body: formGroupe });
           const listeG = Array.isArray(dataG?.aems) ? dataG.aems : [];
           // On ne remplace le résultat page-par-page que si le groupé fait MIEUX :
@@ -4174,7 +4175,7 @@ function AppInner() {
     setReleveExtrait(null);
     try {
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", await preparerPhoto(file));
       const d = await apiFetch("/intermittent/releve/extract", { method: "POST", body: form });
       const periodes = Array.isArray(d?.periodes) ? d.periodes : [];
       if (periodes.length === 0) {
@@ -5041,7 +5042,7 @@ function AppInner() {
     setAreExtrait(null);
     try {
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", await preparerPhoto(file));
       const data = await apiFetch("/intermittent/are/extract", { method: "POST", body: form });
       // Lecture vide (ni date, ni montant) : message honnête plutôt qu'un formulaire vide muet.
       if (!data.date_anniversaire && data.montant_journalier == null) {
@@ -5132,7 +5133,7 @@ function AppInner() {
     setError("");
     try {
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", await preparerPhoto(file));
       const data = await apiFetch("/income/extract", { method: "POST", body: form });
       setFactureExtraite({
         amount: String(data.amount),
@@ -5930,7 +5931,7 @@ function AppInner() {
     setError("");
     try {
       const form = new FormData();
-      form.append("file", file);
+      form.append("file", await preparerPhoto(file));
       const data = await apiFetch("/expenses/extract", { method: "POST", body: form });
       // Nettoyer la description : virer les headers de tableau PDF mal parsés
       const descBrute = data.description || "";
