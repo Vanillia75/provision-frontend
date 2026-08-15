@@ -2418,6 +2418,34 @@ function AppInner() {
   // WKWebView sait afficher un PDF dans la page ; il ne sait ni ouvrir un onglet
   // exploitable, ni honorer un téléchargement. On lui donne donc un cadre, plus
   // un bouton de partage explicite pour enregistrer ou envoyer le document.
+  // ⚠️ En natif, le lien <a download> est AUSSI ignoré en silence (vécu par
+  //  Camille le 15/08, build 29) : même famille que window.print(). On passe
+  //  par la vraie feuille de partage iOS/Android : fichier écrit dans le cache
+  //  puis Share.share → AirDrop, Enregistrer dans Fichiers, Mail, etc.
+  const partagerPdfNatif = async () => {
+    try {
+      const rep = await fetch(pdfAffiche.url);
+      const blob = await rep.blob();
+      const b64 = await new Promise((resolve, reject) => {
+        const lecteur = new FileReader();
+        lecteur.onload = () => resolve(String(lecteur.result).split(",")[1]);
+        lecteur.onerror = () => reject(new Error("lecture du PDF impossible"));
+        lecteur.readAsDataURL(blob);
+      });
+      const { Filesystem, Directory } = await import("@capacitor/filesystem");
+      const ecrit = await Filesystem.writeFile({ path: pdfAffiche.filename || "document.pdf", data: b64, directory: Directory.Cache });
+      const { Share } = await import("@capacitor/share");
+      await Share.share({ files: [ecrit.uri] });
+    } catch (e) {
+      // Refermer la feuille sans rien choisir est NORMAL et ne doit rien dire.
+      // Mais un vrai échec doit se voir : ce bouton a déjà été muet une fois
+      // (13/08), on ne recommence pas. Le message reste utile et actionnable.
+      const annule = /cancel|abort|dismiss/i.test(String(e?.message || e));
+      if (!annule) {
+        showToast("Je n'ai pas réussi à ouvrir le partage. Le document reste affiché à l'écran.", "ti-alert-triangle");
+      }
+    }
+  };
   const pdfViewerUI = pdfAffiche ? (
     <div style={{ position: "fixed", inset: 0, background: "#07192E", zIndex: 900, display: "flex", flexDirection: "column" }}>
       {/* Safe-area du natif : sans ça, la barre (et son bouton Fermer) se glisse
@@ -2436,10 +2464,17 @@ function AppInner() {
       <iframe src={pdfAffiche.url} title="Aperçu du document"
         style={{ flex: 1, width: "100%", border: "none", background: "#fff" }} />
       <div style={{ padding: "12px 16px calc(12px + env(safe-area-inset-bottom, 0px))", borderTop: "1px solid rgba(255,255,255,0.1)", flexShrink: 0 }}>
-        <a href={pdfAffiche.url} download={pdfAffiche.filename} target="_blank" rel="noopener noreferrer"
-          style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5DCAA5", color: "#04342C", borderRadius: 11, padding: "13px 16px", fontSize: 14.5, fontWeight: 700, textDecoration: "none", minHeight: 48 }}>
-          <i className="ti ti-share" aria-hidden="true" style={{ fontSize: 17 }} /> Enregistrer ou partager
-        </a>
+        {EST_MOBILE_NATIF ? (
+          <button type="button" onClick={partagerPdfNatif}
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "13px 16px", fontSize: 14.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 48, width: "100%" }}>
+            <i className="ti ti-share" aria-hidden="true" style={{ fontSize: 17 }} /> Enregistrer ou partager
+          </button>
+        ) : (
+          <a href={pdfAffiche.url} download={pdfAffiche.filename} target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, background: "#5DCAA5", color: "#04342C", borderRadius: 11, padding: "13px 16px", fontSize: 14.5, fontWeight: 700, textDecoration: "none", minHeight: 48 }}>
+            <i className="ti ti-share" aria-hidden="true" style={{ fontSize: 17 }} /> Enregistrer ou partager
+          </a>
+        )}
         <div style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
           Si l'aperçu reste blanc, appuie sur ce bouton : ton iPhone ouvrira le document.
         </div>

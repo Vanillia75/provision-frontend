@@ -12,6 +12,8 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/share": "^8.0.1",
     "@capgo/capacitor-social-login": "^8.3.39",
     "@sentry/react": "^8.40.0",
     "@vercel/analytics": "^2.0.1",
