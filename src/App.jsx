@@ -2523,7 +2523,11 @@ function AppInner() {
   const aideSuggestions = AIDE_SUGGESTIONS[aideEcranCourant]
     || (profile?.statut === "intermittent" ? AIDE_SUGGESTIONS.cockpit : AIDE_SUGGESTIONS.dashboard);
 
-  async function envoyerAide(texte) {
+  // ⚠️ « suggeree » : la question vient-elle d'une pastille proposee par Totor,
+  //  ou la personne l'a-t-elle ECRITE ? Le radar UX envoyait les deux a Camille
+  //  sans les distinguer, et une pastille tapee par curiosite ressemblait alors
+  //  a quelqu'un de perdu. On risquait de refaire un ecran pour rien (15/08).
+  async function envoyerAide(texte, suggeree = false) {
     const q = String(texte != null ? texte : aideInput).trim();
     if (!q || aideLoading) return;
     const suite = [...aideMessages, { role: "user", content: q }];
@@ -2533,7 +2537,7 @@ function AppInner() {
     try {
       const data = await apiFetch("/assistant/chat", {
         method: "POST",
-        body: JSON.stringify({ messages: suite.slice(-8), mode: "aide", ecran: aideEcranCourant }),
+        body: JSON.stringify({ messages: suite.slice(-8), mode: "aide", ecran: aideEcranCourant, suggeree }),
       });
       setAideMessages([...suite, { role: "assistant", content: (data && data.reply) || "Hmm, je n'ai pas réussi à répondre. Réessaie ?" }]);
     } catch {
@@ -2606,7 +2610,7 @@ function AppInner() {
             {aideMessages.length === 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 6, marginLeft: 32 }}>
                 {aideSuggestions.map(s => (
-                  <button key={s} type="button" onClick={() => envoyerAide(s)}
+                  <button key={s} type="button" onClick={() => envoyerAide(s, true)}
                     style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#B5D4F4", borderRadius: 10, padding: "9px 12px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
                     {s}
                   </button>
