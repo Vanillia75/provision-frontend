@@ -1152,7 +1152,19 @@ function AppInner() {
   }
 
   const todayISO = new Date().toISOString().split("T")[0];
-  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+  // ⚠️ AJOUTÉ LE 15/08/2026. La date d'échéance était vide par défaut, donc
+  //  absente de la plupart des factures. Or c'est une mention OBLIGATOIRE entre
+  //  professionnels (article L441-9 du code de commerce et article 242 nonies A
+  //  du CGI), au même titre que les pénalités de retard que TOTOR imprime déjà.
+  //  Le délai légal supplétif est de 30 jours après exécution de la prestation.
+  //  On la pré-remplit à 30 jours : la personne reste libre de la changer, mais
+  //  elle n'émet plus une facture incomplète sans le savoir.
+  const echeanceParDefaut = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 30);
+    return d.toISOString().slice(0, 10);
+  })();
+  const [factureForm, setFactureForm] = useState({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: echeanceParDefaut, lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
   const [aiMessages, setAiMessages] = useState([{ role: "assistant", content: "Salut 👋 Qu'est-ce qu'on regarde aujourd'hui ?" }]);
   const [aiInput, setAiInput] = useState("");
   // Historique persistant du chat AE (mêmes rôles que côté intermittent).
@@ -5285,7 +5297,7 @@ function AppInner() {
   }
 
   function resetFactureForm() {
-    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: "", lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
+    setFactureForm({ client_nom: "", client_email: "", client_adresse: "", client_type: "particulier", client_siret: "", client_tva: "", client_localisation: "france", date_emission: todayISO, date_echeance: echeanceParDefaut, lignes: [{ description: "", quantite: 1, prix_unitaire: "" }], notes: "" });
     setEditingInvoiceId(null);
   }
 
