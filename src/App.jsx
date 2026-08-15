@@ -16599,7 +16599,11 @@ function AppInner() {
                     <div style={{ fontSize: 13, color: "#E6EDF5", lineHeight: 1.6 }}>
                       <strong>{appendEiMention(profilEntreprise || profile?.raison_sociale || `${profilPrenom} ${profilNom}`.trim(), profile?.statut)}</strong><br />
                       {profilAdresse}<br />
-                      SIRET : {profilSiret}{profile?.statut === "auto_entrepreneur" && <> · Auto-entrepreneur, dispensé d'immatriculation au RCS et au RM</>}
+                      {/* ⚠️ La mention « dispensé d'immatriculation au RCS et au RM » a été
+                          RETIRÉE le 15/08/2026 : cette dispense n'existe plus depuis le
+                          1er janvier 2023 (Registre national des entreprises). L'afficher
+                          faisait croire à l'utilisateur que sa facture était conforme. */}
+                      SIRET : {profilSiret}
                       <button type="button" style={{ ...S.linkBtn, fontSize: 11, display: "block", marginTop: 6 }} onClick={() => setNav("profil")}>Modifier dans Profil →</button>
                     </div>
                   ) : (
