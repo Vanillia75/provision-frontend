@@ -244,7 +244,7 @@ const TMI_OPTIONS = [
 ];
 
 const CONSEILS = [
-  { emoji: "⭐", titre: "ACRE : économise 50% la 1ère année", texte: "Si tu as créé ton activité après juillet 2025, tes cotisations sont divisées par 2 pendant 12 mois. Pense à faire la demande dans les 60 jours." },
+  { emoji: "⭐", titre: "ACRE : des cotisations réduites au démarrage", texte: "Le taux a changé le 1er juillet 2026 : 25% d'exonération si tu as créé à partir de cette date, 50% si tu as créé avant. Ça dure jusqu'à la fin du 3e trimestre civil suivant ton début d'activité. La demande est obligatoire, dans les 60 jours." },
   { emoji: "📊", titre: "Versement libératoire", texte: "Paie ton impôt sur le revenu en même temps que tes cotisations, à 1,7% de ton CA. Simple et prévisible." },
   { emoji: "🗓️", titre: "Mensuel vs trimestriel", texte: "En mensuel, tu paies de petites sommes régulières. En trimestriel, tu as plus de trésorerie mais attention aux gros versements." },
   { emoji: "⚠️", titre: "Surveille le plafond", texte: "Au-delà de 83 600€ deux années consécutives, tu bascules en régime réel. Anticipe ce changement avec ton comptable." },
@@ -9130,7 +9130,7 @@ function AppInner() {
       },
       {
         icon: "ti-baby-carriage", titre: "Congé maternité, accident : heures assimilées",
-        texte: "Certaines périodes comptent comme du temps de travail pour tes 507h, même sans contrat : congé maternité/paternité et accident du travail sont assimilés à hauteur de 5 heures par jour. Des heures de formation ou d'enseignement artistique peuvent aussi être retenues sous conditions. Pense à les déclarer.",
+        texte: "Certaines périodes comptent comme du temps de travail pour tes 507h, même sans contrat, à hauteur de 5 heures par jour : congé maternité, congé d'adoption, accident du travail, et arrêt de longue durée. ⚠️ Le congé de paternité n'en fait PAS partie : il ne donne pas d'heures, mais il allonge ta période de référence, ce qui est un autre mécanisme. Les heures de formation et d'enseignement peuvent aussi compter, dans une limite commune de 338 h. Pense à les déclarer.",
       },
       {
         icon: "ti-umbrella", titre: "Les congés spectacles (Audiens)",
@@ -16236,7 +16236,7 @@ function AppInner() {
                 { titre: "Relance impayé", texte: "Bonjour [Nom],\n\nJe me permets de revenir vers vous concernant la facture [N°] du [date], d'un montant de [montant]€, dont l'échéance est dépassée.\n\nPourriez-vous me confirmer la date de règlement prévue ?\n\nBien à vous," },
                 { titre: "Hausse de tarifs", texte: "Bonjour [Nom],\n\nJe vous informe qu'à compter du [date], mes tarifs évoluent à [nouveau tarif].\n\nCette révision reflète [raison : montée en compétence / coûts / etc.]. Je reste à votre disposition pour en discuter.\n\nCordialement," },
                 { titre: "Email de prospection", texte: "Bonjour [Nom],\n\nJe me permets de vous contacter au sujet de [besoin identifié]. Je propose [votre service] et pense pouvoir vous aider sur ce point.\n\nSeriez-vous disponible pour un échange rapide cette semaine ?\n\nBien à vous," },
-                { titre: "CGV simplifiées", texte: "Conditions Générales de Vente\n\n1. Les prestations sont facturées au tarif en vigueur au moment de la commande.\n2. Le règlement est dû à réception de facture, sauf accord contraire.\n3. Tout retard de paiement entraîne des pénalités au taux légal en vigueur.\n4. TVA non applicable, article 293 B du CGI." },
+                { titre: "CGV simplifiées", texte: "Conditions Générales de Vente\n\n1. Les prestations sont facturées au tarif en vigueur au moment de la commande.\n2. Le règlement est dû à réception de facture, sauf accord contraire.\n3. Tout retard de paiement entraîne des pénalités de retard au taux de trois fois le taux d'intérêt légal, exigibles sans qu'un rappel soit nécessaire.\n4. Tout professionnel en situation de retard de paiement est de plein droit débiteur d'une indemnité forfaitaire pour frais de recouvrement de 40 euros (article L441-10 du code de commerce).\n5. TVA non applicable, article 293 B du CGI." },
               ].map((m, i) => (
                 <div key={i} style={S.card}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
