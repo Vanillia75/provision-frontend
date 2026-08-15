@@ -9,6 +9,7 @@ import { INK, ACCENT, PAPER, CSS, S } from "./theme";
 import { DEPARTEMENTS, libelleDepartement } from "./departements";
 import { preparerPhoto, preparerPhotos } from "./photo";
 import { doitPrendreLaLectureGroupee, regrouperParMois } from "./scan";
+import { bornesPeriode, choixDisponibles } from "./periodes";
 import { LegalPageView } from "./LegalPage";
 import { NouveautesPage } from "./Nouveautes";
 import MontantInput from "./MontantInput";
@@ -1169,6 +1170,12 @@ function AppInner() {
   // personnalisables ; showSavedToast() garde le comportement historique "enregistré".
   const [savedToast, setSavedToast] = useState(false);
   const [toastContent, setToastContent] = useState({ msg: "Modification enregistrée", icon: "ti-check" });
+  // ⚠️ MÊME RÈGLE QUE pdfAffiche JUSTE EN DESSOUS : recapRevenus lit cette clé
+  //  PENDANT le rendu. Déclarée plus bas, React lève « Cannot access
+  //  recapPeriodeCle before initialization » et toute l'app tombe. Ne pas la
+  //  redescendre au milieu du bloc intermittent.
+  // Période choisie pour le récapitulatif de revenus (voir src/periodes.js).
+  const [recapPeriodeCle, setRecapPeriodeCle] = useState("12mois");
   // ⚠️ DÉCLARÉ ICI, TOUT EN HAUT, ET PAS PLUS BAS : pdfViewerUI le lit pendant
   //  le rendu. Place plus bas, React leve « Cannot access pdfAffiche before
   //  initialization » et TOUTE l'app tombe. C'est le piege du 06/08/2026, que
@@ -4798,7 +4805,7 @@ function AppInner() {
       </div>
       <h1>Recapitulatif de revenus</h1>
       <div class="sub">Intermittent du spectacle &middot; periode ${recap.periodeLabel}</div>
-      <div class="who"><b>${nomComplet}</b><br>Revenus d'activite declares sur les 12 derniers mois</div>
+      <div class="who"><b>${nomComplet}</b><br>Revenus d'activite declares sur la periode indiquee</div>
       <div class="stats">
         <div class="stat"><div class="v">${fmt(recap.totalBrut)} &euro;</div><div class="l">Total brut sur la periode</div></div>
         <div class="stat"><div class="v">${fmt(recap.moyenneMensuelle)} &euro;</div><div class="l">Moyenne mensuelle*</div></div>
@@ -9018,12 +9025,18 @@ function AppInner() {
     })();
 
     // ═══ RÉCAPITULATIF DE REVENUS (pour bailleur / banque) ═══
-    // Synthèse des revenus déclarés sur les 12 derniers mois. Document personnel, PAS officiel.
+    // Synthèse des revenus déclarés sur la période CHOISIE. Document personnel, PAS officiel.
+    // ⚠️ 15/08/2026 : la période était figée sur les 12 derniers mois. Or on ne
+    //  demande pas ce document pour le plaisir : un propriétaire veut les trois
+    //  derniers mois, une banque veut l'année civile, le milieu raisonne en
+    //  saisons. Le calcul des bornes vit dans src/periodes.js, il est vérifiable.
+    const recapChoixDispo = choixDisponibles(interActivites);
+    const recapChoix = recapChoixDispo.find(c => c.cle === recapPeriodeCle) || recapChoixDispo[0];
     const recapRevenus = (() => {
       const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
       const now = new Date();
-      const debut = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-      const acts = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= debut; });
+      const { debut, fin, label: labelPeriode } = bornesPeriode(recapChoix);
+      const acts = (interActivites || []).filter(a => { const d = new Date(a.date); return !isNaN(d) && d >= debut && d <= fin; });
       // Agrégat par mois
       const parMois = {};
       let totalBrut = 0, totalAvecBrut = 0, totalContrats = 0, totalCachets = 0;
@@ -9048,7 +9061,7 @@ function AppInner() {
       const moisAvecRevenu = lignes.filter(l => l.brut > 0).length;
       const moyenneMensuelle = moisAvecRevenu > 0 ? totalBrut / moisAvecRevenu : 0;
       const employeursUniques = new Set(acts.map(a => a.employeur).filter(Boolean)).size;
-      const periodeLabel = `${MOIS[debut.getMonth()]} ${debut.getFullYear()} – ${MOIS[now.getMonth()]} ${now.getFullYear()}`;
+      const periodeLabel = labelPeriode;
       // % de contrats avec brut renseigné (pour avertir si incomplet)
       const completude = totalContrats > 0 ? Math.round((totalAvecBrut / totalContrats) * 100) : 0;
       return { lignes, totalBrut: Math.round(totalBrut), moyenneMensuelle: Math.round(moyenneMensuelle), totalContrats, totalCachets, employeursUniques, periodeLabel, completude, aDesDonnees: acts.length > 0 };
@@ -12390,12 +12403,40 @@ function AppInner() {
 
               {/* ─── SECTION REVENUS ─── */}
               {docTab === "revenus" && (<>
+              {/* Choix de la période (15/08/2026). Avant, le récap prenait
+                  toujours les 12 derniers mois : impossible de sortir une année
+                  civile pour une banque ou trois mois pour un propriétaire. */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ fontSize: 12, color: "#8BA5C0", marginBottom: 8 }}>Sur quelle période ?</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {recapChoixDispo.map(c => {
+                    const actif = c.cle === (recapChoix && recapChoix.cle);
+                    return (
+                      <button key={c.cle} type="button" onClick={() => setRecapPeriodeCle(c.cle)}
+                        style={{ background: actif ? "rgba(93,202,165,0.16)" : "rgba(255,255,255,0.04)",
+                                 border: `1px solid ${actif ? "rgba(93,202,165,0.55)" : "rgba(255,255,255,0.12)"}`,
+                                 color: actif ? "#5DCAA5" : "#B5D4F4", borderRadius: 999,
+                                 padding: "9px 15px", fontSize: 13, fontWeight: actif ? 700 : 500,
+                                 cursor: "pointer", fontFamily: "inherit", minHeight: 40 }}>
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
               {!recapRevenus.aDesDonnees ? (
                 <div style={{ textAlign: "center", padding: "30px 20px", background: "rgba(255,255,255,0.02)", borderRadius: 14, color: "#8BA5C0", fontSize: 13.5, lineHeight: 1.6 }}>
-                  Ajoute tes contrats avec leur salaire brut pour que je génère ton récap de revenus.<br />Le plus simple : scanne tes AEM, je remplis tout.
-                  <div style={{ marginTop: 16 }}>
-                    <button type="button" onClick={() => setInterNav("mesaem")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
-                  </div>
+                  {(interActivites || []).length > 0 ? (
+                    // Le dossier n'est PAS vide : c'est la période choisie qui l'est.
+                    // Le dire, plutôt que de réclamer des contrats déjà saisis.
+                    <>Je n'ai aucun contrat sur cette période ({recapRevenus.periodeLabel}).<br />Choisis une autre période au-dessus.</>
+                  ) : (
+                    <>Ajoute tes contrats avec leur salaire brut pour que je génère ton récap de revenus.<br />Le plus simple : scanne tes AEM, je remplis tout.
+                      <div style={{ marginTop: 16 }}>
+                        <button type="button" onClick={() => setInterNav("mesaem")} style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 20px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>Scanner une AEM</button>
+                      </div>
+                    </>
+                  )}
                 </div>
               ) : (
                 <>
@@ -12417,7 +12458,7 @@ function AppInner() {
                     <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 18 }}>Intermittent du spectacle · {recapRevenus.periodeLabel}</div>
                     <div style={{ background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "12px 16px", marginBottom: 18, fontSize: 13.5 }}>
                       <b style={{ color: "white" }}>{[profilPrenom, profilNom].filter(Boolean).join(" ") || "Ton nom"}</b><br />
-                      <span style={{ color: "#8BA5C0", fontSize: 12.5 }}>Revenus déclarés sur les 12 derniers mois</span>
+                      <span style={{ color: "#8BA5C0", fontSize: 12.5 }}>Revenus déclarés sur cette période</span>
                     </div>
                     {/* Stats */}
                     <div style={{ display: "flex", gap: 10, marginBottom: 18, flexWrap: "wrap" }}>

@@ -9,6 +9,14 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "15 août 2026",
+    titre: "Ton récap de revenus, sur la période que TU choisis",
+    items: [
+      { qui: "intermittent", texte: "Mon récapitulatif de revenus prenait toujours les douze derniers mois, et c'était bête : ce document, tu ne le fais pas pour toi, tu le fais parce que quelqu'un te le réclame. Et chacun réclame autre chose. Un propriétaire veut tes trois derniers mois, une banque veut une année civile, et dans le spectacle on raisonne en saisons. Maintenant tu choisis avant de générer." },
+      { qui: "intermittent", texte: "Tu as quatre choix au-dessus du document : les 12 derniers mois, les 3 derniers mois, une année civile, ou une saison de septembre à août. Je ne te propose que les années et les saisons où tu as vraiment travaillé, pour ne pas te faire cliquer sur du vide. Le PDF porte la période choisie, écrite noir sur blanc." },
+    ],
+  },
+  {
     date: "14 août 2026",
     titre: "Je vérifie tes versements France Travail",
     items: [
