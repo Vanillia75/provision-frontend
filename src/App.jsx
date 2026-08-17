@@ -2646,7 +2646,7 @@ function AppInner() {
     <>
       <style>{`@keyframes aidePatte { 0%,100% { opacity: 0.15; } 50% { opacity: 1; } }`}</style>
       {aideOuverte && (
-        <div style={{ position: "fixed", bottom: isMobile ? 84 : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
+        <div style={{ position: "fixed", bottom: isMobile ? (profile?.statut === "intermittent" ? 152 : 84) : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
           {/* En-tête : la vocation lisible sans cliquer */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
             <HectorTete size={28} />
@@ -2765,7 +2765,7 @@ function AppInner() {
       {/* La pastille : petite, sereine, jamais de badge ni de rebond. */}
       <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
         title="Totor · aide & mode d'emploi"
-        style={{ position: "fixed", bottom: isMobile ? 16 : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
+        style={{ position: "fixed", bottom: isMobile ? (profile?.statut === "intermittent" ? 92 : 16) : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
         <HectorTete size={38} />
         <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
       </button>
@@ -9425,7 +9425,49 @@ function AppInner() {
           </button>
         </nav>
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: "40px 20px 80px" }}>
+        {/* ─── BARRE D'ONGLETS DU BAS, mobile uniquement (15/08/2026) ───
+            Demande de Camille, version LUDIQUE assumée : barre flottante aux
+            coins ronds, onglet actif en pastille verte, le SCANNER au centre
+            dans un gros bouton, et la tête de Totor comme onglet de chat.
+            Le tiroir garde tout le reste du menu, rien ne disparaît.
+            zIndex 250 : sous les tiroirs (300+) et les modales (500+). */}
+        {isMobile && (
+          <nav aria-label="Navigation rapide" style={{ position: "fixed", left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 250, background: "#0E1B30", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-around", padding: "10px 8px 9px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
+            {[
+              { id: "cockpit", icon: "ti-gauge", label: "Cockpit" },
+              { id: "activites", icon: "ti-calendar-event", label: "Activités" },
+              { id: "mesaem", icon: "ti-scan", label: "Scanner", central: true },
+              { id: "versements", icon: "ti-cash", label: "Versements" },
+              { id: "hector", label: "Totor", totor: true },
+            ].map(o => {
+              const actif = interNav === o.id;
+              if (o.central) {
+                return (
+                  <button key={o.id} type="button" onClick={() => { setInterNav(o.id); window.scrollTo(0, 0); }}
+                    aria-label="Scanner une AEM"
+                    style={{ background: "none", border: "none", padding: 0, marginTop: -34, cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
+                    <span style={{ display: "flex", width: 62, height: 62, borderRadius: "50%", background: "#5DCAA5", border: "5px solid #07192E", outline: actif ? "2px solid rgba(93,202,165,0.6)" : "2px solid rgba(93,202,165,0.25)", alignItems: "center", justifyContent: "center", color: "#04342C", margin: "0 auto", boxShadow: "0 6px 18px rgba(93,202,165,0.35)" }}>
+                      <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 28 }} />
+                    </span>
+                    <span style={{ display: "block", fontSize: 10, fontWeight: 700, color: "#9FE1CB", marginTop: 3 }}>{o.label}</span>
+                  </button>
+                );
+              }
+              return (
+                <button key={o.id} type="button" onClick={() => { setInterNav(o.id); window.scrollTo(0, 0); }}
+                  style={{ background: actif ? "rgba(93,202,165,0.16)" : "none", border: actif ? "1px solid rgba(93,202,165,0.45)" : "1px solid transparent", borderRadius: 15, padding: "6px 9px 5px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", color: actif ? "#5DCAA5" : "#7C93AC", minWidth: 56 }}>
+                  {o.totor
+                    ? <span style={{ display: "inline-block", transform: actif ? "scale(1.12)" : "none", transition: "transform 0.15s" }}><HectorTete size={24} /></span>
+                    : <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 22 }} />}
+                  <span style={{ display: "block", fontSize: 10, fontWeight: actif ? 700 : 500, marginTop: 1 }}>{o.label}</span>
+                  {actif && <span style={{ display: "block", fontSize: 8, lineHeight: "6px", color: "#5DCAA5" }}>🐾</span>}
+                </button>
+              );
+            })}
+          </nav>
+        )}
+
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "40px 20px 130px" : "40px 20px 80px" }}>
 
           {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
           {!pwaDismissed && (
