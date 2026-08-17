@@ -76,9 +76,11 @@ describe("Les taux et seuils officiels 2026", () => {
     }
   });
 
-  it("les taux de CFP suivent le secteur : 0,1 % vente, 0,2 % services et BNC, 0,3 % artisan", () => {
+  it("les taux de CFP suivent le secteur : 0,1 % vente, 0,3 % services et artisan, 0,2 % BNC", () => {
     expect(FISCALITE.cfp.vente).toBe(0.001);
-    expect(FISCALITE.cfp.services).toBe(0.002);
+    // ⚠️ 15/08/2026 : 0,2 % n'existe pas pour les services BIC (0,1 % commercial,
+    //  0,3 % artisanal). L'app ne demande pas laquelle des deux : repli prudent.
+    expect(FISCALITE.cfp.services).toBe(0.003);
     expect(FISCALITE.cfp.bnc).toBe(0.002);
     expect(FISCALITE.cfp.artisan).toBe(0.003);
   });
@@ -472,10 +474,11 @@ describe("Scénarios complets d'un auto-entrepreneur", () => {
     const impot = calcImpot("services", ca, { versementLiberatoire: true });
 
     expect(urssaf).toBe(5088);
-    expect(cfp).toBe(48);
+    expect(cfp).toBe(72);   // 24 000 x 0,3 % (CFP services corrigee le 15/08/2026)
     expect(impot).toBe(408);
     // Reste net après cotisations, formation et impôt libératoire.
-    expect(Math.round((ca - urssaf - cfp - impot) * 100) / 100).toBe(18456);
+    // 24 000 − 5 088 (21,2 %) − 72 (CFP 0,3 %, corrigée le 15/08/2026) − 408 (1,7 %)
+    expect(Math.round((ca - urssaf - cfp - impot) * 100) / 100).toBe(18432);
 
     // Encore loin des deux plafonds : aucune alerte à ce niveau de CA.
     expect(statutPlafond("services", ca).proche).toBe(false);

@@ -46,6 +46,26 @@ const API_BASE = "https://provision-backend-production.up.railway.app";
 // Sert à n'afficher l'essai gratuit 7 jours QUE dans les stores (l'essai est
 // configuré côté Apple/Google ; le web/Stripe n'a pas d'essai). Sur `main` (web)
 // window.Capacitor n'existe pas → toujours faux, donc le web ne change pas.
+// Le tarif habituel d'un cachet, tiré des SAISIES de la personne.
+// MÉDIANE et non moyenne : un seul gros cachet ne doit pas tirer l'estimation.
+// null tant qu'il n'y a pas au moins deux cachets : un seul ne fait pas une
+// habitude. Sorti du composant le 15/08/2026 pour servir aussi au simulateur
+// du mois (demande de Lucile), plutôt que de recopier le calcul.
+export function medianeCachet(acts) {
+  const montants = (acts || [])
+    .filter(a => a && a.type_activite !== "autre_salaire" && Number(a.salaire_brut) > 0)
+    .map(a => {
+      const nb = Number(a.nombre) > 0 ? Number(a.nombre) : 1;
+      return Number(a.salaire_brut) / nb;      // brut PAR cachet, pas le total de la ligne
+    })
+    .filter(v => v > 0 && v < 5000);           // borne de sécurité contre une saisie aberrante
+  if (montants.length < 2) return null;
+  const tries = [...montants].sort((x, y) => x - y);
+  const milieu = Math.floor(tries.length / 2);
+  const mediane = tries.length % 2 ? tries[milieu] : (tries[milieu - 1] + tries[milieu]) / 2;
+  return Math.round(mediane * 100) / 100;
+}
+
 function estNatif() {
   try { return !!(window.Capacitor?.isNativePlatform?.()); } catch { return false; }
 }
@@ -1188,6 +1208,16 @@ function AppInner() {
   //  redescendre au milieu du bloc intermittent.
   // Période choisie pour le récapitulatif de revenus (voir src/periodes.js).
   const [recapPeriodeCle, setRecapPeriodeCle] = useState("12mois");
+  // ⚠️ MÊME RÈGLE QUE CI-DESSUS : la carte « Ton mois » lit ces états PENDANT le
+  //  rendu. Déclarés plus bas, React lève « Cannot access ... before
+  //  initialization » et toute l'app tombe.
+  // Simulation « et si j'ajoute des cachets ? », demandée par Lucile : elle a
+  // des dates pas encore sûres et ne veut pas les saisir tant qu'elles peuvent
+  // être annulées.
+  const [simCachets, setSimCachets] = useState(0);
+  const [simPrix, setSimPrix] = useState("");
+  const [simResultat, setSimResultat] = useState(null);
+  const [simEnCours, setSimEnCours] = useState(false);
   // ⚠️ DÉCLARÉ ICI, TOUT EN HAUT, ET PAS PLUS BAS : pdfViewerUI le lit pendant
   //  le rendu. Place plus bas, React leve « Cannot access pdfAffiche before
   //  initialization » et TOUTE l'app tombe. C'est le piege du 06/08/2026, que
@@ -2539,6 +2569,23 @@ function AppInner() {
   //  ou la personne l'a-t-elle ECRITE ? Le radar UX envoyait les deux a Camille
   //  sans les distinguer, et une pastille tapee par curiosite ressemblait alors
   //  a quelqu'un de perdu. On risquait de refaire un ecran pour rien (15/08).
+  // Simulation du mois : RIEN n'est enregistré, les cachets n'existent que le
+  // temps du calcul. Elle voit l'effet sur les DEUX côtés, l'allocation qui
+  // baisse à cause du décalage et le salaire qui monte.
+  async function lancerSimulationMois(n, prix) {
+    if (!n || n <= 0) { setSimResultat(null); return; }
+    setSimEnCours(true);
+    try {
+      const q = `cachets_sup=${n}${prix > 0 ? `&brut_cachet=${prix}` : ""}`;
+      const d = await apiFetch(`/intermittent/estimation-mois?${q}`);
+      setSimResultat(d && d.simulation ? d.simulation : null);
+    } catch {
+      setSimResultat(null);
+    } finally {
+      setSimEnCours(false);
+    }
+  }
+
   async function envoyerAide(texte, suggeree = false) {
     const q = String(texte != null ? texte : aideInput).trim();
     if (!q || aideLoading) return;
@@ -4647,21 +4694,7 @@ function AppInner() {
     //  On va donc chercher le prix là où il est déjà : dans ses cachets declarés.
     //  RÈGLE D'OR RESPECTÉE : ce n'est pas un chiffre invente, c'est SON argent, et
     //  on dit toujours d'où il vient (« a ton tarif habituel »).
-    const cachetMoyen = (() => {
-      const montants = acts
-        .filter(a => a && a.type_activite !== "autre_salaire" && Number(a.salaire_brut) > 0)
-        .map(a => {
-          const nb = Number(a.nombre) > 0 ? Number(a.nombre) : 1;
-          return Number(a.salaire_brut) / nb;      // brut PAR cachet, pas le total de la ligne
-        })
-        .filter(v => v > 0 && v < 5000);           // borne de sécurité contre une saisie aberrante
-      if (montants.length < 2) return null;        // un seul cachet ne fait pas une habitude
-      const tries = [...montants].sort((x, y) => x - y);
-      const milieu = Math.floor(tries.length / 2);
-      // Médiane et non moyenne : un seul gros cachet ne doit pas tirer l'estimation.
-      const mediane = tries.length % 2 ? tries[milieu] : (tries[milieu - 1] + tries[milieu]) / 2;
-      return Math.round(mediane * 100) / 100;
-    })();
+    const cachetMoyen = medianeCachet(acts);
 
     // ─ Scénario 1 : accepter des cachets ─
     if (/(accepte|prends?|fais|ajoute).*(cachet)/.test(q) || (/cachet/.test(q) && /(et si|si je)/.test(q))) {
@@ -10456,6 +10489,71 @@ function AppInner() {
                         )}
                       </div>
                     )}
+                    {/* ─── « ET SI J'AJOUTE DES CACHETS ? » (15/08/2026) ───
+                        Demandé par Lucile : « je suis pas tout à fait sûre de
+                        Pôle emploi puisque j'ai encore trois cachets à faire,
+                        mais c'est possible qu'on les annule. Donc pour
+                        l'instant, moi je les ai pas notés. »
+                        Rien ne s'enregistre : ces cachets n'existent que le
+                        temps du calcul. */}
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ fontSize: 12, color: "#B5D4F4", marginBottom: 8 }}>
+                        Et si j'ajoute des cachets pas encore sûrs ?
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {[1, 2, 3, 4, 5].map(n => {
+                          const actif = simCachets === n;
+                          return (
+                            <button key={n} type="button"
+                              onClick={() => { const v = actif ? 0 : n; setSimCachets(v); lancerSimulationMois(v, Number(simPrix) || medianeCachet(interActivites) || 0); }}
+                              style={{ background: actif ? "rgba(93,202,165,0.18)" : "rgba(255,255,255,0.05)",
+                                       border: `1px solid ${actif ? "rgba(93,202,165,0.55)" : "rgba(255,255,255,0.12)"}`,
+                                       color: actif ? "#9FE1CB" : "#B5D4F4", borderRadius: 9,
+                                       width: 40, minHeight: 40, fontSize: 14, fontWeight: actif ? 800 : 600,
+                                       cursor: "pointer", fontFamily: "inherit" }}>
+                              +{n}
+                            </button>
+                          );
+                        })}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
+                          <span style={{ fontSize: 12, color: "#8BA5C0" }}>à</span>
+                          <MontantInput
+                            style={{ width: 92, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 10px", fontSize: 13.5, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                            placeholder={medianeCachet(interActivites) ? String(Math.round(medianeCachet(interActivites))) : "prix"}
+                            value={simPrix}
+                            onChange={v => { setSimPrix(v); if (simCachets > 0) lancerSimulationMois(simCachets, Number(v) || medianeCachet(interActivites) || 0); }}
+                          />
+                          <span style={{ fontSize: 12, color: "#8BA5C0" }}>€ brut</span>
+                        </div>
+                      </div>
+                      {simEnCours && <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8 }}>Je calcule…</div>}
+                      {!simEnCours && simResultat && (
+                        <div style={{ marginTop: 10, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "11px 13px" }}>
+                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.6 }}>
+                            Avec <strong style={{ color: "#C8E0F5" }}>{simResultat.cachets_sup} cachet{simResultat.cachets_sup > 1 ? "s" : ""} de plus</strong> :
+                          </div>
+                          <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 6, lineHeight: 1.7 }}>
+                            France Travail : <strong style={{ color: "#9FE1CB" }}>{formatEUR(simResultat.net_estime)} nets</strong>
+                            <span style={{ color: "#8BA5C0" }}> ({simResultat.ecart_allocation < 0 ? "−" : "+"}{formatEUR(Math.abs(simResultat.ecart_allocation))}, {simResultat.jours_indemnisables} jours indemnisés)</span>
+                            <br />
+                            {simResultat.salaire_sup_brut ? (
+                              <>Tes cachets : <strong style={{ color: "#C8E0F5" }}>+{formatEUR(simResultat.salaire_sup_brut)} bruts</strong>
+                                {simResultat.salaire_sup_net ? <span style={{ color: "#8BA5C0" }}> (environ {formatEUR(simResultat.salaire_sup_net)} nets)</span> : null}</>
+                            ) : (
+                              <span style={{ color: "#8BA5C0" }}>Dis-moi le prix d'un cachet pour que je chiffre aussi ton salaire.</span>
+                            )}
+                          </div>
+                          {simResultat.salaires_nets_estimes != null && (
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "white", marginTop: 9 }}>
+                              Total du mois : environ {formatEUR(simResultat.net_estime + simResultat.salaires_nets_estimes)} nets
+                            </div>
+                          )}
+                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 7, lineHeight: 1.45 }}>
+                            Rien n'est enregistré : ces cachets n'existent que le temps de ce calcul. Si tu les confirmes, ajoute-les comme d'habitude.
+                          </div>
+                        </div>
+                      )}
+                    </div>
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
                       Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Montant <strong style={{ color: "#C8E0F5" }}>net social, avant ton impôt à la source</strong> (il varie selon ton taux, je ne l'estime jamais). Chaque contrat ajouté dans le mois met ce chiffre à jour.
                     </div>

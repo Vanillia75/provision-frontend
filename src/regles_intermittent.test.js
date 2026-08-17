@@ -510,17 +510,17 @@ describe("Allocation journalière : les repères qui bornent le montant affiché
 //  9. PMSS ET FRANCHISE CONGÉS
 // ═════════════════════════════════════════════════════════════════════════════
 describe("PMSS et franchise congés payés", () => {
-  it("le PMSS 2025 vaut 3 925 euros et le cumul est plafonné à 118 %", () => {
+  it("le PMSS 2026 vaut 4 005 euros et le cumul est plafonné à 118 %", () => {
     expect(valeurDe("pmssMensuel")).toEqual({
-      montant: 3925.0,
-      annee: 2025,
+      montant: 4005.0,
+      annee: 2026,
       coefPlafondCumul: 1.18,
     });
   });
 
-  it("le plafond de cumul ARE plus salaires se calcule à 4 631,50 euros en 2025", () => {
+  it("le plafond de cumul ARE plus salaires se calcule à 4 725,90 euros en 2026", () => {
     const p = valeurDe("pmssMensuel");
-    expect(arrondi2(p.montant * p.coefPlafondCumul)).toBe(4631.5);
+    expect(arrondi2(p.montant * p.coefPlafondCumul)).toBe(4725.9);
   });
 
   it("l'exemple officiel du guide (PMSS 2024) retombe sur 4 559,52 euros une fois arrondi", () => {
@@ -619,7 +619,7 @@ describe("valeurDe()", () => {
   });
 
   it("renvoie l'objet complet pour une règle composite", () => {
-    expect(valeurDe("pmssMensuel").montant).toBe(3925.0);
+    expect(valeurDe("pmssMensuel").montant).toBe(4005.0);
   });
 
   it("renvoie null pour une règle inconnue, sans lever d'erreur", () => {
@@ -651,7 +651,7 @@ describe("tracer()", () => {
   it("sérialise les règles composites au lieu d'afficher [object Object]", () => {
     const t = tracer("pmssMensuel");
     expect(t).not.toContain("[object Object]");
-    expect(t).toContain("3925");
+    expect(t).toContain("4005");
     expect(t).toContain("1.18");
   });
 
