@@ -1215,6 +1215,7 @@ function AppInner() {
   // des dates pas encore sûres et ne veut pas les saisir tant qu'elles peuvent
   // être annulées.
   const [simCachets, setSimCachets] = useState(0);
+  const [moisDetailOuvert, setMoisDetailOuvert] = useState(false); // repli du détail de « Ton mois » (téléphone)
   const [simPrix, setSimPrix] = useState("");
   const [simResultat, setSimResultat] = useState(null);
   const [simEnCours, setSimEnCours] = useState(false);
@@ -9479,6 +9480,25 @@ function AppInner() {
                         : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
                       {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
                     </div>
+                    {/* ─── REPLIABLE SUR TÉLÉPHONE (18/08/2026, demande de Camille :
+                        « bcp trop long », et « c'est important comme info ») : rien ne
+                        disparaît, le détail (simulation de cachets, versement, différé)
+                        se replie derrière un bouton. Toujours ouvert sur ordinateur.
+                        ⚠️ Leçon du menu replié (27/07) : le bouton NOMME ce qu'il cache,
+                        sinon personne ne l'ouvre jamais. */}
+                    {isMobile && !moisDetailOuvert && (
+                      <div style={{ fontSize: 11.5, color: "#8FB4D8", marginTop: 10, lineHeight: 1.5 }}>
+                        Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation.
+                      </div>
+                    )}
+                    {isMobile && (
+                      <button type="button" onClick={() => setMoisDetailOuvert(v => !v)}
+                        style={{ width: "100%", marginTop: 10, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", color: "#B5D4F4", borderRadius: 10, padding: "10px 12px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 44 }}>
+                        <i className={`ti ti-chevron-${moisDetailOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15 }} />
+                        {moisDetailOuvert ? "Replier le détail" : "Simuler des cachets · tout le détail"}
+                      </button>
+                    )}
+                    {(!isMobile || moisDetailOuvert) && (<>
                     {/* ─── « ET SI J'AJOUTE DES CACHETS ? » (15/08/2026) ───
                         Demandé par Lucile : « je suis pas tout à fait sûre de
                         Pôle emploi puisque j'ai encore trois cachets à faire,
@@ -9621,6 +9641,64 @@ function AppInner() {
                     <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
                       Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ce calcul a été vérifié au centime sur de vrais versements. Seul le versement de France Travail fait foi.
                     </div>
+                    </>)}
+                  </div>
+                );
+                })();
+
+    // « Tes Congés Spectacles » : même déménagement que blocMois (18/08/2026),
+    // pour vivre en haut du cockpit téléphone. Garde c && : le cockpit peut ne
+    // pas être encore chargé quand ce scope s'évalue.
+                const blocConges = c && c.conges_spectacles && (() => {
+                const cs = c.conges_spectacles;
+                const anDeb = cs.exercice_debut ? cs.exercice_debut.slice(0, 4) : "";
+                const anFin = cs.exercice_fin ? cs.exercice_fin.slice(0, 4) : "";
+                const m = new Date().getMonth() + 1, jour = new Date().getDate();
+                const enSaisonDemande = (m === 4 && jour >= 15) || m === 5 || m === 6; // demandes ouvertes mi-avril → juin
+                const aDesBruts = cs.assiette > 0;
+                return (
+                  <div style={{ background: "linear-gradient(160deg, rgba(216,180,254,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(190,150,240,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+                      <span style={{ fontSize: 18 }}>🎭</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Tes Congés Spectacles</div>
+                    </div>
+
+                    {/* L1 — rappel daté (saison de demande) */}
+                    {enSaisonDemande && (
+                      <div style={{ marginTop: 8, marginBottom: 10, fontSize: 12, color: "#E3D4F5", lineHeight: 1.5, background: "rgba(190,150,240,0.12)", border: "1px solid rgba(190,150,240,0.3)", borderRadius: 10, padding: "10px 12px" }}>
+                        🐾 C'est le moment : ta saison écoulée est <strong style={{ color: "#F0E4FF" }}>demandable maintenant</strong> chez Audiens. Beaucoup d'intermittents oublient, ne laisse pas dormir ce qui t'attend. <a href="https://conges-spectacles.audiens.org" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A6F5", fontWeight: 700 }}>Faire ma demande →</a>
+                      </div>
+                    )}
+
+                    {/* L2 — estimation du montant (backtestée) */}
+                    {aDesBruts ? (
+                      <>
+                        <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5, marginTop: 4 }}>
+                          Cette saison (avril {anDeb} → mars {anFin}), tu accumules :
+                        </div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap", marginTop: 6 }}>
+                          <div style={{ fontSize: 26, fontWeight: 800, color: "#D8B4FE", lineHeight: 1.1 }}>
+                            <span style={{ fontSize: 15, color: "#A98FD0", fontWeight: 600 }}>environ </span>{formatEUR(cs.icp_brut)}<span style={{ fontSize: 14, color: "#A98FD0", fontWeight: 600 }}> brut</span>
+                          </div>
+                          <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                        </div>
+                        <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 4 }}>
+                          soit <strong style={{ color: "#C8E0F5" }}>~{formatEUR(cs.icp_net)} net</strong> (avant impôts).
+                        </div>
+                        {cs.assiette_incomplete && (
+                          <div style={{ fontSize: 11, color: "#E7C98A", marginTop: 8, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 8, padding: "8px 10px", lineHeight: 1.45 }}>
+                            {cs.activites_sans_brut} activité{cs.activites_sans_brut > 1 ? "s" : ""} sans salaire renseigné → l'estimation est <strong>sous-évaluée</strong>. Ajoute les montants bruts (ou scanne tes AEM) pour l'affiner.
+                          </div>
+                        )}
+                        <div style={{ fontSize: 11, color: "#7E97B3", marginTop: 10, paddingTop: 9, borderTop: "1px solid rgba(190,150,240,0.15)", lineHeight: 1.5 }}>
+                          Estimation à <strong style={{ color: "#9FB6CE" }}>10 % de tes bruts saisis</strong> (validé sur de vrais bordereaux). <strong style={{ color: "#9FB6CE" }}>Audiens reste seul juge</strong> ; le net dépend des cotisations de l'année.
+                        </div>
+                      </>
+                    ) : (
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginTop: 6 }}>
+                        Ajoute le <strong style={{ color: "#E3D4F5" }}>salaire brut</strong> de tes contrats (ou scanne tes AEM) et je t'estime tes Congés Spectacles, <strong style={{ color: "#E3D4F5" }}>~10 % de tes bruts</strong> qui t'attendent chaque année chez Audiens.
+                      </div>
+                    )}
                   </div>
                 );
                 })();
@@ -10422,6 +10500,9 @@ function AppInner() {
                   SANS défiler : les heures d'abord (héros), le briefing, puis l'argent.
                   Sur ordinateur, la carte reste à gauche sous Totor (inchangé). */}
               {isMobile && blocMois && <div style={{ marginBottom: 12 }}>{blocMois}</div>}
+              {/* Congés Spectacles juste après l'argent du mois (18/08/2026,
+                  demande de Camille : « congé spectacle placer plus haut »). */}
+              {isMobile && blocConges && <div style={{ marginBottom: 12 }}>{blocConges}</div>}
 
               {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══
                    ⚠️ GARDE-FOU DU 06/08/2026, mesuré sur les comptes réels : 20 intermittents
@@ -10685,59 +10766,9 @@ function AppInner() {
                 </div>
               </div>
                 );
-                const blocConges = c.conges_spectacles && (() => {
-                const cs = c.conges_spectacles;
-                const anDeb = cs.exercice_debut ? cs.exercice_debut.slice(0, 4) : "";
-                const anFin = cs.exercice_fin ? cs.exercice_fin.slice(0, 4) : "";
-                const m = new Date().getMonth() + 1, jour = new Date().getDate();
-                const enSaisonDemande = (m === 4 && jour >= 15) || m === 5 || m === 6; // demandes ouvertes mi-avril → juin
-                const aDesBruts = cs.assiette > 0;
-                return (
-                  <div style={{ background: "linear-gradient(160deg, rgba(216,180,254,0.07), rgba(10,19,34,0.5))", border: "1px solid rgba(190,150,240,0.28)", borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
-                      <span style={{ fontSize: 18 }}>🎭</span>
-                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Tes Congés Spectacles</div>
-                    </div>
-
-                    {/* L1 — rappel daté (saison de demande) */}
-                    {enSaisonDemande && (
-                      <div style={{ marginTop: 8, marginBottom: 10, fontSize: 12, color: "#E3D4F5", lineHeight: 1.5, background: "rgba(190,150,240,0.12)", border: "1px solid rgba(190,150,240,0.3)", borderRadius: 10, padding: "10px 12px" }}>
-                        🐾 C'est le moment : ta saison écoulée est <strong style={{ color: "#F0E4FF" }}>demandable maintenant</strong> chez Audiens. Beaucoup d'intermittents oublient, ne laisse pas dormir ce qui t'attend. <a href="https://conges-spectacles.audiens.org" target="_blank" rel="noopener noreferrer" style={{ color: "#C9A6F5", fontWeight: 700 }}>Faire ma demande →</a>
-                      </div>
-                    )}
-
-                    {/* L2 — estimation du montant (backtestée) */}
-                    {aDesBruts ? (
-                      <>
-                        <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5, marginTop: 4 }}>
-                          Cette saison (avril {anDeb} → mars {anFin}), tu accumules :
-                        </div>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap", marginTop: 6 }}>
-                          <div style={{ fontSize: 26, fontWeight: 800, color: "#D8B4FE", lineHeight: 1.1 }}>
-                            <span style={{ fontSize: 15, color: "#A98FD0", fontWeight: 600 }}>environ </span>{formatEUR(cs.icp_brut)}<span style={{ fontSize: 14, color: "#A98FD0", fontWeight: 600 }}> brut</span>
-                          </div>
-                          <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
-                        </div>
-                        <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 4 }}>
-                          soit <strong style={{ color: "#C8E0F5" }}>~{formatEUR(cs.icp_net)} net</strong> (avant impôts).
-                        </div>
-                        {cs.assiette_incomplete && (
-                          <div style={{ fontSize: 11, color: "#E7C98A", marginTop: 8, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 8, padding: "8px 10px", lineHeight: 1.45 }}>
-                            {cs.activites_sans_brut} activité{cs.activites_sans_brut > 1 ? "s" : ""} sans salaire renseigné → l'estimation est <strong>sous-évaluée</strong>. Ajoute les montants bruts (ou scanne tes AEM) pour l'affiner.
-                          </div>
-                        )}
-                        <div style={{ fontSize: 11, color: "#7E97B3", marginTop: 10, paddingTop: 9, borderTop: "1px solid rgba(190,150,240,0.15)", lineHeight: 1.5 }}>
-                          Estimation à <strong style={{ color: "#9FB6CE" }}>10 % de tes bruts saisis</strong> (validé sur de vrais bordereaux). <strong style={{ color: "#9FB6CE" }}>Audiens reste seul juge</strong> ; le net dépend des cotisations de l'année.
-                        </div>
-                      </>
-                    ) : (
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginTop: 6 }}>
-                        Ajoute le <strong style={{ color: "#E3D4F5" }}>salaire brut</strong> de tes contrats (ou scanne tes AEM) et je t'estime tes Congés Spectacles, <strong style={{ color: "#E3D4F5" }}>~10 % de tes bruts</strong> qui t'attendent chaque année chez Audiens.
-                      </div>
-                    )}
-                  </div>
-                );
-                })();
+                // « Tes Congés Spectacles » (blocConges) : déménagé au niveau du
+                // composant le 18/08/2026, comme blocMois : sur téléphone la carte
+                // vit maintenant tout en haut du cockpit, juste après « Ton mois ».
                 // PAS prélevé cette année : SOMME des montants réels recopiés des
                 // bulletins (backend). Rien si l'utilisateur n'a rien saisi. Jamais une estimation.
                 const blocPAS = c.pas_preleve && (
@@ -11400,7 +11431,6 @@ function AppInner() {
               </div>
               )}
               {isMobile && blocFrise}
-              {isMobile && blocConges}
               {isMobile && blocPAS}
 
                 {/* Action + bannière ligne comblent le bas de la colonne droite. */}
