@@ -13103,6 +13103,29 @@ function AppInner() {
               {/* ═══ PAGE MES ACTIVITÉS ═══ */}
               {interNav === "activites" && (<>
 
+              {/* ─── EN-TÊTE TÉLÉPHONE (18/08/2026, étape 2 de la maquette validée) :
+                  le compteur d'heures en accroche et la jauge en un clin d'œil,
+                  pour voir son avancée pendant qu'on ajoute ses contrats.
+                  Seulement s'il y a des activités : on n'affiche jamais un
+                  « 0 h au compteur » qu'on ne sait pas vrai. */}
+              {isMobile && interActivites.length > 0 && (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ fontSize: 19, fontWeight: 800, color: "white" }}>Mes activités</div>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", marginTop: 2, fontWeight: 600 }}>
+                    {Math.round(calc.heures)} h au compteur · {interActivites.length} contrat{interActivites.length > 1 ? "s" : ""} 🐾
+                  </div>
+                  <div style={{ marginTop: 10, background: "rgba(93,202,165,0.09)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: "11px 13px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9FE1CB", fontWeight: 600 }}>
+                      <span>Vers les {calc.seuil} h</span>
+                      <span>{calc.heures >= calc.seuil ? "objectif atteint ✓" : `plus que ${Math.round(calc.manque)} h`}</span>
+                    </div>
+                    <div style={{ marginTop: 6, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 5 }}>
+                      <div style={{ width: `${Math.min(100, (calc.heures / calc.seuil) * 100)}%`, height: 8, background: "#5DCAA5", borderRadius: 5 }} />
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* ── Reporter les heures déjà faites (saisie de départ) ── */}
               <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, cursor: "pointer" }} onClick={() => setReportOpen(v => !v)}>
@@ -13569,13 +13592,16 @@ function AppInner() {
                         </button>
                       ))}
                     </div>
-                    {/* En-tête de colonnes (style tableau) */}
+                    {/* En-tête de colonnes (style tableau) : ordinateur seulement, sur
+                        téléphone les lignes deviennent des cases (18/08/2026). */}
+                    {!isMobile && (
                     <div style={{ display: "flex", alignItems: "center", padding: "4px 14px", fontSize: 10.5, color: "#5A7088", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5 }}>
                       <div style={{ width: 96, flexShrink: 0 }}>Date</div>
                       <div style={{ flex: 1, minWidth: 0 }}>Employeur</div>
                       <div style={{ width: 90, flexShrink: 0, textAlign: "right" }}>Volume</div>
                       <div style={{ width: 96, flexShrink: 0 }} />
                     </div>
+                    )}
                     {(() => {
                       // Tri récent → ancien (l'ordre serveur n'est pas garanti), puis regroupement selon la vue.
                       const tri = [...interActivites].sort((x, y) => String(y.date || "").localeCompare(String(x.date || "")));
@@ -13704,8 +13730,80 @@ function AppInner() {
                         ARRET_LABELS[a.type_activite] || "Cachet (artiste)";
                       const estAEM = a.aem_recue === true || a.source === "ocr";
                       const detailOuvert = aemDetailId === a.id;
+                      {/* ─── CASE TÉLÉPHONE (18/08/2026, étape 2 de la maquette) : la ligne
+                          type tableau étouffait en 375 px (282 px de colonnes fixes). Sur
+                          téléphone chaque contrat devient une case : icône du type de
+                          travail, employeur, détail, et les heures gagnées à droite. ─── */}
+                      const heuresLigne = Math.round(heuresDe(a));
+                      const iconeLigne = a.type_activite === "heures" ? "ti-clock" :
+                        a.type_activite === "formation" ? "ti-school" :
+                        a.type_activite === "enseignement" ? "ti-book" :
+                        (a.type_activite || "").startsWith("arret_") ? "ti-first-aid-kit" :
+                        a.type_activite === "autre_salaire" ? "ti-cash" : "ti-masks-theater";
+                      const teinteLigne = a.type_activite === "heures"
+                        ? { bg: "rgba(55,138,221,0.15)", fg: "#85B7EB" }
+                        : ((a.type_activite || "").startsWith("cachet") || !a.type_activite)
+                          ? { bg: "rgba(93,202,165,0.15)", fg: "#5DCAA5" }
+                          : { bg: "rgba(255,255,255,0.07)", fg: "#9FB6CE" };
+                      const detailLigne = ((a.type_activite || "").startsWith("cachet") || !a.type_activite)
+                        ? `${a.nombre} cachet${a.nombre > 1 ? "s" : ""}` : typeLabel;
+                      const brutLigne = a.salaire_brut && a.type_activite !== "autre_salaire"
+                        ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : "";
                       return (
-                        <div key={a.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${detailOuvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: 10, overflow: "hidden" }}>
+                        <div key={a.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${detailOuvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: isMobile ? 14 : 10, overflow: "hidden" }}>
+                          {isMobile ? (
+                          <div style={{ padding: "11px 13px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                              <div style={{ width: 34, height: 34, borderRadius: 10, background: teinteLigne.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                                <i className={`ti ${iconeLigne}`} aria-hidden="true" style={{ fontSize: 16, color: teinteLigne.fg }} />
+                              </div>
+                              <div style={{ flex: 1, minWidth: 0 }}>
+                                <div style={{ fontSize: 13, color: a.employeur ? "white" : "#5A7088", fontWeight: a.employeur ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {a.employeur || "Employeur à compléter"}
+                                </div>
+                                <div style={{ fontSize: 10.5, color: "#8FB4D8", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {formatPeriode(a)} · {detailLigne}{brutLigne}
+                                </div>
+                              </div>
+                              <span style={{ fontSize: 12.5, fontWeight: 800, color: heuresLigne > 0 ? "#5DCAA5" : "#5A7088", flexShrink: 0 }}>
+                                {heuresLigne > 0 ? `+${heuresLigne} h` : "0 h"}
+                              </span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
+                              {estAEM && (
+                                <span title="Extraite de ton AEM scannée" style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
+                                </span>
+                              )}
+                              {a.estime === true && (
+                                <span style={{ fontSize: 9.5, color: "#9FCBF5", background: "rgba(55,138,221,0.14)", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-bulb" aria-hidden="true" style={{ fontSize: 11 }} /> Estimé
+                                </span>
+                              )}
+                              {a.date && a.date > todayISO && (
+                                <span style={{ fontSize: 9.5, color: "#7FB8F0", background: "rgba(55,138,221,0.10)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
+                                  <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 11 }} /> À venir
+                                </span>
+                              )}
+                              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
+                                {estAEM && (
+                                  <button type="button" onClick={() => setAemDetailId(detailOuvert ? null : a.id)} aria-label="Revoir l'AEM"
+                                    style={{ background: "transparent", border: "none", color: detailOuvert ? "#5DCAA5" : "#6B8299", cursor: "pointer", fontSize: 15, padding: "4px 8px" }}>
+                                    <i className={`ti ${detailOuvert ? "ti-eye-off" : "ti-eye"}`} aria-hidden="true" />
+                                  </button>
+                                )}
+                                <button type="button" onClick={() => startEditActivite(a)} aria-label="Modifier"
+                                  style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 15, padding: "4px 8px" }}>
+                                  <i className="ti ti-pencil" aria-hidden="true" />
+                                </button>
+                                <button type="button" onClick={() => { if (window.confirm("Supprimer cette activité ?")) handleDeleteActivite(a.id); }} aria-label="Supprimer"
+                                  style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 15, padding: "4px 8px" }}>
+                                  <i className="ti ti-trash" aria-hidden="true" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                          ) : (
                           <div style={{ display: "flex", alignItems: "center", padding: "11px 14px", gap: 8 }}>
                             {/* Date */}
                             <div style={{ width: 96, flexShrink: 0, fontSize: 12, color: "#9FB6CE", fontVariantNumeric: "tabular-nums" }}>{formatPeriode(a)}</div>
@@ -13750,6 +13848,7 @@ function AppInner() {
                               </button>
                             </div>
                           </div>
+                          )}
                           {/* Panneau "revoir ce que Totor a lu sur l'AEM" */}
                           {detailOuvert && (
                             <div style={{ borderTop: "1px solid rgba(93,202,165,0.15)", background: "rgba(93,202,165,0.04)", padding: "12px 14px" }}>
@@ -13782,6 +13881,23 @@ function AppInner() {
                         </div>
                       ));
                     })()}
+                  </div>
+                )}
+
+                {/* ─── AJOUTER OU SCANNER, À PORTÉE DE POUCE (18/08/2026, maquette) :
+                    en bas de la liste téléphone, les deux gestes qui la font
+                    grandir, en pointillés comme une place qui attend. ─── */}
+                {isMobile && interActivites.length > 0 && (
+                  <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                    <button type="button"
+                      onClick={() => { setInterShowAdd(true); const el = document.getElementById("inter-activites"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }}
+                      style={{ flex: 1, background: "transparent", border: "1.5px dashed rgba(93,202,165,0.4)", color: "#9FE1CB", borderRadius: 14, padding: "12px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 44 }}>
+                      <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} /> Ajouter un contrat
+                    </button>
+                    <button type="button" onClick={() => setInterNav("mesaem")}
+                      style={{ flex: 1, background: "transparent", border: "1.5px dashed rgba(55,138,221,0.45)", color: "#9FCBF5", borderRadius: 14, padding: "12px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6, minHeight: 44 }}>
+                      <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 15 }} /> Scanner une AEM
+                    </button>
                   </div>
                 )}
               </div>

@@ -9,6 +9,15 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "18 août 2026 · sur téléphone",
+    titre: "Tes heures en très gros, et des couleurs qui rassurent",
+    items: [
+      { qui: "intermittent", texte: "En ouvrant l'app, LE chiffre que tu vois maintenant, c'est tes heures : « Tu es à 502 h sur 507 » en très gros, la jauge, et mon état du moment en une petite ligne dessous. Fini le pavé." },
+      { qui: "intermittent", texte: "Et j'arrête de te faire peur avec le rouge : la carte du haut reste bleu nuit même quand ça se corse, seule une petite ligne 🔴 ou 🟡 te tient au courant. La carte ne passe entière en couleur que pour une bonne nouvelle : le vert des droits sécurisés, ça c'est une fête." },
+      { qui: "intermittent", texte: "« Mes activités » fait peau neuve : ton compteur en accroche (« 502 h au compteur · 19 contrats »), et chaque contrat dans sa propre case avec son icône, son employeur, son brut et ses heures gagnées. En bas de la liste, deux boutons t'attendent : ajouter un contrat, ou scanner une AEM." },
+    ],
+  },
+  {
     date: "17 août 2026",
     titre: "Ton mois en deux colonnes, comme sur un bulletin",
     items: [
