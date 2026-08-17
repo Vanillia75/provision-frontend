@@ -10296,7 +10296,12 @@ function AppInner() {
 
 
               {/* ═══ EN-TÊTE COCKPIT : Totor + état (le héros) ═══ */}
-              <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
+              {/* ─── ON NE PEINT JAMAIS LA PEUR (18/08/2026, question de Camille :
+                  « le rouge fait peut-être peur non ? ») : le héros garde sa robe
+                  bleu nuit NEUTRE quel que soit l'état, le gros chiffre reste blanc.
+                  Seule la petite ligne d'état en bas porte la couleur (🔴/🟡).
+                  Une exception, la JOIE : droits sécurisés = carte verte entière. */}
+              <div style={{ background: etat.ton === "green" ? etat.bg : "#0a1322", border: `1px solid ${etat.ton === "green" ? etat.bd : "rgba(255,255,255,0.09)"}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
                 {/* ─── LES HEURES EN VEDETTE (18/08/2026, retour de Camille sur capture :
                     « bcp trop gros, il faudrait les heures en gros et le reste plus
                     petit »). Quand il y a des heures, LE gros chiffre du héros, c'est
@@ -10306,20 +10311,20 @@ function AppInner() {
                     vedette, et on n'affiche jamais un « 0 h » qu'on ne sait pas vrai. */}
                 {calc.heures > 0 ? (<>
                   <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.ton === "green" ? etat.bd : "rgba(255,255,255,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.ton === "green" ? etat.tc : "#5DCAA5"} />
                     </div>
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", fontWeight: 600 }}>
                           🐾 {salutInter}{profilPrenom ? ` ${profilPrenom}` : ""}
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: etat.tc, textAlign: "right", flexShrink: 0 }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: etat.ton === "green" ? etat.tc : "#8FB4D8", textAlign: "right", flexShrink: 0 }}>
                           {calc.heures >= calc.seuil ? "objectif atteint 🎉" : `plus que ${Math.round(calc.manque)} h`}
                         </span>
                       </div>
-                      <div style={{ fontSize: 13.5, color: etat.st, marginTop: 3, whiteSpace: "nowrap" }}>
-                        Tu es à <strong style={{ color: etat.tc, fontSize: 31, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1 }}>{Math.round(calc.heures)} h</strong>
+                      <div style={{ fontSize: 13.5, color: etat.ton === "green" ? etat.st : "#B5D4F4", marginTop: 3, whiteSpace: "nowrap" }}>
+                        Tu es à <strong style={{ color: etat.ton === "green" ? etat.tc : "white", fontSize: 31, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1 }}>{Math.round(calc.heures)} h</strong>
                         <span> sur {calc.seuil}</span>
                       </div>
                     </div>
@@ -10328,7 +10333,7 @@ function AppInner() {
                     <div style={{ width: `${Math.min(100, (calc.heures / calc.seuil) * 100)}%`, height: 10, background: "#5DCAA5", borderRadius: 6, transition: "width 0.4s" }} />
                     <span aria-hidden="true" style={{ position: "absolute", left: `calc(${Math.min(100, (calc.heures / calc.seuil) * 100)}% - 9px)`, top: -8, fontSize: 15 }}>🐾</span>
                   </div>
-                  <div style={{ fontSize: 12.5, color: etat.st, marginTop: 11, lineHeight: 1.55 }}>
+                  <div style={{ fontSize: 12.5, color: etat.ton === "green" ? etat.st : "#B5D4F4", marginTop: 11, lineHeight: 1.55 }}>
                     {etat.emoji} <strong style={{ color: etat.tc }}>{etat.titre}.</strong> {etat.phrase}
                   </div>
                 </>) : (
