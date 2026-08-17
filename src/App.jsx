@@ -10434,9 +10434,26 @@ function AppInner() {
                             sur {em.activites_travail_mois} contrat{em.activites_travail_mois > 1 ? "s" : ""}
                           </span>
                         </div>
-                        <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 5, lineHeight: 1.45 }}>
-                          C'est le total de ce que TU m'as donné, en brut. Je ne connais pas le net de tes fiches de paie, donc je ne l'invente pas : je n'additionne pas ce brut avec l'allocation ci-dessus, ça ferait un chiffre faux.
-                        </div>
+                        {em.salaires_nets_estimes ? (
+                          <>
+                            <div style={{ fontSize: 13, color: "#9FE1CB", marginTop: 4, fontWeight: 600 }}>
+                              soit environ {formatEUR(em.salaires_nets_estimes)} nets
+                            </div>
+                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed rgba(255,255,255,0.12)" }}>
+                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 2 }}>Ton mois, tout compris</div>
+                              <div style={{ fontSize: 24, fontWeight: 800, color: "white", lineHeight: 1.15 }}>
+                                environ {formatEUR(em.net_estime + em.salaires_nets_estimes)}<span style={{ fontSize: 13, color: "#8FB4D8", fontWeight: 600 }}> nets</span>
+                              </div>
+                              <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 5, lineHeight: 1.45 }}>
+                                France Travail plus tes contrats. Le net de tes cachets vient du rapport lu sur ton bulletin de paie{em.ratio_net_brut_maj_le ? <> de {formatDate(em.ratio_net_brut_maj_le)}</> : null} ({Math.round(em.ratio_net_brut * 100)} % du brut) : c'est une estimation, tes prochaines fiches peuvent varier.
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 5, lineHeight: 1.45 }}>
+                            C'est le total de ce que TU m'as donné, en brut. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                          </div>
+                        )}
                       </div>
                     )}
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
