@@ -10413,6 +10413,32 @@ function AppInner() {
                         : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
                       {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
                     </div>
+                    {/* ─── CE QUE TU AS DÉCLARÉ CE MOIS-CI (15/08/2026) ───
+                        Demandé par Lucile : « je vois nulle part combien j'ai
+                        déclaré pour un mois. Il faut que je fasse les calculs
+                        moi-même en retournant sur mes cachets, savoir combien
+                        c'était un cachet à combien là, un cachet à combien là. »
+                        Le serveur calculait déjà ce total, il n'était affiché
+                        nulle part. On le met À CÔTÉ de l'allocation, pour qu'elle
+                        ait les deux montants du mois au même endroit.
+                        ⚠️ C'est du BRUT, et on le dit : on ne connaît pas le net
+                        de ses bulletins de paie et on ne l'invente pas. */}
+                    {em.remunerations_brutes > 0 && (
+                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                        <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 3 }}>Ce que tu as déclaré ce mois-ci</div>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
+                          <div style={{ fontSize: 21, fontWeight: 800, color: "#C8E0F5", lineHeight: 1.15 }}>
+                            {formatEUR(em.remunerations_brutes)}<span style={{ fontSize: 13, color: "#8FB4D8", fontWeight: 600 }}> bruts</span>
+                          </div>
+                          <span style={{ fontSize: 12, color: "#8FB4D8" }}>
+                            sur {em.activites_travail_mois} contrat{em.activites_travail_mois > 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 5, lineHeight: 1.45 }}>
+                          C'est le total de ce que TU m'as donné, en brut. Je ne connais pas le net de tes fiches de paie, donc je ne l'invente pas : je n'additionne pas ce brut avec l'allocation ci-dessus, ça ferait un chiffre faux.
+                        </div>
+                      </div>
+                    )}
                     <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
                       Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Montant <strong style={{ color: "#C8E0F5" }}>net social, avant ton impôt à la source</strong> (il varie selon ton taux, je ne l'estime jamais). Chaque contrat ajouté dans le mois met ce chiffre à jour.
                     </div>
