@@ -9325,6 +9325,304 @@ function AppInner() {
       </div>
     );
 
+    // « Ton mois » (carte du cockpit intermittent) : défini ICI, au niveau du rendu,
+    // pour pouvoir s'afficher à DEUX endroits : tout en haut du cockpit sur téléphone,
+    // colonne gauche sous Totor sur ordinateur. Sorti de l'IIFE du cockpit le 17/08/2026
+    // (déplacement pur : l'indentation d'origine est conservée, aucun texte changé).
+                const blocMois = (() => {
+                const em = estMois;
+                if (!em) return null;
+                const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
+                const nomMois = em.mois ? MOIS[em.mois - 1] : MOIS[new Date().getMonth()];
+                const nomMoisSuivant = em.mois ? MOIS[em.mois % 12] : MOIS[(new Date().getMonth() + 1) % 12];
+                const shell = { background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.26)", borderRadius: 16, padding: "18px 20px" };
+                const tete = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18 }}>📅</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton mois de {nomMois}</div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#9FE1CB", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                  </div>
+                );
+                if (em.verrou) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      {/* VERROU DISCRET, pas un deuxieme bouton vert.
+                          La carte « Ton prochain renouvellement », juste a cote, porte
+                          deja l'offre avec son bouton plein. Deux gros boutons verts
+                          identiques a la suite faisaient passer le cockpit pour une
+                          page de vente, et surtout ils ecrasaient les VRAIES actions
+                          (ajouter un contrat, scanner une AEM), qui ont la meme
+                          couleur. Une seule offre visible : celle du renouvellement,
+                          la question centrale de l'app. Ici, meme presentation que le
+                          radar acompte cote auto-entrepreneur : cadenas + lien. */}
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
+                        <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>🔒</span>
+                        <span style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                          J'estime aussi <strong style={{ color: "#C8E0F5" }}>ce que France Travail te versera ce mois-ci</strong> : jours indemnisés, jours déduits par tes contrats, montant net.{" "}
+                          <button type="button" onClick={() => setInterNav("abonnement")}
+                            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
+                            Débloquer
+                          </button>
+                        </span>
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false && em.raison === "allocation_manquante") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Pour estimer ton versement du mois, deux chemins au choix : <strong style={{ color: "#C8E0F5" }}>importe ton attestation France Travail</strong> (bouton « Importer mon ARE » sur le cockpit, je lis ton taux officiel dedans), ou renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière ». Et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false && em.raison === "annexe_manquante") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        J'ai déjà <strong style={{ color: "#C8E0F5" }}>ton taux officiel</strong> (merci pour ton attestation !). Il me manque juste ton <strong style={{ color: "#C8E0F5" }}>annexe</strong> (8 technicien·ne ou 10 artiste) : indique-la dans la carte « Ton allocation journalière », ou ajoute un contrat du mois et je la déduis toute seule.
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.ok === false) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                        <>Il me manque quelque chose pour calculer ton mois avec certitude, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
+                      </div>
+                    </div>
+                  );
+                }
+                if (em.seuil_atteint) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Gros mois : <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jours travaillés</strong>, c'est au-delà du seuil d'indemnisation du mois. France Travail ne devrait rien verser pour {nomMois}, mais ton compteur d'heures, lui, fait le plein. 🐾
+                      </div>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={shell}>
+                    {tete}
+                    {/* ─── LE MOIS EN DEUX COLONNES (17/08/2026) ───
+                        Demandé par Camille pour Lucile : « sur ta page d'accueil,
+                        tu as un salaire global qui est séparé en deux : tant de
+                        France Travail et tant de tes employeurs, c'est ultra
+                        pratique. » Le total du mois en gros quand on connaît le
+                        net des cachets, et TOUJOURS les deux colonnes côte à
+                        côte, France Travail à gauche, les employeurs à droite.
+                        ⚠️ Sans bulletin de paie rangé, la colonne employeurs
+                        reste en BRUT et on ne l'additionne pas : on ne mélange
+                        jamais du brut et du net dans un même total. */}
+                    {(() => {
+                      const netEmployeurs = em.remunerations_brutes > 0 && em.salaires_nets_estimes ? em.salaires_nets_estimes : null;
+                      return (
+                        <>
+                          {netEmployeurs != null && (
+                            <div style={{ marginBottom: 10 }}>
+                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 2 }}>Ton mois, tout compris</div>
+                              <div style={{ fontSize: 30, fontWeight: 800, color: "white", lineHeight: 1.1 }}>
+                                <span style={{ fontSize: 15, color: "#8FB4D8", fontWeight: 600 }}>environ </span>{formatEUR(em.net_estime + netEmployeurs)}<span style={{ fontSize: 15, color: "#8FB4D8", fontWeight: 600 }}> nets</span>
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                            <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "10px 12px" }}>
+                              <div style={{ fontSize: 10.5, color: "#7FB8A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>France Travail</div>
+                              <div style={{ fontSize: 21, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.15, marginTop: 3 }}>
+                                {formatEUR(em.net_estime)}<span style={{ fontSize: 12, color: "#7FB8A8", fontWeight: 600 }}> nets</span>
+                              </div>
+                              <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>{em.jours_indemnisables} jours indemnisés</div>
+                            </div>
+                            <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.30)", borderRadius: 10, padding: "10px 12px" }}>
+                              <div style={{ fontSize: 10.5, color: "#8FB4D8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>Tes employeurs</div>
+                              <div style={{ fontSize: 21, fontWeight: 800, color: "#C8E0F5", lineHeight: 1.15, marginTop: 3 }}>
+                                {netEmployeurs != null
+                                  ? <>{formatEUR(netEmployeurs)}<span style={{ fontSize: 12, color: "#8FB4D8", fontWeight: 600 }}> nets</span></>
+                                  : em.remunerations_brutes > 0
+                                    ? <>{formatEUR(em.remunerations_brutes)}<span style={{ fontSize: 12, color: "#8FB4D8", fontWeight: 600 }}> bruts</span></>
+                                    : <>0 €</>}
+                              </div>
+                              <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>
+                                {em.activites_travail_mois > 0
+                                  ? <>sur {em.activites_travail_mois} contrat{em.activites_travail_mois > 1 ? "s" : ""}</>
+                                  : <>aucun contrat saisi</>}
+                              </div>
+                            </div>
+                          </div>
+                          {netEmployeurs != null ? (
+                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
+                              Le net de tes cachets vient du rapport lu sur ton bulletin de paie{em.ratio_net_brut_maj_le ? <> de {formatDate(em.ratio_net_brut_maj_le)}</> : null} ({Math.round(em.ratio_net_brut * 100)} % du brut) : c'est une estimation, tes prochaines fiches peuvent varier.
+                            </div>
+                          ) : em.remunerations_brutes > 0 ? (
+                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
+                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                            </div>
+                          ) : null}
+                        </>
+                      );
+                    })()}
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 10, lineHeight: 1.5 }}>
+                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour{em.taux_source === "officiel" ? <> (<strong style={{ color: "#9FE1CB" }}>ton taux officiel</strong>, importé de ton attestation)</> : null}.
+                      {em.jours_travailles > 0
+                        ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
+                        : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
+                      {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
+                    </div>
+                    {/* ─── « ET SI J'AJOUTE DES CACHETS ? » (15/08/2026) ───
+                        Demandé par Lucile : « je suis pas tout à fait sûre de
+                        Pôle emploi puisque j'ai encore trois cachets à faire,
+                        mais c'est possible qu'on les annule. Donc pour
+                        l'instant, moi je les ai pas notés. »
+                        Rien ne s'enregistre : ces cachets n'existent que le
+                        temps du calcul. */}
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
+                      <div style={{ fontSize: 12, color: "#B5D4F4", marginBottom: 8 }}>
+                        Et si j'ajoute des cachets pas encore sûrs ?
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                        {[1, 2, 3, 4, 5].map(n => {
+                          const actif = simCachets === n;
+                          return (
+                            <button key={n} type="button"
+                              onClick={() => { const v = actif ? 0 : n; setSimCachets(v); lancerSimulationMois(v, Number(simPrix) || medianeCachet(interActivites) || 0); }}
+                              style={{ background: actif ? "rgba(93,202,165,0.18)" : "rgba(255,255,255,0.05)",
+                                       border: `1px solid ${actif ? "rgba(93,202,165,0.55)" : "rgba(255,255,255,0.12)"}`,
+                                       color: actif ? "#9FE1CB" : "#B5D4F4", borderRadius: 9,
+                                       width: 40, minHeight: 40, fontSize: 14, fontWeight: actif ? 800 : 600,
+                                       cursor: "pointer", fontFamily: "inherit" }}>
+                              +{n}
+                            </button>
+                          );
+                        })}
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
+                          <span style={{ fontSize: 12, color: "#8BA5C0" }}>à</span>
+                          <MontantInput
+                            style={{ width: 92, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 10px", fontSize: 13.5, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
+                            placeholder={medianeCachet(interActivites) ? String(Math.round(medianeCachet(interActivites))) : "prix"}
+                            value={simPrix}
+                            onChange={v => { setSimPrix(v); if (simCachets > 0) lancerSimulationMois(simCachets, Number(v) || medianeCachet(interActivites) || 0); }}
+                          />
+                          <span style={{ fontSize: 12, color: "#8BA5C0" }}>€ brut</span>
+                        </div>
+                      </div>
+                      {simEnCours && <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8 }}>Je calcule…</div>}
+                      {!simEnCours && simResultat && (
+                        <div style={{ marginTop: 10, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "11px 13px" }}>
+                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.6 }}>
+                            Avec <strong style={{ color: "#C8E0F5" }}>{simResultat.cachets_sup} cachet{simResultat.cachets_sup > 1 ? "s" : ""} de plus</strong> :
+                          </div>
+                          <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 6, lineHeight: 1.7 }}>
+                            France Travail : <strong style={{ color: "#9FE1CB" }}>{formatEUR(simResultat.net_estime)} nets</strong>
+                            <span style={{ color: "#8BA5C0" }}> ({simResultat.ecart_allocation < 0 ? "−" : "+"}{formatEUR(Math.abs(simResultat.ecart_allocation))}, {simResultat.jours_indemnisables} jours indemnisés)</span>
+                            <br />
+                            {simResultat.salaire_sup_brut ? (
+                              <>Tes cachets : <strong style={{ color: "#C8E0F5" }}>+{formatEUR(simResultat.salaire_sup_brut)} bruts</strong>
+                                {simResultat.salaire_sup_net ? <span style={{ color: "#8BA5C0" }}> (environ {formatEUR(simResultat.salaire_sup_net)} nets)</span> : null}</>
+                            ) : (
+                              <span style={{ color: "#8BA5C0" }}>Dis-moi le prix d'un cachet pour que je chiffre aussi ton salaire.</span>
+                            )}
+                          </div>
+                          {simResultat.salaires_nets_estimes != null && (
+                            <div style={{ fontSize: 15, fontWeight: 800, color: "white", marginTop: 9 }}>
+                              Total du mois : environ {formatEUR(simResultat.net_estime + simResultat.salaires_nets_estimes)} nets
+                            </div>
+                          )}
+                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 7, lineHeight: 1.45 }}>
+                            Rien n'est enregistré : ces cachets n'existent que le temps de ce calcul. Si tu les confirmes, ajoute-les comme d'habitude.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                      Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Montant <strong style={{ color: "#C8E0F5" }}>net social, avant ton impôt à la source</strong> (il varie selon ton taux, je ne l'estime jamais). Chaque contrat ajouté dans le mois met ce chiffre à jour.
+                    </div>
+                    {em.bruts_manquants && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Il me manque des salaires bruts sur tes contrats du mois : complète-les pour fiabiliser l'estimation.
+                      </div>
+                    )}
+                    {em.autre_salaire_non_decale && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Ton salaire hors spectacle de ce mois décale aussi des jours, d'une façon que je ne sais pas encore chiffrer précisément : le versement réel sera un peu plus bas que mon estimation.
+                      </div>
+                    )}
+                    {em.arrondi_approximatif && (
+                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
+                        Ton mois tombe sur des fractions de jours : je tronque comme France Travail le fait sur les relevés que j'ai vérifiés, mais le résultat peut bouger d'un jour.
+                      </div>
+                    )}
+                    {/* Les franchises (différés d'indemnisation) : recopiées, jamais devinées. */}
+                    <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px solid rgba(93,202,165,0.15)" }}>
+                      {(em.franchise_cp_imputee > 0 || em.franchise_salaires_imputee > 0) ? (
+                        <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+                          <strong style={{ color: "#C8E0F5" }}>
+                            {em.franchise_cp_imputee + em.franchise_salaires_imputee} jour{(em.franchise_cp_imputee + em.franchise_salaires_imputee) > 1 ? "s" : ""} de différé
+                          </strong> déduit{(em.franchise_cp_imputee + em.franchise_salaires_imputee) > 1 ? "s" : ""} ce mois-ci
+                          {em.franchise_cp_imputee > 0 && em.franchise_salaires_imputee > 0
+                            ? ` (${em.franchise_cp_imputee} congés payés, ${em.franchise_salaires_imputee} salaires)`
+                            : em.franchise_cp_imputee > 0 ? " (congés payés)" : " (salaires)"}.
+                          {" "}Il t'en resterait <strong style={{ color: "#C8E0F5" }}>{(em.franchise_cp_restante_apres || 0) + (em.franchise_salaires_restante_apres || 0)} jour{((em.franchise_cp_restante_apres || 0) + (em.franchise_salaires_restante_apres || 0)) > 1 ? "s" : ""}</strong> après.{" "}
+                          <button type="button" onClick={() => { setFranchiseForm({ cp: em.franchise_cp_jours ?? "", salaires: em.franchise_salaires_jours ?? "" }); setFranchisePanel(!franchisePanel); }}
+                            style={{ background: "none", border: "none", color: "#9FE1CB", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+                            Mettre à jour
+                          </button>
+                        </div>
+                      ) : (
+                        <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
+                          Ta notification mentionne un <strong style={{ color: "#C8E0F5" }}>différé d'indemnisation</strong> (congés payés ou salaires) ?{" "}
+                          <button type="button" onClick={() => { setFranchiseForm({ cp: em.franchise_cp_jours ?? "", salaires: em.franchise_salaires_jours ?? "" }); setFranchisePanel(!franchisePanel); }}
+                            style={{ background: "none", border: "none", color: "#9FE1CB", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
+                            Dis-le-moi, je le déduis
+                          </button>
+                        </div>
+                      )}
+
+                      {franchisePanel && (
+                        <div style={{ marginTop: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 10, padding: "12px 14px" }}>
+                          <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 10 }}>
+                            Recopie les jours qu'il te <strong style={{ color: "#C8E0F5" }}>reste</strong>, tels qu'ils figurent sur ta notification ou ton dernier relevé de situation. Laisse vide si tu n'en as pas.
+                          </div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
+                            <input type="number" min="0" max="365" value={franchiseForm.cp} onChange={e => setFranchiseForm({ ...franchiseForm, cp: e.target.value })}
+                              placeholder="Congés payés (jours)"
+                              style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                            <input type="number" min="0" max="365" value={franchiseForm.salaires} onChange={e => setFranchiseForm({ ...franchiseForm, salaires: e.target.value })}
+                              placeholder="Salaires (jours)"
+                              style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                          </div>
+                          <div style={{ display: "flex", gap: 8 }}>
+                            <button type="button" disabled={franchiseSaving} onClick={enregistrerFranchises}
+                              style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12.5, fontWeight: 700, cursor: franchiseSaving ? "default" : "pointer", fontFamily: "inherit", opacity: franchiseSaving ? 0.6 : 1 }}>
+                              {franchiseSaving ? "…" : "Enregistrer"}
+                            </button>
+                            <button type="button" onClick={() => setFranchisePanel(false)}
+                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
+                              Annuler
+                            </button>
+                          </div>
+                          <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 9, lineHeight: 1.45, fontStyle: "italic" }}>
+                            Je ne les devine jamais et je ne les décompte pas tout seul : une régularisation de France Travail peut les changer. Reviens les corriger à chaque relevé.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ce calcul a été vérifié au centime sur de vrais versements. Seul le versement de France Travail fait foi.
+                    </div>
+                  </div>
+                );
+                })();
+
     return (
       <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex" }}>
         <style>{CSS}</style>
@@ -10099,6 +10397,13 @@ function AppInner() {
                 );
               })()}
 
+              {/* ─── L'ARGENT DU MOIS JUSTE SOUS LE BRIEFING (17/08/2026) ───
+                  Maquette mobile validée + demande vocale de Camille : sur téléphone,
+                  les deux revenus du mois (France Travail | tes employeurs) se voient
+                  SANS défiler : les heures d'abord (héros), le briefing, puis l'argent.
+                  Sur ordinateur, la carte reste à gauche sous Totor (inchangé). */}
+              {isMobile && blocMois && <div style={{ marginBottom: 12 }}>{blocMois}</div>}
+
               {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══
                    ⚠️ GARDE-FOU DU 06/08/2026, mesuré sur les comptes réels : 20 intermittents
                    sur 26 n'avaient jamais saisi la moindre activité, et l'app leur annonçait
@@ -10426,303 +10731,10 @@ function AppInner() {
                     <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>D'après tes bulletins de paie. C'est la somme des montants que tu as recopiés, pas une estimation.</div>
                   </div>
                 );
-                // « Ton mois » + « Totor vérifie ta décision » : définis ici pour être posés
-                // à GAUCHE en desktop (la colonne droite a trop grossi le 24/07, retour
-                // Camille « ça fait un grand vide ») et rester dans le flux de droite en
-                // mobile. Déplacement pur : aucun texte ni comportement changé.
-                const blocMois = (() => {
-                const em = estMois;
-                if (!em) return null;
-                const MOIS = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"];
-                const nomMois = em.mois ? MOIS[em.mois - 1] : MOIS[new Date().getMonth()];
-                const nomMoisSuivant = em.mois ? MOIS[em.mois % 12] : MOIS[(new Date().getMonth() + 1) % 12];
-                const shell = { background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.26)", borderRadius: 16, padding: "18px 20px" };
-                const tete = (
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 18 }}>📅</span>
-                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton mois de {nomMois}</div>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#9FE1CB", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
-                  </div>
-                );
-                if (em.verrou) {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      {/* VERROU DISCRET, pas un deuxieme bouton vert.
-                          La carte « Ton prochain renouvellement », juste a cote, porte
-                          deja l'offre avec son bouton plein. Deux gros boutons verts
-                          identiques a la suite faisaient passer le cockpit pour une
-                          page de vente, et surtout ils ecrasaient les VRAIES actions
-                          (ajouter un contrat, scanner une AEM), qui ont la meme
-                          couleur. Une seule offre visible : celle du renouvellement,
-                          la question centrale de l'app. Ici, meme presentation que le
-                          radar acompte cote auto-entrepreneur : cadenas + lien. */}
-                      <div style={{ display: "flex", alignItems: "flex-start", gap: 9 }}>
-                        <span style={{ fontSize: 15, flexShrink: 0, lineHeight: 1.4 }}>🔒</span>
-                        <span style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                          J'estime aussi <strong style={{ color: "#C8E0F5" }}>ce que France Travail te versera ce mois-ci</strong> : jours indemnisés, jours déduits par tes contrats, montant net.{" "}
-                          <button type="button" onClick={() => setInterNav("abonnement")}
-                            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
-                            Débloquer
-                          </button>
-                        </span>
-                      </div>
-                    </div>
-                  );
-                }
-                if (em.ok === false && em.raison === "allocation_manquante") {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Pour estimer ton versement du mois, deux chemins au choix : <strong style={{ color: "#C8E0F5" }}>importe ton attestation France Travail</strong> (bouton « Importer mon ARE » sur le cockpit, je lis ton taux officiel dedans), ou renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière ». Et je te donne le chiffre.
-                      </div>
-                    </div>
-                  );
-                }
-                if (em.ok === false && em.raison === "annexe_manquante") {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        J'ai déjà <strong style={{ color: "#C8E0F5" }}>ton taux officiel</strong> (merci pour ton attestation !). Il me manque juste ton <strong style={{ color: "#C8E0F5" }}>annexe</strong> (8 technicien·ne ou 10 artiste) : indique-la dans la carte « Ton allocation journalière », ou ajoute un contrat du mois et je la déduis toute seule.
-                      </div>
-                    </div>
-                  );
-                }
-                if (em.ok === false) {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
-                        <>Il me manque quelque chose pour calculer ton mois avec certitude, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
-                      </div>
-                    </div>
-                  );
-                }
-                if (em.seuil_atteint) {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Gros mois : <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jours travaillés</strong>, c'est au-delà du seuil d'indemnisation du mois. France Travail ne devrait rien verser pour {nomMois}, mais ton compteur d'heures, lui, fait le plein. 🐾
-                      </div>
-                    </div>
-                  );
-                }
-                return (
-                  <div style={shell}>
-                    {tete}
-                    {/* ─── LE MOIS EN DEUX COLONNES (17/08/2026) ───
-                        Demandé par Camille pour Lucile : « sur ta page d'accueil,
-                        tu as un salaire global qui est séparé en deux : tant de
-                        France Travail et tant de tes employeurs, c'est ultra
-                        pratique. » Le total du mois en gros quand on connaît le
-                        net des cachets, et TOUJOURS les deux colonnes côte à
-                        côte, France Travail à gauche, les employeurs à droite.
-                        ⚠️ Sans bulletin de paie rangé, la colonne employeurs
-                        reste en BRUT et on ne l'additionne pas : on ne mélange
-                        jamais du brut et du net dans un même total. */}
-                    {(() => {
-                      const netEmployeurs = em.remunerations_brutes > 0 && em.salaires_nets_estimes ? em.salaires_nets_estimes : null;
-                      return (
-                        <>
-                          {netEmployeurs != null && (
-                            <div style={{ marginBottom: 10 }}>
-                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 2 }}>Ton mois, tout compris</div>
-                              <div style={{ fontSize: 30, fontWeight: 800, color: "white", lineHeight: 1.1 }}>
-                                <span style={{ fontSize: 15, color: "#8FB4D8", fontWeight: 600 }}>environ </span>{formatEUR(em.net_estime + netEmployeurs)}<span style={{ fontSize: 15, color: "#8FB4D8", fontWeight: 600 }}> nets</span>
-                              </div>
-                            </div>
-                          )}
-                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                            <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "10px 12px" }}>
-                              <div style={{ fontSize: 10.5, color: "#7FB8A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>France Travail</div>
-                              <div style={{ fontSize: 21, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.15, marginTop: 3 }}>
-                                {formatEUR(em.net_estime)}<span style={{ fontSize: 12, color: "#7FB8A8", fontWeight: 600 }}> nets</span>
-                              </div>
-                              <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>{em.jours_indemnisables} jours indemnisés</div>
-                            </div>
-                            <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.30)", borderRadius: 10, padding: "10px 12px" }}>
-                              <div style={{ fontSize: 10.5, color: "#8FB4D8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>Tes employeurs</div>
-                              <div style={{ fontSize: 21, fontWeight: 800, color: "#C8E0F5", lineHeight: 1.15, marginTop: 3 }}>
-                                {netEmployeurs != null
-                                  ? <>{formatEUR(netEmployeurs)}<span style={{ fontSize: 12, color: "#8FB4D8", fontWeight: 600 }}> nets</span></>
-                                  : em.remunerations_brutes > 0
-                                    ? <>{formatEUR(em.remunerations_brutes)}<span style={{ fontSize: 12, color: "#8FB4D8", fontWeight: 600 }}> bruts</span></>
-                                    : <>0 €</>}
-                              </div>
-                              <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>
-                                {em.activites_travail_mois > 0
-                                  ? <>sur {em.activites_travail_mois} contrat{em.activites_travail_mois > 1 ? "s" : ""}</>
-                                  : <>aucun contrat saisi</>}
-                              </div>
-                            </div>
-                          </div>
-                          {netEmployeurs != null ? (
-                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
-                              Le net de tes cachets vient du rapport lu sur ton bulletin de paie{em.ratio_net_brut_maj_le ? <> de {formatDate(em.ratio_net_brut_maj_le)}</> : null} ({Math.round(em.ratio_net_brut * 100)} % du brut) : c'est une estimation, tes prochaines fiches peuvent varier.
-                            </div>
-                          ) : em.remunerations_brutes > 0 ? (
-                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
-                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
-                            </div>
-                          ) : null}
-                        </>
-                      );
-                    })()}
-                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 10, lineHeight: 1.5 }}>
-                      <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour{em.taux_source === "officiel" ? <> (<strong style={{ color: "#9FE1CB" }}>ton taux officiel</strong>, importé de ton attestation)</> : null}.
-                      {em.jours_travailles > 0
-                        ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
-                        : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
-                      {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
-                    </div>
-                    {/* ─── « ET SI J'AJOUTE DES CACHETS ? » (15/08/2026) ───
-                        Demandé par Lucile : « je suis pas tout à fait sûre de
-                        Pôle emploi puisque j'ai encore trois cachets à faire,
-                        mais c'est possible qu'on les annule. Donc pour
-                        l'instant, moi je les ai pas notés. »
-                        Rien ne s'enregistre : ces cachets n'existent que le
-                        temps du calcul. */}
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                      <div style={{ fontSize: 12, color: "#B5D4F4", marginBottom: 8 }}>
-                        Et si j'ajoute des cachets pas encore sûrs ?
-                      </div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                        {[1, 2, 3, 4, 5].map(n => {
-                          const actif = simCachets === n;
-                          return (
-                            <button key={n} type="button"
-                              onClick={() => { const v = actif ? 0 : n; setSimCachets(v); lancerSimulationMois(v, Number(simPrix) || medianeCachet(interActivites) || 0); }}
-                              style={{ background: actif ? "rgba(93,202,165,0.18)" : "rgba(255,255,255,0.05)",
-                                       border: `1px solid ${actif ? "rgba(93,202,165,0.55)" : "rgba(255,255,255,0.12)"}`,
-                                       color: actif ? "#9FE1CB" : "#B5D4F4", borderRadius: 9,
-                                       width: 40, minHeight: 40, fontSize: 14, fontWeight: actif ? 800 : 600,
-                                       cursor: "pointer", fontFamily: "inherit" }}>
-                              +{n}
-                            </button>
-                          );
-                        })}
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 2 }}>
-                          <span style={{ fontSize: 12, color: "#8BA5C0" }}>à</span>
-                          <MontantInput
-                            style={{ width: 92, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 8, padding: "8px 10px", fontSize: 13.5, color: "white", outline: "none", boxSizing: "border-box", fontFamily: "inherit" }}
-                            placeholder={medianeCachet(interActivites) ? String(Math.round(medianeCachet(interActivites))) : "prix"}
-                            value={simPrix}
-                            onChange={v => { setSimPrix(v); if (simCachets > 0) lancerSimulationMois(simCachets, Number(v) || medianeCachet(interActivites) || 0); }}
-                          />
-                          <span style={{ fontSize: 12, color: "#8BA5C0" }}>€ brut</span>
-                        </div>
-                      </div>
-                      {simEnCours && <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8 }}>Je calcule…</div>}
-                      {!simEnCours && simResultat && (
-                        <div style={{ marginTop: 10, background: "rgba(255,255,255,0.04)", borderRadius: 10, padding: "11px 13px" }}>
-                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.6 }}>
-                            Avec <strong style={{ color: "#C8E0F5" }}>{simResultat.cachets_sup} cachet{simResultat.cachets_sup > 1 ? "s" : ""} de plus</strong> :
-                          </div>
-                          <div style={{ fontSize: 12.5, color: "#B5D4F4", marginTop: 6, lineHeight: 1.7 }}>
-                            France Travail : <strong style={{ color: "#9FE1CB" }}>{formatEUR(simResultat.net_estime)} nets</strong>
-                            <span style={{ color: "#8BA5C0" }}> ({simResultat.ecart_allocation < 0 ? "−" : "+"}{formatEUR(Math.abs(simResultat.ecart_allocation))}, {simResultat.jours_indemnisables} jours indemnisés)</span>
-                            <br />
-                            {simResultat.salaire_sup_brut ? (
-                              <>Tes cachets : <strong style={{ color: "#C8E0F5" }}>+{formatEUR(simResultat.salaire_sup_brut)} bruts</strong>
-                                {simResultat.salaire_sup_net ? <span style={{ color: "#8BA5C0" }}> (environ {formatEUR(simResultat.salaire_sup_net)} nets)</span> : null}</>
-                            ) : (
-                              <span style={{ color: "#8BA5C0" }}>Dis-moi le prix d'un cachet pour que je chiffre aussi ton salaire.</span>
-                            )}
-                          </div>
-                          {simResultat.salaires_nets_estimes != null && (
-                            <div style={{ fontSize: 15, fontWeight: 800, color: "white", marginTop: 9 }}>
-                              Total du mois : environ {formatEUR(simResultat.net_estime + simResultat.salaires_nets_estimes)} nets
-                            </div>
-                          )}
-                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 7, lineHeight: 1.45 }}>
-                            Rien n'est enregistré : ces cachets n'existent que le temps de ce calcul. Si tu les confirmes, ajoute-les comme d'habitude.
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
-                      Versement prévu par France Travail <strong style={{ color: "#C8E0F5" }}>début {nomMoisSuivant}</strong>, après ton actualisation. Montant <strong style={{ color: "#C8E0F5" }}>net social, avant ton impôt à la source</strong> (il varie selon ton taux, je ne l'estime jamais). Chaque contrat ajouté dans le mois met ce chiffre à jour.
-                    </div>
-                    {em.bruts_manquants && (
-                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
-                        Il me manque des salaires bruts sur tes contrats du mois : complète-les pour fiabiliser l'estimation.
-                      </div>
-                    )}
-                    {em.autre_salaire_non_decale && (
-                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
-                        Ton salaire hors spectacle de ce mois décale aussi des jours, d'une façon que je ne sais pas encore chiffrer précisément : le versement réel sera un peu plus bas que mon estimation.
-                      </div>
-                    )}
-                    {em.arrondi_approximatif && (
-                      <div style={{ fontSize: 11, color: "#F2C879", marginTop: 7, lineHeight: 1.45 }}>
-                        Ton mois tombe sur des fractions de jours : je tronque comme France Travail le fait sur les relevés que j'ai vérifiés, mais le résultat peut bouger d'un jour.
-                      </div>
-                    )}
-                    {/* Les franchises (différés d'indemnisation) : recopiées, jamais devinées. */}
-                    <div style={{ marginTop: 11, paddingTop: 10, borderTop: "1px solid rgba(93,202,165,0.15)" }}>
-                      {(em.franchise_cp_imputee > 0 || em.franchise_salaires_imputee > 0) ? (
-                        <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
-                          <strong style={{ color: "#C8E0F5" }}>
-                            {em.franchise_cp_imputee + em.franchise_salaires_imputee} jour{(em.franchise_cp_imputee + em.franchise_salaires_imputee) > 1 ? "s" : ""} de différé
-                          </strong> déduit{(em.franchise_cp_imputee + em.franchise_salaires_imputee) > 1 ? "s" : ""} ce mois-ci
-                          {em.franchise_cp_imputee > 0 && em.franchise_salaires_imputee > 0
-                            ? ` (${em.franchise_cp_imputee} congés payés, ${em.franchise_salaires_imputee} salaires)`
-                            : em.franchise_cp_imputee > 0 ? " (congés payés)" : " (salaires)"}.
-                          {" "}Il t'en resterait <strong style={{ color: "#C8E0F5" }}>{(em.franchise_cp_restante_apres || 0) + (em.franchise_salaires_restante_apres || 0)} jour{((em.franchise_cp_restante_apres || 0) + (em.franchise_salaires_restante_apres || 0)) > 1 ? "s" : ""}</strong> après.{" "}
-                          <button type="button" onClick={() => { setFranchiseForm({ cp: em.franchise_cp_jours ?? "", salaires: em.franchise_salaires_jours ?? "" }); setFranchisePanel(!franchisePanel); }}
-                            style={{ background: "none", border: "none", color: "#9FE1CB", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
-                            Mettre à jour
-                          </button>
-                        </div>
-                      ) : (
-                        <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5 }}>
-                          Ta notification mentionne un <strong style={{ color: "#C8E0F5" }}>différé d'indemnisation</strong> (congés payés ou salaires) ?{" "}
-                          <button type="button" onClick={() => { setFranchiseForm({ cp: em.franchise_cp_jours ?? "", salaires: em.franchise_salaires_jours ?? "" }); setFranchisePanel(!franchisePanel); }}
-                            style={{ background: "none", border: "none", color: "#9FE1CB", fontSize: 11.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>
-                            Dis-le-moi, je le déduis
-                          </button>
-                        </div>
-                      )}
-
-                      {franchisePanel && (
-                        <div style={{ marginTop: 10, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.09)", borderRadius: 10, padding: "12px 14px" }}>
-                          <div style={{ fontSize: 11.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 10 }}>
-                            Recopie les jours qu'il te <strong style={{ color: "#C8E0F5" }}>reste</strong>, tels qu'ils figurent sur ta notification ou ton dernier relevé de situation. Laisse vide si tu n'en as pas.
-                          </div>
-                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 10 }}>
-                            <input type="number" min="0" max="365" value={franchiseForm.cp} onChange={e => setFranchiseForm({ ...franchiseForm, cp: e.target.value })}
-                              placeholder="Congés payés (jours)"
-                              style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                            <input type="number" min="0" max="365" value={franchiseForm.salaires} onChange={e => setFranchiseForm({ ...franchiseForm, salaires: e.target.value })}
-                              placeholder="Salaires (jours)"
-                              style={{ flex: "1 1 150px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                          </div>
-                          <div style={{ display: "flex", gap: 8 }}>
-                            <button type="button" disabled={franchiseSaving} onClick={enregistrerFranchises}
-                              style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 12.5, fontWeight: 700, cursor: franchiseSaving ? "default" : "pointer", fontFamily: "inherit", opacity: franchiseSaving ? 0.6 : 1 }}>
-                              {franchiseSaving ? "…" : "Enregistrer"}
-                            </button>
-                            <button type="button" onClick={() => setFranchisePanel(false)}
-                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit" }}>
-                              Annuler
-                            </button>
-                          </div>
-                          <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 9, lineHeight: 1.45, fontStyle: "italic" }}>
-                            Je ne les devine jamais et je ne les décompte pas tout seul : une régularisation de France Travail peut les changer. Reviens les corriger à chaque relevé.
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
-                      Estimation d'après les barèmes publiés{em.franchises_declarees ? "" : " (différés de début de droits non comptés tant que tu ne me les as pas donnés)"}. Ce calcul a été vérifié au centime sur de vrais versements. Seul le versement de France Travail fait foi.
-                    </div>
-                  </div>
-                );
-                })();
+                // « Totor vérifie ta décision » (blocVerdict) : défini ici pour être posé
+                // à GAUCHE en desktop et rester dans le flux mobile plus bas. « Ton mois »
+                // (blocMois) a déménagé au niveau du composant le 17/08/2026 : sur téléphone
+                // il s'affiche désormais TOUT EN HAUT du cockpit, hors de cette IIFE.
                 const blocVerdict = c.allocation && c.allocation.heures_reference != null && (() => {
                 const ftH = c.allocation.heures_reference;
                 const hectorH = c.total_heures;
@@ -11307,10 +11319,9 @@ function AppInner() {
                 );
               })()}
 
-              {/* ══ TON MOIS EN COURS + TOTOR VÉRIFIE : définis en tête de l'IIFE (blocMois /
-                   blocVerdict) et posés à GAUCHE en desktop. Ici, leur place dans le flux mobile. ══ */}
-              {isMobile && blocMois}
-
+              {/* ══ TOTOR VÉRIFIE : défini en tête de l'IIFE (blocVerdict), posé à GAUCHE
+                   en desktop. Ici sa place dans le flux mobile. « Ton mois », lui, est
+                   remonté tout en haut du cockpit téléphone (17/08/2026). ══ */}
               {isMobile && blocVerdict}
 
 
