@@ -9405,7 +9405,7 @@ function AppInner() {
         {/* Sidebar mobile (drawer) */}
         {isMobile && interMenuOpen && (
           <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.5)" }} onClick={() => setInterMenuOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch" }}>{interSidebar}</div>
+            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>{interSidebar}</div>
           </div>
         )}
 
@@ -9430,8 +9430,9 @@ function AppInner() {
             coins ronds, onglet actif en pastille verte, le SCANNER au centre
             dans un gros bouton, et la tête de Totor comme onglet de chat.
             Le tiroir garde tout le reste du menu, rien ne disparaît.
-            zIndex 250 : sous les tiroirs (300+) et les modales (500+). */}
-        {isMobile && (
+            La barre s'EFFACE quand le tiroir est ouvert : le tiroir est a
+            zIndex 201, en dessous d'elle, et elle recouvrait Deconnexion. */}
+        {isMobile && !interMenuOpen && (
           <nav aria-label="Navigation rapide" style={{ position: "fixed", left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 250, background: "#0E1B30", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 24, display: "flex", alignItems: "flex-end", justifyContent: "space-around", padding: "10px 8px 9px", boxShadow: "0 10px 30px rgba(0,0,0,0.5)" }}>
             {[
               { id: "cockpit", icon: "ti-gauge", label: "Cockpit" },
