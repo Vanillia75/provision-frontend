@@ -8670,7 +8670,9 @@ function AppInner() {
       // 🟢 SÉCURISÉ — seul cas vert : le moteur confirme les droits.
       if (calc.secu) {
         return {
-          ton: "green", emoji: "🟢", titre: `Tes droits sont sécurisés (${Math.round(c.total_heures)} h)`,
+          // (18/08/2026) plus de « (X h) » dans le titre : le héros affiche déjà les
+          // heures en très gros juste au-dessus, le doublon jurait sur la capture.
+          ton: "green", emoji: "🟢", titre: "Tes droits sont sécurisés",
           bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5", st: "#BFE6D6",
           phrase: calc.aDateAnniv
             ? `C'est bon jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Je monte la garde, tu peux souffler. 🐾`
@@ -10295,6 +10297,41 @@ function AppInner() {
 
               {/* ═══ EN-TÊTE COCKPIT : Totor + état (le héros) ═══ */}
               <div style={{ background: etat.bg, border: `1px solid ${etat.bd}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
+                {/* ─── LES HEURES EN VEDETTE (18/08/2026, retour de Camille sur capture :
+                    « bcp trop gros, il faudrait les heures en gros et le reste plus
+                    petit »). Quand il y a des heures, LE gros chiffre du héros, c'est
+                    ELLES ; l'état de Totor et sa phrase passent SOUS la jauge, en une
+                    ligne discrète. Sans aucune activité (« Faisons connaissance »),
+                    l'ancienne mise en page reste : il n'y a pas d'heures à mettre en
+                    vedette, et on n'affiche jamais un « 0 h » qu'on ne sait pas vrai. */}
+                {calc.heures > 0 ? (<>
+                  <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
+                        <div style={{ fontSize: 12.5, color: "#8BA5C0", fontWeight: 600 }}>
+                          🐾 {salutInter}{profilPrenom ? ` ${profilPrenom}` : ""}
+                        </div>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: etat.tc, textAlign: "right", flexShrink: 0 }}>
+                          {calc.heures >= calc.seuil ? "objectif atteint 🎉" : `plus que ${Math.round(calc.manque)} h`}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: 13.5, color: etat.st, marginTop: 3, whiteSpace: "nowrap" }}>
+                        Tu es à <strong style={{ color: etat.tc, fontSize: 31, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1 }}>{Math.round(calc.heures)} h</strong>
+                        <span> sur {calc.seuil}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ marginTop: 11, height: 10, background: "rgba(255,255,255,0.1)", borderRadius: 6, position: "relative" }}>
+                    <div style={{ width: `${Math.min(100, (calc.heures / calc.seuil) * 100)}%`, height: 10, background: "#5DCAA5", borderRadius: 6, transition: "width 0.4s" }} />
+                    <span aria-hidden="true" style={{ position: "absolute", left: `calc(${Math.min(100, (calc.heures / calc.seuil) * 100)}% - 9px)`, top: -8, fontSize: 15 }}>🐾</span>
+                  </div>
+                  <div style={{ fontSize: 12.5, color: etat.st, marginTop: 11, lineHeight: 1.55 }}>
+                    {etat.emoji} <strong style={{ color: etat.tc }}>{etat.titre}.</strong> {etat.phrase}
+                  </div>
+                </>) : (
                 <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                   <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
                     <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
@@ -10312,29 +10349,6 @@ function AppInner() {
                     <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
                   </div>
                 </div>
-                {/* ─── LES HEURES EN PREMIER (15/08/2026, demande de Camille) ───
-                    « tu es à 502 h, c'est le premier truc qu'on devrait voir. »
-                    La jauge vit DANS le héros, tout en haut du cockpit : le
-                    chiffre, le seuil, et la patte qui avance. Masquée tant
-                    qu'aucun contrat n'est saisi : le héros « Faisons
-                    connaissance » fait déjà ce travail-là, et on ne déduit
-                    RIEN d'un dossier vide. */}
-                {calc.heures > 0 && (
-                  <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${etat.bd}` }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 4 }}>
-                      <span style={{ fontSize: 13.5, color: etat.st }}>
-                        Tu es à <strong style={{ color: etat.tc, fontSize: 17 }}>{Math.round(calc.heures)} h</strong>
-                        <span style={{ color: etat.st }}> sur {calc.seuil}</span>
-                      </span>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: etat.tc }}>
-                        {calc.heures >= calc.seuil ? "objectif atteint 🎉" : `plus que ${Math.round(calc.manque)} h`}
-                      </span>
-                    </div>
-                    <div style={{ marginTop: 7, height: 10, background: "rgba(255,255,255,0.1)", borderRadius: 6, position: "relative" }}>
-                      <div style={{ width: `${Math.min(100, (calc.heures / calc.seuil) * 100)}%`, height: 10, background: "#5DCAA5", borderRadius: 6, transition: "width 0.4s" }} />
-                      <span aria-hidden="true" style={{ position: "absolute", left: `calc(${Math.min(100, (calc.heures / calc.seuil) * 100)}% - 9px)`, top: -8, fontSize: 15 }}>🐾</span>
-                    </div>
-                  </div>
                 )}
               </div>
 
