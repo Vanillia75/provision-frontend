@@ -13,7 +13,9 @@ const VAGUES = [
     titre: "Le menu passe sous ton pouce",
     items: [
       { qui: "intermittent", texte: "Sur téléphone, une barre s'installe en bas de l'écran : Cockpit, Activités, Versements, moi pour discuter, et au centre le gros bouton vert pour scanner une attestation, parce que c'est le geste que tu fais le plus. L'onglet où tu es s'allume avec une petite patte. 🐾" },
-      { qui: "intermittent", texte: "Rien n'a disparu : le menu complet reste dans le tiroir en haut à gauche. La barre, c'est juste tes gestes du quotidien, à un pouce." },
+      { qui: "intermittent", texte: "Rien n'a disparu : le menu complet reste dans le tiroir en haut à gauche. La barre, c'est juste tes gestes du quotidien, à un pouce. Et elle se fait glisser du doigt : tout le menu y tient, les écrans du quotidien d'abord, le reste à la glisse." },
+      { qui: "intermittent", texte: "Et en ouvrant l'app, la première chose que tu vois maintenant, c'est TES HEURES : « tu es à tant sur 507 », avec la petite patte qui avance sur la jauge. C'était demandé, c'était juste, c'est fait." },
+      { qui: "ae", texte: "Toi aussi tu as ta barre en bas de l'écran sur téléphone : Cockpit, Encaissé, le scanner de factures au centre, Factures, moi, et le reste à la glisse. Tes gestes du quotidien, à un pouce." },
     ],
   },
   {

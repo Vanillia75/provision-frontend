@@ -2646,7 +2646,7 @@ function AppInner() {
     <>
       <style>{`@keyframes aidePatte { 0%,100% { opacity: 0.15; } 50% { opacity: 1; } }`}</style>
       {aideOuverte && (
-        <div style={{ position: "fixed", bottom: isMobile ? (profile?.statut === "intermittent" ? "calc(162px + env(safe-area-inset-bottom, 0px))" : 84) : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
+        <div style={{ position: "fixed", bottom: isMobile ? "calc(162px + env(safe-area-inset-bottom, 0px))" : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
           {/* En-tête : la vocation lisible sans cliquer */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
             <HectorTete size={28} />
@@ -2765,7 +2765,7 @@ function AppInner() {
       {/* La pastille : petite, sereine, jamais de badge ni de rebond. */}
       <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
         title="Totor · aide & mode d'emploi"
-        style={{ position: "fixed", bottom: isMobile ? (profile?.statut === "intermittent" ? "calc(102px + env(safe-area-inset-bottom, 0px))" : 16) : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
+        style={{ position: "fixed", bottom: isMobile ? "calc(102px + env(safe-area-inset-bottom, 0px))" : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
         <HectorTete size={38} />
         <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
       </button>
@@ -14598,10 +14598,61 @@ function AppInner() {
         <div style={S.sidebarBackdrop} onClick={() => setMobileMenuOpen(false)} />
       )}
 
+      {/* ─── BARRE D'ONGLETS DU BAS, mobile (côté AE, 15/08/2026) ───
+          Même patron que le côté intermittent, validé par Camille : défilante,
+          les gestes du quotidien d'abord, le Scanner au centre (ici : scanner
+          une facture de dépense), la tête de Totor pour le chat, et le reste à
+          la glisse. S'efface quand le tiroir est ouvert. */}
+      {isMobile && !mobileMenuOpen && (
+        <nav aria-label="Navigation rapide" style={{ position: "fixed", left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 250, background: "#0E1B30", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", overflow: "hidden" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 2, overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch", padding: "9px 26px 8px 8px" }}>
+            {[
+              { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
+              { id: "revenus", icon: "ti-chart-bar", label: "Encaissé" },
+              { id: "frais", icon: "ti-scan", label: "Scanner", central: true },
+              { id: "factures", icon: "ti-file-invoice", label: "Factures" },
+              { id: "assistant", label: "Totor", totor: true },
+              { id: "declaration", icon: "ti-clipboard-check", label: "Déclarer" },
+              { id: "devis", icon: "ti-file-description", label: "Devis" },
+              { id: "salaire", icon: "ti-pig-money", label: "Ma paie" },
+              { id: "echeances", icon: "ti-calendar-due", label: "Échéances" },
+              { id: "achat", icon: "ti-shopping-cart", label: "Achat" },
+              { id: "marches", icon: "ti-building-bank", label: "Missions" },
+              { id: "abonnement", icon: "ti-paw", label: "Veille" },
+            ].map(o => {
+              const actif = nav === o.id;
+              if (o.central) {
+                return (
+                  <button key={o.id} type="button" onClick={() => { setNav(o.id); window.scrollTo(0, 0); }}
+                    aria-label="Scanner une facture"
+                    style={{ flex: "0 0 auto", background: "none", border: "none", padding: "0 4px", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
+                    <span style={{ display: "flex", width: 50, height: 50, borderRadius: "50%", background: "#5DCAA5", outline: actif ? "3px solid rgba(93,202,165,0.55)" : "2px solid rgba(93,202,165,0.25)", alignItems: "center", justifyContent: "center", color: "#04342C", margin: "0 auto", boxShadow: "0 4px 14px rgba(93,202,165,0.35)" }}>
+                      <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 24 }} />
+                    </span>
+                    <span style={{ display: "block", fontSize: 9.5, fontWeight: 700, color: "#9FE1CB", marginTop: 2 }}>{o.label}</span>
+                  </button>
+                );
+              }
+              return (
+                <button key={o.id} type="button" onClick={() => { setNav(o.id); window.scrollTo(0, 0); }}
+                  style={{ flex: "0 0 auto", background: actif ? "rgba(93,202,165,0.16)" : "none", border: actif ? "1px solid rgba(93,202,165,0.45)" : "1px solid transparent", borderRadius: 15, padding: "6px 8px 4px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", color: actif ? "#5DCAA5" : "#7C93AC", minWidth: 56 }}>
+                  {o.totor
+                    ? <span style={{ display: "inline-block", transform: actif ? "scale(1.12)" : "none", transition: "transform 0.15s" }}><HectorTete size={24} /></span>
+                    : <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 22 }} />}
+                  <span style={{ display: "block", fontSize: 9.5, fontWeight: actif ? 700 : 500, marginTop: 1 }}>{o.label}</span>
+                  {actif && <span style={{ display: "block", fontSize: 8, lineHeight: "6px", color: "#5DCAA5" }}>🐾</span>}
+                </button>
+              );
+            })}
+          </div>
+          <div aria-hidden="true" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 34, background: "linear-gradient(to left, #0E1B30, rgba(14,27,48,0))", pointerEvents: "none", borderRadius: "0 24px 24px 0" }} />
+        </nav>
+      )}
+
       <aside
         style={{
           ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch" }
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
           background: "#07192E",
         }}
@@ -14745,7 +14796,7 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px 16px" } : S.mainContent), background: "#07192E" }}>
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px calc(120px + env(safe-area-inset-bottom, 0px))" } : S.mainContent), background: "#07192E" }}>
         {/* Barre du haut (desktop) — miroir de celle du mode intermittent : badge + bascule. */}
         {!isMobile && (
           <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "-28px -32px 24px" }}>
