@@ -10513,61 +10513,71 @@ function AppInner() {
                 return (
                   <div style={shell}>
                     {tete}
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
-                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(em.net_estime)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> nets</span>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
+                    {/* ─── LE MOIS EN DEUX COLONNES (17/08/2026) ───
+                        Demandé par Camille pour Lucile : « sur ta page d'accueil,
+                        tu as un salaire global qui est séparé en deux : tant de
+                        France Travail et tant de tes employeurs, c'est ultra
+                        pratique. » Le total du mois en gros quand on connaît le
+                        net des cachets, et TOUJOURS les deux colonnes côte à
+                        côte, France Travail à gauche, les employeurs à droite.
+                        ⚠️ Sans bulletin de paie rangé, la colonne employeurs
+                        reste en BRUT et on ne l'additionne pas : on ne mélange
+                        jamais du brut et du net dans un même total. */}
+                    {(() => {
+                      const netEmployeurs = em.remunerations_brutes > 0 && em.salaires_nets_estimes ? em.salaires_nets_estimes : null;
+                      return (
+                        <>
+                          {netEmployeurs != null && (
+                            <div style={{ marginBottom: 10 }}>
+                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 2 }}>Ton mois, tout compris</div>
+                              <div style={{ fontSize: 30, fontWeight: 800, color: "white", lineHeight: 1.1 }}>
+                                <span style={{ fontSize: 15, color: "#8FB4D8", fontWeight: 600 }}>environ </span>{formatEUR(em.net_estime + netEmployeurs)}<span style={{ fontSize: 15, color: "#8FB4D8", fontWeight: 600 }}> nets</span>
+                              </div>
+                            </div>
+                          )}
+                          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                            <div style={{ background: "rgba(93,202,165,0.08)", border: "1px solid rgba(93,202,165,0.28)", borderRadius: 10, padding: "10px 12px" }}>
+                              <div style={{ fontSize: 10.5, color: "#7FB8A8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>France Travail</div>
+                              <div style={{ fontSize: 21, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.15, marginTop: 3 }}>
+                                {formatEUR(em.net_estime)}<span style={{ fontSize: 12, color: "#7FB8A8", fontWeight: 600 }}> nets</span>
+                              </div>
+                              <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>{em.jours_indemnisables} jours indemnisés</div>
+                            </div>
+                            <div style={{ background: "rgba(55,138,221,0.08)", border: "1px solid rgba(55,138,221,0.30)", borderRadius: 10, padding: "10px 12px" }}>
+                              <div style={{ fontSize: 10.5, color: "#8FB4D8", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>Tes employeurs</div>
+                              <div style={{ fontSize: 21, fontWeight: 800, color: "#C8E0F5", lineHeight: 1.15, marginTop: 3 }}>
+                                {netEmployeurs != null
+                                  ? <>{formatEUR(netEmployeurs)}<span style={{ fontSize: 12, color: "#8FB4D8", fontWeight: 600 }}> nets</span></>
+                                  : em.remunerations_brutes > 0
+                                    ? <>{formatEUR(em.remunerations_brutes)}<span style={{ fontSize: 12, color: "#8FB4D8", fontWeight: 600 }}> bruts</span></>
+                                    : <>0 €</>}
+                              </div>
+                              <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 3 }}>
+                                {em.activites_travail_mois > 0
+                                  ? <>sur {em.activites_travail_mois} contrat{em.activites_travail_mois > 1 ? "s" : ""}</>
+                                  : <>aucun contrat saisi</>}
+                              </div>
+                            </div>
+                          </div>
+                          {netEmployeurs != null ? (
+                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
+                              Le net de tes cachets vient du rapport lu sur ton bulletin de paie{em.ratio_net_brut_maj_le ? <> de {formatDate(em.ratio_net_brut_maj_le)}</> : null} ({Math.round(em.ratio_net_brut * 100)} % du brut) : c'est une estimation, tes prochaines fiches peuvent varier.
+                            </div>
+                          ) : em.remunerations_brutes > 0 ? (
+                            <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
+                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                            </div>
+                          ) : null}
+                        </>
+                      );
+                    })()}
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 10, lineHeight: 1.5 }}>
                       <strong style={{ color: "#C8E0F5" }}>{em.jours_indemnisables} jours indemnisés</strong> sur {em.jours_calendaires}, à {formatEUR(em.aj_nette)} nets par jour{em.taux_source === "officiel" ? <> (<strong style={{ color: "#9FE1CB" }}>ton taux officiel</strong>, importé de ton attestation)</> : null}.
                       {em.jours_travailles > 0
                         ? <> Tes <strong style={{ color: "#C8E0F5" }}>{em.jours_travailles} jour{em.jours_travailles > 1 ? "s" : ""} travaillé{em.jours_travailles > 1 ? "s" : ""}</strong> ({em.heures_mois} h) en déduisent {em.jours_non_indemnisables} par le décalage.</>
                         : <> Aucun contrat saisi ce mois-ci pour l'instant.</>}
                       {em.plafond_cumul_applique ? <> Plafond mensuel de cumul salaires + allocation atteint : le versement est réduit d'autant.</> : null}
                     </div>
-                    {/* ─── CE QUE TU AS DÉCLARÉ CE MOIS-CI (15/08/2026) ───
-                        Demandé par Lucile : « je vois nulle part combien j'ai
-                        déclaré pour un mois. Il faut que je fasse les calculs
-                        moi-même en retournant sur mes cachets, savoir combien
-                        c'était un cachet à combien là, un cachet à combien là. »
-                        Le serveur calculait déjà ce total, il n'était affiché
-                        nulle part. On le met À CÔTÉ de l'allocation, pour qu'elle
-                        ait les deux montants du mois au même endroit.
-                        ⚠️ C'est du BRUT, et on le dit : on ne connaît pas le net
-                        de ses bulletins de paie et on ne l'invente pas. */}
-                    {em.remunerations_brutes > 0 && (
-                      <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                        <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 3 }}>Ce que tu as déclaré ce mois-ci</div>
-                        <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" }}>
-                          <div style={{ fontSize: 21, fontWeight: 800, color: "#C8E0F5", lineHeight: 1.15 }}>
-                            {formatEUR(em.remunerations_brutes)}<span style={{ fontSize: 13, color: "#8FB4D8", fontWeight: 600 }}> bruts</span>
-                          </div>
-                          <span style={{ fontSize: 12, color: "#8FB4D8" }}>
-                            sur {em.activites_travail_mois} contrat{em.activites_travail_mois > 1 ? "s" : ""}
-                          </span>
-                        </div>
-                        {em.salaires_nets_estimes ? (
-                          <>
-                            <div style={{ fontSize: 13, color: "#9FE1CB", marginTop: 4, fontWeight: 600 }}>
-                              soit environ {formatEUR(em.salaires_nets_estimes)} nets
-                            </div>
-                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: "1px dashed rgba(255,255,255,0.12)" }}>
-                              <div style={{ fontSize: 11.5, color: "#8BA5C0", marginBottom: 2 }}>Ton mois, tout compris</div>
-                              <div style={{ fontSize: 24, fontWeight: 800, color: "white", lineHeight: 1.15 }}>
-                                environ {formatEUR(em.net_estime + em.salaires_nets_estimes)}<span style={{ fontSize: 13, color: "#8FB4D8", fontWeight: 600 }}> nets</span>
-                              </div>
-                              <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 5, lineHeight: 1.45 }}>
-                                France Travail plus tes contrats. Le net de tes cachets vient du rapport lu sur ton bulletin de paie{em.ratio_net_brut_maj_le ? <> de {formatDate(em.ratio_net_brut_maj_le)}</> : null} ({Math.round(em.ratio_net_brut * 100)} % du brut) : c'est une estimation, tes prochaines fiches peuvent varier.
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 5, lineHeight: 1.45 }}>
-                            C'est le total de ce que TU m'as donné, en brut. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
-                          </div>
-                        )}
-                      </div>
-                    )}
                     {/* ─── « ET SI J'AJOUTE DES CACHETS ? » (15/08/2026) ───
                         Demandé par Lucile : « je suis pas tout à fait sûre de
                         Pôle emploi puisque j'ai encore trois cachets à faire,

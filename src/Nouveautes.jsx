@@ -9,6 +9,14 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "17 août 2026",
+    titre: "Ton mois en deux colonnes, comme sur un bulletin",
+    items: [
+      { qui: "intermittent", texte: "Sur la carte « Ton mois », tu vois maintenant tes deux revenus côte à côte : à gauche ce que France Travail va te verser, à droite ce que tes employeurs te doivent. Une demande d'utilisatrice : « les deux montants du mois, au même endroit ». C'est fait. 🐾" },
+      { qui: "intermittent", texte: "Et si tu as rangé un bulletin de paie dans « Mes documents », j'affiche ton mois TOUT COMPRIS en gros au-dessus : France Travail plus tes cachets, en nets. Sans bulletin, je montre tes cachets en brut et je n'additionne pas : je ne mélange jamais du brut et du net." },
+    ],
+  },
+  {
     date: "15 août 2026 · sur téléphone",
     titre: "Le menu passe sous ton pouce",
     items: [
