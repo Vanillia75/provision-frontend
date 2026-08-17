@@ -9,6 +9,14 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "15 août 2026 · sur téléphone",
+    titre: "Le menu passe sous ton pouce",
+    items: [
+      { qui: "intermittent", texte: "Sur téléphone, une barre s'installe en bas de l'écran : Cockpit, Activités, Versements, moi pour discuter, et au centre le gros bouton vert pour scanner une attestation, parce que c'est le geste que tu fais le plus. L'onglet où tu es s'allume avec une petite patte. 🐾" },
+      { qui: "intermittent", texte: "Rien n'a disparu : le menu complet reste dans le tiroir en haut à gauche. La barre, c'est juste tes gestes du quotidien, à un pouce." },
+    ],
+  },
+  {
     date: "15 août 2026",
     titre: "Ton récap de revenus, sur la période que TU choisis",
     items: [
