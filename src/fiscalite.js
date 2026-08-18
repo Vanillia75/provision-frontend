@@ -97,7 +97,14 @@ export const FISCALITE = {
   // ──────────────────────────────────────────────────────────────────────
   cfp: {
     vente: 0.001, // 0,1 % (commerçants)
-    services: 0.002, // 0,2 % (prestations de services / libéral non réglementé)
+    // ⚠️ CORRIGÉ LE 15/08/2026 (audit à la source). Il n'existe PAS de taux
+    //  0,2 % pour les prestations de services BIC : service-public.fr donne
+    //  0,1 % pour une activité COMMERCIALE et 0,3 % pour une activité
+    //  ARTISANALE. L'application ne demande nulle part laquelle des deux, donc
+    //  on retient 0,3 %, le plus élevé : sur-provisionner coûte quelques
+    //  dizaines d'euros et se rattrape, sous-provisionner produit la mauvaise
+    //  surprise. Jumeau de tax_engine.py.
+    services: 0.003, // 0,3 % (artisanal, repli prudent)
     bnc: 0.002, // 0,2 % (professions libérales)
     artisan: 0.003, // 0,3 % (artisans)
     source: "URSSAF / service-public.fr — taux CFP 2026 (0,1 % à 0,3 % selon secteur)",

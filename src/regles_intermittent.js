@@ -221,13 +221,13 @@ export const REGLES = {
   },
 
   pmssMensuel: {
-    valeur: { montant: 3925.0, annee: 2025, coefPlafondCumul: 1.18 },
+    valeur: { montant: 4005.0, annee: 2026, coefPlafondCumul: 1.18 },
     libelle: "Plafond mensuel de la sécurité sociale (pour le plafond de cumul ARE + salaires)",
-    source: "Unédic — Paramètres utiles avril 2025 (PMSS 2025 = 3 925 €) ; guide FT p.17 (cumul ≤ 118 % du PMSS)",
+    source: "Unédic — Paramètres utiles AVRIL 2026, tableau des plafonds : PMSS 2026 = 4 005 € (LU À LA SOURCE le 15/08/2026 ; arrêté du 22/12/2025, PASS 2026 = 48 060 € = 4 005 × 12) ; guide FT p.17 (cumul ≤ 118 % du PMSS)",
     version: "2026.07",
     dateAppli: "2025-01-01",
     verifie: true,
-    commentaire: "Cumul mensuel ARE + rémunérations brutes plafonné à 118 % du PMSS. Valeur 2025 — à réviser chaque 1er janvier (l'exemple 12 du guide utilise le PMSS 2024 = 3 864 € → plafond 4 559,52 €, vérifié).",
+    commentaire: "Cumul mensuel ARE + rémunérations brutes plafonné à 118 % du PMSS. ⚠️ La valeur 2025 (3 925 €) était encore en place le 15/08/2026, soit sept mois de retard : à réviser chaque 1er janvier, sans faute. À réviser (l'exemple 12 du guide utilise le PMSS 2024 = 3 864 € → plafond 4 559,52 €, vérifié).",
   },
 
   franchiseCongesParJours: {

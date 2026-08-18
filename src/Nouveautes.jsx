@@ -9,6 +9,37 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "18 août 2026 · sur téléphone",
+    titre: "Tes heures en très gros, et des couleurs qui rassurent",
+    items: [
+      { qui: "intermittent", texte: "En ouvrant l'app, LE chiffre que tu vois maintenant, c'est tes heures : « Tu es à 502 h sur 507 » en très gros, la jauge, et mon état du moment en une petite ligne dessous. Fini le pavé." },
+      { qui: "intermittent", texte: "Et j'arrête de te faire peur avec le rouge : la carte du haut reste bleu nuit même quand ça se corse, seule une petite ligne 🔴 ou 🟡 te tient au courant. La carte ne passe entière en couleur que pour une bonne nouvelle : le vert des droits sécurisés, ça c'est une fête." },
+      { qui: "intermittent", texte: "« Mes activités » fait peau neuve : ton compteur en accroche (« 502 h au compteur · 19 contrats »), et chaque contrat dans sa propre case avec son icône, son employeur, son brut et ses heures gagnées. En bas de la liste, deux boutons t'attendent : ajouter un contrat, ou scanner une AEM." },
+      { qui: "intermittent", texte: "La carte « Ton mois » apprend à se faire petite : l'essentiel reste affiché (le total, les deux colonnes, la date du versement prévu), et le reste se déplie d'un geste avec « Simuler des cachets · tout le détail ». Rien ne disparaît, tout respire." },
+      { qui: "intermittent", texte: "Et « Tes Congés Spectacles » est remontée juste sous « Ton mois » : tout ton argent au même endroit, dans l'ordre où tu le touches." },
+      { qui: "ae", texte: "Le gros bouton vert de ta barre change de métier : c'est maintenant FACTURER. Un appui, et ta nouvelle facture s'ouvre, parce que c'est ça, ton geste du quotidien. Le scan de tes frais reste à portée de glisse, dans l'onglet « Frais »." },
+    ],
+  },
+  {
+    date: "17 août 2026",
+    titre: "Ton mois en deux colonnes, comme sur un bulletin",
+    items: [
+      { qui: "intermittent", texte: "Sur la carte « Ton mois », tu vois maintenant tes deux revenus côte à côte : à gauche ce que France Travail va te verser, à droite ce que tes employeurs te doivent. Une demande d'utilisatrice : « les deux montants du mois, au même endroit ». C'est fait. 🐾" },
+      { qui: "intermittent", texte: "Et si tu as rangé un bulletin de paie dans « Mes documents », j'affiche ton mois TOUT COMPRIS en gros au-dessus : France Travail plus tes cachets, en nets. Sans bulletin, je montre tes cachets en brut et je n'additionne pas : je ne mélange jamais du brut et du net." },
+      { qui: "intermittent", texte: "Sur téléphone, cette carte est remontée tout en haut du cockpit : tes heures d'abord, ton briefing, puis ton argent du mois. Plus besoin de défiler pour savoir où tu en es." },
+    ],
+  },
+  {
+    date: "15 août 2026 · sur téléphone",
+    titre: "Le menu passe sous ton pouce",
+    items: [
+      { qui: "intermittent", texte: "Sur téléphone, une barre s'installe en bas de l'écran : Cockpit, Activités, Versements, moi pour discuter, et au centre le gros bouton vert pour scanner une attestation, parce que c'est le geste que tu fais le plus. L'onglet où tu es s'allume avec une petite patte. 🐾" },
+      { qui: "intermittent", texte: "Rien n'a disparu : le menu complet reste dans le tiroir en haut à gauche. La barre, c'est juste tes gestes du quotidien, à un pouce. Et elle se fait glisser du doigt : tout le menu y tient, les écrans du quotidien d'abord, le reste à la glisse." },
+      { qui: "intermittent", texte: "Et en ouvrant l'app, la première chose que tu vois maintenant, c'est TES HEURES : « tu es à tant sur 507 », avec la petite patte qui avance sur la jauge. C'était demandé, c'était juste, c'est fait." },
+      { qui: "ae", texte: "Toi aussi tu as ta barre en bas de l'écran sur téléphone : Cockpit, Encaissé, le scanner de factures au centre, Factures, moi, et le reste à la glisse. Tes gestes du quotidien, à un pouce." },
+    ],
+  },
+  {
     date: "15 août 2026",
     titre: "Ton récap de revenus, sur la période que TU choisis",
     items: [
