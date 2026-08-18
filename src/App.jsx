@@ -10430,6 +10430,26 @@ function AppInner() {
                       <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
                     </div>
                     <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
+                    {/* ─── LE PREMIER GESTE, GUIDÉ (18/08/2026) : dans la revue des
+                        inscrits, 2 nouveaux venus d'iPhone sont repartis sans rien
+                        saisir. La toute première action vit maintenant DANS le héros :
+                        scanner une AEM (le geste magique) ou saisir un cachet à la
+                        main. Dès la première activité, ce héros disparaît et le vrai
+                        cockpit prend le relais : ces boutons ne vivent que le temps
+                        d'un compte vide. */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
+                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
+                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 17 }} /> Scanner une AEM
+                      </button>
+                      <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); }}
+                        style={{ flex: "1 1 150px", background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Ajouter un cachet
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: etat.st, marginTop: 8, lineHeight: 1.5 }}>
+                      Deux minutes, et ton cockpit s'allume : tes heures vers les 507, ton allocation, ton argent du mois.
+                    </div>
                   </div>
                 </div>
                 )}
