@@ -10968,6 +10968,11 @@ function AppInner() {
                      Desktop : display block, les cartes coulent dans le multicolonnes
                      (équilibrage automatique) ; mobile : pile flex classique. */}
                 <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* ─── L'ARGENT D'ABORD, AUSSI SUR ORDINATEUR (18/08/2026, Camille
+                    cherchait la carte : « ou ca ») : « Ton mois » vivait SOUS la
+                    grande carte de Totor, invisible sans défiler. Elle passe en
+                    tête de la colonne de gauche, Totor juste dessous. */}
+                {!isMobile && blocMois}
                 {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
                     les oreilles dépassent du cadre (même signature que la carte AE ;
                     l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
@@ -11074,7 +11079,8 @@ function AppInner() {
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                   style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block", WebkitMaskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)" }} />
                 </div>
-                {!isMobile && blocMois}
+                {/* (« Ton mois » est remonté EN TÊTE de cette colonne le 18/08/2026,
+                    au-dessus de la grande carte de Totor : ne pas le re-poser ici.) */}
                 {!isMobile && blocVerdict}
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
