@@ -14786,19 +14786,23 @@ function AppInner() {
 
       {/* ─── BARRE D'ONGLETS DU BAS, mobile (côté AE, 15/08/2026) ───
           Même patron que le côté intermittent, validé par Camille : défilante,
-          les gestes du quotidien d'abord, le Scanner au centre (ici : scanner
-          une facture de dépense), la tête de Totor pour le chat, et le reste à
-          la glisse. S'efface quand le tiroir est ouvert. */}
+          les gestes du quotidien d'abord, la tête de Totor pour le chat, et le
+          reste à la glisse. S'efface quand le tiroir est ouvert.
+          ⚠️ 18/08/2026, retour de Camille : « le scan est moins utile côté
+          A/E ». Le geste central d'un auto-entrepreneur, c'est FACTURER :
+          le gros bouton vert crée une nouvelle facture, et le scanner de
+          frais redevient un onglet normal dans la glisse. */}
       {isMobile && !mobileMenuOpen && (
         <nav aria-label="Navigation rapide" style={{ position: "fixed", left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 250, background: "#0E1B30", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", overflow: "hidden" }}>
           <div style={{ display: "flex", alignItems: "center", gap: 2, overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch", padding: "9px 26px 8px 8px" }}>
             {[
               { id: "dashboard", icon: "ti-gauge", label: "Cockpit" },
               { id: "revenus", icon: "ti-chart-bar", label: "Encaissé" },
-              { id: "frais", icon: "ti-scan", label: "Scanner", central: true },
+              { id: "facturer", icon: "ti-file-plus", label: "Facturer", central: true },
               { id: "factures", icon: "ti-file-invoice", label: "Factures" },
               { id: "assistant", label: "Totor", totor: true },
               { id: "declaration", icon: "ti-clipboard-check", label: "Déclarer" },
+              { id: "frais", icon: "ti-scan", label: "Frais" },
               { id: "devis", icon: "ti-file-description", label: "Devis" },
               { id: "salaire", icon: "ti-pig-money", label: "Ma paie" },
               { id: "echeances", icon: "ti-calendar-due", label: "Échéances" },
@@ -14809,11 +14813,12 @@ function AppInner() {
               const actif = nav === o.id;
               if (o.central) {
                 return (
-                  <button key={o.id} type="button" onClick={() => { setNav(o.id); window.scrollTo(0, 0); }}
-                    aria-label="Scanner une facture"
+                  <button key={o.id} type="button"
+                    onClick={() => { setNav("factures"); resetFactureForm(); setShowNewFacture(true); window.scrollTo(0, 0); }}
+                    aria-label="Créer une facture"
                     style={{ flex: "0 0 auto", background: "none", border: "none", padding: "0 4px", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
-                    <span style={{ display: "flex", width: 50, height: 50, borderRadius: "50%", background: "#5DCAA5", outline: actif ? "3px solid rgba(93,202,165,0.55)" : "2px solid rgba(93,202,165,0.25)", alignItems: "center", justifyContent: "center", color: "#04342C", margin: "0 auto", boxShadow: "0 4px 14px rgba(93,202,165,0.35)" }}>
-                      <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 24 }} />
+                    <span style={{ display: "flex", width: 50, height: 50, borderRadius: "50%", background: "#5DCAA5", outline: nav === "factures" ? "3px solid rgba(93,202,165,0.55)" : "2px solid rgba(93,202,165,0.25)", alignItems: "center", justifyContent: "center", color: "#04342C", margin: "0 auto", boxShadow: "0 4px 14px rgba(93,202,165,0.35)" }}>
+                      <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 24 }} />
                     </span>
                     <span style={{ display: "block", fontSize: 9.5, fontWeight: 700, color: "#9FE1CB", marginTop: 2 }}>{o.label}</span>
                   </button>

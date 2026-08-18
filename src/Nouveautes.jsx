@@ -17,6 +17,7 @@ const VAGUES = [
       { qui: "intermittent", texte: "« Mes activités » fait peau neuve : ton compteur en accroche (« 502 h au compteur · 19 contrats »), et chaque contrat dans sa propre case avec son icône, son employeur, son brut et ses heures gagnées. En bas de la liste, deux boutons t'attendent : ajouter un contrat, ou scanner une AEM." },
       { qui: "intermittent", texte: "La carte « Ton mois » apprend à se faire petite : l'essentiel reste affiché (le total, les deux colonnes, la date du versement prévu), et le reste se déplie d'un geste avec « Simuler des cachets · tout le détail ». Rien ne disparaît, tout respire." },
       { qui: "intermittent", texte: "Et « Tes Congés Spectacles » est remontée juste sous « Ton mois » : tout ton argent au même endroit, dans l'ordre où tu le touches." },
+      { qui: "ae", texte: "Le gros bouton vert de ta barre change de métier : c'est maintenant FACTURER. Un appui, et ta nouvelle facture s'ouvre, parce que c'est ça, ton geste du quotidien. Le scan de tes frais reste à portée de glisse, dans l'onglet « Frais »." },
     ],
   },
   {
