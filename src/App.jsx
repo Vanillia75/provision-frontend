@@ -2236,6 +2236,9 @@ function AppInner() {
   // ── Abonnement Stripe (Premium) ──
   const [billingBusy, setBillingBusy] = useState(false);
   const [planChoisi, setPlanChoisi] = useState("annuel");   // "pionnier" | "annuel" (recommandé) | "mensuel"
+  // ── Tarif solidaire (19/08/2026) : 4,99 €/mois pendant un an, sur l'honneur.
+  const [solidaireOuvert, setSolidaireOuvert] = useState(false);
+  const [solidaireEtat, setSolidaireEtat] = useState(null);  // null | "chargement" | {type:"code",...} | {type:"bientot"} | {type:"erreur"}
   // Offre Pionnier : compteur RÉEL lu au backend (places restantes sur 100).
   // null = pas encore chargé -> la page n'affiche pas l'offre tant qu'on ne sait pas.
   const [offresBilling, setOffresBilling] = useState(null);
@@ -2282,6 +2285,25 @@ function AppInner() {
   useEffect(() => {
     if (token && (interNav === "abonnement" || nav === "abonnement")) chargerOffresBilling();
   }, [token, interNav, nav]);
+
+  // Le tarif solidaire : la personne DIT que c'est dur, on la croit. Web →
+  // paiement Stripe à 4,99 € (coupon serveur). App iPhone/Android → un code
+  // de réduction du store, pioché dans la réserve, avec son lien direct.
+  async function demanderSolidaire() {
+    setSolidaireEtat("chargement");
+    try {
+      const plateforme = PLATEFORME_NATIVE === "ios" ? "apple" : PLATEFORME_NATIVE === "android" ? "google" : "web";
+      if (profile?.statut) safeStorage.setItem("billing_return_mode", profile.statut);
+      const r = await apiFetch("/billing/solidaire", {
+        method: "POST",
+        body: JSON.stringify({ plateforme, mode: profile?.statut || null, origin: window.location.origin }),
+      });
+      if (r.type === "stripe" && r.url) { window.location = r.url; return; }
+      setSolidaireEtat(r);
+    } catch {
+      setSolidaireEtat({ type: "erreur" });
+    }
+  }
 
   async function openBillingPortal() {
     setBillingBusy(true);
@@ -3036,6 +3058,59 @@ function AppInner() {
             </div>
             {promoStatus && (
               <div style={{ fontSize: 12, marginTop: 8, color: promoStatus.ok === true ? "#5DCAA5" : promoStatus.ok === false ? "#F0997F" : "#8BA5C0" }}>{promoStatus.msg}</div>
+            )}
+          </div>
+
+          {/* ─── LE TARIF SOLIDAIRE (19/08/2026) ───
+              Retours de terrain : « 9,99 c'est trop cher pour beaucoup
+              d'intermittents précaires ». Réponse : 4,99 €/mois pendant un an,
+              SUR L'HONNEUR, sans justificatif. La ligne est discrète exprès :
+              il faut faire le geste de la déplier, et le texte dit à ceux qui
+              peuvent payer plein tarif pourquoi c'est important qu'ils le
+              fassent. Au bout d'un an, retour au tarif normal tout seul
+              (expiration du coupon Stripe ou du code store). */}
+          <div style={{ ...S.card, maxWidth: 460, margin: "12px auto 0" }}>
+            {!solidaireOuvert ? (
+              <button type="button" onClick={() => setSolidaireOuvert(true)}
+                style={{ background: "transparent", border: "none", color: "#8FB4D8", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", width: "100%", minHeight: 34 }}>
+                🐾 Les fins de mois sont dures en ce moment ? Dis-le-moi.
+              </button>
+            ) : (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#E6EDF5", marginBottom: 8 }}>Le tarif solidaire</div>
+                <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 10 }}>
+                  Si payer 9,99 € par mois est un vrai problème en ce moment, TOTOR Veille passe à <strong style={{ color: "#9FE1CB" }}>4,99 € par mois pendant un an</strong>. Sur l'honneur, sans justificatif : tu me le dis, je te crois. Et si tu peux payer plein tarif, c'est toi qui finances la veille d'un collègue qui ne peut pas. 🐾
+                </div>
+                {solidaireEtat === null && (
+                  <button type="button" style={{ ...S.btnSecondary, width: "100%" }} onClick={demanderSolidaire}>
+                    C'est dur en ce moment · je passe à 4,99 €
+                  </button>
+                )}
+                {solidaireEtat === "chargement" && (
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Un instant…</div>
+                )}
+                {solidaireEtat && solidaireEtat.type === "code" && (
+                  <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 12, color: "#9FE1CB", marginBottom: 6 }}>Ton code solidaire, rien qu'à toi :</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "white", letterSpacing: 1.5, fontFamily: "Consolas, monospace", userSelect: "all", marginBottom: 10 }}>{solidaireEtat.code}</div>
+                    <a href={solidaireEtat.lien} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#5DCAA5", color: "#04342C", borderRadius: 9, padding: "10px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none", minHeight: 40 }}>
+                      L'activer dans {solidaireEtat.plateforme === "apple" ? "l'App Store" : "Google Play"} →
+                    </a>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
+                      Il vaut 4,99 €/mois pendant 12 mois, puis retour au tarif normal tout seul. Si c'est encore dur dans un an, tu reviendras me le dire.
+                    </div>
+                  </div>
+                )}
+                {solidaireEtat && solidaireEtat.type === "bientot" && (
+                  <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                    Les codes solidaires arrivent dans l'application d'ici quelques jours. En attendant, ça marche déjà sur <strong style={{ color: "#9FE1CB" }}>montotor.fr</strong> depuis un navigateur : même compte, même prix.
+                  </div>
+                )}
+                {solidaireEtat && solidaireEtat.type === "erreur" && (
+                  <div style={{ fontSize: 12.5, color: "#F0997F" }}>Ça n'a pas marché, réessaie dans un instant.</div>
+                )}
+              </>
             )}
           </div>
 

@@ -9,6 +9,14 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "19 août 2026",
+    titre: "Le tarif solidaire : dis-le-moi, je te crois",
+    items: [
+      { qui: "tous", texte: "Des intermittents m'ont dit que 9,99 € par mois, c'était trop pour eux en ce moment. Alors voilà : si les fins de mois sont dures, tu me le dis sur la page TOTOR Veille, et c'est 4,99 € par mois pendant un an. Sur l'honneur, sans justificatif. Tu me le dis, je te crois." },
+      { qui: "tous", texte: "Et si tu peux payer plein tarif, ton abonnement finance la veille d'un collègue qui ne peut pas. Au bout d'un an, retour au tarif normal tout seul ; si c'est encore dur, tu reviendras me le dire. C'est ça, une meute. 🐾" },
+    ],
+  },
+  {
     date: "18 août 2026 · sur téléphone",
     titre: "Tes heures en très gros, et des couleurs qui rassurent",
     items: [
