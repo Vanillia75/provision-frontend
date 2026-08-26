@@ -157,6 +157,27 @@ def trouver_py():
     return None
 
 
+def rafraichir_copie_ci(chemin_py):
+    """(25/08/2026) La CI GitHub du front n'a PAS accès au dépôt backend : le
+    workflow verifier-regles.yml échouait à CHAQUE poussée depuis des semaines,
+    en silence, et le gardien anti-divergence était donc mort (c'est comme ça
+    que le .js a pu rester périmé un mois). Remède : quand on génère depuis le
+    backend, on dépose AUSSI une copie générée du .py à la racine du front,
+    committée avec le .js. La CI régénère depuis cette copie et compare.
+    La copie est GÉNÉRÉE : ne jamais l'éditer à la main."""
+    if os.path.basename(os.path.dirname(chemin_py)) != "provision-backend":
+        return  # on a déjà généré depuis la copie : rien à rafraîchir
+    with open(chemin_py, "r", encoding="utf-8") as f:
+        contenu = f.read()
+    entete = ("# ⚠️ COPIE GÉNÉRÉE pour la CI GitHub (generer_regles_js.py) — NE PAS ÉDITER.\n"
+              "# Source unique : provision-backend/regles_intermittent.py. Cette copie est\n"
+              "# rafraîchie à chaque génération et committée avec le .js.\n")
+    cible = os.path.join(ICI, "regles_intermittent.py")
+    with open(cible, "w", encoding="utf-8", newline="\n") as f:
+        f.write(entete + contenu)
+    print(f"  → copie CI rafraîchie : {cible}")
+
+
 def cibles_js():
     # UNE seule cible : src/, le seul endroit d'où l'application importe les règles.
     # (Avant le 06/08/2026, une copie était aussi écrite à la racine : elle ne
@@ -170,6 +191,7 @@ def main():
         print("❌ regles_intermittent.py introuvable.")
         return 1
     version_ref, regles = charger_py(chemin_py)
+    rafraichir_copie_ci(chemin_py)
     contenu = generer_js(version_ref, regles)
 
     ecrits = []
