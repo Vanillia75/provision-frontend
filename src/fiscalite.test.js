@@ -98,7 +98,8 @@ describe("Les taux et seuils officiels 2026", () => {
   it("les droits formation CPF restent cohérents : crédit annuel sous le plafond", () => {
     expect(FISCALITE.formation.cpfCreditAnnuel).toBe(500);
     expect(FISCALITE.formation.cpfPlafond).toBe(5000);
-    expect(FISCALITE.formation.cpfResteACharge).toBe(103.2);
+    // 150 € depuis le 02/04/2026 (décret n° 2026-234 du 30/03/2026, service-public F10705).
+    expect(FISCALITE.formation.cpfResteACharge).toBe(150.0);
     expect(FISCALITE.formation.cpfCreditAnnuel).toBeLessThan(FISCALITE.formation.cpfPlafond);
   });
 

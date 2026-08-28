@@ -18279,7 +18279,13 @@ function AppInner() {
                       Cette année, tu as versé environ <strong style={{ color: "#5DCAA5" }}>{formatEUR(cfpVersee)}</strong> de CFP.
                       <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: "#8BA5C0", lineHeight: 1.6 }}>
                         Mon calcul : ton CA de {formatEUR(caAnnuel)} × {(tauxCfp * 100).toFixed(1).replace(".", ",")} % (le taux CFP pour ton activité) = {formatEUR(cfpVersee)}.
-                        <br />Ce taux est de 0,1 % pour la vente, 0,2 % pour les services et professions libérales, 0,3 % pour les artisans.
+                        {/* (28/08/2026, vérif quotidienne) Les taux officiels ne connaissent que
+                            trois cas : 0,1 % activité commerciale, 0,3 % artisanale, 0,2 %
+                            libérale (service-public F23459). « Prestation de services » n'est
+                            pas une catégorie CFP : elle peut être commerciale OU artisanale,
+                            l'app ne pose pas encore la question, donc le calcul prend 0,3 %
+                            (le plus haut, jamais de mauvaise surprise) et le texte le DIT. */}
+                        <br />Les taux officiels : 0,1 % pour une activité commerciale, 0,3 % pour une activité artisanale, 0,2 % pour une profession libérale.{act === "services" ? " Comme je ne sais pas encore si ta prestation de services est commerciale ou artisanale, je calcule au taux le plus haut : la vraie somme peut être un peu plus basse, jamais plus haute." : ""}
                       </div>
                     </div>
                   )}
