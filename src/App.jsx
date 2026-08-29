@@ -9542,7 +9542,20 @@ function AppInner() {
                             </div>
                           ) : em.remunerations_brutes > 0 ? (
                             <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
-                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation.
+                              {/* ─── LE BOUTON PLUTÔT QUE LA PHRASE (29/08/2026, cas Lucile ×2) :
+                                  « range un bulletin dans Mes documents » obligeait à trouver
+                                  l'écran soi-même, deux personnes ont demandé le chemin. Un
+                                  appui ouvre le classeur avec « Bulletin de paie » déjà
+                                  choisi : il ne reste qu'à prendre la photo. ─── */}
+                              <button type="button"
+                                onClick={() => { setClasseurForm(prev => ({ ...prev, type_document: "bulletin" })); setDocTab("classeur"); setInterNav("attestation"); window.scrollTo(0, 0); }}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, width: "100%", marginTop: 9, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 14px", fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", minHeight: 42 }}>
+                                <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 15 }} /> Déposer un bulletin de paie
+                              </button>
+                              <div style={{ marginTop: 6 }}>
+                                Une photo suffit : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                              </div>
                             </div>
                           ) : null}
                         </>

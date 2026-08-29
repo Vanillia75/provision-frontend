@@ -9,6 +9,13 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "29 août 2026",
+    titre: "Un bouton qui t'emmène au bon endroit",
+    items: [
+      { qui: "intermittent", texte: "Dans la carte « Ton mois », quand je ne connais pas encore ton net, il y a maintenant un bouton « Déposer un bulletin de paie » : un appui, et tu arrives directement dans ton classeur, avec le bon type déjà choisi. Une photo de ton bulletin, et je te donne ton mois tout compris en net. Merci à celle qui a cherché le chemin deux fois : c'est grâce à toi. 🐾" },
+    ],
+  },
+  {
     date: "19 août 2026",
     titre: "Le tarif solidaire : dis-le-moi, je te crois",
     items: [
