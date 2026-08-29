@@ -13,6 +13,7 @@ const VAGUES = [
     titre: "Un bouton qui t'emmène au bon endroit",
     items: [
       { qui: "intermittent", texte: "Dans la carte « Ton mois », quand je ne connais pas encore ton net, il y a maintenant un bouton « Déposer un bulletin de paie » : un appui, et tu arrives directement dans ton classeur, avec le bon type déjà choisi. Une photo de ton bulletin, et je te donne ton mois tout compris en net. Merci à celle qui a cherché le chemin deux fois : c'est grâce à toi. 🐾" },
+      { qui: "intermittent", texte: "Et ton allocation journalière se corrige enfin à la main : le bouton « Modifier » de la carte Date anniversaire change maintenant la date ET le montant. Ton taux a bougé au renouvellement ? Deux secondes, et toutes tes estimations repartent sur le bon chiffre. Merci à celle qui a essayé avant que ce soit possible. 🐾" },
     ],
   },
   {

@@ -600,6 +600,7 @@ function AppInner() {
   const [simLoading, setSimLoading] = useState(false);
   // Brique 5.5 : date anniversaire (date de renouvellement des droits)
   const [anniversaireInput, setAnniversaireInput] = useState("");
+  const [anniversaireMontantInput, setAnniversaireMontantInput] = useState(""); // AJ €/jour, editable depuis « Modifier » (29/08/2026, cas Constance)
   const [anniversaireSaving, setAnniversaireSaving] = useState(false);
   const [anniversaireEdit, setAnniversaireEdit] = useState(false);
   // Allocation journalière recalculée (carte cockpit, encadrée par la Loi X).
@@ -5174,9 +5175,12 @@ function AppInner() {
   async function handleSaveAnniversaire() {
     setAnniversaireSaving(true);
     try {
+      const mj = parseFloat(String(anniversaireMontantInput).replace(",", "."));
       await apiFetch("/profile/date-anniversaire", {
         method: "POST",
-        body: JSON.stringify({ date_anniversaire: anniversaireInput || null }),
+        // Montant vide = on garde l'existant (le serveur ne touche a rien sur null).
+        body: JSON.stringify({ date_anniversaire: anniversaireInput || null,
+                               montant_journalier: !isNaN(mj) && String(anniversaireMontantInput).trim() !== "" ? mj : null }),
       });
       setAnniversaireEdit(false);
       await loadIntermittentCockpit();
@@ -10703,7 +10707,7 @@ function AppInner() {
                         )}
                       </div>
                     </div>
-                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireEdit(true); }}
+                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireMontantInput(c.montant_journalier != null ? String(c.montant_journalier) : ""); setAnniversaireEdit(true); }}
                       style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
                       Modifier
                     </button>
@@ -10747,8 +10751,19 @@ function AppInner() {
                 </>)}
                 {anniversaireEdit && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
-                      style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    {/* (29/08/2026, cas Constance) : le montant est enfin modifiable ICI.
+                        Avant, seul le re-import de l'ARE pouvait le changer : quelqu'un
+                        dont le taux venait de baisser au renouvellement restait bloque
+                        sur l'ancien chiffre, avec des estimations trop belles (Loi X). */}
+                    <label style={{ flex: "1 1 160px", fontSize: 10.5, color: "#C9A861", fontWeight: 600 }}>Date anniversaire
+                      <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
+                        style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <label style={{ flex: "1 1 150px", fontSize: 10.5, color: "#C9A861", fontWeight: 600 }}>Allocation journalière (€ brut/jour)
+                      <MontantInput value={anniversaireMontantInput} onChange={v => setAnniversaireMontantInput(v)}
+                        decimales placeholder="ex : 43,26"
+                        style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
                     <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
                       style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1 }}>
                       {anniversaireSaving ? "…" : "Enregistrer"}
