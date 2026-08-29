@@ -9,6 +9,22 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "29 août 2026",
+    titre: "Un bouton qui t'emmène au bon endroit",
+    items: [
+      { qui: "intermittent", texte: "Dans la carte « Ton mois », quand je ne connais pas encore ton net, il y a maintenant un bouton « Déposer un bulletin de paie » : un appui, et tu arrives directement dans ton classeur, avec le bon type déjà choisi. Une photo de ton bulletin, et je te donne ton mois tout compris en net. Merci à celle qui a cherché le chemin deux fois : c'est grâce à toi. 🐾" },
+      { qui: "intermittent", texte: "Et ton allocation journalière se corrige enfin à la main : le bouton « Modifier » de la carte Date anniversaire change maintenant la date ET le montant. Ton taux a bougé au renouvellement ? Deux secondes, et toutes tes estimations repartent sur le bon chiffre. Merci à celle qui a essayé avant que ce soit possible. 🐾" },
+    ],
+  },
+  {
+    date: "19 août 2026",
+    titre: "Le tarif solidaire : dis-le-moi, je te crois",
+    items: [
+      { qui: "tous", texte: "Des intermittents m'ont dit que 9,99 € par mois, c'était trop pour eux en ce moment. Alors voilà : si les fins de mois sont dures, tu me le dis sur la page TOTOR Veille, et c'est 4,99 € par mois pendant un an. Sur l'honneur, sans justificatif. Tu me le dis, je te crois." },
+      { qui: "tous", texte: "Et si tu peux payer plein tarif, ton abonnement finance la veille d'un collègue qui ne peut pas. Au bout d'un an, retour au tarif normal tout seul ; si c'est encore dur, tu reviendras me le dire. C'est ça, une meute. 🐾" },
+    ],
+  },
+  {
     date: "18 août 2026 · sur téléphone",
     titre: "Tes heures en très gros, et des couleurs qui rassurent",
     items: [
@@ -17,7 +33,9 @@ const VAGUES = [
       { qui: "intermittent", texte: "« Mes activités » fait peau neuve : ton compteur en accroche (« 502 h au compteur · 19 contrats »), et chaque contrat dans sa propre case avec son icône, son employeur, son brut et ses heures gagnées. En bas de la liste, deux boutons t'attendent : ajouter un contrat, ou scanner une AEM." },
       { qui: "intermittent", texte: "La carte « Ton mois » apprend à se faire petite : l'essentiel reste affiché (le total, les deux colonnes, la date du versement prévu), et le reste se déplie d'un geste avec « Simuler des cachets · tout le détail ». Rien ne disparaît, tout respire." },
       { qui: "intermittent", texte: "Et « Tes Congés Spectacles » est remontée juste sous « Ton mois » : tout ton argent au même endroit, dans l'ordre où tu le touches." },
+      { qui: "intermittent", texte: "Sur ordinateur aussi, « Ton mois » remonte : première carte de la colonne de gauche, au-dessus de la grande carte de Totor. Ton argent ne se cherche plus, il t'attend." },
       { qui: "ae", texte: "Le gros bouton vert de ta barre change de métier : c'est maintenant FACTURER. Un appui, et ta nouvelle facture s'ouvre, parce que c'est ça, ton geste du quotidien. Le scan de tes frais reste à portée de glisse, dans l'onglet « Frais »." },
+      { qui: "intermittent", texte: "Et pour les nouveaux venus : quand ton compte est encore vide, je te tends directement la patte avec deux boutons, « Scanner une AEM » ou « Ajouter un cachet ». Deux minutes, et ton cockpit s'allume." },
     ],
   },
   {

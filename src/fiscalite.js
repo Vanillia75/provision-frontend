@@ -114,7 +114,11 @@ export const FISCALITE = {
     // Droits CPF (Compte Personnel de Formation) — plateforme moncompteformation.gouv.fr
     cpfCreditAnnuel: 500, // € crédités par an (année pleine, CA > 0)
     cpfPlafond: 5000, // € plafond total
-    cpfResteACharge: 103.20, // € reste à charge par formation (réforme 2026)
+    // (28/08/2026, vérif quotidienne) 103,20 € était le montant 2024-2025 revalorisé ;
+    // le décret n° 2026-234 du 30 mars 2026 porte la participation à 150 € par
+    // formation depuis le 2 avril 2026 (service-public F10705). Pas encore affiché
+    // dans l'app, mais un chiffre faux ne doit pas attendre de le devenir.
+    cpfResteACharge: 150.0, // € reste à charge par formation (décret 2026-234, depuis le 02/04/2026)
     // Droits FAF (Fonds d'Assurance Formation) selon l'activité
     fafParActivite: {
       vente: "AGEFICE",

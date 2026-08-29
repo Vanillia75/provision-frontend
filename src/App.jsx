@@ -608,6 +608,7 @@ function AppInner() {
   const [simLoading, setSimLoading] = useState(false);
   // Brique 5.5 : date anniversaire (date de renouvellement des droits)
   const [anniversaireInput, setAnniversaireInput] = useState("");
+  const [anniversaireMontantInput, setAnniversaireMontantInput] = useState(""); // AJ €/jour, editable depuis « Modifier » (29/08/2026, cas Constance)
   const [anniversaireSaving, setAnniversaireSaving] = useState(false);
   const [anniversaireEdit, setAnniversaireEdit] = useState(false);
   // Allocation journalière recalculée (carte cockpit, encadrée par la Loi X).
@@ -2306,6 +2307,9 @@ function AppInner() {
 
   const [billingBusy, setBillingBusy] = useState(false);
   const [planChoisi, setPlanChoisi] = useState("annuel");   // "pionnier" | "annuel" (recommandé) | "mensuel"
+  // ── Tarif solidaire (19/08/2026) : 4,99 €/mois pendant un an, sur l'honneur.
+  const [solidaireOuvert, setSolidaireOuvert] = useState(false);
+  const [solidaireEtat, setSolidaireEtat] = useState(null);  // null | "chargement" | {type:"code",...} | {type:"bientot"} | {type:"erreur"}
   // Offre Pionnier : compteur RÉEL lu au backend (places restantes sur 100).
   // null = pas encore chargé -> la page n'affiche pas l'offre tant qu'on ne sait pas.
   const [offresBilling, setOffresBilling] = useState(null);
@@ -2352,6 +2356,25 @@ function AppInner() {
   useEffect(() => {
     if (token && (interNav === "abonnement" || nav === "abonnement")) chargerOffresBilling();
   }, [token, interNav, nav]);
+
+  // Le tarif solidaire : la personne DIT que c'est dur, on la croit. Web →
+  // paiement Stripe à 4,99 € (coupon serveur). App iPhone/Android → un code
+  // de réduction du store, pioché dans la réserve, avec son lien direct.
+  async function demanderSolidaire() {
+    setSolidaireEtat("chargement");
+    try {
+      const plateforme = PLATEFORME_NATIVE === "ios" ? "apple" : PLATEFORME_NATIVE === "android" ? "google" : "web";
+      if (profile?.statut) safeStorage.setItem("billing_return_mode", profile.statut);
+      const r = await apiFetch("/billing/solidaire", {
+        method: "POST",
+        body: JSON.stringify({ plateforme, mode: profile?.statut || null, origin: window.location.origin }),
+      });
+      if (r.type === "stripe" && r.url) { window.location = r.url; return; }
+      setSolidaireEtat(r);
+    } catch {
+      setSolidaireEtat({ type: "erreur" });
+    }
+  }
 
   async function openBillingPortal() {
     setBillingBusy(true);
@@ -3315,6 +3338,59 @@ function AppInner() {
             </div>
             {promoStatus && (
               <div style={{ fontSize: 12, marginTop: 8, color: promoStatus.ok === true ? "#5DCAA5" : promoStatus.ok === false ? "#F0997F" : "#8BA5C0" }}>{promoStatus.msg}</div>
+            )}
+          </div>
+
+          {/* ─── LE TARIF SOLIDAIRE (19/08/2026) ───
+              Retours de terrain : « 9,99 c'est trop cher pour beaucoup
+              d'intermittents précaires ». Réponse : 4,99 €/mois pendant un an,
+              SUR L'HONNEUR, sans justificatif. La ligne est discrète exprès :
+              il faut faire le geste de la déplier, et le texte dit à ceux qui
+              peuvent payer plein tarif pourquoi c'est important qu'ils le
+              fassent. Au bout d'un an, retour au tarif normal tout seul
+              (expiration du coupon Stripe ou du code store). */}
+          <div style={{ ...S.card, maxWidth: 460, margin: "12px auto 0" }}>
+            {!solidaireOuvert ? (
+              <button type="button" onClick={() => setSolidaireOuvert(true)}
+                style={{ background: "transparent", border: "none", color: "#8FB4D8", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", width: "100%", minHeight: 34 }}>
+                🐾 Les fins de mois sont dures en ce moment ? Dis-le-moi.
+              </button>
+            ) : (
+              <>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#E6EDF5", marginBottom: 8 }}>Le tarif solidaire</div>
+                <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 10 }}>
+                  Si payer 9,99 € par mois est un vrai problème en ce moment, TOTOR Veille passe à <strong style={{ color: "#9FE1CB" }}>4,99 € par mois pendant un an</strong>. Sur l'honneur, sans justificatif : tu me le dis, je te crois. Et si tu peux payer plein tarif, c'est toi qui finances la veille d'un collègue qui ne peut pas. 🐾
+                </div>
+                {solidaireEtat === null && (
+                  <button type="button" style={{ ...S.btnSecondary, width: "100%" }} onClick={demanderSolidaire}>
+                    C'est dur en ce moment · je passe à 4,99 €
+                  </button>
+                )}
+                {solidaireEtat === "chargement" && (
+                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Un instant…</div>
+                )}
+                {solidaireEtat && solidaireEtat.type === "code" && (
+                  <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 10, padding: "12px 14px" }}>
+                    <div style={{ fontSize: 12, color: "#9FE1CB", marginBottom: 6 }}>Ton code solidaire, rien qu'à toi :</div>
+                    <div style={{ fontSize: 20, fontWeight: 800, color: "white", letterSpacing: 1.5, fontFamily: "Consolas, monospace", userSelect: "all", marginBottom: 10 }}>{solidaireEtat.code}</div>
+                    <a href={solidaireEtat.lien} target="_blank" rel="noopener noreferrer"
+                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#5DCAA5", color: "#04342C", borderRadius: 9, padding: "10px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none", minHeight: 40 }}>
+                      L'activer dans {solidaireEtat.plateforme === "apple" ? "l'App Store" : "Google Play"} →
+                    </a>
+                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
+                      Il vaut 4,99 €/mois pendant 12 mois, puis retour au tarif normal tout seul. Si c'est encore dur dans un an, tu reviendras me le dire.
+                    </div>
+                  </div>
+                )}
+                {solidaireEtat && solidaireEtat.type === "bientot" && (
+                  <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
+                    Les codes solidaires arrivent dans l'application d'ici quelques jours. En attendant, ça marche déjà sur <strong style={{ color: "#9FE1CB" }}>montotor.fr</strong> depuis un navigateur : même compte, même prix.
+                  </div>
+                )}
+                {solidaireEtat && solidaireEtat.type === "erreur" && (
+                  <div style={{ fontSize: 12.5, color: "#F0997F" }}>Ça n'a pas marché, réessaie dans un instant.</div>
+                )}
+              </>
             )}
           </div>
 
@@ -5379,9 +5455,12 @@ function AppInner() {
   async function handleSaveAnniversaire() {
     setAnniversaireSaving(true);
     try {
+      const mj = parseFloat(String(anniversaireMontantInput).replace(",", "."));
       await apiFetch("/profile/date-anniversaire", {
         method: "POST",
-        body: JSON.stringify({ date_anniversaire: anniversaireInput || null }),
+        // Montant vide = on garde l'existant (le serveur ne touche a rien sur null).
+        body: JSON.stringify({ date_anniversaire: anniversaireInput || null,
+                               montant_journalier: !isNaN(mj) && String(anniversaireMontantInput).trim() !== "" ? mj : null }),
       });
       setAnniversaireEdit(false);
       await loadIntermittentCockpit();
@@ -9760,7 +9839,20 @@ function AppInner() {
                             </div>
                           ) : em.remunerations_brutes > 0 ? (
                             <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
-                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation. <strong style={{ color: "#C8E0F5" }}>Range un bulletin de paie dans « Mes documents »</strong> : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                              Côté employeurs, c'est le total en brut de ce que TU m'as donné. Je ne connais pas encore le net de tes fiches de paie, donc je ne l'invente pas et je n'additionne pas ce brut avec l'allocation.
+                              {/* ─── LE BOUTON PLUTÔT QUE LA PHRASE (29/08/2026, cas Lucile ×2) :
+                                  « range un bulletin dans Mes documents » obligeait à trouver
+                                  l'écran soi-même, deux personnes ont demandé le chemin. Un
+                                  appui ouvre le classeur avec « Bulletin de paie » déjà
+                                  choisi : il ne reste qu'à prendre la photo. ─── */}
+                              <button type="button"
+                                onClick={() => { setClasseurForm(prev => ({ ...prev, type_document: "bulletin" })); setDocTab("classeur"); setInterNav("attestation"); window.scrollTo(0, 0); }}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 7, width: "100%", marginTop: 9, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 14px", fontSize: 12.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", minHeight: 42 }}>
+                                <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 15 }} /> Déposer un bulletin de paie
+                              </button>
+                              <div style={{ marginTop: 6 }}>
+                                Une photo suffit : j'y lirai ton rapport net/brut, et je pourrai enfin te donner ton total du mois.
+                              </div>
                             </div>
                           ) : null}
                         </>
@@ -10723,6 +10815,26 @@ function AppInner() {
                       <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
                     </div>
                     <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
+                    {/* ─── LE PREMIER GESTE, GUIDÉ (18/08/2026) : dans la revue des
+                        inscrits, 2 nouveaux venus d'iPhone sont repartis sans rien
+                        saisir. La toute première action vit maintenant DANS le héros :
+                        scanner une AEM (le geste magique) ou saisir un cachet à la
+                        main. Dès la première activité, ce héros disparaît et le vrai
+                        cockpit prend le relais : ces boutons ne vivent que le temps
+                        d'un compte vide. */}
+                    <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
+                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
+                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 17 }} /> Scanner une AEM
+                      </button>
+                      <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); }}
+                        style={{ flex: "1 1 150px", background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Ajouter un cachet
+                      </button>
+                    </div>
+                    <div style={{ fontSize: 11.5, color: etat.st, marginTop: 8, lineHeight: 1.5 }}>
+                      Deux minutes, et ton cockpit s'allume : tes heures vers les 507, ton allocation, ton argent du mois.
+                    </div>
                   </div>
                 </div>
                 )}
@@ -10888,7 +11000,7 @@ function AppInner() {
                         )}
                       </div>
                     </div>
-                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireEdit(true); }}
+                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireMontantInput(c.montant_journalier != null ? String(c.montant_journalier) : ""); setAnniversaireEdit(true); }}
                       style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
                       Modifier
                     </button>
@@ -10932,8 +11044,19 @@ function AppInner() {
                 </>)}
                 {anniversaireEdit && (
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
-                      style={{ flex: "1 1 160px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    {/* (29/08/2026, cas Constance) : le montant est enfin modifiable ICI.
+                        Avant, seul le re-import de l'ARE pouvait le changer : quelqu'un
+                        dont le taux venait de baisser au renouvellement restait bloque
+                        sur l'ancien chiffre, avec des estimations trop belles (Loi X). */}
+                    <label style={{ flex: "1 1 160px", fontSize: 10.5, color: "#C9A861", fontWeight: 600 }}>Date anniversaire
+                      <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
+                        style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <label style={{ flex: "1 1 150px", fontSize: 10.5, color: "#C9A861", fontWeight: 600 }}>Allocation journalière (€ brut/jour)
+                      <MontantInput value={anniversaireMontantInput} onChange={v => setAnniversaireMontantInput(v)}
+                        decimales placeholder="ex : 43,26"
+                        style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
                     <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
                       style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1 }}>
                       {anniversaireSaving ? "…" : "Enregistrer"}
@@ -11241,6 +11364,11 @@ function AppInner() {
                      Desktop : display block, les cartes coulent dans le multicolonnes
                      (équilibrage automatique) ; mobile : pile flex classique. */}
                 <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
+                {/* ─── L'ARGENT D'ABORD, AUSSI SUR ORDINATEUR (18/08/2026, Camille
+                    cherchait la carte : « ou ca ») : « Ton mois » vivait SOUS la
+                    grande carte de Totor, invisible sans défiler. Elle passe en
+                    tête de la colonne de gauche, Totor juste dessous. */}
+                {!isMobile && blocMois}
                 {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
                     les oreilles dépassent du cadre (même signature que la carte AE ;
                     l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
@@ -11347,7 +11475,8 @@ function AppInner() {
                   onError={(e) => { e.currentTarget.style.display = "none"; }}
                   style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block", WebkitMaskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)" }} />
                 </div>
-                {!isMobile && blocMois}
+                {/* (« Ton mois » est remonté EN TÊTE de cette colonne le 18/08/2026,
+                    au-dessus de la grande carte de Totor : ne pas le re-poser ici.) */}
                 {!isMobile && blocVerdict}
                 {!isMobile && blocFrise}
                 {!isMobile && blocConges}
@@ -18474,7 +18603,13 @@ function AppInner() {
                       Cette année, tu as versé environ <strong style={{ color: "#5DCAA5" }}>{formatEUR(cfpVersee)}</strong> de CFP.
                       <div style={{ marginTop: 8, paddingTop: 8, borderTop: "1px solid rgba(255,255,255,0.08)", fontSize: 12, color: "#8BA5C0", lineHeight: 1.6 }}>
                         Mon calcul : ton CA de {formatEUR(caAnnuel)} × {(tauxCfp * 100).toFixed(1).replace(".", ",")} % (le taux CFP pour ton activité) = {formatEUR(cfpVersee)}.
-                        <br />Ce taux est de 0,1 % pour la vente, 0,2 % pour les services et professions libérales, 0,3 % pour les artisans.
+                        {/* (28/08/2026, vérif quotidienne) Les taux officiels ne connaissent que
+                            trois cas : 0,1 % activité commerciale, 0,3 % artisanale, 0,2 %
+                            libérale (service-public F23459). « Prestation de services » n'est
+                            pas une catégorie CFP : elle peut être commerciale OU artisanale,
+                            l'app ne pose pas encore la question, donc le calcul prend 0,3 %
+                            (le plus haut, jamais de mauvaise surprise) et le texte le DIT. */}
+                        <br />Les taux officiels : 0,1 % pour une activité commerciale, 0,3 % pour une activité artisanale, 0,2 % pour une profession libérale.{act === "services" ? " Comme je ne sais pas encore si ta prestation de services est commerciale ou artisanale, je calcule au taux le plus haut : la vraie somme peut être un peu plus basse, jamais plus haute." : ""}
                       </div>
                     </div>
                   )}

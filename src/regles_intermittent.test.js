@@ -31,7 +31,7 @@ const arrondi2 = (n) => Math.round(n * 100) / 100;
 //  1. INTÉGRITÉ DU RÉFÉRENTIEL
 // ═════════════════════════════════════════════════════════════════════════════
 describe("Intégrité du référentiel", () => {
-  it("le référentiel contient exactement les 22 règles attendues", () => {
+  it("le référentiel contient exactement les 23 règles attendues", () => {
     // Si ce test casse, c'est qu'une règle a disparu ou est apparue.
     // Une règle qui DISPARAÎT est le scénario le plus dangereux : le code
     // appelant recevra null au lieu d'un chiffre, sans le moindre bruit.
@@ -58,6 +58,7 @@ describe("Intégrité du référentiel", () => {
       "allocationPlancherNetCsg",
       "pmssMensuel",
       "franchiseCongesParJours",
+      "allocationPlafondAJOfficiel",
     ];
     expect(Object.keys(REGLES).sort()).toEqual(attendues.sort());
   });
@@ -76,9 +77,9 @@ describe("Intégrité du référentiel", () => {
   });
 
   it("la version du référentiel est datée et sa date de revue est une vraie date", () => {
-    expect(VERSION_REFERENTIEL.version).toBe("2026.07");
+    expect(VERSION_REFERENTIEL.version).toBe("2026.08");
     expect(VERSION_REFERENTIEL.version).toMatch(/^\d{4}\.\d{2}$/);
-    expect(VERSION_REFERENTIEL.revue).toBe("2026-06-26");
+    expect(VERSION_REFERENTIEL.revue).toBe("2026-08-25");
     expect(Number.isNaN(new Date(VERSION_REFERENTIEL.revue).getTime())).toBe(false);
   });
 
@@ -91,14 +92,14 @@ describe("Intégrité du référentiel", () => {
     }
   });
 
-  it("la seule règle marquée non vérifiée et réservée au front est la franchise congés", () => {
+  it("les seules règles non vérifiées sont la franchise congés et le plafond prudent du moteur", () => {
     // Tout ce qui sert à annoncer des droits doit être vérifié. Si une nouvelle
     // règle arrive à verifie:false, on veut le savoir avant qu'elle serve.
     const nonVerifiees = Object.entries(REGLES)
       .filter(([, r]) => r.verifie !== true)
       .map(([cle]) => cle)
       .sort();
-    expect(nonVerifiees).toEqual(["cachetGroupeHeures_HISTORIQUE", "franchiseCongesParJours"]);
+    expect(nonVerifiees).toEqual(["allocationPlafondAJ", "cachetGroupeHeures_HISTORIQUE", "franchiseCongesParJours"]);
     expect(REGLES.franchiseCongesParJours.frontOnly).toBe(true);
   });
 });
@@ -413,12 +414,19 @@ describe("Allocation journalière : les repères qui bornent le montant affiché
     expect(valeurDe("ajMinimale")).toBe(31.96);
   });
 
-  it("le plafond de l'allocation journalière vaut 155,77 euros", () => {
-    // VALEUR CRITIQUE, corrigée le 27/07/2026 (on avait 174,80 € périmé).
-    // Si ce test repasse à 174,80, un artiste très bien payé verra une
-    // allocation SUPÉRIEURE à la réalité : c'est une promesse fausse.
+  it("le plafond PRUDENT du moteur vaut 155,77 euros (jamais publié comme officiel)", () => {
+    // VALEUR CRITIQUE du moteur : la plus basse des valeurs connues, pour ne
+    // jamais afficher plus que ce que le simulateur officiel calcule (Loi X).
     expect(valeurDe("allocationPlafondAJ")).toBe(155.77);
     expect(valeurDe("allocationPlafondAJ")).not.toBe(174.8);
+  });
+
+  it("le plafond OFFICIEL vaut 181,18 euros (art. 16 des annexes, résolu le 25/08/2026)", () => {
+    // 34,4 % de 1/365e du plafond annuel des contributions : 0,344 × 526,68.
+    // C'est LE chiffre des guides, de la FAQ et du chat. Il évolue chaque
+    // 1er janvier : le rituel de janvier doit le rejouer.
+    expect(valeurDe("allocationPlafondAJOfficiel")).toBe(181.18);
+    expect(valeurDe("allocationPlafondAJOfficiel")).toBeGreaterThan(valeurDe("allocationPlafondAJ"));
   });
 
   it("le plafond est très au dessus du minimum : la fourchette est cohérente", () => {
@@ -645,7 +653,7 @@ describe("tracer()", () => {
     expect(t).toContain("Seuil d'ouverture de droits");
     expect(t).toContain("507");
     expect(t).toContain("Source :");
-    expect(t).toContain("version 2026.07");
+    expect(t).toContain("version 2026.08");
   });
 
   it("sérialise les règles composites au lieu d'afficher [object Object]", () => {
