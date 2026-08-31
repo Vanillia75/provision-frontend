@@ -14910,7 +14910,8 @@ function AppInner() {
       )}
 
       {isMobile && mobileMenuOpen && (
-        <div style={S.sidebarBackdrop} onClick={() => setMobileMenuOpen(false)} />
+        /* zIndex 95 : le voile doit couvrir l'en-tête fixe (90) puisque le tiroir passe à 100. */
+        <div style={{ ...S.sidebarBackdrop, zIndex: 95 }} onClick={() => setMobileMenuOpen(false)} />
       )}
 
       {/* ─── BARRE D'ONGLETS DU BAS, mobile (côté AE, 15/08/2026) ───
@@ -14972,7 +14973,10 @@ function AppInner() {
       <aside
         style={{
           ...(isMobile
-            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 80, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }
+            // zIndex 100 : AU-DESSUS de l'en-tête fixe (90), sinon celui-ci recouvrait
+            // le haut du tiroir (logo + Cockpit inaccessibles — retour Camille 30/08).
+            // Et paddingTop avec l'encoche pour que le tiroir ne démarre pas sous elle.
+            ? { ...S.sidebar, position: "fixed", top: 0, left: 0, bottom: 0, width: 250, zIndex: 100, transform: mobileMenuOpen ? "translateX(0)" : "translateX(-100%)", transition: "transform 0.25s ease", overflowY: "auto", WebkitOverflowScrolling: "touch", paddingTop: "calc(20px + env(safe-area-inset-top, 0px))", paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }
             : { ...S.sidebar, ...(sidebarOpen ? {} : S.sidebarClosed) }),
           background: "#07192E",
         }}
@@ -15116,7 +15120,10 @@ function AppInner() {
         </div>
       </aside>
 
-      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "72px 14px calc(120px + env(safe-area-inset-bottom, 0px))" } : S.mainContent), background: "#07192E" }}>
+      {/* Safe-area du natif (retour Camille 30/08, build 33) : l'en-tête fixe fait
+          56px + encoche, le contenu doit commencer SOUS lui — sans env() le haut
+          du cockpit était avalé (~60px coupés sur iPhone à encoche). */}
+      <main style={{ ...(isMobile ? { ...S.mainContent, padding: "calc(72px + env(safe-area-inset-top, 0px)) 14px calc(120px + env(safe-area-inset-bottom, 0px))" } : S.mainContent), background: "#07192E" }}>
         {/* Barre du haut (desktop) — miroir de celle du mode intermittent : badge + bascule. */}
         {!isMobile && (
           <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between", margin: "-28px -32px 24px" }}>
