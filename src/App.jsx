@@ -10533,18 +10533,28 @@ function AppInner() {
                         main. Dès la première activité, ce héros disparaît et le vrai
                         cockpit prend le relais : ces boutons ne vivent que le temps
                         d'un compte vide. */}
+                    {/* ⚠️ ORDRE DES DEUX BOUTONS (07/09/2026) : le cachet à la main
+                        passe DEVANT le scan. Mesure sur les 85 comptes : 46 personnes
+                        ont fini leur inscription puis n'ont RIEN saisi, et 36 d'entre
+                        elles n'ont même jamais lancé un scan. Le scan n'échoue pas, il
+                        n'est jamais tenté : il réclame un document que personne n'a sur
+                        soi le soir où il découvre l'app. Le but du premier geste n'est
+                        pas le dossier complet, c'est UN chiffre, pour que le cockpit
+                        s'allume. Le bloc « Je ne connais pas encore ton historique »,
+                        plus bas dans cette même page, était déjà dans cet ordre : le
+                        héros le contredisait. */}
                     <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
-                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
-                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 17 }} /> Scanner une AEM
-                      </button>
                       <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); }}
+                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un cachet
+                      </button>
+                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
                         style={{ flex: "1 1 150px", background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
-                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Ajouter un cachet
+                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM
                       </button>
                     </div>
                     <div style={{ fontSize: 11.5, color: etat.st, marginTop: 8, lineHeight: 1.5 }}>
-                      Deux minutes, et ton cockpit s'allume : tes heures vers les 507, ton allocation, ton argent du mois.
+                      Un seul contrat suffit à allumer ton cockpit. Et si tu as tes attestations sous la main, le scan en remplit un d'un coup.
                     </div>
                   </div>
                 </div>
