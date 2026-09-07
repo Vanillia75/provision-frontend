@@ -718,7 +718,7 @@ function AppInner() {
     { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",  img: "/totor-chiot.webp?v=1" },
     { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",    img: "/totor-vigilant.webp?v=5" },
     { etat: "confirme", seuil: 300, nom: "Confirmé", court: "300h",  sous: "Il assure",         img: "/totor-alerte.webp?v=5" },
-    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes droits sont là", img: "/totor-serein.webp?v=5" },
+    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes 507 heures sont là", img: "/totor-serein.webp?v=5" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -4787,7 +4787,7 @@ function AppInner() {
       const prix = (prixDit && prixDit > 0) ? prixDit : cachetMoyen;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
         simulerAj: prix && prix > 0 ? { n, brut: prix, estime: !prixDit } : null,
         // Aucun prix nulle part : on le DEMANDE au lieu de se taire sur l'allocation.
         demanderPrix: !prix,
@@ -4800,7 +4800,7 @@ function AppInner() {
       const secu = apres >= seuil;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h, c'est sécurisé.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
+        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
       };
     }
     // ─ Scénario 3 : refuser / annuler un contrat ─
@@ -8513,7 +8513,7 @@ function AppInner() {
     const pct = c ? Math.min(100, c.pourcentage) : 0;
     const etatLabels = {
       oeuf: "Totor couve", chiot: "Totor chiot", ado: "Totor ado",
-      filet: "Seuil du filet franchi", adulte: "Totor adulte", niche: "Droits sécurisés",
+      filet: "Seuil du filet franchi", adulte: "Totor adulte", niche: "507 heures atteintes",
     };
     // Palier actuel + prochain palier (pour l'affichage immersif de Totor au centre)
     const heuresActuelles = c ? c.total_heures : 0;
@@ -8531,8 +8531,8 @@ function AppInner() {
     const penseesHector = (() => {
       if (c && c.droits_securises) {
         return [
-          "Tes droits sont sécurisés. Je veille, repose-toi un peu. 🐾",
-          "On l'a fait. Maintenant chaque heure, c'est du bonus.",
+          "Tes 507 heures sont là. Je veille, repose-toi un peu. 🐾",
+          "On l'a fait, tes heures sont comptées. Maintenant chaque heure, c'est du bonus.",
           "Je suis fier de nous. Tu peux souffler.",
         ];
       }
@@ -8620,9 +8620,13 @@ function AppInner() {
       if (secu) {
         conseilNiveau = "green";
         conseilTitre = "Tu peux souffler";
+        // ⚠️ On dit le FAIT (les heures y sont), jamais la PROMESSE (les droits sont acquis) :
+        // France Travail vérifie aussi que la privation d'emploi est involontaire, et une
+        // démission dans la période peut valoir un rejet malgré des heures largement suffisantes.
+        // Même piège que le filet des 338h : une règle a presque toujours une seconde condition.
         conseilTexte = aDateAnniv
-          ? `Tes droits sont sécurisés jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Chaque heure en plus, c'est du bonus pour après.`
-          : "Tes droits sont sécurisés. Continue à déclarer, ça prépare ton prochain renouvellement.";
+          ? `Tes heures y sont, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. C'est la condition principale, et elle est remplie. Chaque heure en plus, c'est du bonus pour après.`
+          : "Tes heures y sont : c'est la condition principale, et elle est remplie. Continue à déclarer, ça prépare ton prochain renouvellement.";
       } else if (dansLesTemps === true) {
         conseilNiveau = "green";
         conseilTitre = "Tu es sur la bonne voie";
@@ -8699,7 +8703,7 @@ function AppInner() {
         // Le compteur EXACT en clair (retour testeuse 23/07 : « je veux voir combien
         // j'ai d'heures, en grand, pas en petit ») — l'info importante doit ressortir.
         phrase = calc.aDateAnniv
-          ? `Tes droits sont sécurisés avec ${Math.round(c.total_heures)} h au compteur, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
+          ? `Tes 507h sont là, ${Math.round(c.total_heures)} h au compteur, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, le plus dur est fait.`
           : `Tes 507h sont là : ${Math.round(c.total_heures)} h au compteur. Je continue à monter la garde sur ton dossier.`;
       } else if (calc.dansLesTemps === true) {
         niveau = "green";
@@ -8752,7 +8756,7 @@ function AppInner() {
         return {
           // (18/08/2026) plus de « (X h) » dans le titre : le héros affiche déjà les
           // heures en très gros juste au-dessus, le doublon jurait sur la capture.
-          ton: "green", emoji: "🟢", titre: "Tes droits sont sécurisés",
+          ton: "green", emoji: "🟢", titre: "Tes 507 heures sont là",
           bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5", st: "#BFE6D6",
           phrase: calc.aDateAnniv
             ? `C'est bon jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Je monte la garde, tu peux souffler. 🐾`
@@ -10470,7 +10474,7 @@ function AppInner() {
                   « le rouge fait peut-être peur non ? ») : le héros garde sa robe
                   bleu nuit NEUTRE quel que soit l'état, le gros chiffre reste blanc.
                   Seule la petite ligne d'état en bas porte la couleur (🔴/🟡).
-                  Une exception, la JOIE : droits sécurisés = carte verte entière. */}
+                  Une exception, la JOIE : 507 heures atteintes = carte verte entière. */}
               <div style={{ background: etat.ton === "green" ? etat.bg : "#0a1322", border: `1px solid ${etat.ton === "green" ? etat.bd : "rgba(255,255,255,0.09)"}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
                 {/* ─── LES HEURES EN VEDETTE (18/08/2026, retour de Camille sur capture :
                     « bcp trop gros, il faudrait les heures en gros et le reste plus
@@ -11845,7 +11849,7 @@ function AppInner() {
                             <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
                           </div>
                           <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6 }}>
-                            Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? ", tes droits sont sécurisés ✓" : `, soit ${pct} % vers ton renouvellement.`}
+                            Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? ", tes 507 heures sont là ✓" : `, soit ${pct} % vers ton renouvellement.`}
                           </div>
                         </div>
                         {!calc.secu && (
@@ -12039,8 +12043,8 @@ function AppInner() {
               {(() => {
                 const nbAem = (interActivites || []).filter(a => !(a.aem_recue === true || a.source === "ocr")).length;
                 let phrase;
-                if (calc.secu && nbAem === 0) phrase = "Ton dossier est complet et tes droits sont sécurisés. Rien à signaler. 🐾";
-                else if (calc.secu && nbAem > 0) phrase = "Tes droits sont sécurisés, mais il te manque " + nbAem + " AEM. Récupère-les et ton dossier sera nickel.";
+                if (calc.secu && nbAem === 0) phrase = "Ton dossier est complet et tes 507 heures sont là. Rien à signaler. 🐾";
+                else if (calc.secu && nbAem > 0) phrase = "Tes 507 heures sont là, mais il te manque " + nbAem + " AEM. Récupère-les et ton dossier sera nickel.";
                 else if (nbAem > 0) phrase = "Il te manque " + calc.manque + " h et " + nbAem + " AEM. Si tu règles les AEM, ton dossier sera déjà plus propre.";
                 else phrase = "Il te manque " + calc.manque + " h pour sécuriser tes droits. Continue à déclarer tes contrats.";
                 return (
@@ -12185,7 +12189,7 @@ function AppInner() {
                 R.renouveler = () => {
                   if (calc.secu) return {
                     ouv: "On peut souffler.",
-                    text: `D'après ce que je vois, tes droits sont déjà sécurisés${dateAnnivTxt ? ` jusqu'à ton renouvellement du ${dateAnnivTxt}` : ""}. Tu as tes 507h. Pour moi, on est tranquilles, et chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
+                    text: `D'après ce que je vois, tu as déjà tes 507h${dateAnnivTxt ? ` pour ton renouvellement du ${dateAnnivTxt}` : ""}. C'est la condition principale, et elle est remplie. Chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
                     pourquoi: `Tu es à ${calc.heures}h, au-dessus du seuil de ${calc.seuil}h requis. C'est ce seuil, atteint dans ta période de référence, qui ouvre le renouvellement.`,
                     suite: ["combien_manque", "rythme", "si_pause"],
                   };
@@ -12243,7 +12247,7 @@ function AppInner() {
                   };
                   return {
                     ouv: "Voyons ça précisément.",
-                    text: `Si c'était mon dossier, je viserais environ ${calc.cachetsManquants} cachets pour être tranquille. C'est ce qu'il faut pour transformer tes ${calc.manque}h manquantes en droits sécurisés.`,
+                    text: `Si c'était mon dossier, je viserais environ ${calc.cachetsManquants} cachets pour être tranquille. C'est ce qu'il faut pour combler tes ${calc.manque}h manquantes.`,
                     pourquoi: `${calc.manque}h manquantes ÷ 12h par cachet ≈ ${calc.cachetsManquants} cachets.`,
                     suite: ["rythme", "si_contrat", "renouveler"],
                   };
@@ -12291,7 +12295,7 @@ function AppInner() {
                   if (!calc.secu && calc.manque > 0) etapes.push(`viser ${calc.manque}h ≈ ${calc.cachetsManquants} cachets pour atteindre tes 507h`);
                   if (etapes.length === 0) return {
                     ouv: "Bonne nouvelle.",
-                    text: "Pour l'instant, tu n'as rien d'urgent à faire : ton dossier est propre et tes droits sont sécurisés. Continue à déclarer tes contrats au fur et à mesure, et on garde le cap.",
+                    text: "Pour l'instant, tu n'as rien d'urgent à faire : ton dossier est propre et tes 507 heures sont là. Continue à déclarer tes contrats au fur et à mesure, et on garde le cap.",
                     suite: ["renouveler", "rythme", "si_pause"],
                   };
                   const txt = etapes.length === 1
@@ -12357,7 +12361,7 @@ function AppInner() {
                                       const apres = calc.heures + n * 12;
                                       const secuApres = apres >= calc.seuil;
                                       return (
-                                        <button key={n} type="button" onClick={() => poserQuestionCalc(`Et si j'accepte ${n} cachet${n > 1 ? "s" : ""} ?`, { ouv: secuApres ? "Ça sent bon." : "Voyons.", text: secuApres ? `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Tu franchis les ${calc.seuil}h, tes droits seraient sécurisés. Celui-là, à ta place, je ne le laisserais pas filer.` : `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Il te manquerait encore ${calc.seuil - apres}h ≈ ${Math.ceil((calc.seuil - apres) / 12)} cachets. Ça aide, mais ça ne suffit pas encore.`, bases, suite: ["combien_cachets", "rythme", "renouveler"], qid: "si_contrat_res" })}
+                                        <button key={n} type="button" onClick={() => poserQuestionCalc(`Et si j'accepte ${n} cachet${n > 1 ? "s" : ""} ?`, { ouv: secuApres ? "Ça sent bon." : "Voyons.", text: secuApres ? `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Tu franchis les ${calc.seuil}h. Celui-là, à ta place, je ne le laisserais pas filer.` : `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Il te manquerait encore ${calc.seuil - apres}h ≈ ${Math.ceil((calc.seuil - apres) / 12)} cachets. Ça aide, mais ça ne suffit pas encore.`, bases, suite: ["combien_cachets", "rythme", "renouveler"], qid: "si_contrat_res" })}
                                           style={{ flex: "1 1 auto", minWidth: 46, background: "#0d2440", color: "#B5D4F4", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                                           +{n}
                                         </button>
@@ -13217,7 +13221,7 @@ function AppInner() {
                     sous = "Tes droits sont déjà sécurisés. Celui-là, c'est du bonus pour la suite.";
                   } else if (secu) {
                     niveau = "green"; emoji = "✅"; titre = "Accepte les yeux fermés";
-                    sous = dateAnnivTxt ? `Avec lui, tes droits sont sécurisés pour ton renouvellement du ${dateAnnivTxt}.` : "Avec lui, tes droits sont sécurisés.";
+                    sous = dateAnnivTxt ? `Avec lui, tes 507 heures y sont pour ton renouvellement du ${dateAnnivTxt}.` : "Avec lui, tes 507 heures y sont.";
                   } else {
                     niveau = "orange"; emoji = "🟠"; titre = "Ça aide, mais continue à chercher";
                     sous = `Bon à prendre, mais il te manquera encore ${manque}h après${dateAnnivTxt ? ` pour ton renouvellement du ${dateAnnivTxt}` : ""}.`;
