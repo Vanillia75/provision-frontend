@@ -8747,7 +8747,7 @@ function AppInner() {
           bg: "rgba(55,138,221,0.08)", bd: "rgba(55,138,221,0.28)", tc: "#8FC3F5", st: "#B5D4F4",
           // On rappelle l'objectif (un fait du régime, pas une affirmation sur la
           // personne) sans jamais prétendre savoir où elle en est.
-          phrase: `Mon métier, c'est de compter tes heures vers les ${calc.seuil} qui sécurisent tes droits. Où tu en es, je ne le sais pas encore et je ne vais pas l'inventer : donne-moi tes premiers contrats, et je m'en occupe.`,
+          phrase: `Mon métier, c'est de compter tes heures vers les ${calc.seuil} qu'il te faut pour renouveler. Où tu en es, je ne le sais pas encore et je ne vais pas l'inventer : donne-moi tes premiers contrats, et je m'en occupe.`,
         };
       }
 
@@ -13215,7 +13215,7 @@ function AppInner() {
                   let niveau, emoji, titre, sous;
                   if (passeLaBarre) {
                     niveau = "green"; emoji = "🎯"; titre = "Fonce, c'est LE contrat";
-                    sous = dateAnnivTxt ? `Il te fait passer les 507h et sécurise ton renouvellement du ${dateAnnivTxt}.` : "Il te fait passer les 507h et sécurise tes droits.";
+                    sous = dateAnnivTxt ? `Il te fait passer les 507h, avant ton renouvellement du ${dateAnnivTxt}.` : "Il te fait passer les 507h.";
                   } else if (dejaSecu) {
                     niveau = "blue"; emoji = "👍"; titre = "Prends-le si tu peux";
                     sous = "Tes droits sont déjà sécurisés. Celui-là, c'est du bonus pour la suite.";
