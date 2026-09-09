@@ -17339,10 +17339,25 @@ function AppInner() {
                     <button aria-label="PDF" onClick={e => { e.stopPropagation(); handleViewInvoicePdf(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
-                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
-                      <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
-                    </button>
-                    <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteInvoice(inv.id); }} style={S.deleteBtn}>✕</button>
+                    {/* ⚖️ Modifier et supprimer n'existent QUE sur un brouillon (09/09/2026).
+                        Une facture émise ne se modifie plus et se conserve 10 ans
+                        (service-public.fr F23208) ; la corriger passe par une facture
+                        d'avoir. Le serveur refuse de toute façon (409), mais on ne
+                        laisse pas un bouton qui ne marche pas : on le retire, et un
+                        cadenas explique pourquoi. */}
+                    {inv.statut === "brouillon" ? (
+                      <>
+                        <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
+                          <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
+                        </button>
+                        <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); if (window.confirm(`Supprimer le brouillon ${inv.numero} ?`)) handleDeleteInvoice(inv.id); }} style={S.deleteBtn}>✕</button>
+                      </>
+                    ) : (
+                      <span title="Facture émise : elle ne peut plus être modifiée ni supprimée, la loi impose de la conserver 10 ans. Pour la corriger, il faut une facture d'avoir."
+                        style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#B4B2A9", flexShrink: 0 }}>
+                        <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 15 }} />
+                      </span>
+                    )}
                   </div>
                 );
               })}
