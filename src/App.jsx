@@ -42,6 +42,12 @@ if (typeof window !== "undefined") {
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 
+// Session expirée : un seul texte, partagé entre apiFetch (qui le lève) et
+// l'écran de connexion (qui l'affiche en bleu). La constante sert aussi à NE PAS
+// répéter le message dans le bandeau rouge des erreurs : ce n'est pas une erreur
+// de la personne, c'est le bout normal d'un jeton de 30 jours.
+const MESSAGE_SESSION_EXPIREE = "Ta session a expiré, c'est normal au bout d'un moment. Reconnecte-toi, tout est là. 🐾";
+
 // Vrai UNIQUEMENT dans l'app native (Capacitor iOS/Android), faux sur le web.
 // Sert à n'afficher l'essai gratuit 7 jours QUE dans les stores (l'essai est
 // configuré côté Apple/Google ; le web/Stripe n'a pas d'essai). Sur `main` (web)
@@ -447,6 +453,9 @@ function PasswordField({ label, value, onChange, autoComplete, minLength = 8 }) 
 
 function AppInner() {
   const [token, setToken] = useState(() => safeStorage.getItem("token"));
+  // Session expirée : on le dit à la personne au moment où elle va se reconnecter,
+  // sinon elle se retrouve à l'accueil sans comprendre pourquoi (11/09/2026).
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   // ─── PWA : aide à l'installation sur l'écran d'accueil ───
   const [pwaPrompt, setPwaPrompt] = useState(null);     // event Android "beforeinstallprompt"
   const [showInstallHelp, setShowInstallHelp] = useState(false); // affiche les instructions iOS
@@ -1532,6 +1541,27 @@ function AppInner() {
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
+      // ⚠️ SESSION EXPIRÉE (11/09/2026, vraie panne remontée par plusieurs clients).
+      // Un jeton vit 30 jours (JWT_EXPIRE_DAYS côté serveur). Passé ce délai le
+      // serveur répond 401 « Token invalide ou expire »... et PERSONNE n'attrapait
+      // ce cas : le jeton mort restait rangé dans le navigateur, chaque écran
+      // affichait le message brut du serveur, et l'utilisateur était bloqué même
+      // en rechargeant la page. Sur les applications, aucun moyen d'en sortir.
+      // Le déclencheur : l'email de lancement du 4 septembre a ramené des comptes
+      // dormants dont les jetons dataient de plus d'un mois.
+      // ⛔ On ne touche PAS aux routes /auth/ : un mot de passe faux y répond 401
+      // lui aussi, et ce n'est pas une session expirée.
+      // Rien n'est perdu : la déconnexion ne vide que des caches locaux, toutes
+      // les données reviennent du serveur à la reconnexion.
+      if (res.status === 401 && token && !path.startsWith("/auth/")) {
+        handleLogout();
+        setSessionExpiree(true);
+        setError(MESSAGE_SESSION_EXPIREE);
+        const expiree = new Error(MESSAGE_SESSION_EXPIREE);
+        expiree.status = 401;
+        expiree.sessionExpiree = true;
+        throw expiree;
+      }
       const isObj = body.detail && typeof body.detail === "object";
       // Quota gratuit atteint OU fonction premium → on déclenche l'écran « passe en Premium ».
       if (isObj && (body.detail.code === "quota_gratuit_atteint" || body.detail.code === "premium_requis")) {
@@ -1925,6 +1955,10 @@ function AppInner() {
   async function handleAuth(e) {
     e.preventDefault();
     setError("");
+    // Le bandeau « session expirée » a fait son travail : il s'efface dès qu'on
+    // tente de se reconnecter, pour laisser la place à une vraie erreur
+    // (mot de passe faux, par exemple).
+    setSessionExpiree(false);
     if (authMode === "register" && authPassword !== authPasswordConfirm) {
       setError("Les deux mots de passe ne correspondent pas.");
       return;
@@ -7027,7 +7061,14 @@ function AppInner() {
                 <form onSubmit={handleAuth}>
                   <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte"}</h2>
                   {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
-                  {error && <div style={S.errorBanner}>{error}</div>}
+                  {/* Expliquer pourquoi on a été déconnecté. En bleu et pas en rouge :
+                      ce n'est pas une erreur de la personne, c'est normal. */}
+                  {sessionExpiree && authMode === "login" && (
+                    <div style={{ background: "#E6F1FB", color: "#0C447C", border: "1px solid #B5D4F4", borderRadius: 8, padding: "12px 16px", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>
+                      {MESSAGE_SESSION_EXPIREE}
+                    </div>
+                  )}
+                  {error && error !== MESSAGE_SESSION_EXPIREE && <div style={S.errorBanner}>{error}</div>}
                   <div ref={googleButtonRefInter} style={{ display: "flex", justifyContent: "center", marginBottom: 8 }} />
                   {/* Bouton Google NATIF, uniquement dans l'appli Android : le bouton
                       web ci-dessus y est refusé par Google (WebView). Sur le site et
