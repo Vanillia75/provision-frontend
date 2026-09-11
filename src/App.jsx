@@ -10965,9 +10965,16 @@ function AppInner() {
                 // il s'affiche désormais TOUT EN HAUT du cockpit, hors de cette IIFE.
                 const blocVerdict = c.allocation && c.allocation.heures_reference != null && (() => {
                 const ftH = c.allocation.heures_reference;
-                const hectorH = c.total_heures;
-                const ecart = Math.round(hectorH - ftH);
-                const coherentH = Math.abs(ecart) <= 5;
+                // ⚠️ On compare la MÊME FENÊTRE que France Travail : les 12 mois qui
+                // ont servi à ouvrir les droits, et surtout PAS `c.total_heures`, qui
+                // est le compteur glissant du prochain renouvellement. Comparer les
+                // deux faisait grossir un faux écart mois après mois (cas réel n°1 :
+                // 513 h reprochées à quelqu'un qui avait tout scanné). Si le serveur
+                // renvoie null, on n'a rien sur cette période : on se tait.
+                const hectorH = c.heures_periode_reference;
+                const peutRecompter = hectorH != null;
+                const ecart = peutRecompter ? Math.round(hectorH - ftH) : 0;
+                const coherentH = peutRecompter && Math.abs(ecart) <= 5;
                 // Fonction Premium : les comptes gratuits voient un teaser verrouillé (le premium/essai voit le contrôle complet).
                 if (!profile?.is_premium) {
                   return (
@@ -10994,19 +11001,24 @@ function AppInner() {
                       <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
                     </div>
 
-                    {/* Les heures */}
+                    {/* Les heures, sur la période qui a servi à ouvrir les droits */}
                     <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong>. À partir de ce que tu as saisi, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.
+                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong> pour ouvrir tes droits.
+                      {peutRecompter
+                        ? <> Sur cette même période, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.</>
+                        : <> Je n'ai aucune activité sur cette période.</>}
                     </div>
                     <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, borderRadius: 8, padding: "9px 11px",
-                      background: coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
-                      border: `1px solid ${coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
-                      color: coherentH ? "#9FE1CB" : "#F0C078" }}>
-                      {coherentH
-                        ? "✓ On tombe pareil, ta décision est cohérente avec ce que tu as déclaré."
-                        : ecart < 0
-                          ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi. Le plus probable : il te manque des AEM à scanner, je ne vois que ce que tu me déclares. Ajoute-les et on revérifie ensemble.</>
-                          : <>Écart de <strong>{ecart} h en plus</strong> chez moi. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
+                      background: !peutRecompter ? "rgba(255,255,255,0.05)" : coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
+                      border: `1px solid ${!peutRecompter ? "rgba(255,255,255,0.12)" : coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
+                      color: !peutRecompter ? "#9FB6CE" : coherentH ? "#9FE1CB" : "#F0C078" }}>
+                      {!peutRecompter
+                        ? <>Je ne peux pas recompter cette période : elle est antérieure à tes saisies. C'est normal si tu es arrivé sur TOTOR après l'ouverture de tes droits, et <strong>ça ne change rien</strong> à ce que tu touches. Je compte à partir de maintenant, pour ton prochain renouvellement.</>
+                        : coherentH
+                          ? "✓ On tombe pareil, ta décision est cohérente avec ce que tu as déclaré."
+                          : ecart < 0
+                            ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi sur cette période. Le plus probable : il me manque des AEM d'avant l'ouverture de tes droits, je ne vois que ce que tu me déclares. Ça <strong>ne change rien</strong> à ce que tu touches aujourd'hui.</>
+                            : <>Écart de <strong>{ecart} h en plus</strong> chez moi sur cette période. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
                     </div>
                     {c.jours_allonges > 0 && (
                       <div style={{ marginTop: 6, fontSize: 11, color: "#8FB4D8", fontStyle: "italic" }}>
@@ -11014,10 +11026,21 @@ function AppInner() {
                       </div>
                     )}
 
-                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel) */}
+                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel).
+                        CONTRÔLE SÉPARÉ, et il faut le dire : celui-ci part du salaire de
+                        référence et des heures retenues recopiés de la notification, pas
+                        des saisies. Il reste donc valable même quand le compte des heures
+                        ci-dessus ne l'est pas. Sans cette phrase, les deux blocs se lisent
+                        comme un seul verdict, et on inquiète pour rien. */}
                     {c.allocation.affichable && c.allocation.montant_officiel != null && (
-                      <div style={{ marginTop: 10, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        <span style={{ color: "#7E97B3", fontSize: 11 }}>Contrôle séparé, à partir de ta notification</span><br />
                         Allocation : je recalcule <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_nette)}</strong>, ta notification indique <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.montant_officiel)}</strong>, {c.allocation.coherent_officiel ? <span style={{ color: "#9FE1CB", fontWeight: 700 }}>cohérent ✓</span> : <span style={{ color: "#F0C078", fontWeight: 700 }}>écart à vérifier</span>}.
+                        {!c.allocation.coherent_officiel && (
+                          <div style={{ marginTop: 5, fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                            Avant tout : vérifie que tu as saisi le montant <strong style={{ color: "#B5D4F4" }}>exact</strong> de ta notification, centimes compris. Un montant arrondi suffit à créer cet écart.
+                          </div>
+                        )}
                       </div>
                     )}
 
