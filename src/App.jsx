@@ -4135,20 +4135,37 @@ function AppInner() {
 
   // ─── Brique 5.2 : ajouter une activité ───
   async function handleAddActivite() {
-    const nombre = parseFloat(interForm.nombre);
-    if (!interForm.date || !nombre || nombre <= 0) {
-      setError("Renseigne une date et un nombre valide.");
-      return;
-    }
+    // Chaque essai repart d'une page propre : sinon l'erreur d'avant reste affichée
+    // au-dessus du bouton alors que la personne vient justement de la corriger.
+    setError("");
     // Plage optionnelle. Deux répartitions quand une date de fin est saisie :
     //  • "parjour" (tournée) : UNE activité par jour de [date → date_fin], même nombre chaque jour.
     //  • "total" (cachets/heures) : UNE seule activité "du X au Y" avec le nombre TOTAL — le moteur
     //    compte nombre×12h / nombre h ; date_fin ne sert qu'à l'affichage (comme une AEM multi-jours).
     const debut = interForm.date;
     const finValide = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : null;
+    // ⚠️ UN ARRÊT, C'EST TOUJOURS UNE SEULE LIGNE (14/09/2026, cas réel : un congé
+    // maternité du 18/03 au 07/07 refusé sans message visible).
+    // Le moteur compte un arrêt `nombre` jours × 5 h (heures_de). Or les arrêts
+    // tombaient dans la boucle « 1 par jour » des tournées : une ligne PAR JOUR,
+    // portant CHACUNE le nombre total de jours. Soit N lignes × N jours × 5 h.
+    //   • 112 jours → refusé par le plafond de 92 jours, donc TOUS les congés
+    //     maternité légaux (16 semaines = 112 jours) étaient impossibles à saisir ;
+    //   • 30 jours → accepté, et enregistré 4 500 h au lieu de 150 h.
+    // Pour un arrêt sur une plage, la durée de l'arrêt EST le nombre de jours :
+    // on la prend sur les dates, et on ne multiplie jamais.
+    const estArret = (interForm.type_activite || "").startsWith("arret_");
+    const joursDeLaPlage = finValide
+      ? Math.round((new Date(finValide + "T00:00:00") - new Date(debut + "T00:00:00")) / 86400000) + 1
+      : null;
+    const nombre = estArret && joursDeLaPlage ? joursDeLaPlage : parseFloat(interForm.nombre);
+    if (!debut || !nombre || nombre <= 0) {
+      setError(estArret ? "Renseigne la date de début et la date de fin de ton arrêt." : "Renseigne une date et un nombre valide.");
+      return;
+    }
     // Un autre salaire sur une période = toujours UNE ligne (0h, pas de tournée qui multiplie).
     const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures" || interForm.type_activite === "autre_salaire";
-    const modeTotal = finValide && (interRepartition === "total" || interForm.type_activite === "autre_salaire") && estCachetOuHeures;
+    const modeTotal = finValide && (estArret || ((interRepartition === "total" || interForm.type_activite === "autre_salaire") && estCachetOuHeures));
 
     // Liste des envois {date, date_fin}.
     let envois;
@@ -13527,7 +13544,12 @@ function AppInner() {
                       {(() => {
                         if (!interForm.date || !interForm.date_fin || interForm.date_fin < interForm.date) return null;
                         const n = Math.round((new Date(interForm.date_fin + "T00:00:00") - new Date(interForm.date + "T00:00:00")) / 86400000) + 1;
-                        return <span style={{ color: "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>= {n} jour{n > 1 ? "s" : ""}</span>;
+                        // Pour un arrêt, la plage suffit : on dit tout de suite ce qui sera compté,
+                        // avec la MÊME fonction que le compteur (heuresDe), jamais un calcul à part.
+                        const h = (interForm.type_activite || "").startsWith("arret_")
+                          ? Math.round(heuresDe({ type_activite: interForm.type_activite, nombre: n }))
+                          : null;
+                        return <span style={{ color: "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>= {n} jour{n > 1 ? "s" : ""}{h ? ` · ${h} h` : ""}</span>;
                       })()}
                     </div>
                     {/* Répartition d'une plage : n'apparaît QUE si une date de fin est saisie (et type cachets/heures) */}
@@ -13572,9 +13594,14 @@ function AppInner() {
                       );
                     })()}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {/* Arrêt avec une date de fin : le nombre de jours se lit sur les dates
+                          (affiché juste au-dessus). Un champ modifiable ici serait ignoré et
+                          laisserait croire le contraire, donc on le retire. */}
+                      {!((interForm.type_activite || "").startsWith("arret_") && interForm.date_fin) && (
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
                         placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : interForm.type_activite === "autre_salaire" ? "Nb de contrats (ex : 1)" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      )}
                       {(() => {
                         // Autocomplétion employeur : suggère les employeurs DÉJÀ saisis par l'utilisateur
                         // (ses activités uniquement — aucune base globale, aucun partage entre comptes).
@@ -13697,6 +13724,16 @@ function AppInner() {
                         </div>
                       );
                     })()}
+                    {/* L'erreur s'affiche AUSSI ici, juste au-dessus du bouton (14/09/2026).
+                        Elle ne partait qu'en haut de la page : quelqu'un qui remplit le
+                        formulaire en bas ne la voyait jamais, et croyait que le bouton
+                        « ne faisait rien ». C'est exactement ce qu'a vécu la cliente dont le
+                        congé maternité était refusé. */}
+                    {error && (
+                      <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.5, color: "#F5C4B3", background: "rgba(216,90,48,0.12)", border: "1px solid rgba(216,90,48,0.4)", borderRadius: 8, padding: "9px 12px" }}>
+                        {error}
+                      </div>
+                    )}
                     <button type="button" disabled={interSaving} onClick={handleAddActivite}
                       style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: interSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interSaving ? 0.6 : 1 }}>
                       {interSaving ? "Enregistrement…" : "Enregistrer"}
