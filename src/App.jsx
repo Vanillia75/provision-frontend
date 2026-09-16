@@ -43,6 +43,12 @@ if (typeof window !== "undefined") {
 
 const API_BASE = "https://provision-backend-production.up.railway.app";
 
+// Session expirée : un seul texte, partagé entre apiFetch (qui le lève) et
+// l'écran de connexion (qui l'affiche en bleu). La constante sert aussi à NE PAS
+// répéter le message dans le bandeau rouge des erreurs : ce n'est pas une erreur
+// de la personne, c'est le bout normal d'un jeton de 30 jours.
+const MESSAGE_SESSION_EXPIREE = "Ta session a expiré, c'est normal au bout d'un moment. Reconnecte-toi, tout est là. 🐾";
+
 // Vrai UNIQUEMENT dans l'app native (Capacitor iOS/Android), faux sur le web.
 // Sert à n'afficher l'essai gratuit 7 jours QUE dans les stores (l'essai est
 // configuré côté Apple/Google ; le web/Stripe n'a pas d'essai). Sur `main` (web)
@@ -455,6 +461,9 @@ function PasswordField({ label, value, onChange, autoComplete, minLength = 8 }) 
 
 function AppInner() {
   const [token, setToken] = useState(() => safeStorage.getItem("token"));
+  // Session expirée : on le dit à la personne au moment où elle va se reconnecter,
+  // sinon elle se retrouve à l'accueil sans comprendre pourquoi (11/09/2026).
+  const [sessionExpiree, setSessionExpiree] = useState(false);
   // ─── PWA : aide à l'installation sur l'écran d'accueil ───
   const [pwaPrompt, setPwaPrompt] = useState(null);     // event Android "beforeinstallprompt"
   const [showInstallHelp, setShowInstallHelp] = useState(false); // affiche les instructions iOS
@@ -726,7 +735,7 @@ function AppInner() {
     { etat: "chiot",    seuil: 0,   nom: "Chiot",    court: "0h",    sous: "Les premiers pas",  img: "/totor-chiot.webp?v=1" },
     { etat: "apprenti", seuil: 100, nom: "Apprenti", court: "100h",  sous: "Ça prend forme",    img: "/totor-vigilant.webp?v=5" },
     { etat: "confirme", seuil: 300, nom: "Confirmé", court: "300h",  sous: "Il assure",         img: "/totor-alerte.webp?v=5" },
-    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes droits sont là", img: "/totor-serein.webp?v=5" },
+    { etat: "cinq07",   seuil: 507, nom: "507",      court: "507h",  sous: "Tes 507 heures sont là", img: "/totor-serein.webp?v=5" },
   ];
   const [forgotMode, setForgotMode] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -1540,6 +1549,27 @@ function AppInner() {
     clearTimeout(timer);
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
+      // ⚠️ SESSION EXPIRÉE (11/09/2026, vraie panne remontée par plusieurs clients).
+      // Un jeton vit 30 jours (JWT_EXPIRE_DAYS côté serveur). Passé ce délai le
+      // serveur répond 401 « Token invalide ou expire »... et PERSONNE n'attrapait
+      // ce cas : le jeton mort restait rangé dans le navigateur, chaque écran
+      // affichait le message brut du serveur, et l'utilisateur était bloqué même
+      // en rechargeant la page. Sur les applications, aucun moyen d'en sortir.
+      // Le déclencheur : l'email de lancement du 4 septembre a ramené des comptes
+      // dormants dont les jetons dataient de plus d'un mois.
+      // ⛔ On ne touche PAS aux routes /auth/ : un mot de passe faux y répond 401
+      // lui aussi, et ce n'est pas une session expirée.
+      // Rien n'est perdu : la déconnexion ne vide que des caches locaux, toutes
+      // les données reviennent du serveur à la reconnexion.
+      if (res.status === 401 && token && !path.startsWith("/auth/")) {
+        handleLogout();
+        setSessionExpiree(true);
+        setError(MESSAGE_SESSION_EXPIREE);
+        const expiree = new Error(MESSAGE_SESSION_EXPIREE);
+        expiree.status = 401;
+        expiree.sessionExpiree = true;
+        throw expiree;
+      }
       const isObj = body.detail && typeof body.detail === "object";
       // Quota gratuit atteint OU fonction premium → on déclenche l'écran « passe en Premium ».
       if (isObj && (body.detail.code === "quota_gratuit_atteint" || body.detail.code === "premium_requis")) {
@@ -1937,6 +1967,10 @@ function AppInner() {
   async function handleAuth(e) {
     e.preventDefault();
     setError("");
+    // Le bandeau « session expirée » a fait son travail : il s'efface dès qu'on
+    // tente de se reconnecter, pour laisser la place à une vraie erreur
+    // (mot de passe faux, par exemple).
+    setSessionExpiree(false);
     if (authMode === "register" && authPassword !== authPasswordConfirm) {
       setError("Les deux mots de passe ne correspondent pas.");
       return;
@@ -4433,20 +4467,37 @@ function AppInner() {
 
   // ─── Brique 5.2 : ajouter une activité ───
   async function handleAddActivite() {
-    const nombre = parseFloat(interForm.nombre);
-    if (!interForm.date || !nombre || nombre <= 0) {
-      setError("Renseigne une date et un nombre valide.");
-      return;
-    }
+    // Chaque essai repart d'une page propre : sinon l'erreur d'avant reste affichée
+    // au-dessus du bouton alors que la personne vient justement de la corriger.
+    setError("");
     // Plage optionnelle. Deux répartitions quand une date de fin est saisie :
     //  • "parjour" (tournée) : UNE activité par jour de [date → date_fin], même nombre chaque jour.
     //  • "total" (cachets/heures) : UNE seule activité "du X au Y" avec le nombre TOTAL — le moteur
     //    compte nombre×12h / nombre h ; date_fin ne sert qu'à l'affichage (comme une AEM multi-jours).
     const debut = interForm.date;
     const finValide = interForm.date_fin && interForm.date_fin >= debut ? interForm.date_fin : null;
+    // ⚠️ UN ARRÊT, C'EST TOUJOURS UNE SEULE LIGNE (14/09/2026, cas réel : un congé
+    // maternité du 18/03 au 07/07 refusé sans message visible).
+    // Le moteur compte un arrêt `nombre` jours × 5 h (heures_de). Or les arrêts
+    // tombaient dans la boucle « 1 par jour » des tournées : une ligne PAR JOUR,
+    // portant CHACUNE le nombre total de jours. Soit N lignes × N jours × 5 h.
+    //   • 112 jours → refusé par le plafond de 92 jours, donc TOUS les congés
+    //     maternité légaux (16 semaines = 112 jours) étaient impossibles à saisir ;
+    //   • 30 jours → accepté, et enregistré 4 500 h au lieu de 150 h.
+    // Pour un arrêt sur une plage, la durée de l'arrêt EST le nombre de jours :
+    // on la prend sur les dates, et on ne multiplie jamais.
+    const estArret = (interForm.type_activite || "").startsWith("arret_");
+    const joursDeLaPlage = finValide
+      ? Math.round((new Date(finValide + "T00:00:00") - new Date(debut + "T00:00:00")) / 86400000) + 1
+      : null;
+    const nombre = estArret && joursDeLaPlage ? joursDeLaPlage : parseFloat(interForm.nombre);
+    if (!debut || !nombre || nombre <= 0) {
+      setError(estArret ? "Renseigne la date de début et la date de fin de ton arrêt." : "Renseigne une date et un nombre valide.");
+      return;
+    }
     // Un autre salaire sur une période = toujours UNE ligne (0h, pas de tournée qui multiplie).
     const estCachetOuHeures = interForm.type_activite === "cachet_isole" || interForm.type_activite === "heures" || interForm.type_activite === "autre_salaire";
-    const modeTotal = finValide && (interRepartition === "total" || interForm.type_activite === "autre_salaire") && estCachetOuHeures;
+    const modeTotal = finValide && (estArret || ((interRepartition === "total" || interForm.type_activite === "autre_salaire") && estCachetOuHeures));
 
     // Liste des envois {date, date_fin}.
     let envois;
@@ -5119,7 +5170,7 @@ function AppInner() {
       const prix = (prixDit && prixDit > 0) ? prixDit : cachetMoyen;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h, tes droits seraient sécurisés. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
+        text: `Avec ${n} cachet${n > 1 ? "s" : ""} (${ajout}h), tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu franchirais tes ${seuil}h. Si c'était mon dossier, je ne laisserais pas filer ce contrat.` : (() => { const nc = Math.ceil((seuil - apres) / 12); return `Il te manquerait encore ${fmtH(seuil - apres)}h ≈ ${nc} cachet${nc > 1 ? "s" : ""}. Ça t'avance bien, mais ça ne suffit pas encore.`; })()}`,
         simulerAj: prix && prix > 0 ? { n, brut: prix, estime: !prixDit } : null,
         // Aucun prix nulle part : on le DEMANDE au lieu de se taire sur l'allocation.
         demanderPrix: !prix,
@@ -5132,7 +5183,7 @@ function AppInner() {
       const secu = apres >= seuil;
       return {
         ouv: secu ? "Ça sent bon." : "Regardons.",
-        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h, c'est sécurisé.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
+        text: `Avec ${n}h de plus, tu passerais de ${fmtH(heuresActuelles)}h à ${fmtH(apres)}h. ${secu ? `Tu atteindrais tes ${seuil}h.` : `Il te manquerait encore ${fmtH(seuil - apres)}h.`}`,
       };
     }
     // ─ Scénario 3 : refuser / annuler un contrat ─
@@ -7359,7 +7410,14 @@ function AppInner() {
                 <form onSubmit={handleAuth}>
                   <h2 style={{ ...S.authTitle, marginBottom: 20 }}>{authMode === "login" ? "Connexion" : "Créer mon compte"}</h2>
                   {!pwaDismissed && <InstallBanner pwaPrompt={pwaPrompt} onInstall={handleInstallClick} onDismiss={dismissPwa} showHelp={showInstallHelp} compact />}
-                  {error && <div style={S.errorBanner}>{error}</div>}
+                  {/* Expliquer pourquoi on a été déconnecté (main, 14/09). En bleu et
+                      pas en rouge : ce n'est pas une erreur de la personne, c'est normal. */}
+                  {sessionExpiree && authMode === "login" && (
+                    <div style={{ background: "#E6F1FB", color: "#0C447C", border: "1px solid #B5D4F4", borderRadius: 8, padding: "12px 16px", fontSize: 14, marginBottom: 16, lineHeight: 1.5 }}>
+                      {MESSAGE_SESSION_EXPIREE}
+                    </div>
+                  )}
+                  {error && error !== MESSAGE_SESSION_EXPIREE && <div style={S.errorBanner}>{error}</div>}
                   {/* Connexion Google WEB : refusee par Google a l'interieur d'une
                       WebView, on la masque donc dans les applis natives, separateur
                       compris, pour un ecran de connexion propre. */}
@@ -8855,7 +8913,7 @@ function AppInner() {
     const pct = c ? Math.min(100, c.pourcentage) : 0;
     const etatLabels = {
       oeuf: "Totor couve", chiot: "Totor chiot", ado: "Totor ado",
-      filet: "Seuil du filet franchi", adulte: "Totor adulte", niche: "Droits sécurisés",
+      filet: "Seuil du filet franchi", adulte: "Totor adulte", niche: "507 heures atteintes",
     };
     // Palier actuel + prochain palier (pour l'affichage immersif de Totor au centre)
     const heuresActuelles = c ? c.total_heures : 0;
@@ -8873,8 +8931,8 @@ function AppInner() {
     const penseesHector = (() => {
       if (c && c.droits_securises) {
         return [
-          "Tes droits sont sécurisés. Je veille, repose-toi un peu. 🐾",
-          "On l'a fait. Maintenant chaque heure, c'est du bonus.",
+          "Tes 507 heures sont là. Je veille, repose-toi un peu. 🐾",
+          "On l'a fait, tes heures sont comptées. Maintenant chaque heure, c'est du bonus.",
           "Je suis fier de nous. Tu peux souffler.",
         ];
       }
@@ -8962,9 +9020,13 @@ function AppInner() {
       if (secu) {
         conseilNiveau = "green";
         conseilTitre = "Tu peux souffler";
+        // ⚠️ On dit le FAIT (les heures y sont), jamais la PROMESSE (les droits sont acquis) :
+        // France Travail vérifie aussi que la privation d'emploi est involontaire, et une
+        // démission dans la période peut valoir un rejet malgré des heures largement suffisantes.
+        // Même piège que le filet des 338h : une règle a presque toujours une seconde condition.
         conseilTexte = aDateAnniv
-          ? `Tes droits sont sécurisés jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Chaque heure en plus, c'est du bonus pour après.`
-          : "Tes droits sont sécurisés. Continue à déclarer, ça prépare ton prochain renouvellement.";
+          ? `Tes heures y sont, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. C'est la condition principale, et elle est remplie. Chaque heure en plus, c'est du bonus pour après.`
+          : "Tes heures y sont : c'est la condition principale, et elle est remplie. Continue à déclarer, ça prépare ton prochain renouvellement.";
       } else if (dansLesTemps === true) {
         conseilNiveau = "green";
         conseilTitre = "Tu es sur la bonne voie";
@@ -9041,7 +9103,7 @@ function AppInner() {
         // Le compteur EXACT en clair (retour testeuse 23/07 : « je veux voir combien
         // j'ai d'heures, en grand, pas en petit ») — l'info importante doit ressortir.
         phrase = calc.aDateAnniv
-          ? `Tes droits sont sécurisés avec ${Math.round(c.total_heures)} h au compteur, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, on est tranquilles.`
+          ? `Tes 507h sont là, ${Math.round(c.total_heures)} h au compteur, jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Pour moi, le plus dur est fait.`
           : `Tes 507h sont là : ${Math.round(c.total_heures)} h au compteur. Je continue à monter la garde sur ton dossier.`;
       } else if (calc.dansLesTemps === true) {
         niveau = "green";
@@ -9085,7 +9147,7 @@ function AppInner() {
           bg: "rgba(55,138,221,0.08)", bd: "rgba(55,138,221,0.28)", tc: "#8FC3F5", st: "#B5D4F4",
           // On rappelle l'objectif (un fait du régime, pas une affirmation sur la
           // personne) sans jamais prétendre savoir où elle en est.
-          phrase: `Mon métier, c'est de compter tes heures vers les ${calc.seuil} qui sécurisent tes droits. Où tu en es, je ne le sais pas encore et je ne vais pas l'inventer : donne-moi tes premiers contrats, et je m'en occupe.`,
+          phrase: `Mon métier, c'est de compter tes heures vers les ${calc.seuil} qu'il te faut pour renouveler. Où tu en es, je ne le sais pas encore et je ne vais pas l'inventer : donne-moi tes premiers contrats, et je m'en occupe.`,
         };
       }
 
@@ -9094,7 +9156,7 @@ function AppInner() {
         return {
           // (18/08/2026) plus de « (X h) » dans le titre : le héros affiche déjà les
           // heures en très gros juste au-dessus, le doublon jurait sur la capture.
-          ton: "green", emoji: "🟢", titre: "Tes droits sont sécurisés",
+          ton: "green", emoji: "🟢", titre: "Tes 507 heures sont là",
           bg: "rgba(93,202,165,0.1)", bd: "rgba(93,202,165,0.3)", tc: "#5DCAA5", st: "#BFE6D6",
           phrase: calc.aDateAnniv
             ? `C'est bon jusqu'à ton renouvellement du ${formatDateCourt(c.date_anniversaire)}. Je monte la garde, tu peux souffler. 🐾`
@@ -10815,7 +10877,7 @@ function AppInner() {
                   « le rouge fait peut-être peur non ? ») : le héros garde sa robe
                   bleu nuit NEUTRE quel que soit l'état, le gros chiffre reste blanc.
                   Seule la petite ligne d'état en bas porte la couleur (🔴/🟡).
-                  Une exception, la JOIE : droits sécurisés = carte verte entière. */}
+                  Une exception, la JOIE : 507 heures atteintes = carte verte entière. */}
               <div style={{ background: etat.ton === "green" ? etat.bg : "#0a1322", border: `1px solid ${etat.ton === "green" ? etat.bd : "rgba(255,255,255,0.09)"}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
                 {/* ─── LES HEURES EN VEDETTE (18/08/2026, retour de Camille sur capture :
                     « bcp trop gros, il faudrait les heures en gros et le reste plus
@@ -10874,18 +10936,28 @@ function AppInner() {
                         main. Dès la première activité, ce héros disparaît et le vrai
                         cockpit prend le relais : ces boutons ne vivent que le temps
                         d'un compte vide. */}
+                    {/* ⚠️ ORDRE DES DEUX BOUTONS (07/09/2026) : le cachet à la main
+                        passe DEVANT le scan. Mesure sur les 85 comptes : 46 personnes
+                        ont fini leur inscription puis n'ont RIEN saisi, et 36 d'entre
+                        elles n'ont même jamais lancé un scan. Le scan n'échoue pas, il
+                        n'est jamais tenté : il réclame un document que personne n'a sur
+                        soi le soir où il découvre l'app. Le but du premier geste n'est
+                        pas le dossier complet, c'est UN chiffre, pour que le cockpit
+                        s'allume. Le bloc « Je ne connais pas encore ton historique »,
+                        plus bas dans cette même page, était déjà dans cet ordre : le
+                        héros le contredisait. */}
                     <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
-                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
-                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 17 }} /> Scanner une AEM
-                      </button>
                       <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); }}
+                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
+                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un cachet
+                      </button>
+                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
                         style={{ flex: "1 1 150px", background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
-                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 16 }} /> Ajouter un cachet
+                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM
                       </button>
                     </div>
                     <div style={{ fontSize: 11.5, color: etat.st, marginTop: 8, lineHeight: 1.5 }}>
-                      Deux minutes, et ton cockpit s'allume : tes heures vers les 507, ton allocation, ton argent du mois.
+                      Un seul contrat suffit à allumer ton cockpit. Et si tu as tes attestations sous la main, le scan en remplit un d'un coup.
                     </div>
                   </div>
                 </div>
@@ -11255,9 +11327,16 @@ function AppInner() {
                 // il s'affiche désormais TOUT EN HAUT du cockpit, hors de cette IIFE.
                 const blocVerdict = c.allocation && c.allocation.heures_reference != null && (() => {
                 const ftH = c.allocation.heures_reference;
-                const hectorH = c.total_heures;
-                const ecart = Math.round(hectorH - ftH);
-                const coherentH = Math.abs(ecart) <= 5;
+                // ⚠️ On compare la MÊME FENÊTRE que France Travail : les 12 mois qui
+                // ont servi à ouvrir les droits, et surtout PAS `c.total_heures`, qui
+                // est le compteur glissant du prochain renouvellement. Comparer les
+                // deux faisait grossir un faux écart mois après mois (cas réel n°1 :
+                // 513 h reprochées à quelqu'un qui avait tout scanné). Si le serveur
+                // renvoie null, on n'a rien sur cette période : on se tait.
+                const hectorH = c.heures_periode_reference;
+                const peutRecompter = hectorH != null;
+                const ecart = peutRecompter ? Math.round(hectorH - ftH) : 0;
+                const coherentH = peutRecompter && Math.abs(ecart) <= 5;
                 // Fonction Premium : les comptes gratuits voient un teaser verrouillé (le premium/essai voit le contrôle complet).
                 if (!profile?.is_premium) {
                   return (
@@ -11284,19 +11363,24 @@ function AppInner() {
                       <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
                     </div>
 
-                    {/* Les heures */}
+                    {/* Les heures, sur la période qui a servi à ouvrir les droits */}
                     <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong>. À partir de ce que tu as saisi, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.
+                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong> pour ouvrir tes droits.
+                      {peutRecompter
+                        ? <> Sur cette même période, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.</>
+                        : <> Je n'ai aucune activité sur cette période.</>}
                     </div>
                     <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, borderRadius: 8, padding: "9px 11px",
-                      background: coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
-                      border: `1px solid ${coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
-                      color: coherentH ? "#9FE1CB" : "#F0C078" }}>
-                      {coherentH
-                        ? "✓ On tombe pareil, ta décision est cohérente avec ce que tu as déclaré."
-                        : ecart < 0
-                          ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi. Le plus probable : il te manque des AEM à scanner, je ne vois que ce que tu me déclares. Ajoute-les et on revérifie ensemble.</>
-                          : <>Écart de <strong>{ecart} h en plus</strong> chez moi. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
+                      background: !peutRecompter ? "rgba(255,255,255,0.05)" : coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
+                      border: `1px solid ${!peutRecompter ? "rgba(255,255,255,0.12)" : coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
+                      color: !peutRecompter ? "#9FB6CE" : coherentH ? "#9FE1CB" : "#F0C078" }}>
+                      {!peutRecompter
+                        ? <>Je ne peux pas recompter cette période : elle est antérieure à tes saisies. C'est normal si tu es arrivé sur TOTOR après l'ouverture de tes droits, et <strong>ça ne change rien</strong> à ce que tu touches. Je compte à partir de maintenant, pour ton prochain renouvellement.</>
+                        : coherentH
+                          ? "✓ On tombe pareil, ta décision est cohérente avec ce que tu as déclaré."
+                          : ecart < 0
+                            ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi sur cette période. Le plus probable : il me manque des AEM d'avant l'ouverture de tes droits, je ne vois que ce que tu me déclares. Ça <strong>ne change rien</strong> à ce que tu touches aujourd'hui.</>
+                            : <>Écart de <strong>{ecart} h en plus</strong> chez moi sur cette période. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
                     </div>
                     {c.jours_allonges > 0 && (
                       <div style={{ marginTop: 6, fontSize: 11, color: "#8FB4D8", fontStyle: "italic" }}>
@@ -11304,10 +11388,21 @@ function AppInner() {
                       </div>
                     )}
 
-                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel) */}
+                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel).
+                        CONTRÔLE SÉPARÉ, et il faut le dire : celui-ci part du salaire de
+                        référence et des heures retenues recopiés de la notification, pas
+                        des saisies. Il reste donc valable même quand le compte des heures
+                        ci-dessus ne l'est pas. Sans cette phrase, les deux blocs se lisent
+                        comme un seul verdict, et on inquiète pour rien. */}
                     {c.allocation.affichable && c.allocation.montant_officiel != null && (
-                      <div style={{ marginTop: 10, fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        <span style={{ color: "#7E97B3", fontSize: 11 }}>Contrôle séparé, à partir de ta notification</span><br />
                         Allocation : je recalcule <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_nette)}</strong>, ta notification indique <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.montant_officiel)}</strong>, {c.allocation.coherent_officiel ? <span style={{ color: "#9FE1CB", fontWeight: 700 }}>cohérent ✓</span> : <span style={{ color: "#F0C078", fontWeight: 700 }}>écart à vérifier</span>}.
+                        {!c.allocation.coherent_officiel && (
+                          <div style={{ marginTop: 5, fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                            Avant tout : vérifie que tu as saisi le montant <strong style={{ color: "#B5D4F4" }}>exact</strong> de ta notification, centimes compris. Un montant arrondi suffit à créer cet écart.
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -12190,7 +12285,7 @@ function AppInner() {
                             <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
                           </div>
                           <div style={{ fontSize: 13.5, color: "#E8F4FF", lineHeight: 1.6 }}>
-                            Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? ", tes droits sont sécurisés ✓" : `, soit ${pct} % vers ton renouvellement.`}
+                            Ces <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{Math.round(totalHeuresMois)} heures</strong> viennent d'être ajoutées à ton dossier. Tu passes maintenant à <strong style={{ color: "#5DCAA5", fontWeight: 800 }}>{calc.heures} h validées</strong>{calc.secu ? ", tes 507 heures sont là ✓" : `, soit ${pct} % vers ton renouvellement.`}
                           </div>
                         </div>
                         {!calc.secu && (
@@ -12384,8 +12479,8 @@ function AppInner() {
               {(() => {
                 const nbAem = (interActivites || []).filter(a => !(a.aem_recue === true || a.source === "ocr")).length;
                 let phrase;
-                if (calc.secu && nbAem === 0) phrase = "Ton dossier est complet et tes droits sont sécurisés. Rien à signaler. 🐾";
-                else if (calc.secu && nbAem > 0) phrase = "Tes droits sont sécurisés, mais il te manque " + nbAem + " AEM. Récupère-les et ton dossier sera nickel.";
+                if (calc.secu && nbAem === 0) phrase = "Ton dossier est complet et tes 507 heures sont là. Rien à signaler. 🐾";
+                else if (calc.secu && nbAem > 0) phrase = "Tes 507 heures sont là, mais il te manque " + nbAem + " AEM. Récupère-les et ton dossier sera nickel.";
                 else if (nbAem > 0) phrase = "Il te manque " + calc.manque + " h et " + nbAem + " AEM. Si tu règles les AEM, ton dossier sera déjà plus propre.";
                 else phrase = "Il te manque " + calc.manque + " h pour sécuriser tes droits. Continue à déclarer tes contrats.";
                 return (
@@ -12530,7 +12625,7 @@ function AppInner() {
                 R.renouveler = () => {
                   if (calc.secu) return {
                     ouv: "On peut souffler.",
-                    text: `D'après ce que je vois, tes droits sont déjà sécurisés${dateAnnivTxt ? ` jusqu'à ton renouvellement du ${dateAnnivTxt}` : ""}. Tu as tes 507h. Pour moi, on est tranquilles, et chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
+                    text: `D'après ce que je vois, tu as déjà tes 507h${dateAnnivTxt ? ` pour ton renouvellement du ${dateAnnivTxt}` : ""}. C'est la condition principale, et elle est remplie. Chaque heure que tu ajoutes prépare déjà ton prochain renouvellement.`,
                     pourquoi: `Tu es à ${calc.heures}h, au-dessus du seuil de ${calc.seuil}h requis. C'est ce seuil, atteint dans ta période de référence, qui ouvre le renouvellement.`,
                     suite: ["combien_manque", "rythme", "si_pause"],
                   };
@@ -12588,7 +12683,7 @@ function AppInner() {
                   };
                   return {
                     ouv: "Voyons ça précisément.",
-                    text: `Si c'était mon dossier, je viserais environ ${calc.cachetsManquants} cachets pour être tranquille. C'est ce qu'il faut pour transformer tes ${calc.manque}h manquantes en droits sécurisés.`,
+                    text: `Si c'était mon dossier, je viserais environ ${calc.cachetsManquants} cachets pour être tranquille. C'est ce qu'il faut pour combler tes ${calc.manque}h manquantes.`,
                     pourquoi: `${calc.manque}h manquantes ÷ 12h par cachet ≈ ${calc.cachetsManquants} cachets.`,
                     suite: ["rythme", "si_contrat", "renouveler"],
                   };
@@ -12636,7 +12731,7 @@ function AppInner() {
                   if (!calc.secu && calc.manque > 0) etapes.push(`viser ${calc.manque}h ≈ ${calc.cachetsManquants} cachets pour atteindre tes 507h`);
                   if (etapes.length === 0) return {
                     ouv: "Bonne nouvelle.",
-                    text: "Pour l'instant, tu n'as rien d'urgent à faire : ton dossier est propre et tes droits sont sécurisés. Continue à déclarer tes contrats au fur et à mesure, et on garde le cap.",
+                    text: "Pour l'instant, tu n'as rien d'urgent à faire : ton dossier est propre et tes 507 heures sont là. Continue à déclarer tes contrats au fur et à mesure, et on garde le cap.",
                     suite: ["renouveler", "rythme", "si_pause"],
                   };
                   const txt = etapes.length === 1
@@ -12702,7 +12797,7 @@ function AppInner() {
                                       const apres = calc.heures + n * 12;
                                       const secuApres = apres >= calc.seuil;
                                       return (
-                                        <button key={n} type="button" onClick={() => poserQuestionCalc(`Et si j'accepte ${n} cachet${n > 1 ? "s" : ""} ?`, { ouv: secuApres ? "Ça sent bon." : "Voyons.", text: secuApres ? `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Tu franchis les ${calc.seuil}h, tes droits seraient sécurisés. Celui-là, à ta place, je ne le laisserais pas filer.` : `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Il te manquerait encore ${calc.seuil - apres}h ≈ ${Math.ceil((calc.seuil - apres) / 12)} cachets. Ça aide, mais ça ne suffit pas encore.`, bases, suite: ["combien_cachets", "rythme", "renouveler"], qid: "si_contrat_res" })}
+                                        <button key={n} type="button" onClick={() => poserQuestionCalc(`Et si j'accepte ${n} cachet${n > 1 ? "s" : ""} ?`, { ouv: secuApres ? "Ça sent bon." : "Voyons.", text: secuApres ? `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Tu franchis les ${calc.seuil}h. Celui-là, à ta place, je ne le laisserais pas filer.` : `Avec ${n} cachet${n > 1 ? "s" : ""}, tu passes de ${calc.heures}h à ${apres}h. Il te manquerait encore ${calc.seuil - apres}h ≈ ${Math.ceil((calc.seuil - apres) / 12)} cachets. Ça aide, mais ça ne suffit pas encore.`, bases, suite: ["combien_cachets", "rythme", "renouveler"], qid: "si_contrat_res" })}
                                           style={{ flex: "1 1 auto", minWidth: 46, background: "#0d2440", color: "#B5D4F4", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
                                           +{n}
                                         </button>
@@ -13556,13 +13651,13 @@ function AppInner() {
                   let niveau, emoji, titre, sous;
                   if (passeLaBarre) {
                     niveau = "green"; emoji = "🎯"; titre = "Fonce, c'est LE contrat";
-                    sous = dateAnnivTxt ? `Il te fait passer les 507h et sécurise ton renouvellement du ${dateAnnivTxt}.` : "Il te fait passer les 507h et sécurise tes droits.";
+                    sous = dateAnnivTxt ? `Il te fait passer les 507h, avant ton renouvellement du ${dateAnnivTxt}.` : "Il te fait passer les 507h.";
                   } else if (dejaSecu) {
                     niveau = "blue"; emoji = "👍"; titre = "Prends-le si tu peux";
                     sous = "Tes droits sont déjà sécurisés. Celui-là, c'est du bonus pour la suite.";
                   } else if (secu) {
                     niveau = "green"; emoji = "✅"; titre = "Accepte les yeux fermés";
-                    sous = dateAnnivTxt ? `Avec lui, tes droits sont sécurisés pour ton renouvellement du ${dateAnnivTxt}.` : "Avec lui, tes droits sont sécurisés.";
+                    sous = dateAnnivTxt ? `Avec lui, tes 507 heures y sont pour ton renouvellement du ${dateAnnivTxt}.` : "Avec lui, tes 507 heures y sont.";
                   } else {
                     niveau = "orange"; emoji = "🟠"; titre = "Ça aide, mais continue à chercher";
                     sous = `Bon à prendre, mais il te manquera encore ${manque}h après${dateAnnivTxt ? ` pour ton renouvellement du ${dateAnnivTxt}` : ""}.`;
@@ -13794,7 +13889,12 @@ function AppInner() {
                       {(() => {
                         if (!interForm.date || !interForm.date_fin || interForm.date_fin < interForm.date) return null;
                         const n = Math.round((new Date(interForm.date_fin + "T00:00:00") - new Date(interForm.date + "T00:00:00")) / 86400000) + 1;
-                        return <span style={{ color: "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>= {n} jour{n > 1 ? "s" : ""}</span>;
+                        // Pour un arrêt, la plage suffit : on dit tout de suite ce qui sera compté,
+                        // avec la MÊME fonction que le compteur (heuresDe), jamais un calcul à part.
+                        const h = (interForm.type_activite || "").startsWith("arret_")
+                          ? Math.round(heuresDe({ type_activite: interForm.type_activite, nombre: n }))
+                          : null;
+                        return <span style={{ color: "#5DCAA5", fontWeight: 700, whiteSpace: "nowrap" }}>= {n} jour{n > 1 ? "s" : ""}{h ? ` · ${h} h` : ""}</span>;
                       })()}
                     </div>
                     {/* Répartition d'une plage : n'apparaît QUE si une date de fin est saisie (et type cachets/heures) */}
@@ -13839,9 +13939,14 @@ function AppInner() {
                       );
                     })()}
                     <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      {/* Arrêt avec une date de fin : le nombre de jours se lit sur les dates
+                          (affiché juste au-dessus). Un champ modifiable ici serait ignoré et
+                          laisserait croire le contraire, donc on le retire. */}
+                      {!((interForm.type_activite || "").startsWith("arret_") && interForm.date_fin) && (
                       <input type="number" min="0" value={interForm.nombre} onChange={e => setInterForm({ ...interForm, nombre: e.target.value })}
                         placeholder={interForm.type_activite === "cachet_isole" ? "Nb de cachets" : (interForm.type_activite || "").startsWith("arret_") ? "Nb de jours" : interForm.type_activite === "autre_salaire" ? "Nb de contrats (ex : 1)" : "Nb d'heures"}
                         style={{ flex: "1 1 120px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                      )}
                       {(() => {
                         // Autocomplétion employeur : suggère les employeurs DÉJÀ saisis par l'utilisateur
                         // (ses activités uniquement — aucune base globale, aucun partage entre comptes).
@@ -13964,6 +14069,16 @@ function AppInner() {
                         </div>
                       );
                     })()}
+                    {/* L'erreur s'affiche AUSSI ici, juste au-dessus du bouton (14/09/2026).
+                        Elle ne partait qu'en haut de la page : quelqu'un qui remplit le
+                        formulaire en bas ne la voyait jamais, et croyait que le bouton
+                        « ne faisait rien ». C'est exactement ce qu'a vécu la cliente dont le
+                        congé maternité était refusé. */}
+                    {error && (
+                      <div role="alert" style={{ fontSize: 12.5, lineHeight: 1.5, color: "#F5C4B3", background: "rgba(216,90,48,0.12)", border: "1px solid rgba(216,90,48,0.4)", borderRadius: 8, padding: "9px 12px" }}>
+                        {error}
+                      </div>
+                    )}
                     <button type="button" disabled={interSaving} onClick={handleAddActivite}
                       style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700, cursor: interSaving ? "default" : "pointer", fontFamily: "inherit", opacity: interSaving ? 0.6 : 1 }}>
                       {interSaving ? "Enregistrement…" : "Enregistrer"}
@@ -17673,10 +17788,25 @@ function AppInner() {
                     <button aria-label="PDF" onClick={e => { e.stopPropagation(); handleViewInvoicePdf(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
                       <i className="ti ti-file-type-pdf" aria-hidden="true" style={{ fontSize: 15 }} />
                     </button>
-                    <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
-                      <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
-                    </button>
-                    <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); handleDeleteInvoice(inv.id); }} style={S.deleteBtn}>✕</button>
+                    {/* ⚖️ Modifier et supprimer n'existent QUE sur un brouillon (09/09/2026).
+                        Une facture émise ne se modifie plus et se conserve 10 ans
+                        (service-public.fr F23208) ; la corriger passe par une facture
+                        d'avoir. Le serveur refuse de toute façon (409), mais on ne
+                        laisse pas un bouton qui ne marche pas : on le retire, et un
+                        cadenas explique pourquoi. */}
+                    {inv.statut === "brouillon" ? (
+                      <>
+                        <button aria-label="Modifier" onClick={e => { e.stopPropagation(); startEditInvoice(inv); }} style={{ background: "none", border: "1px solid #DDE5EE", borderRadius: 8, width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#8BA5C0", flexShrink: 0, cursor: "pointer" }}>
+                          <i className="ti ti-edit" aria-hidden="true" style={{ fontSize: 15 }} />
+                        </button>
+                        <button aria-label="Supprimer" onClick={e => { e.stopPropagation(); if (window.confirm(`Supprimer le brouillon ${inv.numero} ?`)) handleDeleteInvoice(inv.id); }} style={S.deleteBtn}>✕</button>
+                      </>
+                    ) : (
+                      <span title="Facture émise : elle ne peut plus être modifiée ni supprimée, la loi impose de la conserver 10 ans. Pour la corriger, il faut une facture d'avoir."
+                        style={{ width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center", color: "#B4B2A9", flexShrink: 0 }}>
+                        <i className="ti ti-lock" aria-hidden="true" style={{ fontSize: 15 }} />
+                      </span>
+                    )}
                   </div>
                 );
               })}
