@@ -11503,21 +11503,36 @@ function AppInner() {
                   );
                 }
                 // Affichable : le chiffre + la courbe « chaque cachet compte ».
+                // ⚠️ TOUT EN NET, ARRONDI À L'EURO (19/09/2026, capture de Camille) : le gros
+                // chiffre était en net et la courbe en brut, et la carte montrait 46,04 € puis
+                // 47,36 € pour le même jour. Décision de Camille : un seul chiffre, rond.
+                // « environ 46,04 € » se contredisait de toute façon. Repli sur le brut tant
+                // que le serveur n'envoie pas le net des points.
                 const pts = pj.points || [];
+                const ajDe = p => (p.aj_nette != null ? p.aj_nette : p.aj_brute);
+                const euros = v => formatEUR(Math.round(v));
+                // Le mini-simulateur suit la même règle, sauf quand l'arrondi effacerait
+                // l'écart qu'il doit montrer (« 46 € au lieu de 46 € ») : centimes alors.
+                const paire = (a, b) => (Math.round(a) === Math.round(b) ? [formatEUR(a), formatEUR(b)] : [euros(a), euros(b)]);
+                // En net, la courbe ne descend jamais (balayé sur 3 740 profils le 19/09/2026),
+                // mais elle peut rester à plat : au minimum garanti, ou autour de 62 €, là où
+                // les prélèvements sociaux absorbent la hausse. « La pente est continue »
+                // serait alors faux : la phrase sous la courbe change.
+                const aPlat = pts.some((p, i) => i > 0 && ajDe(p) === ajDe(pts[i - 1]));
                 const courbe = (() => {
                   if (pts.length < 2) return null;
                   const W = 300, H = 110, PAD = 22;
-                  const ajs = pts.map(p => p.aj_brute);
+                  const ajs = pts.map(ajDe);
                   const min = Math.min(...ajs), max = Math.max(...ajs);
                   const x = (i) => PAD + i * ((W - 2 * PAD) / (pts.length - 1));
                   const y = (v) => max === min ? H / 2 : (H - PAD) - ((v - min) / (max - min)) * (H - 2 * PAD);
-                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.aj_brute).toFixed(1)}`).join(" ");
+                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(ajDe(p)).toFixed(1)}`).join(" ");
                   return (
                     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 10 }} aria-label="Courbe de l'allocation estimée selon les cachets ajoutés">
                       <path d={d} fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" />
-                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.aj_brute)} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
-                      <text x={x(0)} y={y(pts[0].aj_brute) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{pts[0].aj_brute.toFixed(2).replace(".", ",")} €</text>
-                      <text x={x(pts.length - 1)} y={y(pts[pts.length - 1].aj_brute) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{pts[pts.length - 1].aj_brute.toFixed(2).replace(".", ",")} €</text>
+                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(ajDe(p))} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
+                      <text x={x(0)} y={y(ajDe(pts[0])) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{euros(ajDe(pts[0]))}</text>
+                      <text x={x(pts.length - 1)} y={y(ajDe(pts[pts.length - 1])) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{euros(ajDe(pts[pts.length - 1]))}</text>
                       <text x={x(0)} y={H - 4} fontSize="9" fill="#6B8299">aujourd'hui</text>
                       <text x={x(pts.length - 1)} y={H - 4} fontSize="9" fill="#6B8299" textAnchor="end">+{pts[pts.length - 1].cachets} cachets</text>
                     </svg>
@@ -11528,16 +11543,21 @@ function AppInner() {
                     {tete}
                     <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
                       <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
-                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{euros(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
-                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{pj.nht} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
+                      {/* Heures à la française (« 510,5 h » et non « 510.5 h »). Jamais arrondies à
+                          l'heure : 506,5 h deviendraient « 507 h », le seuil qu'on n'a pas encore. */}
+                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(pj.nht)} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
                     </div>
                     {courbe}
                     {pts.length >= 2 && (
                       <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
-                        <strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue. Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{formatEUR(pj.brut_moyen_cachet)}).
+                        {aPlat
+                          ? <>Là où ma courbe reste à plat, ce n'est pas une erreur : ton allocation nette bute sur une limite fixée par les règles. <strong style={{ color: "#9FE1CB" }}>Tes cachets comptent toujours pour tes heures.</strong></>
+                          : <><strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue.</>}
+                        {" "}Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{euros(pj.brut_moyen_cachet)}).
                       </div>
                     )}
                     {pj.courbe_plafonnee_60 && (
@@ -11575,10 +11595,10 @@ function AppInner() {
                             ? "La simulation n'a pas répondu, réessaie dans un instant."
                             : projSimResult.affichable
                               ? <>
-                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
+                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{paire(projSimResult.aj_nette, pj.aj_nette)[0]} /jour</strong> au lieu de {paire(projSimResult.aj_nette, pj.aj_nette)[1]}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
                                   {projSimResult.brut_cachet > 0 && (
                                     <div style={{ marginTop: 6, color: "#CBB3E8" }}>
-                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{formatEUR(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
+                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{euros(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
                                     </div>
                                   )}
                                 </>
