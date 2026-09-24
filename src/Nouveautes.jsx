@@ -9,6 +9,15 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "24 septembre 2026",
+    titre: "Les prix baissent, pour tout le monde",
+    items: [
+      { qui: "tous", texte: "TOTOR Veille passe de 9,99 € à 4,99 € par mois, et de 79 € à 34,99 € par an. Rien à demander, rien à déclarer : c'est le nouveau prix, pour les nouveaux comme pour ceux qui sont déjà là." },
+      { qui: "tous", texte: "Du coup, le tarif solidaire disparaît : le prix public EST devenu le prix solidaire. Si tu l'avais demandé, tu gardes ta remise jusqu'au bout, et ensuite tu retombes sur ce nouveau tarif." },
+      { qui: "tous", texte: "L'offre Pionnier, elle, descend à 24,99 € par an, toujours verrouillée à vie et toujours réservée aux 100 premiers. 🐾" },
+    ],
+  },
+  {
     date: "29 août 2026",
     titre: "Un bouton qui t'emmène au bon endroit",
     items: [

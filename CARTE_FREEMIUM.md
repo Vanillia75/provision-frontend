@@ -11,7 +11,7 @@
 
 ## Prix (PRICING.md, inchangé)
 
-- Mensuel : 9,99 €/mois. Annuel : 79 €/an. Pionnier : 44,99 €/an à vie,
+- Mensuel : 4,99 €/mois. Annuel : 34,99 €/an. Pionnier : 24,99 €/an à vie,
   100 premiers payants réels.
 
 ## Quotas du gratuit (décisions TRANCHÉES, remplacent toute autre valeur)
