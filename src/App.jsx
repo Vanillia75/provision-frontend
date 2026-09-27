@@ -17,6 +17,7 @@ import { SimulateurPublic } from "./SimulateurPublic";
 import { PourquoiHector } from "./PourquoiHector";
 import HectorRunnerGame from "./HectorRunnerGame";
 import TrouverDesHeures from "./features/trouverDesHeures/TrouverDesHeures";
+import OffresAccueil from "./features/trouverDesHeures/OffresAccueil";
 
 // ⚠️ Le suivi d'erreurs ne doit JAMAIS recevoir nos sessions de développement :
 // le critère de lancement est « Sentry silencieux », il ne vaut que s'il reflète
@@ -2609,6 +2610,10 @@ function AppInner() {
     activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
     mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
     versements: ["Où trouver mon relevé de situation ?", "Que veut dire l'écart affiché ?", "Pourquoi vérifier mes versements ?"],
+    mois: ["D'où vient ce montant ?", "Pourquoi France Travail m'a repris de l'argent ?"],
+    renouv: ["À quoi sert ma date anniversaire ?", "Comment est calculée mon allocation ?"],
+    conges: ["C'est quoi les Congés Spectacles ?", "Quand faire ma demande chez Audiens ?"],
+    progression: ["À quoi servent les paliers de Totor ?"],
     actu: ["Quand dois-je m'actualiser ?", "Totor s'actualise à ma place ?"],
     reglages: ["C'est quoi la double vérification ?", "Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?"],
   };
@@ -5177,6 +5182,25 @@ function AppInner() {
                                montant_journalier: !isNaN(mj) && String(anniversaireMontantInput).trim() !== "" ? mj : null }),
       });
       setAnniversaireEdit(false);
+      await loadIntermittentCockpit();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setAnniversaireSaving(false);
+    }
+  }
+
+  // La date anniversaire se change SUR PLACE depuis l'accueil (refonte du 27/09/2026) :
+  // le calendrier du téléphone s'ouvre, le choix est enregistré aussitôt. Le montant
+  // journalier part à null : le serveur garde alors celui qu'il connaît déjà.
+  async function enregistrerDateAnniversaire(date) {
+    if (!date) return;
+    setAnniversaireSaving(true);
+    try {
+      await apiFetch("/profile/date-anniversaire", {
+        method: "POST",
+        body: JSON.stringify({ date_anniversaire: date, montant_journalier: null }),
+      });
       await loadIntermittentCockpit();
     } catch (err) {
       setError(err.message);
@@ -9359,15 +9383,15 @@ function AppInner() {
     // ⚠️ Toute page déplacée doit l'être aussi dans l'aide vivante (aide_app.py
     // + AIDE_SUGGESTIONS), sinon l'aide envoie vers des menus qui n'existent plus.
     const ONGLETS_INTER = [
-      { id: "accueil", icon: "ti-home", label: "Accueil", court: "Accueil", defaut: "cockpit", retour: "Accueil",
-        pages: ["cockpit", "calcul", "simulateur"],
+      { id: "accueil", icon: "ti-home", label: "Accueil", court: "Accueil", defaut: "cockpit",
+        pages: ["cockpit", "calcul", "mois", "renouv", "conges", "simulateur"],
         sous: [
           { page: "calcul", label: "Tes heures" },
-          { page: "cockpit", ancre: "carte-mois", label: "Ton mois" },
-          { page: "simulateur", label: "Ton renouvellement" },
-          { page: "cockpit", ancre: "carte-conges", label: "Tes Congés" },
+          { page: "mois", label: "Ton mois" },
+          { page: "renouv", label: "Ton renouvellement" },
+          { page: "conges", label: "Tes Congés" },
         ] },
-      { id: "contrats", icon: "ti-file-text", label: "Contrats", court: "Contrats", defaut: "activites", retour: "Mes contrats",
+      { id: "contrats", icon: "ti-file-text", label: "Contrats", court: "Contrats", defaut: "activites",
         pages: ["activites", "trouver-heures", "mesaem", "attestation"],
         sous: [
           // « Trouver du travail » en tête et TOUJOURS là : on cherche du travail
@@ -9377,27 +9401,36 @@ function AppInner() {
           { page: "mesaem", label: "Mes AEM" },
           { page: "attestation", label: "Mes documents" },
         ] },
-      { id: "actu", icon: "ti-refresh", label: "Actualisation", court: "Actualiser", defaut: "actu", retour: "Actualisation",
+      { id: "actu", icon: "ti-refresh", label: "Actualisation", court: "Actualiser", defaut: "actu",
         badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3),
         pages: ["actu", "versements"],
         sous: [{ page: "versements", label: "Mes versements" }] },
-      { id: "totor", icon: "ti-paw", label: "Totor", court: "Totor", defaut: "hector", retour: "Parle à Totor",
-        pages: ["hector", "conseils", "reglages"],
+      { id: "totor", icon: "ti-paw", label: "Totor", court: "Totor", defaut: "hector",
+        pages: ["hector", "progression", "conseils", "reglages"],
         sous: [
           { page: "hector", label: "Parle à Totor" },
+          { page: "progression", label: "Ta progression" },
           { page: "conseils", label: "Comprendre" },
           { page: "reglages", label: "Réglages" },
         ] },
       { id: "abonnement", icon: "ti-credit-card", label: "Abonnement", court: "Abonnement", defaut: "abonnement", pages: ["abonnement"], sous: [] },
     ];
     const ongletActif = ONGLETS_INTER.find(o => o.pages.includes(interNav)) || ONGLETS_INTER[0];
-    // Ouvre une page ; avec une ancre, descend jusqu'à la carte voulue (« Ton mois »
-    // et « Tes Congés » sont des cartes de l'accueil, pas des pages).
-    const allerPage = (page, ancre) => {
+    // D'où vient chaque sous-page : le lien « ‹ … » en haut de page y ramène
+    // (un chemin fixe, comme dans la maquette, plutôt qu'un historique qui rebondit).
+    const PAGE_PARENTE = {
+      calcul: "cockpit", mois: "cockpit", renouv: "cockpit", conges: "cockpit", simulateur: "renouv",
+      "trouver-heures": "activites", mesaem: "activites", attestation: "activites",
+      versements: "actu",
+      progression: "hector", conseils: "hector", reglages: "hector",
+    };
+    const NOM_PAGE = {
+      cockpit: "Accueil", renouv: "Ton renouvellement", activites: "Mes contrats", actu: "Actualisation", hector: "Totor",
+    };
+    const allerPage = (page) => {
       setInterNav(page);
       setInterMenuOpen(false);
-      if (ancre) setTimeout(() => { const el = document.getElementById(ancre); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 120);
-      else window.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     };
     // Une « porte » : une ligne qui mène à une page (même dessin que la maquette).
     const porte = ({ cle, icon, titre, sous, onClick }) => (
@@ -9414,9 +9447,9 @@ function AppInner() {
       </button>
     );
     const boutonSousMenu = (s) => {
-      const actif = interNav === s.page && !s.ancre;
+      const actif = interNav === s.page;
       return (
-        <button key={s.label} type="button" onClick={() => allerPage(s.page, s.ancre)} aria-current={actif ? "page" : undefined}
+        <button key={s.label} type="button" onClick={() => allerPage(s.page)} aria-current={actif ? "page" : undefined}
           style={{ display: "block", background: actif ? "rgba(93,202,165,0.08)" : "transparent", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 13, color: actif ? "#5DCAA5" : "#8FA6BD", fontWeight: actif ? 600 : 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
           {s.label}
         </button>
@@ -9430,7 +9463,7 @@ function AppInner() {
             const actif = ongletActif.id === o.id;
             return (
               <div key={o.id}>
-                <button type="button" onClick={() => allerPage(o.defaut)} aria-current={actif && interNav === o.defaut && !o.sous.some(s => s.page === o.defaut && !s.ancre) ? "page" : undefined}
+                <button type="button" onClick={() => allerPage(o.defaut)} aria-current={actif && interNav === o.defaut && !o.sous.some(s => s.page === o.defaut) ? "page" : undefined}
                   style={{ display: "flex", alignItems: "center", gap: 11, background: actif ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 10, padding: "10px 12px", fontSize: 14.5, color: actif ? "#5DCAA5" : "#B5D4F4", fontWeight: actif ? 700 : 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
                   <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 19, flexShrink: 0 }} />
                   <span>{o.label}</span>
@@ -9505,7 +9538,7 @@ function AppInner() {
                     <div style={shell}>
                       {tete}
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Pour estimer ton versement du mois, deux chemins au choix : <strong style={{ color: "#C8E0F5" }}>importe ton attestation France Travail</strong> (bouton « Importer mon ARE » sur le cockpit, je lis ton taux officiel dedans), ou renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière ». Et je te donne le chiffre.
+                        Pour estimer ton versement du mois, deux chemins au choix : <strong style={{ color: "#C8E0F5" }}>importe ton attestation France Travail</strong> (sur l'accueil, sous ta date anniversaire : je lis ton taux officiel dedans), ou renseigne ton salaire de référence, tes heures retenues et ton annexe dans la carte « Ton allocation journalière ». Et je te donne le chiffre.
                       </div>
                     </div>
                   );
@@ -9844,6 +9877,588 @@ function AppInner() {
                 );
                 })();
 
+    // ─── LES GRANDES CARTES DE L'ANCIEN COCKPIT (refonte du 27/09/2026) ───
+    // Déménagées ici, au niveau du rendu, pour vivre dans les pages de détail que
+    // les trois cartes courtes de l'accueil ouvrent (Ton mois, Ton renouvellement)
+    // et dans « Ta progression » (onglet Totor). Contenu inchangé, seule la garde
+    // `c &&` est ajoutée : ici, le cockpit peut ne pas être encore chargé.
+                const blocFrise = c && (
+              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px" }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>Progression</div>
+                <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 16, textAlign: "center" }}>Chaque heure déclarée le fait grandir avec toi.</div>
+                <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 2px" }}>
+                  {PALIERS_INTERMITTENT.map((p, i) => {
+                    const acquis = c.total_heures >= p.seuil;
+                    const iciMaintenant = i === idxActuel;
+                    const ligneAcquise = i < PALIERS_INTERMITTENT.length - 1 && c.total_heures >= PALIERS_INTERMITTENT[i + 1].seuil;
+                    const couleurActif = p.etat === "gardien" ? "#5DCAA5" : "#378ADD";
+                    return (
+                      <div key={p.etat} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
+                        {i < PALIERS_INTERMITTENT.length - 1 && (
+                          <div style={{ position: "absolute", top: 20, left: "50%", width: "100%", height: 2, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.06)", zIndex: 0 }} />
+                        )}
+                        <div style={{ position: "relative", zIndex: 1, width: 40, height: 40, borderRadius: "50%", margin: "0 auto 6px", overflow: "hidden", background: "#16314E",
+                          border: iciMaintenant ? `2px solid ${couleurActif}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.1)"),
+                          opacity: acquis ? 1 : 0.35,
+                          boxShadow: iciMaintenant ? `0 0 0 4px ${couleurActif}30` : "none",
+                          display: "flex", alignItems: "center", justifyContent: "center" }}>
+                          <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
+                        </div>
+                        <div style={{ fontSize: 9.5, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#3A5170", lineHeight: 1.2 }}>{p.nom}</div>
+                        <div style={{ fontSize: 8.5, color: iciMaintenant ? couleurActif : (acquis ? "#9FE1CB" : "#2A4060") }}>
+                          {iciMaintenant ? "tu es ici" : (acquis ? "✓" : p.court)}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+                );
+                const blocPAS = c && c.pas_preleve && (
+                  <div style={{ background: "linear-gradient(160deg, rgba(159,203,245,0.06), rgba(10,19,34,0.5))", border: "1px solid rgba(159,203,245,0.24)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
+                      <span style={{ fontSize: 18 }}>🧾</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>PAS prélevé en {c.pas_preleve.annee}</div>
+                    </div>
+                    <div style={{ fontSize: 26, fontWeight: 800, color: "#9FCBF5", lineHeight: 1.1 }}>{formatEUR(c.pas_preleve.montant)}</div>
+                    <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>D'après tes bulletins de paie. C'est la somme des montants que tu as recopiés, pas une estimation.</div>
+                  </div>
+                );
+                const blocVerdict = c && c.allocation && c.allocation.heures_reference != null && (() => {
+                const ftH = c.allocation.heures_reference;
+                // ⚠️ On compare la MÊME FENÊTRE que France Travail : les 12 mois qui
+                // ont servi à ouvrir les droits, et surtout PAS `c.total_heures`, qui
+                // est le compteur glissant du prochain renouvellement. Comparer les
+                // deux faisait grossir un faux écart mois après mois (cas réel n°1 :
+                // 513 h reprochées à quelqu'un qui avait tout scanné). Si le serveur
+                // renvoie null, on n'a rien sur cette période : on se tait.
+                const hectorH = c.heures_periode_reference;
+                const peutRecompter = hectorH != null;
+                const ecart = peutRecompter ? Math.round(hectorH - ftH) : 0;
+                const coherentH = peutRecompter && Math.abs(ecart) <= 5;
+                // Fonction Premium : les comptes gratuits voient un teaser verrouillé (le premium/essai voit le contrôle complet).
+                if (!profile?.is_premium) {
+                  return (
+                    <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                        <span style={{ fontSize: 18 }}>🔒</span>
+                        <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
+                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
+                      </div>
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
+                        Je compare ce que tu as reconstitué avec ce que France Travail a retenu, et je t'explique chaque écart, pour repérer une AEM manquante ou une erreur <strong style={{ color: "#E8F4FF" }}>avant qu'elle te coûte des droits</strong>.
+                      </div>
+                      <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "conformite" })}
+                        style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        🐾 Je laisse Totor s'en occuper
+                      </button>
+                    </div>
+                  );
+                }
+                return (
+                  <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
+                      <span style={{ fontSize: 18 }}>🔍</span>
+                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
+                    </div>
+
+                    {/* Les heures, sur la période qui a servi à ouvrir les droits */}
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong> pour ouvrir tes droits.
+                      {peutRecompter
+                        ? <> Sur cette même période, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.</>
+                        : <> Je n'ai aucune activité sur cette période.</>}
+                    </div>
+                    <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, borderRadius: 8, padding: "9px 11px",
+                      background: !peutRecompter ? "rgba(255,255,255,0.05)" : coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
+                      border: `1px solid ${!peutRecompter ? "rgba(255,255,255,0.12)" : coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
+                      color: !peutRecompter ? "#9FB6CE" : coherentH ? "#9FE1CB" : "#F0C078" }}>
+                      {!peutRecompter
+                        ? <>Je ne peux pas recompter cette période : elle est antérieure à tes saisies. C'est normal si tu es arrivé sur TOTOR après l'ouverture de tes droits, et <strong>ça ne change rien</strong> à ce que tu touches. Je compte à partir de maintenant, pour ton prochain renouvellement.</>
+                        : coherentH
+                          ? "✓ On tombe pareil, ta décision est cohérente avec ce que tu as déclaré."
+                          : ecart < 0
+                            ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi sur cette période. Le plus probable : il me manque des AEM d'avant l'ouverture de tes droits, je ne vois que ce que tu me déclares. Ça <strong>ne change rien</strong> à ce que tu touches aujourd'hui.</>
+                            : <>Écart de <strong>{ecart} h en plus</strong> chez moi sur cette période. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
+                    </div>
+                    {c.jours_allonges > 0 && (
+                      <div style={{ marginTop: 6, fontSize: 11, color: "#8FB4D8", fontStyle: "italic" }}>
+                        (dont {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""} de fractionnement pris en compte)
+                      </div>
+                    )}
+
+                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel).
+                        CONTRÔLE SÉPARÉ, et il faut le dire : celui-ci part du salaire de
+                        référence et des heures retenues recopiés de la notification, pas
+                        des saisies. Il reste donc valable même quand le compte des heures
+                        ci-dessus ne l'est pas. Sans cette phrase, les deux blocs se lisent
+                        comme un seul verdict, et on inquiète pour rien. */}
+                    {c.allocation.affichable && c.allocation.montant_officiel != null && (
+                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        <span style={{ color: "#7E97B3", fontSize: 11 }}>Contrôle séparé, à partir de ta notification</span><br />
+                        Allocation : je recalcule <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_nette)}</strong>, ta notification indique <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.montant_officiel)}</strong>, {c.allocation.coherent_officiel ? <span style={{ color: "#9FE1CB", fontWeight: 700 }}>cohérent ✓</span> : <span style={{ color: "#F0C078", fontWeight: 700 }}>écart à vérifier</span>}.
+                        {!c.allocation.coherent_officiel && (
+                          <div style={{ marginTop: 5, fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.5 }}>
+                            Avant tout : vérifie que tu as saisi le montant <strong style={{ color: "#B5D4F4" }}>exact</strong> de ta notification, centimes compris. Un montant arrondi suffit à créer cet écart.
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 11, color: "#7E97B3", lineHeight: 1.5 }}>
+                      Ces contrôles sont des <strong style={{ color: "#9FB6CE" }}>estimations</strong> à partir de tes saisies. <strong style={{ color: "#9FB6CE" }}>France Travail reste seul juge</strong>, c'est un outil pour t'aider à repérer un point à vérifier, pas une contestation officielle.
+                    </div>
+                  </div>
+                );
+                })();
+    // La grande carte de Totor (image, palier, message, chemin parcouru).
+    const blocTotorGrand = c && (
+                <div style={{ position: "relative", paddingTop: 44 }}>
+                <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", boxShadow: "0 0 0 10px rgba(93,202,165,0.07), 0 10px 30px rgba(0,0,0,0.4)" }}>
+                  {/* Header immersif Totor (agrandi : il est la star) */}
+                  <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
+                    {/* halo doux derrière Totor */}
+                    <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
+                    {/* (l'image de Totor est posée par le wrapper, au-dessus de la carte) */}
+
+                    {/* Badge palier en haut à droite */}
+                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
+                      <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
+                      <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
+                    </div>
+
+                    {/* Fondu vers le fond de la carte */}
+                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 190, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)", zIndex: 1 }} />
+
+                    {/* Titre + message en bas à gauche */}
+                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20, zIndex: 2 }}>
+                      <div style={{ fontSize: 28, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
+                        Totor {palierActuel.nom}
+                      </div>
+                      <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
+                        {c.hector_message}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Progression en phrase + barre ── */}
+                  <div style={{ padding: "16px 22px 18px" }}>
+                    <div style={{ fontSize: 14, color: "white", fontWeight: 700, marginBottom: 10 }}>
+                      Tu as déjà parcouru <span style={{ color: "#5DCAA5" }}>{coach.pctChemin}%</span> du chemin.
+                    </div>
+                    <div style={{ height: 10, background: "#07192E", borderRadius: 6, overflow: "hidden", position: "relative" }}>
+                      <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
+                      <span>{c.total_heures}h faites</span>
+                      <span>Objectif · {c.seuil}h</span>
+                    </div>
+
+                    {/* Compteur incluant un arrêt assimilé → estimation assumée (Loi X) */}
+                    {c.arret_estimation && (
+                      <div style={{ marginTop: 12, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 10, padding: "11px 13px" }}>
+                        <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
+                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé</strong>{c.jours_allonges > 0 ? <> et ta période de recherche est <strong style={{ color: "#FCE0A8" }}>allongée de {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""}</strong> (fractionnement)</> : null}. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong>, vérifie avec eux.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* L'invitation à renseigner la date vivait ICI. Retirée le 28/07 :
+                        la carte juste en dessous demande EXACTEMENT la même chose, avec
+                        son champ de saisie, sous l'autre nom (« date anniversaire »).
+                        Deux noms pour un seul champ, on croyait qu'on demandait deux
+                        dates. Une seule demande, celle qui a le bouton. */}
+
+                    {/* Comparaison mois-à-mois (le chien remarque) */}
+                    {coach.compa && (
+                      <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: coach.compa.sens === "up" ? "rgba(93,202,165,0.07)" : "rgba(250,199,117,0.06)", border: `1px solid ${coach.compa.sens === "up" ? "rgba(93,202,165,0.2)" : "rgba(250,199,117,0.2)"}`, borderRadius: 10, padding: "11px 13px" }}>
+                        <i className={`ti ${coach.compa.sens === "up" ? "ti-trending-up" : "ti-trending-down"}`} aria-hidden="true" style={{ color: coach.compa.sens === "up" ? "#5DCAA5" : "#FAC775", fontSize: 17, flexShrink: 0, marginTop: 1 }} />
+                        <div style={{ fontSize: 12.5, color: "#D6E8FA", lineHeight: 1.45 }}>{coach.compa.txt}</div>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* ── ACCROCHE ANALYSE DE TOTOR (il remarque des choses) ── */}
+                  {aDesAnalyses && (
+                    <button type="button" onClick={() => setInterNav("calcul")}
+                      style={{ width: "100%", textAlign: "left", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px", display: "flex", alignItems: "center", gap: 11, background: "rgba(55,138,221,0.05)", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
+                      <i className="ti ti-bulb" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18, flexShrink: 0 }} />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 11, color: "#7FB8F0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>J'ai remarqué</div>
+                        <div style={{ fontSize: 13, color: "#D6E8FA", marginTop: 2 }}>{analyses[0].court}{analyses.length > 1 ? ` · +${analyses.length - 1}` : ""}</div>
+                      </div>
+                      <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 16, flexShrink: 0 }} />
+                    </button>
+                  )}
+
+                  {/* ── PENSÉE DE TOTOR (il est vivant) ── */}
+                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px 18px", display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.04)" }}>
+                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
+                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
+                    </div>
+                    <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5, fontStyle: "italic" }}>{penseeHector}</div>
+                  </div>
+                </div>
+                {/* Totor détouré par-dessus la carte : oreilles hors cadre, poitrail
+                    fondu (alpha dans l'image). Sous le badge/titre (zIndex 1 < 2).
+                    ⚠️ Le fondu incrusté dans l'image NE SUFFIT PAS. L'image est carrée
+                    (900×900) et affichée en « cover » calée en haut : dès que la carte
+                    est plus LARGE que haute (tablette, grand écran, émulateur), le
+                    recadrage ne montre que le haut de l'image et coupe le museau NET,
+                    avant d'atteindre son fondu. Le dégradé de la carte, lui, est peint
+                    DESSOUS (zIndex plus bas) : il ne peut rien y faire.
+                    D'où ce masque, appliqué à l'image elle-même : il fond toujours,
+                    quelle que soit la largeur. Il démarre tard (72 %) pour ne pas
+                    manger le visage sur les écrans étroits, où l'image entière tient. */}
+                <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
+                  onError={(e) => { e.currentTarget.style.display = "none"; }}
+                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block", WebkitMaskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)" }} />
+                </div>
+    );
+    const blocAllocation = c && (<>
+              {/* ══ ALLOCATION JOURNALIÈRE — recalculée, encadrée par la Loi X ══
+                   Un chiffre affiché = un chiffre validé sur un vrai courrier. Sinon,
+                   Totor dit honnêtement « pas encore » plutôt que d'approximer. */}
+              <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
+                  <span style={{ fontSize: 18 }}>🎭</span>
+                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton allocation journalière</div>
+                </div>
+
+                {/* État 1 : rien de saisi → invitation */}
+                {!allocEdit && !c.allocation && (
+                  <div style={{ marginTop: 8 }}>
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
+                      Donne-moi ton <strong style={{ color: "#C8E0F5" }}>salaire de référence</strong> et tes <strong style={{ color: "#C8E0F5" }}>heures retenues</strong> (ils sont écrits sur ta notification France Travail) : je recalcule ton allocation, règle par règle.
+                    </div>
+                    <button type="button" onClick={() => ouvrirAllocEdit(null)}
+                      style={{ background: "#5DCAA5", color: "#052b20", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                      Renseigner
+                    </button>
+                  </div>
+                )}
+
+                {/* État 2 : formulaire de saisie */}
+                {allocEdit && (
+                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 11 }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      {[["annexe10", "Artiste"], ["annexe8", "Technicien"]].map(([val, lbl]) => (
+                        <button key={val} type="button" onClick={() => setAllocAnnexe(val)}
+                          style={{ flex: 1, background: allocAnnexe === val ? "#378ADD" : "#0d2440", color: allocAnnexe === val ? "white" : "#B5D4F4", border: `1px solid ${allocAnnexe === val ? "#378ADD" : "#1e3a5f"}`, borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                          {lbl}
+                        </button>
+                      ))}
+                    </div>
+                    <label style={{ fontSize: 11.5, color: "#8BA5C0", fontWeight: 600 }}>Salaire de référence (sur ta notification)
+                      <MontantInput decimales value={allocSR} onChange={v => setAllocSR(v)} placeholder="ex. 8 537"
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <label style={{ fontSize: 11.5, color: "#8BA5C0", fontWeight: 600 }}>Nombre d'heures retenues
+                      <input type="number" min="0" step="1" value={allocNHT} onChange={e => setAllocNHT(e.target.value)} placeholder="ex. 636"
+                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                    </label>
+                    <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
+                      <button type="button" disabled={allocSaving} onClick={handleSaveAllocation}
+                        style={{ flex: 1, background: "#5DCAA5", color: "#052b20", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 700, cursor: allocSaving ? "default" : "pointer", fontFamily: "inherit", opacity: allocSaving ? 0.6 : 1 }}>
+                        {allocSaving ? "…" : "Calculer mon allocation"}
+                      </button>
+                      <button type="button" onClick={() => setAllocEdit(false)}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* État 3a : allocation AFFICHABLE (branche validée) */}
+                {!allocEdit && c.allocation && c.allocation.affichable && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(c.allocation.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                      </div>
+                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.45 }}>
+                      <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 14, flexShrink: 0, marginTop: 1, color: "#7FB8F0" }} />
+                      <span>Estimé à partir de ton salaire de référence et de tes heures France Travail.</span>
+                    </div>
+                    {c.allocation.montant_officiel != null && (
+                      <div style={{ fontSize: 11.5, color: c.allocation.coherent_officiel ? "#9FE1CB" : "#F0C078", marginTop: 8, background: c.allocation.coherent_officiel ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)", border: `1px solid ${c.allocation.coherent_officiel ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`, borderRadius: 8, padding: "8px 11px", lineHeight: 1.45 }}>
+                        {c.allocation.coherent_officiel
+                          ? `✓ Cohérent avec ta notification (${formatEUR(c.allocation.montant_officiel)}), on tombe pareil.`
+                          : `⚠️ Je trouve ${formatEUR(c.allocation.aj_nette)}, ta notification dit ${formatEUR(c.allocation.montant_officiel)}. Ta notification fait foi, vérifions ensemble tes chiffres saisis.`}
+                      </div>
+                    )}
+
+                    {/* Pourquoi ce montant ? (le raisonnement dépliable — Loi X) */}
+                    <button type="button" onClick={() => setAllocPourquoiOuvert(o => !o)}
+                      style={{ background: "transparent", border: "none", color: "#7FB8F0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "10px 0 0", display: "inline-flex", alignItems: "center", gap: 5 }}>
+                      <i className={`ti ti-chevron-${allocPourquoiOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 14 }} />
+                      Pourquoi ce montant ?
+                    </button>
+                    {allocPourquoiOuvert && (
+                      <div style={{ fontSize: 11.5, color: "#9FB6CE", marginTop: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "11px 13px", lineHeight: 1.6 }}>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part salaires (A)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_a)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part heures (B)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_b)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part fixe (C)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_c)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 5, paddingTop: 5 }}><span>Allocation brute</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_brute)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>− retraite complémentaire</span><strong style={{ color: "#E8F4FF" }}>−{formatEUR(c.allocation.retenue_retraite)}</strong></div>
+                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}><span style={{ color: "#9FE1CB" }}>Allocation nette</span><strong style={{ color: "#9FE1CB" }}>{formatEUR(c.allocation.aj_nette)}</strong></div>
+                        <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 9, fontStyle: "italic" }}>
+                          Calcul selon les règles France Travail (annexes 8 et 10). Seule ta notification officielle fait foi.
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Le renvoi vers l'estimation mensuelle (lancée le 24/07, carte « Ton mois »).
+                         Depuis la refonte du 27/09/2026, les deux cartes vivent sur la même page. */}
+                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(93,202,165,0.15)", lineHeight: 1.55 }}>
+                      <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Et ton versement du mois ?</strong><br />
+                      Regarde la carte « Ton mois », juste au-dessus : elle estime ce que France Travail te versera pour le mois en cours. Un calcul déjà vérifié au centime sur de vrais versements. 🐾
+                    </div>
+
+                    <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 12 }}>
+                      Modifier mes chiffres
+                    </button>
+                  </div>
+                )}
+
+                {/* État 3b : NON affichable (branche pas encore validée) — l'honnêteté assumée */}
+                {!allocEdit && c.allocation && !c.allocation.affichable && (
+                  <div style={{ marginTop: 6 }}>
+                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                      <>Il me manque quelque chose pour recalculer ton allocation avec certitude, et je préfère me taire plutôt que t'avancer un chiffre à l'aveugle. Vérifie tes informations juste en dessous. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
+                    </div>
+                    <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
+                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 }}>
+                      Modifier mes chiffres
+                    </button>
+                  </div>
+                )}
+              </div>
+    </>);
+              /* ══ PROJECTION AU PROCHAIN RENOUVELLEMENT (demande testeuse 23/07/2026) ══
+                   L'AJ que donnerait la formule si le dossier était examiné tel quel, et la
+                   courbe « chaque cachet compte ». MÊME Loi X que la carte allocation :
+                   branche validée seulement, sinon on le dit. Depuis le 27/07/2026 les deux
+                   annexes passent (backtest contre le simulateur officiel France Travail). */
+    const blocProjectionAj = c && (() => {
+                const pj = projAj;
+                if (!pj) return null;
+                if (pj.ok === false && pj.raison === "aucune_activite") return null;
+                const shell = { background: "linear-gradient(160deg, rgba(55,138,221,0.09), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" };
+                const tete = (
+                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 18 }}>🔭</span>
+                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton prochain renouvellement</div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                  </div>
+                );
+                // Vitrine (gratuit) : la promesse Veille, sans chiffre.
+                if (pj.verrou) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
+                        Avec TOTOR Veille, je projette <strong style={{ color: "#C8E0F5" }}>l'allocation de ton prochain renouvellement</strong> à partir de tes AEM, et je te montre ce que chaque cachet en plus changerait. L'estimation s'affine à chaque scan.
+                      </div>
+                      <button type="button" onClick={() => setInterNav("abonnement")}
+                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
+                        Découvrir TOTOR Veille
+                      </button>
+                    </div>
+                  );
+                }
+                if (pj.ok === false && pj.raison === "bruts_incomplets") {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
+                        Pour projeter ton allocation, il me faut tes <strong style={{ color: "#C8E0F5" }}>salaires bruts</strong> : je ne les connais que sur <strong style={{ color: "#F2C879" }}>{pj.completude} %</strong> de tes heures. Complète-les dans « Mes activités » (ou scanne tes AEM, je lis tout), et je te donne le chiffre.
+                      </div>
+                    </div>
+                  );
+                }
+                if (pj.affichable === false) {
+                  return (
+                    <div style={shell}>
+                      {tete}
+                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
+                        <>Il me manque quelque chose pour projeter ton renouvellement avec certitude, et je préfère me taire plutôt que t'avancer un chiffre à l'aveugle. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
+                      </div>
+                    </div>
+                  );
+                }
+                // Affichable : le chiffre + la courbe « chaque cachet compte ».
+                // ⚠️ TOUT EN NET, ARRONDI À L'EURO (19/09/2026, capture de Camille) : le gros
+                // chiffre était en net et la courbe en brut, et la carte montrait 46,04 € puis
+                // 47,36 € pour le même jour. Décision de Camille : un seul chiffre, rond.
+                // « environ 46,04 € » se contredisait de toute façon. Repli sur le brut tant
+                // que le serveur n'envoie pas le net des points.
+                const pts = pj.points || [];
+                const ajDe = p => (p.aj_nette != null ? p.aj_nette : p.aj_brute);
+                const euros = v => formatEUR(Math.round(v));
+                // Le mini-simulateur suit la même règle, sauf quand l'arrondi effacerait
+                // l'écart qu'il doit montrer (« 46 € au lieu de 46 € ») : centimes alors.
+                const paire = (a, b) => (Math.round(a) === Math.round(b) ? [formatEUR(a), formatEUR(b)] : [euros(a), euros(b)]);
+                // En net, la courbe ne descend jamais (balayé sur 3 740 profils le 19/09/2026),
+                // mais elle peut rester à plat : au minimum garanti, ou autour de 62 €, là où
+                // les prélèvements sociaux absorbent la hausse. « La pente est continue »
+                // serait alors faux : la phrase sous la courbe change.
+                const aPlat = pts.some((p, i) => i > 0 && ajDe(p) === ajDe(pts[i - 1]));
+                const courbe = (() => {
+                  if (pts.length < 2) return null;
+                  const W = 300, H = 110, PAD = 22;
+                  const ajs = pts.map(ajDe);
+                  const min = Math.min(...ajs), max = Math.max(...ajs);
+                  const x = (i) => PAD + i * ((W - 2 * PAD) / (pts.length - 1));
+                  const y = (v) => max === min ? H / 2 : (H - PAD) - ((v - min) / (max - min)) * (H - 2 * PAD);
+                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(ajDe(p)).toFixed(1)}`).join(" ");
+                  return (
+                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 10 }} aria-label="Courbe de l'allocation estimée selon les cachets ajoutés">
+                      <path d={d} fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" />
+                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(ajDe(p))} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
+                      <text x={x(0)} y={y(ajDe(pts[0])) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{euros(ajDe(pts[0]))}</text>
+                      <text x={x(pts.length - 1)} y={y(ajDe(pts[pts.length - 1])) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{euros(ajDe(pts[pts.length - 1]))}</text>
+                      <text x={x(0)} y={H - 4} fontSize="9" fill="#6B8299">aujourd'hui</text>
+                      <text x={x(pts.length - 1)} y={H - 4} fontSize="9" fill="#6B8299" textAnchor="end">+{pts[pts.length - 1].cachets} cachets</text>
+                    </svg>
+                  );
+                })();
+                return (
+                  <div style={shell}>
+                    {tete}
+                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
+                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{euros(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                      </div>
+                    </div>
+                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
+                      {/* Heures à la française (« 510,5 h » et non « 510.5 h »). Jamais arrondies à
+                          l'heure : 506,5 h deviendraient « 507 h », le seuil qu'on n'a pas encore. */}
+                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(pj.nht)} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
+                    </div>
+                    {courbe}
+                    {pts.length >= 2 && (
+                      <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
+                        {aPlat
+                          ? <>Là où ma courbe reste à plat, ce n'est pas une erreur : ton allocation nette bute sur une limite fixée par les règles. <strong style={{ color: "#9FE1CB" }}>Tes cachets comptent toujours pour tes heures.</strong></>
+                          : <><strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue.</>}
+                        {" "}Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{euros(pj.brut_moyen_cachet)}).
+                      </div>
+                    )}
+                    {pj.courbe_plafonnee_60 && (
+                      <div style={{ fontSize: 11, color: "#8FB4D8", marginTop: 6, lineHeight: 1.45 }}>
+                        La courbe s'arrête au plafond de l'allocation : au-delà, ajouter des cachets ne fait plus monter le montant journalier.
+                      </div>
+                    )}
+                    {/* Mini-simulateur « et si j'ajoute N cachets à X € ? » (demande testeuse 24/07 :
+                        « c'est le nombre de cachets PLUS combien ils sont payés qui décide ») */}
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(55,138,221,0.18)" }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: "#C8E0F5", marginBottom: 8 }}>Et si j'ajoute… ?</div>
+                      {/* Deux façons de donner le montant : par cachet, ou le TOTAL sur la
+                          période (les cachets n'ont pas tous le même prix). */}
+                      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
+                        {[["cachet", "€ par cachet"], ["total", "€ au total"]].map(([m, lib]) => (
+                          <button key={m} type="button" onClick={() => setProjSimMode(m)}
+                            style={{ background: projSimMode === m ? "rgba(55,138,221,0.25)" : "transparent", border: `1px solid ${projSimMode === m ? "#378ADD" : "#1e3a5f"}`, borderRadius: 999, padding: "4px 12px", fontSize: 11.5, fontWeight: 700, color: projSimMode === m ? "#C8E0F5" : "#8FB4D8", cursor: "pointer", fontFamily: "inherit" }}>
+                            {lib}
+                          </button>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                        <input type="number" min="1" max="200" value={projSimCachets} onChange={e => setProjSimCachets(e.target.value)} placeholder="Nb cachets"
+                          style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={projSimMode === "total" ? "€ au total (tous cachets)" : `€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
+                          style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
+                        <button type="button" disabled={projSimLoading || !projSimCachets} onClick={lancerSimulationAj}
+                          style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: projSimLoading || !projSimCachets ? "default" : "pointer", fontFamily: "inherit", opacity: projSimLoading || !projSimCachets ? 0.6 : 1 }}>
+                          {projSimLoading ? "…" : "Simuler"}
+                        </button>
+                      </div>
+                      {projSimResult && (
+                        <div style={{ fontSize: 12.5, marginTop: 9, lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "10px 13px", color: "#B5D4F4" }}>
+                          {projSimResult.erreur
+                            ? "La simulation n'a pas répondu, réessaie dans un instant."
+                            : projSimResult.affichable
+                              ? <>
+                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{paire(projSimResult.aj_nette, pj.aj_nette)[0]} /jour</strong> au lieu de {paire(projSimResult.aj_nette, pj.aj_nette)[1]}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
+                                  {projSimResult.brut_cachet > 0 && (
+                                    <div style={{ marginTop: 6, color: "#CBB3E8" }}>
+                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{euros(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
+                                    </div>
+                                  )}
+                                </>
+                              : <>Je n'arrive pas à chiffrer ce lot précisément, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. Ce que je peux te dire de sûr : ça monte. 🐾</>}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
+                      Estimation d'après tes activités déclarées, affinée à chaque AEM scannée. Seule ta notification France Travail fera foi.
+                    </div>
+                  </div>
+                );
+    })();
+              /* ═══ PROJECTION : "Quand pourrais-je renouveler ?" ═══ */
+    const blocQuandRenouveler = projection.dispo && (
+              <div style={{ background: "linear-gradient(160deg,#0d2440,#0a1322)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "18px 20px 20px" }}>
+                <div onClick={basculerProjection} role="button" tabIndex={0}
+                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); basculerProjection(); } }}
+                  style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, cursor: "pointer" }}>
+                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                    <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
+                  </div>
+                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Quand pourrais-tu renouveler ?</div>
+                  <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: "auto" }}><i className={`ti ti-chevron-${projectionOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#B5D4F4" }} /></span>
+                </div>
+                {projectionOuverte && (<>
+                <div style={{ fontSize: 11.5, color: "#7E97B3", marginBottom: 14, lineHeight: 1.45 }}>
+                  Des estimations, pas des certitudes, elles dépendent de ce qui va se passer.
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {projection.scenarios.map((s, i) => (
+                    <div key={i} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 11, padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>🔵</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 12, color: "#8FB4D8", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                          {s.label}
+                          {s.estimation && <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: "#F0C070", background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.3)", borderRadius: 10, padding: "1px 6px", textTransform: "uppercase" }}>estimation</span>}
+                        </div>
+                        <div style={{ fontSize: 14.5, fontWeight: 800, color: s.ok ? "white" : "#F0997F", lineHeight: 1.2, marginTop: 1 }}>
+                          {s.ok ? "tu pourrais y être " : ""}{s.valeur}
+                        </div>
+                        {s.note && <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 1 }}>{s.note}</div>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {projection.nbPrevus === 0 && (
+                  <div style={{ marginTop: 12, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "13px 15px" }}>
+                    <div style={{ fontSize: 12.5, color: "#C2E6D8", lineHeight: 1.5, marginBottom: 10 }}>
+                      🗓️ <strong style={{ color: "white" }}>Tu as déjà des cachets signés pour les mois à venir&nbsp;?</strong> Ajoute-les avec leur vraie date, je te montre tout de suite où tu en seras à ta date anniversaire.
+                    </div>
+                    <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); }}
+                      style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "11px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un contrat déjà signé
+                    </button>
+                  </div>
+                )}
+
+                {!calc.aDateAnniv && (
+                  <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 12, lineHeight: 1.5, textAlign: "center" }}>
+                    🐾 Ajoute ta date anniversaire ci-dessus pour affiner ces estimations.
+                  </div>
+                )}
+                </>)}
+              </div>
+    );
+
     return (
       <div style={{ background: "#07192E", minHeight: "100vh", color: "white", fontFamily: "inherit", display: "flex" }}>
         <style>{CSS}</style>
@@ -9951,11 +10566,11 @@ function AppInner() {
 
         <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(150px + env(safe-area-inset-bottom, 0px))" : "40px 20px 80px" }}>
 
-          {/* Téléphone : sur une sous-page, le chemin du retour vers la page de l'onglet. */}
-          {isMobile && interNav !== ongletActif.defaut && (
-            <button type="button" onClick={() => allerPage(ongletActif.defaut)}
+          {/* Sur une sous-page, le chemin du retour vers la page d'où elle vient. */}
+          {PAGE_PARENTE[interNav] && (
+            <button type="button" onClick={() => allerPage(PAGE_PARENTE[interNav])}
               style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: "4px 0", marginBottom: 10, color: "#8FB4D8", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 36 }}>
-              <i className="ti ti-chevron-left" aria-hidden="true" style={{ fontSize: 17 }} /> {ongletActif.retour}
+              <i className="ti ti-chevron-left" aria-hidden="true" style={{ fontSize: 17 }} /> {NOM_PAGE[PAGE_PARENTE[interNav]]}
             </button>
           )}
 
@@ -10468,1193 +11083,352 @@ function AppInner() {
               })()}
 
               {/* ═══ PAGE COCKPIT : 2 colonnes — Totor (gauche) + infos (droite) ═══ */}
-              {interNav === "cockpit" && (<>
+              {/* ═══ L'ACCUEIL ALLÉGÉ (refonte du 27/09/2026, maquette validée par Camille) ═══
+                  « Dès qu'on arrive, on voit combien on a d'heures » : les heures en très
+                  gros, la date anniversaire modifiable sur place, les offres quand il
+                  manque des heures, trois cartes courtes, un seul bouton.
+                  Ce qui a quitté l'accueil (décisions de Camille des 19 et 26/09) :
+                  - le briefing du jour, « Tes 507 h sont là », « Mon plan avec toi », la
+                    prochaine action, le rappel d'actualisation et le murmure d'abonnement :
+                    ils répétaient les heures, et l'actualisation comme l'abonnement ont
+                    maintenant leur onglet (avec sa pastille pour l'actualisation) ;
+                  - les grandes cartes (Ton mois, allocation, vérification de la décision,
+                    PAS, renouvellement, Congés) : intactes, dans les pages de détail que
+                    les trois cartes ouvrent ;
+                  - la grande carte de Totor et ses paliers : onglet Totor, « Ta progression ».
+                  Jamais un « 0 h » qu'on ne sait pas vrai : sans activité, « Faisons connaissance ». */}
+              {interNav === "cockpit" && (() => {
+                const aDesActivites = (interActivites || []).length > 0;
+                const pctH = Math.min(100, (calc.heures / calc.seuil) * 100);
+                const manque = aDesActivites && calc.heures < calc.seuil;
+                const nbH = (n) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(n);
+                const MOIS_NOMS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+                const ajouterContrat = () => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); };
+                const lienVert = { display: "block", marginTop: 9, fontSize: 13, lineHeight: 1.45, color: "#5DCAA5", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3, background: "none", border: "none", padding: 0, fontFamily: "inherit", textAlign: "left", cursor: "pointer" };
+                const champ = { width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
 
-
-
-              {/* ═══ EN-TÊTE COCKPIT : Totor + état (le héros) ═══ */}
-              {/* ─── ON NE PEINT JAMAIS LA PEUR (18/08/2026, question de Camille :
-                  « le rouge fait peut-être peur non ? ») : le héros garde sa robe
-                  bleu nuit NEUTRE quel que soit l'état, le gros chiffre reste blanc.
-                  Seule la petite ligne d'état en bas porte la couleur (🔴/🟡).
-                  Une exception, la JOIE : 507 heures atteintes = carte verte entière. */}
-              <div style={{ background: etat.ton === "green" ? etat.bg : "#0a1322", border: `1px solid ${etat.ton === "green" ? etat.bd : "rgba(255,255,255,0.09)"}`, borderRadius: 16, padding: "18px 20px", marginBottom: 12 }}>
-                {/* ─── LES HEURES EN VEDETTE (18/08/2026, retour de Camille sur capture :
-                    « bcp trop gros, il faudrait les heures en gros et le reste plus
-                    petit »). Quand il y a des heures, LE gros chiffre du héros, c'est
-                    ELLES ; l'état de Totor et sa phrase passent SOUS la jauge, en une
-                    ligne discrète. Sans aucune activité (« Faisons connaissance »),
-                    l'ancienne mise en page reste : il n'y a pas d'heures à mettre en
-                    vedette, et on n'affiche jamais un « 0 h » qu'on ne sait pas vrai. */}
-                {calc.heures > 0 ? (<>
-                  <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                    <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.ton === "green" ? etat.bd : "rgba(255,255,255,0.12)"}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.ton === "green" ? etat.tc : "#5DCAA5"} />
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8 }}>
-                        <div style={{ fontSize: 12.5, color: "#8BA5C0", fontWeight: 600 }}>
-                          🐾 {salutInter}{profilPrenom ? ` ${profilPrenom}` : ""}
-                        </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: etat.ton === "green" ? etat.tc : "#8FB4D8", textAlign: "right", flexShrink: 0 }}>
-                          {calc.heures >= calc.seuil ? "objectif atteint 🎉" : `plus que ${Math.round(calc.manque)} h`}
-                        </span>
-                      </div>
-                      <div style={{ fontSize: 13.5, color: etat.ton === "green" ? etat.st : "#B5D4F4", marginTop: 3, whiteSpace: "nowrap" }}>
-                        Tu es à <strong style={{ color: etat.ton === "green" ? etat.tc : "white", fontSize: 31, fontWeight: 800, letterSpacing: -0.5, lineHeight: 1 }}>{Math.round(calc.heures)} h</strong>
-                        <span> sur {calc.seuil}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ marginTop: 11, height: 10, background: "rgba(255,255,255,0.1)", borderRadius: 6, position: "relative" }}>
-                    <div style={{ width: `${Math.min(100, (calc.heures / calc.seuil) * 100)}%`, height: 10, background: "#5DCAA5", borderRadius: 6, transition: "width 0.4s" }} />
-                    <span aria-hidden="true" style={{ position: "absolute", left: `calc(${Math.min(100, (calc.heures / calc.seuil) * 100)}% - 9px)`, top: -8, fontSize: 15 }}>🐾</span>
-                  </div>
-                  <div style={{ fontSize: 12.5, color: etat.ton === "green" ? etat.st : "#B5D4F4", marginTop: 11, lineHeight: 1.55 }}>
-                    {etat.emoji} <strong style={{ color: etat.tc }}>{etat.titre}.</strong> {etat.phrase}
-                  </div>
-                </>) : (
-                <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
-                  <div style={{ width: 52, height: 52, borderRadius: 14, background: "#07192E", border: `1px solid ${etat.bd}`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor={etat.tc} />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    {/* Salon V2 — présence d'abord : salut léger AU-DESSUS de l'état, dans l'unique Totor du
-                        héros (image ci-dessus) — aucune 2e image. 🐾 + logique identiques à l'AE. */}
-                    <div style={{ fontSize: 13, color: "#8BA5C0", fontWeight: 600, marginBottom: 4 }}>
-                      🐾 {salutInter}{profilPrenom ? ` ${profilPrenom}` : ""}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 20 }}>{etat.emoji}</span>
-                      <div style={{ fontSize: 21, fontWeight: 800, color: etat.tc, lineHeight: 1.1 }}>{etat.titre}</div>
-                    </div>
-                    <div style={{ fontSize: 14, color: etat.st, marginTop: 6, lineHeight: 1.55 }}>{etat.phrase}</div>
-                    {/* ─── LE PREMIER GESTE, GUIDÉ (18/08/2026) : dans la revue des
-                        inscrits, 2 nouveaux venus d'iPhone sont repartis sans rien
-                        saisir. La toute première action vit maintenant DANS le héros :
-                        scanner une AEM (le geste magique) ou saisir un cachet à la
-                        main. Dès la première activité, ce héros disparaît et le vrai
-                        cockpit prend le relais : ces boutons ne vivent que le temps
-                        d'un compte vide. */}
-                    {/* ⚠️ ORDRE DES DEUX BOUTONS (07/09/2026) : le cachet à la main
-                        passe DEVANT le scan. Mesure sur les 85 comptes : 46 personnes
-                        ont fini leur inscription puis n'ont RIEN saisi, et 36 d'entre
-                        elles n'ont même jamais lancé un scan. Le scan n'échoue pas, il
-                        n'est jamais tenté : il réclame un document que personne n'a sur
-                        soi le soir où il découvre l'app. Le but du premier geste n'est
-                        pas le dossier complet, c'est UN chiffre, pour que le cockpit
-                        s'allume. Le bloc « Je ne connais pas encore ton historique »,
-                        plus bas dans cette même page, était déjà dans cet ordre : le
-                        héros le contredisait. */}
-                    <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                      <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); }}
-                        style={{ flex: "1 1 150px", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
-                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un cachet
-                      </button>
-                      <button type="button" onClick={() => { setInterNav("mesaem"); window.scrollTo(0, 0); }}
-                        style={{ flex: "1 1 150px", background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 11, padding: "12px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 7, minHeight: 46 }}>
-                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 16 }} /> Scanner une AEM
-                      </button>
-                    </div>
-                    <div style={{ fontSize: 11.5, color: etat.st, marginTop: 8, lineHeight: 1.5 }}>
-                      Un seul contrat suffit à allumer ton cockpit. Et si tu as tes attestations sous la main, le scan en remplit un d'un coup.
-                    </div>
-                  </div>
-                </div>
-                )}
-              </div>
-
-              {/* ═══ TON BRIEFING DU JOUR — la promesse du carnet (28/06), enfin réelle.
-                   Composé uniquement de données déjà calculées ailleurs (Loi X : rien de
-                   nouveau), 3 lignes max, priorité : à faire > à surveiller > tout va bien. ═══ */}
-              {(() => {
-                const items = [];
-                // ⚠️ AJOUT DU 06/08/2026 : sur 26 intermittents réels, 20 n'avaient jamais
-                //  saisi d'activité et 16 n'avaient pas de date anniversaire. L'inscription
-                //  ne la réclame qu'une fois, et rien ne la redemandait jamais ensuite : le
-                //  briefing affichait « rien d'urgent » à quelqu'un dont le dossier était
-                //  vide. Ces deux lignes passent EN TÊTE parce qu'elles conditionnent tout
-                //  le reste : sans activités je ne compte rien, sans date anniversaire je ne
-                //  sais pas dire « à temps ou non ».
-                if ((interActivites || []).length === 0) {
-                  items.push({ ic: "🎬", tx: <>Je n'ai encore <strong style={{ color: "#C8E0F5" }}>aucun de tes contrats</strong>. Ajoute-les, ou scanne une AEM, et je compte pour toi.</>, cible: "activites", lib: "Commencer" });
-                }
-                if (interCockpit && !interCockpit.date_anniversaire) {
-                  items.push({ ic: "📅", tx: <>Il me manque ta <strong style={{ color: "#C8E0F5" }}>date anniversaire</strong> : sans elle, je ne peux pas te dire si tu seras à temps pour ton renouvellement.</>, cible: "cockpit", lib: "La renseigner" });
-                }
-                if (actuOuverte && !dejaActualise) {
-                  items.push({ ic: "📋", tx: <>Ton <strong style={{ color: "#C8E0F5" }}>actualisation</strong> est ouverte : je te l'ai préparée, il n'y a plus qu'à recopier.</>, cible: "actu", lib: "Voir" });
-                }
-                if (aemManquantes.length > 0) {
-                  items.push({ ic: "📄", tx: <>Il me manque l'AEM de <strong style={{ color: "#C8E0F5" }}>{aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""}</strong> : réclame-la, ou scanne-la dès qu'elle arrive.</>, cible: "mesaem", lib: "Mes AEM" });
-                }
-                const contratsAVenir = (interActivites || []).filter(a => {
-                  if (!a.date) return false;
-                  const ecart = (new Date(a.date + "T12:00:00") - Date.now()) / 86400000;
-                  return ecart >= 0 && ecart <= 7;
-                }).length;
-                if (contratsAVenir > 0) {
-                  items.push({ ic: "🗓️", tx: <><strong style={{ color: "#C8E0F5" }}>{contratsAVenir} contrat{contratsAVenir > 1 ? "s" : ""}</strong> dans les 7 prochains jours. Belle semaine en vue.</>, cible: "activites", lib: "Voir" });
-                }
-                const dateJour = new Date().toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-                return (
-                  <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "14px 18px", marginBottom: 12 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap", marginBottom: items.length ? 8 : 4 }}>
-                      <span style={{ fontSize: 13.5, fontWeight: 800, color: "white" }}>☀️ Ton briefing du jour</span>
-                      <span style={{ fontSize: 11, color: "#5A7798" }}>{dateJour}</span>
-                    </div>
-                    {items.length === 0 ? (
-                      <div style={{ fontSize: 12.5, color: "#8FB4D8", lineHeight: 1.5 }}>
-                        Rien d'urgent aujourd'hui. Tu es à <strong style={{ color: "#C8E0F5" }}>{calc.heures} h</strong> (objectif {calc.seuil}). Va créer, je veille. 🐾
-                      </div>
-                    ) : items.slice(0, 3).map((it, i) => (
-                      <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "5px 0", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
-                        <span style={{ flexShrink: 0 }}>{it.ic}</span>
-                        <span style={{ flex: 1 }}>
-                          {it.tx}{" "}
-                          <button type="button" onClick={() => setInterNav(it.cible)}
-                            style={{ background: "none", border: "none", padding: 0, color: "#5DCAA5", fontWeight: 700, cursor: "pointer", fontFamily: "inherit", fontSize: 12.5, textDecoration: "underline" }}>
-                            {it.lib} →
-                          </button>
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                // ── La section « date anniversaire » (idée de Camille, 26/09) ──
+                // Le compte à rebours dit l'urgence mieux qu'une date ; la date se
+                // change SUR PLACE (le calendrier du téléphone s'ouvre, le choix est
+                // enregistré aussitôt) ; l'allocation du jour est rappelée.
+                const j = c.jours_avant_anniversaire;
+                const quand = !c.date_anniversaire || j == null ? null : j > 1 ? `dans ${j} jours` : j === 1 ? "demain" : j === 0 ? "aujourd'hui" : "passée";
+                const dateLongue = (iso) => { try { return new Date(iso + "T12:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" }); } catch { return iso; } };
+                const importerARE = (texte) => (
+                  <label style={{ ...lienVert, cursor: areUploading ? "default" : "pointer" }}>
+                    {areUploading ? "Je lis ton attestation…" : texte}
+                    <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
+                      style={{ display: "none" }} />
+                  </label>
                 );
-              })()}
-
-              {/* ─── L'ARGENT DU MOIS JUSTE SOUS LE BRIEFING (17/08/2026) ───
-                  Maquette mobile validée + demande vocale de Camille : sur téléphone,
-                  les deux revenus du mois (France Travail | tes employeurs) se voient
-                  SANS défiler : les heures d'abord (héros), le briefing, puis l'argent.
-                  Sur ordinateur, la carte reste à gauche sous Totor (inchangé). */}
-              {isMobile && blocMois && <div id="carte-mois" style={{ marginBottom: 12 }}>{blocMois}</div>}
-              {/* Congés Spectacles juste après l'argent du mois (18/08/2026,
-                  demande de Camille : « congé spectacle placer plus haut »). */}
-              {isMobile && blocConges && <div id="carte-conges" style={{ marginBottom: 12 }}>{blocConges}</div>}
-
-              {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══
-                   ⚠️ GARDE-FOU DU 06/08/2026, mesuré sur les comptes réels : 20 intermittents
-                   sur 26 n'avaient jamais saisi la moindre activité, et l'app leur annonçait
-                   « tu es à 0 h, plus que 507 h, environ 43 cachets », jauge à 0 %.
-                   C'est FAUX : quelqu'un qui n'a rien saisi a peut-être déjà 400 heures
-                   travaillées. On ne déduit jamais d'une absence. Tant qu'AUCUNE activité
-                   n'existe, on n'affiche donc aucun chiffre et aucune jauge : on dit ce qu'on
-                   sait, c'est-à-dire rien, et on demande. ═══ */}
-              {(interActivites || []).length === 0 ? (
-                <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "20px 20px", marginBottom: 12 }}>
-                  <div style={{ fontSize: 17.5, fontWeight: 800, color: "white", lineHeight: 1.35, marginBottom: 8 }}>
-                    Je ne connais pas encore ton historique.
-                  </div>
-                  <div style={{ fontSize: 13.5, color: "#8BA5C0", lineHeight: 1.6, marginBottom: 16 }}>
-                    Ce que je fais, une fois que tu m'as donné tes contrats : je compte tes heures sur les 12 mois qui glissent, je te dis en permanence combien il t'en reste avant les <strong style={{ color: "#C8E0F5" }}>{calc.seuil} h</strong>, et je te préviens si le rythme ne suffit pas. Je ne vais pas te dire que tu es à zéro heure aujourd'hui : je n'en sais rien.
-                  </div>
-                  <div style={{ display: "flex", gap: 9, flexWrap: "wrap" }}>
-                    <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); }}
-                      style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 10, padding: "11px 18px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7 }}>
-                      <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} />
-                      Ajouter mon premier cachet
-                    </button>
-                    <button type="button" onClick={() => setInterNav("mesaem")}
-                      style={{ background: "transparent", color: "#B5D4F4", border: "1px solid rgba(255,255,255,0.16)", borderRadius: 10, padding: "11px 18px", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7 }}>
-                      <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} />
-                      Scanner une AEM
-                    </button>
-                  </div>
-                  <div style={{ fontSize: 11.5, color: "#5A7798", lineHeight: 1.5, marginTop: 12 }}>
-                    Une AEM scannée, c'est tout un contrat rempli d'un coup. C'est le plus rapide si tu en as sous la main.
-                  </div>
-                </div>
-              ) : (
-              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "18px 20px", marginBottom: 12 }}>
-                {!calc.secu ? (
-                  <>
-                    {/* Le compteur ACTUEL en grand d'abord (demande Camille 25/07), puis le manque. */}
-                    <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.3, marginBottom: 4 }}>
-                      Tu es à <span style={{ color: "#5DCAA5" }}>{calc.heures} h</span>. Plus que <span style={{ color: "#5DCAA5" }}>{calc.manque} h</span> pour sécuriser tes droits.
-                    </div>
-                    <div style={{ fontSize: 12.5, color: "#5A7798", marginBottom: 16 }}>
-                      Objectif {calc.seuil} h · encore ≈ {calc.cachetsManquants} cachet{calc.cachetsManquants > 1 ? "s" : ""}
-                    </div>
-                  </>
-                ) : (
-                  <div style={{ fontSize: 19, fontWeight: 800, color: "white", lineHeight: 1.25, marginBottom: 16 }}>
-                    Tes <span style={{ color: "#5DCAA5" }}>{calc.seuil} h</span> sont là. 🎉
-                  </div>
-                )}
-
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 7 }}>
-                  <div style={{ fontSize: 12, color: "#8BA5C0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Renouvellement</div>
-                  <div style={{ fontSize: 14, fontWeight: 800, color: "#5DCAA5" }}>{coach.pctChemin}%</div>
-                </div>
-                <div style={{ height: 10, background: "rgba(255,255,255,0.06)", borderRadius: 6, overflow: "hidden" }}>
-                  <div style={{ height: "100%", width: `${coach.pctChemin}%`, background: "#5DCAA5", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
-                </div>
-                {fenetre.aDesActivites && fenetre.sortent60 > 0 && (
-                  <div style={{ display: "flex", gap: 8, marginTop: 9 }}>
-                    <span style={{ fontSize: 11, color: "#5DCAA5" }}>🟢 {calc.heures} h certaines</span>
-                    <span style={{ fontSize: 11, color: "#5A7798" }}>·</span>
-                    <span style={{ fontSize: 11, color: "#7FB8F0" }}>🔵 {fenetre.sortent60} h sortent dans 60 j</span>
-                  </div>
-                )}
-              </div>
-              )}
-
-              {/* ── Brique 5.5 : date anniversaire (date de renouvellement des droits) ── */}
-              <div style={{ background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.2)", borderRadius: 14, padding: "16px 20px" }}>
-                {!anniversaireEdit && c.date_anniversaire && (
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <i className="ti ti-calendar-clock" aria-hidden="true" style={{ color: "#FAC775", fontSize: 22 }} />
-                      <div>
-                        <div style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Date anniversaire</div>
-                        <div style={{ fontSize: 14, color: "white", fontWeight: 600, marginTop: 1 }}>
-                          {c.jours_avant_anniversaire != null && c.jours_avant_anniversaire >= 0
-                            ? `Dans ${c.jours_avant_anniversaire} jour${c.jours_avant_anniversaire > 1 ? "s" : ""}`
-                            : "Renouvellement dépassé"}
-                          <span style={{ color: "#8BA5C0", fontWeight: 400, fontSize: 12 }}> · {c.date_anniversaire}</span>
-                        </div>
-                        <div style={{ fontSize: 11, color: "#9A8050", marginTop: 3, fontStyle: "italic" }}>
-                          C'est la date à laquelle France Travail étudie ton renouvellement.
-                        </div>
-                        {c.montant_journalier != null && (
-                          <div style={{ fontSize: 12.5, color: "#9FE1CB", marginTop: 6, fontWeight: 600 }}>
-                            💶 Allocation journalière : {c.montant_journalier} €
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireMontantInput(c.montant_journalier != null ? String(c.montant_journalier) : ""); setAnniversaireEdit(true); }}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                      Modifier
-                    </button>
-                  </div>
-                )}
-                {/* Tant que la date manque : UN choix, deux colonnes.
-                    Avant, c'etaient deux paragraphes empiles (« renseigne ta date »,
-                    puis « tu as ton attestation ? »), qui donnaient l'impression de
-                    deux corvees a faire l'une apres l'autre. Ce sont en realite DEUX
-                    CHEMINS VERS LA MEME CHOSE : soit tu tapes la date, soit tu deposes
-                    ton attestation et Totor la lit. Cote a cote, ca se lit en un coup
-                    d'oeil et ca occupe la largeur au lieu d'allonger la page. */}
-                {!anniversaireEdit && !c.date_anniversaire && !areExtrait && (<>
-                  <div style={{ fontSize: 13, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
-                    Donne-moi ta <strong style={{ color: "#FAE3B6" }}>date anniversaire</strong> et je te préviendrai avant l'échéance.
-                    <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 3, fontStyle: "italic" }}>C'est la date à laquelle France Travail étudie ton dossier. Deux façons, au choix.</span>
-                  </div>
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
-                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
-                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je la connais</div>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Tu la saisis, c'est réglé en dix secondes.</div>
-                      <button type="button" onClick={() => { setAnniversaireInput(""); setAnniversaireEdit(true); }}
-                        style={{ width: "100%", background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        Saisir la date
-                      </button>
-                    </div>
-                    <div style={{ background: "rgba(250,199,117,0.05)", border: "1px solid rgba(250,199,117,0.18)", borderRadius: 12, padding: "13px 12px", display: "flex", flexDirection: "column", gap: 7 }}>
-                      <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20 }} />
-                      <div style={{ fontSize: 12.5, color: "white", fontWeight: 700, lineHeight: 1.3 }}>Je ne la connais pas</div>
-                      <div style={{ fontSize: 11, color: "#8BA5C0", lineHeight: 1.4, flex: 1 }}>Dépose ton attestation, je lis la date ET ton montant journalier.</div>
-                      <label style={{ width: "100%", boxSizing: "border-box", background: areUploading ? "rgba(250,199,117,0.4)" : "transparent", border: "1px solid rgba(250,199,117,0.55)", color: "#FAE3B6", borderRadius: 8, padding: "9px 10px", fontSize: 12.5, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                        <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 14 }} />
-                        {areUploading ? "Lecture…" : "Importer mon ARE"}
-                        <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
-                          style={{ display: "none" }} />
+                const basDate = areExtrait ? (
+                  // Ce que Totor a lu sur l'attestation, à vérifier avant d'enregistrer
+                  // (il n'affiche que ce que France Travail a écrit, il ne calcule rien).
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ fontSize: 13, color: "#FAE3B6", fontWeight: 700, marginBottom: 4 }}>Voici ce que j'ai lu sur ton attestation</div>
+                    <div style={{ fontSize: 11.5, color: "#9A8050", marginBottom: 10, fontStyle: "italic" }}>Vérifie et corrige si besoin : je n'affiche que ce que France Travail a écrit.</div>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <label style={{ flex: "1 1 150px", fontSize: 11, color: "#C9A861", fontWeight: 600 }}>Date anniversaire
+                        <input type="date" value={areExtrait.date_anniversaire} onChange={e => setAreExtrait({ ...areExtrait, date_anniversaire: e.target.value })} style={champ} />
+                      </label>
+                      <label style={{ flex: "1 1 130px", fontSize: 11, color: "#C9A861", fontWeight: 600 }}>Montant journalier (€)
+                        <input type="text" value={areExtrait.montant_journalier} onChange={e => setAreExtrait({ ...areExtrait, montant_journalier: e.target.value })} placeholder="ex : 52,30" style={champ} />
                       </label>
                     </div>
-                  </div>
-                  {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
-                </>)}
-                {anniversaireEdit && (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    {/* (29/08/2026, cas Constance) : le montant est enfin modifiable ICI.
-                        Avant, seul le re-import de l'ARE pouvait le changer : quelqu'un
-                        dont le taux venait de baisser au renouvellement restait bloque
-                        sur l'ancien chiffre, avec des estimations trop belles (Loi X). */}
-                    <label style={{ flex: "1 1 160px", fontSize: 10.5, color: "#C9A861", fontWeight: 600 }}>Date anniversaire
-                      <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)}
-                        style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                    </label>
-                    <label style={{ flex: "1 1 150px", fontSize: 10.5, color: "#C9A861", fontWeight: 600 }}>Allocation journalière (€ brut/jour)
-                      <MontantInput value={anniversaireMontantInput} onChange={v => setAnniversaireMontantInput(v)}
-                        decimales placeholder="ex : 43,26"
-                        style={{ width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                    </label>
-                    <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
-                      style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1 }}>
-                      {anniversaireSaving ? "…" : "Enregistrer"}
-                    </button>
-                    <button type="button" onClick={() => setAnniversaireEdit(false)}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 12px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                      Annuler
-                    </button>
-                  </div>
-                )}
-
-                {/* ── Import attestation ARE : Totor lit la date anniversaire + le montant (ne calcule rien) ──
-                    Quand la date manque, l'import est deja propose dans le choix a deux
-                    colonnes ci-dessus : ce bloc ne sert plus qu'a l'ecran de verification
-                    de ce qui a ete lu, et au re-import quand une date existe deja. */}
-                {!anniversaireEdit && (c.date_anniversaire || areExtrait) && (
-                  <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(250,199,117,0.15)" }}>
-                    {areExtrait ? (
-                      // Écran de vérification : ce que Totor a lu, éditable avant enregistrement.
-                      <div>
-                        <div style={{ fontSize: 12.5, color: "#FAE3B6", fontWeight: 700, marginBottom: 10, display: "flex", alignItems: "center", gap: 7 }}>
-                          <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 16 }} /> Voici ce que j'ai lu sur ton attestation
-                        </div>
-                        <div style={{ fontSize: 11.5, color: "#9A8050", marginBottom: 12, fontStyle: "italic" }}>Vérifie et corrige si besoin, je n'affiche que ce que France Travail a écrit, je ne calcule rien.</div>
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                          <div>
-                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Date anniversaire</label>
-                            <input type="date" value={areExtrait.date_anniversaire} onChange={e => setAreExtrait({ ...areExtrait, date_anniversaire: e.target.value })}
-                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                          </div>
-                          <div>
-                            <label style={{ fontSize: 11, color: "#C9A861", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600, display: "block", marginBottom: 4 }}>Montant journalier (€)</label>
-                            <input type="text" inputMode="text" value={areExtrait.montant_journalier} onChange={e => setAreExtrait({ ...areExtrait, montant_journalier: e.target.value })}
-                              placeholder="ex : 52,30"
-                              style={{ width: "100%", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                          </div>
-                        </div>
-                        {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
-                        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-                          <button type="button" disabled={areSaving} onClick={handleConfirmARE}
-                            style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: areSaving ? "default" : "pointer", fontFamily: "inherit", opacity: areSaving ? 0.6 : 1 }}>
-                            {areSaving ? "Enregistrement…" : "C'est bon, enregistre"}
-                          </button>
-                          <button type="button" onClick={() => { setAreExtrait(null); setAreError(""); }}
-                            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "9px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                            Annuler
-                          </button>
-                        </div>
-                      </div>
-                    ) : (c && c.montant_journalier != null) ? (
-                      // Loi VIII : l'ARE est déjà importée (Totor connaît le montant journalier)
-                      // → on ne redemande plus. Encart discret, réimport possible si besoin.
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
-                          <i className="ti ti-file-check" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18, flexShrink: 0 }} />
-                          <div style={{ fontSize: 12.5, color: "#9FE1CB", fontWeight: 600 }}>Attestation importée</div>
-                        </div>
-                        <label style={{ background: "transparent", color: "#8BA5C0", border: "1px solid rgba(255,255,255,0.14)", borderRadius: 8, padding: "7px 12px", fontSize: 12, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
-                          <i className="ti ti-refresh" aria-hidden="true" style={{ fontSize: 13 }} />
-                          {areUploading ? "Lecture…" : "Réimporter"}
-                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
-                            style={{ display: "none" }} />
-                        </label>
-                      </div>
-                    ) : (
-                      // Bouton d'import (upload PDF/photo de l'attestation ARE).
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                          <i className="ti ti-file-upload" aria-hidden="true" style={{ color: "#FAC775", fontSize: 20, flexShrink: 0 }} />
-                          <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
-                            Tu as ton attestation France Travail ?
-                            <span style={{ display: "block", fontSize: 11.5, color: "#8BA5C0", marginTop: 2 }}>Glisse-la, je lis ta date anniversaire et ton montant journalier pour toi.</span>
-                          </div>
-                        </div>
-                        <label style={{ background: areUploading ? "rgba(250,199,117,0.4)" : "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: areUploading ? "default" : "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 7, flexShrink: 0 }}>
-                          <i className="ti ti-upload" aria-hidden="true" style={{ fontSize: 15 }} />
-                          {areUploading ? "Lecture…" : "Importer mon ARE"}
-                          <input type="file" accept="image/*,application/pdf" disabled={areUploading} onChange={e => { const f = e.target.files && e.target.files[0]; if (f) handleImportARE(f); e.target.value = ""; }}
-                            style={{ display: "none" }} />
-                        </label>
-                      </div>
-                    )}
-                    {areError && !areExtrait && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 9 }}>{areError}</div>}
-                  </div>
-                )}
-              </div>
-
-              {(() => {
-                // Rééquilibrage des colonnes (déplacement pur) : Progression (frise) + Congés
-                // Spectacles passent SOUS Totor à gauche en DESKTOP (comble le vide) ; en mobile
-                // ils restent dans le flux de droite, après « Quand pourrais-tu renouveler ? »
-                // (ordre validé : Chiot → dossier renouvellement → Progression → Congés).
-                // ── Brique 5.3 : la frise des paliers (Progression) ──
-                const blocFrise = (
-              <div style={{ background: "#0a1322", border: "1px solid rgba(93,202,165,0.15)", borderRadius: 14, padding: "18px 16px" }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: "white", marginBottom: 2, textAlign: "center" }}>Progression</div>
-                <div style={{ fontSize: 10.5, color: "#6B8299", marginBottom: 16, textAlign: "center" }}>Chaque heure déclarée le fait grandir avec toi.</div>
-                <div style={{ display: "flex", justifyContent: "space-between", position: "relative", padding: "0 2px" }}>
-                  {PALIERS_INTERMITTENT.map((p, i) => {
-                    const acquis = c.total_heures >= p.seuil;
-                    const iciMaintenant = i === idxActuel;
-                    const ligneAcquise = i < PALIERS_INTERMITTENT.length - 1 && c.total_heures >= PALIERS_INTERMITTENT[i + 1].seuil;
-                    const couleurActif = p.etat === "gardien" ? "#5DCAA5" : "#378ADD";
-                    return (
-                      <div key={p.etat} style={{ flex: 1, textAlign: "center", position: "relative", minWidth: 0 }}>
-                        {i < PALIERS_INTERMITTENT.length - 1 && (
-                          <div style={{ position: "absolute", top: 20, left: "50%", width: "100%", height: 2, background: ligneAcquise ? "#5DCAA5" : "rgba(255,255,255,0.06)", zIndex: 0 }} />
-                        )}
-                        <div style={{ position: "relative", zIndex: 1, width: 40, height: 40, borderRadius: "50%", margin: "0 auto 6px", overflow: "hidden", background: "#16314E",
-                          border: iciMaintenant ? `2px solid ${couleurActif}` : (acquis ? "2px solid #5DCAA5" : "2px solid rgba(255,255,255,0.1)"),
-                          opacity: acquis ? 1 : 0.35,
-                          boxShadow: iciMaintenant ? `0 0 0 4px ${couleurActif}30` : "none",
-                          display: "flex", alignItems: "center", justifyContent: "center" }}>
-                          <NiveauImage src={p.img} fallbackIcon={acquis ? "ti-check" : "ti-lock"} fallbackColor={acquis ? "#5DCAA5" : "#6B86A3"} />
-                        </div>
-                        <div style={{ fontSize: 9.5, fontWeight: 600, color: (acquis || iciMaintenant) ? "white" : "#3A5170", lineHeight: 1.2 }}>{p.nom}</div>
-                        <div style={{ fontSize: 8.5, color: iciMaintenant ? couleurActif : (acquis ? "#9FE1CB" : "#2A4060") }}>
-                          {iciMaintenant ? "tu es ici" : (acquis ? "✓" : p.court)}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-                );
-                // « Tes Congés Spectacles » (blocConges) : déménagé au niveau du
-                // composant le 18/08/2026, comme blocMois : sur téléphone la carte
-                // vit maintenant tout en haut du cockpit, juste après « Ton mois ».
-                // PAS prélevé cette année : SOMME des montants réels recopiés des
-                // bulletins (backend). Rien si l'utilisateur n'a rien saisi. Jamais une estimation.
-                const blocPAS = c.pas_preleve && (
-                  <div style={{ background: "linear-gradient(160deg, rgba(159,203,245,0.06), rgba(10,19,34,0.5))", border: "1px solid rgba(159,203,245,0.24)", borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6 }}>
-                      <span style={{ fontSize: 18 }}>🧾</span>
-                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>PAS prélevé en {c.pas_preleve.annee}</div>
-                    </div>
-                    <div style={{ fontSize: 26, fontWeight: 800, color: "#9FCBF5", lineHeight: 1.1 }}>{formatEUR(c.pas_preleve.montant)}</div>
-                    <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 6, lineHeight: 1.5 }}>D'après tes bulletins de paie. C'est la somme des montants que tu as recopiés, pas une estimation.</div>
-                  </div>
-                );
-                // « Totor vérifie ta décision » (blocVerdict) : défini ici pour être posé
-                // à GAUCHE en desktop et rester dans le flux mobile plus bas. « Ton mois »
-                // (blocMois) a déménagé au niveau du composant le 17/08/2026 : sur téléphone
-                // il s'affiche désormais TOUT EN HAUT du cockpit, hors de cette IIFE.
-                const blocVerdict = c.allocation && c.allocation.heures_reference != null && (() => {
-                const ftH = c.allocation.heures_reference;
-                // ⚠️ On compare la MÊME FENÊTRE que France Travail : les 12 mois qui
-                // ont servi à ouvrir les droits, et surtout PAS `c.total_heures`, qui
-                // est le compteur glissant du prochain renouvellement. Comparer les
-                // deux faisait grossir un faux écart mois après mois (cas réel n°1 :
-                // 513 h reprochées à quelqu'un qui avait tout scanné). Si le serveur
-                // renvoie null, on n'a rien sur cette période : on se tait.
-                const hectorH = c.heures_periode_reference;
-                const peutRecompter = hectorH != null;
-                const ecart = peutRecompter ? Math.round(hectorH - ftH) : 0;
-                const coherentH = peutRecompter && Math.abs(ecart) <= 5;
-                // Fonction Premium : les comptes gratuits voient un teaser verrouillé (le premium/essai voit le contrôle complet).
-                if (!profile?.is_premium) {
-                  return (
-                    <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-                        <span style={{ fontSize: 18 }}>🔒</span>
-                        <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
-                        <span style={{ marginLeft: "auto", fontSize: 10, fontWeight: 800, letterSpacing: 0.5, color: "#5DCAA5", background: "rgba(93,202,165,0.14)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 999, padding: "3px 9px" }}>🐾 TOTOR Veille</span>
-                      </div>
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 14 }}>
-                        Je compare ce que tu as reconstitué avec ce que France Travail a retenu, et je t'explique chaque écart, pour repérer une AEM manquante ou une erreur <strong style={{ color: "#E8F4FF" }}>avant qu'elle te coûte des droits</strong>.
-                      </div>
-                      <button onClick={() => setPremiumGate({ code: "premium_requis", fonction: "conformite" })}
-                        style={{ background: ACCENT, color: "white", border: "none", borderRadius: 10, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        🐾 Je laisse Totor s'en occuper
+                    {areError && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 8 }}>{areError}</div>}
+                    <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+                      <button type="button" disabled={areSaving} onClick={handleConfirmARE}
+                        style={{ background: "#FAC775", color: "#412402", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: areSaving ? "default" : "pointer", fontFamily: "inherit", opacity: areSaving ? 0.6 : 1, minHeight: 40 }}>
+                        {areSaving ? "Enregistrement…" : "C'est bon, enregistre"}
                       </button>
-                    </div>
-                  );
-                }
-                return (
-                  <div style={{ background: "linear-gradient(160deg, rgba(55,138,221,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 10 }}>
-                      <span style={{ fontSize: 18 }}>🔍</span>
-                      <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Totor vérifie ta décision</div>
-                    </div>
-
-                    {/* Les heures, sur la période qui a servi à ouvrir les droits */}
-                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                      France Travail a retenu <strong style={{ color: "#E8F4FF" }}>{ftH} h</strong> pour ouvrir tes droits.
-                      {peutRecompter
-                        ? <> Sur cette même période, je reconstitue <strong style={{ color: "#E8F4FF" }}>{Math.round(hectorH)} h</strong>.</>
-                        : <> Je n'ai aucune activité sur cette période.</>}
-                    </div>
-                    <div style={{ marginTop: 8, fontSize: 12, lineHeight: 1.5, borderRadius: 8, padding: "9px 11px",
-                      background: !peutRecompter ? "rgba(255,255,255,0.05)" : coherentH ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)",
-                      border: `1px solid ${!peutRecompter ? "rgba(255,255,255,0.12)" : coherentH ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`,
-                      color: !peutRecompter ? "#9FB6CE" : coherentH ? "#9FE1CB" : "#F0C078" }}>
-                      {!peutRecompter
-                        ? <>Je ne peux pas recompter cette période : elle est antérieure à tes saisies. C'est normal si tu es arrivé sur TOTOR après l'ouverture de tes droits, et <strong>ça ne change rien</strong> à ce que tu touches. Je compte à partir de maintenant, pour ton prochain renouvellement.</>
-                        : coherentH
-                          ? "✓ On tombe pareil, ta décision est cohérente avec ce que tu as déclaré."
-                          : ecart < 0
-                            ? <>Écart de <strong>{Math.abs(ecart)} h en moins</strong> chez moi sur cette période. Le plus probable : il me manque des AEM d'avant l'ouverture de tes droits, je ne vois que ce que tu me déclares. Ça <strong>ne change rien</strong> à ce que tu touches aujourd'hui.</>
-                            : <>Écart de <strong>{ecart} h en plus</strong> chez moi sur cette période. Vérifie tes saisies (ou un contrat que France Travail n'aurait pas retenu). À confronter avec eux.</>}
-                    </div>
-                    {c.jours_allonges > 0 && (
-                      <div style={{ marginTop: 6, fontSize: 11, color: "#8FB4D8", fontStyle: "italic" }}>
-                        (dont {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""} de fractionnement pris en compte)
-                      </div>
-                    )}
-
-                    {/* L'allocation (si la branche est affichable et qu'on a le montant officiel).
-                        CONTRÔLE SÉPARÉ, et il faut le dire : celui-ci part du salaire de
-                        référence et des heures retenues recopiés de la notification, pas
-                        des saisies. Il reste donc valable même quand le compte des heures
-                        ci-dessus ne l'est pas. Sans cette phrase, les deux blocs se lisent
-                        comme un seul verdict, et on inquiète pour rien. */}
-                    {c.allocation.affichable && c.allocation.montant_officiel != null && (
-                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        <span style={{ color: "#7E97B3", fontSize: 11 }}>Contrôle séparé, à partir de ta notification</span><br />
-                        Allocation : je recalcule <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_nette)}</strong>, ta notification indique <strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.montant_officiel)}</strong>, {c.allocation.coherent_officiel ? <span style={{ color: "#9FE1CB", fontWeight: 700 }}>cohérent ✓</span> : <span style={{ color: "#F0C078", fontWeight: 700 }}>écart à vérifier</span>}.
-                        {!c.allocation.coherent_officiel && (
-                          <div style={{ marginTop: 5, fontSize: 11.5, color: "#8FB4D8", lineHeight: 1.5 }}>
-                            Avant tout : vérifie que tu as saisi le montant <strong style={{ color: "#B5D4F4" }}>exact</strong> de ta notification, centimes compris. Un montant arrondi suffit à créer cet écart.
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    <div style={{ marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(55,138,221,0.15)", fontSize: 11, color: "#7E97B3", lineHeight: 1.5 }}>
-                      Ces contrôles sont des <strong style={{ color: "#9FB6CE" }}>estimations</strong> à partir de tes saisies. <strong style={{ color: "#9FB6CE" }}>France Travail reste seul juge</strong>, c'est un outil pour t'aider à repérer un point à vérifier, pas une contestation officielle.
-                    </div>
-                  </div>
-                );
-                })();
-                // Le PILOTAGE, scindé en deux (retours Camille 25/07 : « l'important
-                // d'abord », « compact dans le vide », « j'aime pas le vide ») :
-                // mobile = tout EN HAUT dans l'ordre historique ; desktop = action +
-                // bannière en bas de colonne DROITE, plan + anomalies en bas de
-                // colonne GAUCHE, pour que les deux colonnes finissent ensemble.
-                const blocActionLigne = (
-                  <>
-              {/* ═══ NEXT ACTION UNIQUE ═══ */}
-              <button type="button" onClick={() => setInterNav(nextAction.nav)}
-                style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(55,138,221,0.1)", border: "1px solid rgba(55,138,221,0.3)", borderRadius: 14, padding: "15px 18px", marginBottom: 12, cursor: "pointer", fontFamily: "inherit" }}>
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <i className={`ti ${nextAction.icon}`} aria-hidden="true" style={{ fontSize: 20, color: "#7FB8F0" }} />
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, color: "#7FB8F0", textTransform: "uppercase", letterSpacing: 0.5, fontWeight: 600 }}>Ta prochaine action</div>
-                  <div style={{ fontSize: 15, color: "white", fontWeight: 700, marginTop: 2 }}>{nextAction.txt}</div>
-                  {nextAction.suivant && (
-                    <div style={{ fontSize: 12, color: "#7E97B3", marginTop: 4 }}>Puis : {nextAction.suivant}</div>
-                  )}
-                </div>
-                <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#7FB8F0", flexShrink: 0 }} />
-              </button>
-
-              {renderBanniereLigneTotor()}
-                  </>
-                );
-                // Deuxième moitié du pilotage : à GAUCHE en desktop (équilibre des colonnes).
-                const blocPlanReperes = (
-                  <>
-              {/* ═══ CHECKLIST DE RENOUVELLEMENT ═══ */}
-              <div style={{ background: "#0a1322", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 14, padding: "16px 20px", marginBottom: 16 }}>
-                <div onClick={basculerPlan} role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); basculerPlan(); } }}
-                  style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, marginBottom: planOuvert ? 14 : 0, cursor: "pointer" }}>
-                  <div style={{ fontSize: 14, fontWeight: 700, color: "white" }}>Mon plan avec toi</div>
-                  {/* Loi VIII : sur compte neuf (checklist.vide = nbActs===0, réutilisé), pas de score/bulletin.
-                      Le « X / 5 » n'apparaît qu'une fois le parcours commencé (progression méritée).
-                      Il reste visible carte REPLIÉE : c'est le résumé qui justifie de ne pas l'ouvrir. */}
-                  {!checklist.vide && (
-                    <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 700, marginLeft: "auto" }}>{checklist.faits} / {checklist.total}</div>
-                  )}
-                  <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}><i className={`ti ti-chevron-${planOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#B5D4F4" }} /></span>
-                </div>
-                {planOuvert && checklist.vide && (
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.5, marginBottom: 14 }}>
-                    🐾 On commence ensemble. Ajoute ton premier contrat, je m'occupe de suivre tes heures.
-                  </div>
-                )}
-                {planOuvert && (
-                <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-                  {/* Ceinture de sécurité posée le 27/07 : minWidth:0 sur le libellé et
-                      flexShrink:0 sur le statut. Par défaut un élément flex a
-                      min-width:auto et refuse de se rétrécir : un libellé long
-                      pousserait alors le statut hors de la carte. ⚠️ Mesuré à 414 px :
-                      il n'y a AUCUN débordement aujourd'hui (Camille l'a confirmé sur
-                      son iPhone), c'est purement préventif pour un futur libellé plus
-                      long. Le texte coupé sur les captures du 26/07 venait de l'outil
-                      de capture, pas de l'application. */}
-                  {checklist.lignes.map(l => (
-                    <div key={l.id} style={{ display: "flex", alignItems: "center", gap: 11, opacity: l.attente ? 0.5 : 1 }}>
-                      <span style={{ fontSize: 16, flexShrink: 0 }}>{l.badge}</span>
-                      <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: l.attente ? "#B5D4F4" : "#E8F4FF" }}>{l.label}</div>
-                      <span style={{ fontSize: 11, color: l.coul, flexShrink: 0, textAlign: "right" }}>{l.statut}</span>
-                    </div>
-                  ))}
-                </div>
-                )}
-              </div>
-
-              {/* Alerte détection d'erreurs (seulement si Totor a repéré quelque chose) */}
-              {aDesAnomalies && (
-                <button type="button" onClick={() => setInterNav("calcul")}
-                  style={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 12, background: "rgba(250,199,117,0.08)", border: "1px solid rgba(250,199,117,0.28)", borderRadius: 14, padding: "13px 16px", marginBottom: 16, cursor: "pointer", fontFamily: "inherit" }}>
-                  <div style={{ width: 36, height: 36, borderRadius: "50%", background: "#0a1322", border: "1.5px solid rgba(250,199,117,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-alert-triangle" fallbackColor="#FAC775" />
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 13.5, fontWeight: 700, color: "#FAE3B6" }}>J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier 🐾</div>
-                    <div style={{ fontSize: 12, color: "#C9A861", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{anomalies.map(a => a.titre).join(" · ")}</div>
-                  </div>
-                  <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#FAC775", fontSize: 18, flexShrink: 0 }} />
-                </button>
-              )}
-                  </>
-                );
-                return (<>
-                {/* Sur mobile, « ta prochaine action », la banniere de la ligne TOTOR et
-                    « Mon plan avec toi » remontaient ICI, tout en haut, avant meme la
-                    carte de Totor. Sur un compte vide ca donnait sept blocs a lire avant
-                    la moindre image, tous du meme poids, et deux d'entre eux repetaient
-                    le compteur 507 h. Ils descendent maintenant au meme endroit que sur
-                    ordinateur : le plan juste apres Totor, l'action et la ligne tout en
-                    bas. Meme ordre partout, une chose a la fois. */}
-              <div className="cockpit-masonry" style={deuxColonnes ? { columnCount: 2, columnGap: 16, marginBottom: 16 } : { marginBottom: 16 }}>
-
-                {/* ───────── COLONNE GAUCHE : Totor (la star) ─────────
-                     Desktop : display block, les cartes coulent dans le multicolonnes
-                     (équilibrage automatique) ; mobile : pile flex classique. */}
-                <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
-                {/* ─── L'ARGENT D'ABORD, AUSSI SUR ORDINATEUR (18/08/2026, Camille
-                    cherchait la carte : « ou ca ») : « Ton mois » vivait SOUS la
-                    grande carte de Totor, invisible sans défiler. Elle passe en
-                    tête de la colonne de gauche, Totor juste dessous. */}
-                {!isMobile && blocMois && <div id="carte-mois">{blocMois}</div>}
-                {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
-                    les oreilles dépassent du cadre (même signature que la carte AE ;
-                    l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
-                <div style={{ position: "relative", paddingTop: 44 }}>
-                <div className={hectorPop ? "hector-pop" : ""} style={{ borderRadius: 18, overflow: "hidden", border: "1px solid rgba(93,202,165,0.2)", background: "#0a1322", boxShadow: "0 0 0 10px rgba(93,202,165,0.07), 0 10px 30px rgba(0,0,0,0.4)" }}>
-                  {/* Header immersif Totor (agrandi : il est la star) */}
-                  <div style={{ position: "relative", width: "100%", height: isMobile ? 380 : 470, overflow: "hidden" }}>
-                    {/* halo doux derrière Totor */}
-                    <div style={{ position: "absolute", top: "32%", left: "50%", width: 280, height: 280, transform: "translate(-50%,-50%)", borderRadius: "50%", background: "radial-gradient(circle, rgba(93,202,165,0.18), transparent 65%)", animation: "hectorHalo 5s ease-in-out infinite", pointerEvents: "none" }} />
-                    {/* (l'image de Totor est posée par le wrapper, au-dessus de la carte) */}
-
-                    {/* Badge palier en haut à droite */}
-                    <div style={{ position: "absolute", top: 14, right: 14, textAlign: "right", background: "rgba(10,19,34,0.55)", backdropFilter: "blur(4px)", border: "1px solid rgba(159,203,245,0.25)", borderRadius: 10, padding: "7px 12px", zIndex: 2 }}>
-                      <div style={{ fontSize: 9.5, color: "#9FCBF5", letterSpacing: 1.2, fontWeight: 600, opacity: 0.85 }}>PALIER {idxActuel + 1}</div>
-                      <div style={{ fontSize: 15, color: "#9FCBF5", fontWeight: 800, lineHeight: 1.1 }}>{palierActuel.nom.toUpperCase()}</div>
-                    </div>
-
-                    {/* Fondu vers le fond de la carte */}
-                    <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 190, background: "linear-gradient(to bottom, transparent 0%, rgba(10,19,34,0.55) 42%, #0a1322 100%)", zIndex: 1 }} />
-
-                    {/* Titre + message en bas à gauche */}
-                    <div style={{ position: "absolute", bottom: 16, left: 20, right: 20, zIndex: 2 }}>
-                      <div style={{ fontSize: 28, color: "white", fontWeight: 800, lineHeight: 1.1, textShadow: "0 2px 8px rgba(0,0,0,0.5)" }}>
-                        Totor {palierActuel.nom}
-                      </div>
-                      <div style={{ fontSize: 13.5, color: "#D6E8FA", lineHeight: 1.55, marginTop: 5, textShadow: "0 1px 6px rgba(0,0,0,0.6)" }}>
-                        {c.hector_message}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* ── Progression en phrase + barre ── */}
-                  <div style={{ padding: "16px 22px 18px" }}>
-                    <div style={{ fontSize: 14, color: "white", fontWeight: 700, marginBottom: 10 }}>
-                      Tu as déjà parcouru <span style={{ color: "#5DCAA5" }}>{coach.pctChemin}%</span> du chemin.
-                    </div>
-                    <div style={{ height: 10, background: "#07192E", borderRadius: 6, overflow: "hidden", position: "relative" }}>
-                      <div style={{ width: `${pct}%`, height: "100%", background: c.droits_securises ? "linear-gradient(90deg,#1D9E75,#5DCAA5)" : "linear-gradient(90deg,#2C6E8F,#378ADD)", borderRadius: 6, transition: "width 0.7s cubic-bezier(.4,1.4,.6,1)" }} />
-                    </div>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 10, color: "#6B8299", marginTop: 6 }}>
-                      <span>{c.total_heures}h faites</span>
-                      <span>Objectif · {c.seuil}h</span>
-                    </div>
-
-                    {/* Compteur incluant un arrêt assimilé → estimation assumée (Loi X) */}
-                    {c.arret_estimation && (
-                      <div style={{ marginTop: 12, display: "flex", alignItems: "flex-start", gap: 9, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.25)", borderRadius: 10, padding: "11px 13px" }}>
-                        <i className="ti ti-alert-triangle" aria-hidden="true" style={{ color: "#FAC775", fontSize: 16, flexShrink: 0, marginTop: 1 }} />
-                        <div style={{ fontSize: 11.5, color: "#E7C98A", lineHeight: 1.5 }}>
-                          Ton compteur inclut un <strong style={{ color: "#FCE0A8" }}>arrêt estimé</strong>{c.jours_allonges > 0 ? <> et ta période de recherche est <strong style={{ color: "#FCE0A8" }}>allongée de {c.jours_allonges} jour{c.jours_allonges > 1 ? "s" : ""}</strong> (fractionnement)</> : null}. C'est une estimation : elle vaut si l'arrêt était indemnisé et si tu as retravaillé après. <strong style={{ color: "#FCE0A8" }}>France Travail reste seul juge</strong>, vérifie avec eux.
-                        </div>
-                      </div>
-                    )}
-
-                    {/* L'invitation à renseigner la date vivait ICI. Retirée le 28/07 :
-                        la carte juste en dessous demande EXACTEMENT la même chose, avec
-                        son champ de saisie, sous l'autre nom (« date anniversaire »).
-                        Deux noms pour un seul champ, on croyait qu'on demandait deux
-                        dates. Une seule demande, celle qui a le bouton. */}
-
-                    {/* Comparaison mois-à-mois (le chien remarque) */}
-                    {coach.compa && (
-                      <div style={{ marginTop: 14, display: "flex", alignItems: "flex-start", gap: 9, background: coach.compa.sens === "up" ? "rgba(93,202,165,0.07)" : "rgba(250,199,117,0.06)", border: `1px solid ${coach.compa.sens === "up" ? "rgba(93,202,165,0.2)" : "rgba(250,199,117,0.2)"}`, borderRadius: 10, padding: "11px 13px" }}>
-                        <i className={`ti ${coach.compa.sens === "up" ? "ti-trending-up" : "ti-trending-down"}`} aria-hidden="true" style={{ color: coach.compa.sens === "up" ? "#5DCAA5" : "#FAC775", fontSize: 17, flexShrink: 0, marginTop: 1 }} />
-                        <div style={{ fontSize: 12.5, color: "#D6E8FA", lineHeight: 1.45 }}>{coach.compa.txt}</div>
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* ── ACCROCHE ANALYSE DE TOTOR (il remarque des choses) ── */}
-                  {aDesAnalyses && (
-                    <button type="button" onClick={() => setInterNav("calcul")}
-                      style={{ width: "100%", textAlign: "left", borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px", display: "flex", alignItems: "center", gap: 11, background: "rgba(55,138,221,0.05)", border: "none", cursor: "pointer", fontFamily: "inherit" }}>
-                      <i className="ti ti-bulb" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18, flexShrink: 0 }} />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 11, color: "#7FB8F0", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>J'ai remarqué</div>
-                        <div style={{ fontSize: 13, color: "#D6E8FA", marginTop: 2 }}>{analyses[0].court}{analyses.length > 1 ? ` · +${analyses.length - 1}` : ""}</div>
-                      </div>
-                      <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 16, flexShrink: 0 }} />
-                    </button>
-                  )}
-
-                  {/* ── PENSÉE DE TOTOR (il est vivant) ── */}
-                  <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", padding: "14px 22px 18px", display: "flex", alignItems: "center", gap: 11, background: "rgba(93,202,165,0.04)" }}>
-                    <div style={{ width: 30, height: 30, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, overflow: "hidden" }}>
-                      <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-paw" fallbackColor="#5DCAA5" />
-                    </div>
-                    <div style={{ fontSize: 13, color: "#D6E8FA", lineHeight: 1.5, fontStyle: "italic" }}>{penseeHector}</div>
-                  </div>
-                </div>
-                {/* Totor détouré par-dessus la carte : oreilles hors cadre, poitrail
-                    fondu (alpha dans l'image). Sous le badge/titre (zIndex 1 < 2).
-                    ⚠️ Le fondu incrusté dans l'image NE SUFFIT PAS. L'image est carrée
-                    (900×900) et affichée en « cover » calée en haut : dès que la carte
-                    est plus LARGE que haute (tablette, grand écran, émulateur), le
-                    recadrage ne montre que le haut de l'image et coupe le museau NET,
-                    avant d'atteindre son fondu. Le dégradé de la carte, lui, est peint
-                    DESSOUS (zIndex plus bas) : il ne peut rien y faire.
-                    D'où ce masque, appliqué à l'image elle-même : il fond toujours,
-                    quelle que soit la largeur. Il démarre tard (72 %) pour ne pas
-                    manger le visage sur les écrans étroits, où l'image entière tient. */}
-                <img src={palierActuel.img} alt={`Totor ${palierActuel.nom}`} className="hector-breathe"
-                  onError={(e) => { e.currentTarget.style.display = "none"; }}
-                  style={{ position: "absolute", top: 0, left: 0, width: "100%", height: 44 + (isMobile ? 380 : 470), objectFit: "cover", objectPosition: "center top", zIndex: 1, pointerEvents: "none", display: "block", WebkitMaskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)", maskImage: "linear-gradient(to bottom, #000 72%, transparent 100%)" }} />
-                </div>
-                {/* (« Ton mois » est remonté EN TÊTE de cette colonne le 18/08/2026,
-                    au-dessus de la grande carte de Totor : ne pas le re-poser ici.) */}
-                {!isMobile && blocVerdict}
-                {!isMobile && blocFrise}
-                {!isMobile && blocConges && <div id="carte-conges">{blocConges}</div>}
-                {!isMobile && blocPAS}
-                {/* La date de renouvellement arrive JUSTE apres Totor : c'est la
-                    premiere chose dont il a besoin pour repondre a la question de
-                    l'app. Elle etait plus bas, apres le rappel d'actualisation et
-                    le plan, alors qu'elle les conditionne tous les deux. */}
-
-                {/* Le rappel d'actualisation vivait AU-DESSUS de la carte de Totor.
-                    Avec le bandeau email et le murmure d'abonnement, ca faisait trois
-                    blocs a lire avant la moindre image. Il descend juste APRES Totor :
-                    toujours visible des le deuxieme ecran, car il est date et il compte,
-                    mais il ne passe plus devant. */}
-              {/* ═══ RAPPEL D'ACTUALISATION DATÉ — présence au bon moment (fenêtre 28 → ~15).
-                  Date volontairement approximative (« ~15 ») : le calendrier exact varie selon
-                  France Travail — approximation assumée, jamais une promesse (Loi I). ═══ */}
-              {actuOuverte && !dejaActualise && (() => {
-                const moisSuivant = new Date(moisDecl.getFullYear(), moisDecl.getMonth() + 1, 1);
-                const nomMoisDecl = moisDecl.toLocaleDateString("fr-FR", { month: "long" });
-                const nomMoisLimite = moisSuivant.toLocaleDateString("fr-FR", { month: "long" });
-                return (
-                  <div style={{ background: "#0a1322", border: "1px solid rgba(250,199,117,0.35)", borderRadius: 14, padding: "13px 18px", marginBottom: 14, display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ flex: 1, minWidth: 220, fontSize: 13, color: "#E4EEF8", lineHeight: 1.6 }}>
-                      {(interActivites || []).length === 0
-                        ? <>🐾 Tu es déjà indemnisé·e par France Travail ? Ton actualisation de <strong>{nomMoisDecl}</strong> est alors à faire avant le <strong>~15 {nomMoisLimite}</strong>, je peux te la préparer.</>
-                        : <>🐾 Ton actualisation de <strong>{nomMoisDecl}</strong> est à faire avant le <strong>~15 {nomMoisLimite}</strong>, je te l'ai préparée.</>}
-                    </div>
-                    <button type="button" onClick={() => setInterNav("actu")}
-                      style={{ background: "rgba(250,199,117,0.15)", color: "#FAC775", border: "1px solid rgba(250,199,117,0.4)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                      Voir mon récap →
-                    </button>
-                    <button type="button" onClick={declarerActualise}
-                      style={{ background: "transparent", color: "#8FB4D8", border: "1px solid rgba(143,180,216,0.3)", borderRadius: 10, padding: "10px 16px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", flexShrink: 0 }}>
-                      Je me suis actualisé·e
-                    </button>
-                  </div>
-                );
-              })()}
-
-                {blocPlanReperes}
-                </div>
-
-
-
-                {/* ───────── COLONNE DROITE : anniversaire + verdict + frise ───────── */}
-                <div style={deuxColonnes ? { display: "block" } : { display: "flex", flexDirection: "column", gap: 16 }}>
-
-              {/* ══ ALLOCATION JOURNALIÈRE — recalculée, encadrée par la Loi X ══
-                   Un chiffre affiché = un chiffre validé sur un vrai courrier. Sinon,
-                   Totor dit honnêtement « pas encore » plutôt que d'approximer. */}
-              <div style={{ background: "linear-gradient(160deg, rgba(93,202,165,0.08), rgba(10,19,34,0.5))", border: "1px solid rgba(93,202,165,0.25)", borderRadius: 16, padding: "18px 20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 4 }}>
-                  <span style={{ fontSize: 18 }}>🎭</span>
-                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton allocation journalière</div>
-                </div>
-
-                {/* État 1 : rien de saisi → invitation */}
-                {!allocEdit && !c.allocation && (
-                  <div style={{ marginTop: 8 }}>
-                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5, marginBottom: 12 }}>
-                      Donne-moi ton <strong style={{ color: "#C8E0F5" }}>salaire de référence</strong> et tes <strong style={{ color: "#C8E0F5" }}>heures retenues</strong> (ils sont écrits sur ta notification France Travail) : je recalcule ton allocation, règle par règle.
-                    </div>
-                    <button type="button" onClick={() => ouvrirAllocEdit(null)}
-                      style={{ background: "#5DCAA5", color: "#052b20", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                      Renseigner
-                    </button>
-                  </div>
-                )}
-
-                {/* État 2 : formulaire de saisie */}
-                {allocEdit && (
-                  <div style={{ marginTop: 10, display: "flex", flexDirection: "column", gap: 11 }}>
-                    <div style={{ display: "flex", gap: 8 }}>
-                      {[["annexe10", "Artiste"], ["annexe8", "Technicien"]].map(([val, lbl]) => (
-                        <button key={val} type="button" onClick={() => setAllocAnnexe(val)}
-                          style={{ flex: 1, background: allocAnnexe === val ? "#378ADD" : "#0d2440", color: allocAnnexe === val ? "white" : "#B5D4F4", border: `1px solid ${allocAnnexe === val ? "#378ADD" : "#1e3a5f"}`, borderRadius: 8, padding: "9px 0", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                          {lbl}
-                        </button>
-                      ))}
-                    </div>
-                    <label style={{ fontSize: 11.5, color: "#8BA5C0", fontWeight: 600 }}>Salaire de référence (sur ta notification)
-                      <MontantInput decimales value={allocSR} onChange={v => setAllocSR(v)} placeholder="ex. 8 537"
-                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                    </label>
-                    <label style={{ fontSize: 11.5, color: "#8BA5C0", fontWeight: 600 }}>Nombre d'heures retenues
-                      <input type="number" min="0" step="1" value={allocNHT} onChange={e => setAllocNHT(e.target.value)} placeholder="ex. 636"
-                        style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                    </label>
-                    <div style={{ display: "flex", gap: 8, marginTop: 2 }}>
-                      <button type="button" disabled={allocSaving} onClick={handleSaveAllocation}
-                        style={{ flex: 1, background: "#5DCAA5", color: "#052b20", border: "none", borderRadius: 8, padding: "10px", fontSize: 13, fontWeight: 700, cursor: allocSaving ? "default" : "pointer", fontFamily: "inherit", opacity: allocSaving ? 0.6 : 1 }}>
-                        {allocSaving ? "…" : "Calculer mon allocation"}
-                      </button>
-                      <button type="button" onClick={() => setAllocEdit(false)}
-                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                      <button type="button" onClick={() => { setAreExtrait(null); setAreError(""); }}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", minHeight: 40 }}>
                         Annuler
                       </button>
                     </div>
                   </div>
-                )}
-
-                {/* État 3a : allocation AFFICHABLE (branche validée) */}
-                {!allocEdit && c.allocation && c.allocation.affichable && (
-                  <div style={{ marginTop: 6 }}>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
-                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(c.allocation.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
-                      </div>
-                      <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
+                ) : anniversaireEdit ? (
+                  // (29/08/2026, cas Constance) le montant reste modifiable ICI : sinon, un
+                  // taux qui baisse au renouvellement laisserait des estimations trop belles.
+                  <div style={{ marginTop: 12 }}>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                      <label style={{ flex: "1 1 150px", fontSize: 11, color: "#C9A861", fontWeight: 600 }}>Date anniversaire
+                        <input type="date" value={anniversaireInput} onChange={e => setAnniversaireInput(e.target.value)} style={champ} />
+                      </label>
+                      <label style={{ flex: "1 1 150px", fontSize: 11, color: "#C9A861", fontWeight: 600 }}>Allocation journalière (€ brut/jour)
+                        <MontantInput value={anniversaireMontantInput} onChange={v => setAnniversaireMontantInput(v)} decimales placeholder="ex : 43,26" style={champ} />
+                      </label>
                     </div>
-                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, display: "flex", alignItems: "flex-start", gap: 6, lineHeight: 1.45 }}>
-                      <i className="ti ti-info-circle" aria-hidden="true" style={{ fontSize: 14, flexShrink: 0, marginTop: 1, color: "#7FB8F0" }} />
-                      <span>Estimé à partir de ton salaire de référence et de tes heures France Travail.</span>
-                    </div>
-                    {c.allocation.montant_officiel != null && (
-                      <div style={{ fontSize: 11.5, color: c.allocation.coherent_officiel ? "#9FE1CB" : "#F0C078", marginTop: 8, background: c.allocation.coherent_officiel ? "rgba(93,202,165,0.08)" : "rgba(240,192,120,0.08)", border: `1px solid ${c.allocation.coherent_officiel ? "rgba(93,202,165,0.25)" : "rgba(240,192,120,0.3)"}`, borderRadius: 8, padding: "8px 11px", lineHeight: 1.45 }}>
-                        {c.allocation.coherent_officiel
-                          ? `✓ Cohérent avec ta notification (${formatEUR(c.allocation.montant_officiel)}), on tombe pareil.`
-                          : `⚠️ Je trouve ${formatEUR(c.allocation.aj_nette)}, ta notification dit ${formatEUR(c.allocation.montant_officiel)}. Ta notification fait foi, vérifions ensemble tes chiffres saisis.`}
-                      </div>
-                    )}
-
-                    {/* Pourquoi ce montant ? (le raisonnement dépliable — Loi X) */}
-                    <button type="button" onClick={() => setAllocPourquoiOuvert(o => !o)}
-                      style={{ background: "transparent", border: "none", color: "#7FB8F0", fontSize: 12, cursor: "pointer", fontFamily: "inherit", padding: "10px 0 0", display: "inline-flex", alignItems: "center", gap: 5 }}>
-                      <i className={`ti ti-chevron-${allocPourquoiOuvert ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 14 }} />
-                      Pourquoi ce montant ?
-                    </button>
-                    {allocPourquoiOuvert && (
-                      <div style={{ fontSize: 11.5, color: "#9FB6CE", marginTop: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 8, padding: "11px 13px", lineHeight: 1.6 }}>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part salaires (A)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_a)}</strong></div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part heures (B)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_b)}</strong></div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>Part fixe (C)</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.partie_c)}</strong></div>
-                        <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid rgba(255,255,255,0.1)", marginTop: 5, paddingTop: 5 }}><span>Allocation brute</span><strong style={{ color: "#E8F4FF" }}>{formatEUR(c.allocation.aj_brute)}</strong></div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}><span>− retraite complémentaire</span><strong style={{ color: "#E8F4FF" }}>−{formatEUR(c.allocation.retenue_retraite)}</strong></div>
-                        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 3 }}><span style={{ color: "#9FE1CB" }}>Allocation nette</span><strong style={{ color: "#9FE1CB" }}>{formatEUR(c.allocation.aj_nette)}</strong></div>
-                        <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 9, fontStyle: "italic" }}>
-                          Calcul selon les règles France Travail (annexes 8 et 10). Seule ta notification officielle fait foi.
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Le renvoi vers l'estimation mensuelle (lancée le 24/07, carte « Ton mois »).
-                         Sans « juste en dessous » : la carte vit à gauche en desktop, plus bas en mobile. */}
-                    <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 12, paddingTop: 11, borderTop: "1px solid rgba(93,202,165,0.15)", lineHeight: 1.55 }}>
-                      <strong style={{ color: "#B5D4F4", fontWeight: 700 }}>Et ton versement du mois ?</strong><br />
-                      Regarde la carte « Ton mois » sur ton cockpit : elle estime ce que France Travail te versera pour le mois en cours. Un calcul déjà vérifié au centime sur de vrais versements. 🐾
-                    </div>
-
-                    <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 12 }}>
-                      Modifier mes chiffres
-                    </button>
-                  </div>
-                )}
-
-                {/* État 3b : NON affichable (branche pas encore validée) — l'honnêteté assumée */}
-                {!allocEdit && c.allocation && !c.allocation.affichable && (
-                  <div style={{ marginTop: 6 }}>
-                    <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
-                      <>Il me manque quelque chose pour recalculer ton allocation avec certitude, et je préfère me taire plutôt que t'avancer un chiffre à l'aveugle. Vérifie tes informations juste en dessous. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
-                    </div>
-                    <button type="button" onClick={() => ouvrirAllocEdit(c.allocation)}
-                      style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", fontSize: 12, cursor: "pointer", fontFamily: "inherit", marginTop: 10 }}>
-                      Modifier mes chiffres
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* ══ PROJECTION AU PROCHAIN RENOUVELLEMENT (demande testeuse 23/07/2026) ══
-                   L'AJ que donnerait la formule si le dossier était examiné tel quel, et la
-                   courbe « chaque cachet compte ». MÊME Loi X que la carte allocation :
-                   branche validée seulement, sinon on le dit. Depuis le 27/07/2026 les deux
-                   annexes passent (backtest contre le simulateur officiel France Travail). */}
-              {(() => {
-                const pj = projAj;
-                if (!pj) return null;
-                if (pj.ok === false && pj.raison === "aucune_activite") return null;
-                const shell = { background: "linear-gradient(160deg, rgba(55,138,221,0.09), rgba(10,19,34,0.5))", border: "1px solid rgba(55,138,221,0.28)", borderRadius: 16, padding: "18px 20px" };
-                const tete = (
-                  <div style={{ display: "flex", alignItems: "center", gap: 9, marginBottom: 6, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 18 }}>🔭</span>
-                    <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Ton prochain renouvellement</div>
-                    <span style={{ fontSize: 10.5, fontWeight: 700, color: "#7FB8F0", background: "rgba(55,138,221,0.12)", border: "1px solid rgba(55,138,221,0.35)", borderRadius: 6, padding: "2px 8px", whiteSpace: "nowrap" }}>estimation</span>
-                  </div>
-                );
-                // Vitrine (gratuit) : la promesse Veille, sans chiffre.
-                if (pj.verrou) {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 12 }}>
-                        Avec TOTOR Veille, je projette <strong style={{ color: "#C8E0F5" }}>l'allocation de ton prochain renouvellement</strong> à partir de tes AEM, et je te montre ce que chaque cachet en plus changerait. L'estimation s'affine à chaque scan.
-                      </div>
-                      <button type="button" onClick={() => setInterNav("abonnement")}
-                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                        Découvrir TOTOR Veille
+                    <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap", alignItems: "center" }}>
+                      <button type="button" disabled={anniversaireSaving} onClick={handleSaveAnniversaire}
+                        style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: anniversaireSaving ? "default" : "pointer", fontFamily: "inherit", opacity: anniversaireSaving ? 0.6 : 1, minHeight: 40 }}>
+                        {anniversaireSaving ? "…" : "Enregistrer"}
+                      </button>
+                      <button type="button" onClick={() => setAnniversaireEdit(false)}
+                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.15)", color: "#8BA5C0", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit", minHeight: 40 }}>
+                        Annuler
                       </button>
                     </div>
-                  );
-                }
-                if (pj.ok === false && pj.raison === "bruts_incomplets") {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Pour projeter ton allocation, il me faut tes <strong style={{ color: "#C8E0F5" }}>salaires bruts</strong> : je ne les connais que sur <strong style={{ color: "#F2C879" }}>{pj.completude} %</strong> de tes heures. Complète-les dans « Mes activités » (ou scanne tes AEM, je lis tout), et je te donne le chiffre.
-                      </div>
+                    {importerARE("Ou réimporte ton attestation France Travail : je relis tout.")}
+                  </div>
+                ) : c.montant_journalier != null ? (
+                  <div style={{ marginTop: 9, fontSize: 13, lineHeight: 1.45, color: "#B5C8DC" }}>
+                    Ton allocation : <b style={{ color: "white" }}>{formatEUR(c.montant_journalier)}</b> par jour ·{" "}
+                    <button type="button" onClick={() => { setAnniversaireInput(c.date_anniversaire || ""); setAnniversaireMontantInput(String(c.montant_journalier)); setAnniversaireEdit(true); }}
+                      style={{ ...lienVert, display: "inline", marginTop: 0 }}>
+                      modifier
+                    </button>
+                  </div>
+                ) : c.date_anniversaire ? importerARE("Importe ton attestation France Travail : je lis ton allocation.")
+                  : (<>
+                    <div style={{ marginTop: 9, fontSize: 13, lineHeight: 1.45, color: "#B5C8DC" }}>Je te dis combien de jours il te reste.</div>
+                    {importerARE("Tu ne la connais pas ? Importe ton attestation France Travail, je la lis pour toi.")}
+                  </>);
+                const sectionDate = (
+                  <div style={{ position: "relative", zIndex: 3, marginTop: 14, padding: "12px 14px 13px", borderRadius: 18, background: "rgba(11,32,56,0.9)", border: "1px solid rgba(255,255,255,0.08)" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 10 }}>
+                      <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontSize: 14, fontWeight: 600, color: "#B5C8DC" }}>
+                        <i className="ti ti-calendar" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} />
+                        {c.date_anniversaire ? "Date anniversaire" : "Ta date anniversaire"}
+                      </span>
+                      {quand && <b style={{ fontSize: 15, fontWeight: 700, color: "white", whiteSpace: "nowrap" }}>{quand}</b>}
                     </div>
-                  );
-                }
-                if (pj.affichable === false) {
-                  return (
-                    <div style={shell}>
-                      {tete}
-                      <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 10, padding: "12px 14px" }}>
-                        <>Il me manque quelque chose pour projeter ton renouvellement avec certitude, et je préfère me taire plutôt que t'avancer un chiffre à l'aveugle. <strong style={{ color: "#9FE1CB" }}>Je préfère être exact que rapide</strong>. 🐾</>
-                      </div>
-                    </div>
-                  );
-                }
-                // Affichable : le chiffre + la courbe « chaque cachet compte ».
-                // ⚠️ TOUT EN NET, ARRONDI À L'EURO (19/09/2026, capture de Camille) : le gros
-                // chiffre était en net et la courbe en brut, et la carte montrait 46,04 € puis
-                // 47,36 € pour le même jour. Décision de Camille : un seul chiffre, rond.
-                // « environ 46,04 € » se contredisait de toute façon. Repli sur le brut tant
-                // que le serveur n'envoie pas le net des points.
-                const pts = pj.points || [];
-                const ajDe = p => (p.aj_nette != null ? p.aj_nette : p.aj_brute);
-                const euros = v => formatEUR(Math.round(v));
-                // Le mini-simulateur suit la même règle, sauf quand l'arrondi effacerait
-                // l'écart qu'il doit montrer (« 46 € au lieu de 46 € ») : centimes alors.
-                const paire = (a, b) => (Math.round(a) === Math.round(b) ? [formatEUR(a), formatEUR(b)] : [euros(a), euros(b)]);
-                // En net, la courbe ne descend jamais (balayé sur 3 740 profils le 19/09/2026),
-                // mais elle peut rester à plat : au minimum garanti, ou autour de 62 €, là où
-                // les prélèvements sociaux absorbent la hausse. « La pente est continue »
-                // serait alors faux : la phrase sous la courbe change.
-                const aPlat = pts.some((p, i) => i > 0 && ajDe(p) === ajDe(pts[i - 1]));
-                const courbe = (() => {
+                    <span style={{ position: "relative", display: "inline-flex", alignItems: "center", gap: 8, marginTop: 9, padding: "9px 14px", minHeight: 44, boxSizing: "border-box", borderRadius: 999, background: c.date_anniversaire ? "rgba(93,202,165,0.12)" : "#5DCAA5", border: `1px solid ${c.date_anniversaire ? "rgba(93,202,165,0.45)" : "#5DCAA5"}`, color: c.date_anniversaire ? "#E6F7F0" : "#04342C", fontSize: 15, fontWeight: 600, opacity: anniversaireSaving ? 0.6 : 1 }}>
+                      {c.date_anniversaire
+                        ? <>{dateLongue(c.date_anniversaire)} <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 18, color: "#5DCAA5" }} /></>
+                        : <><i className="ti ti-calendar" aria-hidden="true" style={{ fontSize: 18 }} /> Choisir ma date</>}
+                      {/* Le vrai champ date, invisible, posé sur la puce : toucher la puce
+                          ouvre le calendrier du téléphone. Sur ordinateur, showPicker fait
+                          de même. On n'enregistre qu'une date complète et plausible : en
+                          tapant une année au clavier, « 0002 » passe avant « 2027 ». */}
+                      <input key={c.date_anniversaire || "vide"} type="date" defaultValue={c.date_anniversaire || ""} disabled={anniversaireSaving}
+                        aria-label={c.date_anniversaire ? "Changer ta date anniversaire" : "Choisir ta date anniversaire"}
+                        onClick={e => { try { e.currentTarget.showPicker(); } catch { /* le navigateur ouvre son calendrier tout seul */ } }}
+                        onChange={e => { const v = e.target.value; if (/^\d{4}-\d{2}-\d{2}$/.test(v) && Number(v.slice(0, 4)) >= 2020 && v !== c.date_anniversaire) enregistrerDateAnniversaire(v); }}
+                        style={{ position: "absolute", inset: 0, width: "100%", height: "100%", margin: 0, padding: 0, border: 0, opacity: 0, cursor: "pointer" }} />
+                    </span>
+                    {basDate}
+                    {areError && !areExtrait && <div style={{ fontSize: 12, color: "#F0A0A0", marginTop: 8 }}>{areError}</div>}
+                  </div>
+                );
+
+                const boutonAjout = (
+                  <button type="button" onClick={ajouterContrat}
+                    style={{ width: isMobile ? "100%" : "auto", border: 0, borderRadius: 999, background: "#378ADD", color: "white", fontSize: 17, fontWeight: 700, padding: isMobile ? "17px 20px" : "15px 28px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 10, boxShadow: "0 10px 22px -12px rgba(55,138,221,0.9)", cursor: "pointer", fontFamily: "inherit", minHeight: 52 }}>
+                    <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 20 }} /> {aDesActivites ? "Ajouter un contrat" : "Ajouter mon premier contrat"}
+                  </button>
+                );
+                // Le premier geste reste le contrat à la main (décision du 07/09) ; le scan
+                // reste proposé, en second, pour qui a ses attestations sous la main.
+                const lienScan = !aDesActivites && (
+                  <button type="button" onClick={() => allerPage("mesaem")}
+                    style={{ ...lienVert, display: "block", marginTop: 12, fontSize: 14, textAlign: isMobile ? "center" : "left", width: isMobile ? "100%" : "auto" }}>
+                    ou scanner une AEM
+                  </button>
+                );
+
+                // ── Les heures, en très gros (ou « Faisons connaissance ») ──
+                const texteHeures = nbH(calc.heures);
+                const heros = (
+                  <div>
+                    {aDesActivites ? (<>
+                      <button type="button" onClick={() => allerPage("calcul")} aria-label={`Tes heures : ${texteHeures} h sur ${calc.seuil}. Voir le détail`}
+                        style={{ display: "block", width: "100%", textAlign: "left", background: "none", border: "none", padding: 0, color: "white", cursor: "pointer", fontFamily: "inherit" }}>
+                        <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: isMobile ? 21 : 22, fontWeight: 700 }}>
+                          Tes heures <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 18, color: "#B5C8DC" }} />
+                        </span>
+                        <span style={{ display: "flex", alignItems: "baseline", gap: 8, fontSize: isMobile ? (texteHeures.length > 3 ? 70 : 88) : 112, fontWeight: 800, lineHeight: 0.86, letterSpacing: "-0.04em", marginTop: 6, fontVariantNumeric: "tabular-nums" }}>
+                          {texteHeures}<small style={{ fontSize: isMobile ? 34 : 42, fontWeight: 700, letterSpacing: 0 }}>h</small>
+                        </span>
+                        {/* La patte reste DANS la barre, même à 100 % : elle ne cache jamais l'objectif. */}
+                        <span style={{ display: "flex", alignItems: "center", gap: 12, marginTop: 22 }}>
+                          <span style={{ position: "relative", flex: 1, height: 12, borderRadius: 99, background: "rgba(255,255,255,0.14)" }}>
+                            <span style={{ position: "absolute", top: 0, bottom: 0, left: 0, width: `${pctH}%`, borderRadius: 99, background: "linear-gradient(90deg, #4FB894, #5DCAA5)", transition: "width 0.6s ease" }} />
+                            <span aria-hidden="true" style={{ position: "absolute", top: "50%", left: `calc(14px + (100% - 28px) * ${(pctH / 100).toFixed(4)})`, width: 28, height: 28, transform: "translate(-50%, -50%)", borderRadius: "50%", background: "white", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.35)" }}>
+                              <i className="ti ti-paw" style={{ fontSize: 17, color: "#0A2540" }} />
+                            </span>
+                          </span>
+                          <span style={{ fontSize: 15, fontWeight: 600, color: "#B5C8DC", whiteSpace: "nowrap" }}>{calc.seuil} h</span>
+                        </span>
+                      </button>
+                      <p style={{ margin: "14px 0 0", fontSize: isMobile ? 16 : 17, lineHeight: 1.45, color: "#DCE7F2" }}>
+                        {calc.heures >= calc.seuil
+                          ? <><b style={{ color: "white" }}>La condition d'heures est remplie.</b> Je continue de veiller.</>
+                          : <>Encore <b style={{ color: "white" }}>{nbH(calc.manque)} h</b> pour tes {calc.seuil}.</>}
+                      </p>
+                      {/* Une erreur repérée dans le dossier reste visible dès l'accueil
+                          (elle vivait dans « Mon plan avec toi ») : une ligne, pas une alarme. */}
+                      {aDesAnomalies && (
+                        <button type="button" onClick={() => allerPage("calcul")}
+                          style={{ display: "inline-flex", alignItems: "center", gap: 7, marginTop: 10, background: "none", border: "none", padding: 0, color: "#FAC775", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "left", minHeight: 32 }}>
+                          <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 16 }} />
+                          J'ai repéré {anomalies.length} chose{anomalies.length > 1 ? "s" : ""} à vérifier
+                          <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 15 }} />
+                        </button>
+                      )}
+                    </>) : (<>
+                      <div style={{ fontSize: isMobile ? 21 : 22, fontWeight: 700 }}>Tes heures</div>
+                      <div style={{ fontSize: isMobile ? 40 : 60, fontWeight: 800, lineHeight: 1.05, letterSpacing: "-0.02em", marginTop: 10 }}>Faisons<br />connaissance.</div>
+                      <p style={{ margin: "14px 0 0", fontSize: isMobile ? 16 : 17, lineHeight: 1.45, color: "#DCE7F2" }}>Ajoute ton premier contrat, je compte tes heures vers les {calc.seuil}.</p>
+                      {/* Compte tout neuf, sur téléphone : le premier geste passe AVANT la
+                          date, visible sans défiler (64 % décrochaient juste après la visite). */}
+                      {isMobile && <div style={{ marginTop: 18 }}>{boutonAjout}{lienScan}</div>}
+                    </>)}
+                    {sectionDate}
+                  </div>
+                );
+
+                // ── Les trois cartes courtes : chacune ouvre sa page de détail ──
+                const em = estMois;
+                const pj = projAj;
+                const cs = c.conges_spectacles;
+                const vide = (t) => <span style={{ display: "block", fontSize: 13.5, lineHeight: 1.45, color: "#5A6B7D", marginTop: 6 }}>{t}</span>;
+                const detail = (t) => <span style={{ display: "block", fontSize: 13.5, color: "#5A6B7D", marginTop: 4 }}>{t}</span>;
+                const montant = (v, extra) => (
+                  <span style={{ display: "flex", alignItems: "center", gap: 14, fontSize: isMobile ? 29 : 34, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.05, marginTop: isMobile ? 5 : 12, fontVariantNumeric: "tabular-nums" }}>{v}{extra}</span>
+                );
+                // La petite courbe est tracée avec les VRAIS points de la projection :
+                // plate si l'allocation bute sur une limite, jamais une pente décorative.
+                const miniCourbe = (() => {
+                  const pts = (pj && pj.points) || [];
                   if (pts.length < 2) return null;
-                  const W = 300, H = 110, PAD = 22;
-                  const ajs = pts.map(ajDe);
-                  const min = Math.min(...ajs), max = Math.max(...ajs);
-                  const x = (i) => PAD + i * ((W - 2 * PAD) / (pts.length - 1));
-                  const y = (v) => max === min ? H / 2 : (H - PAD) - ((v - min) / (max - min)) * (H - 2 * PAD);
-                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(ajDe(p)).toFixed(1)}`).join(" ");
+                  const vals = pts.map(p => (p.aj_nette != null ? p.aj_nette : p.aj_brute));
+                  const min = Math.min(...vals), max = Math.max(...vals);
+                  const W = 76, H = 34, P = 4;
+                  const x = (i) => P + i * ((W - 2 * P) / (vals.length - 1));
+                  const y = (v) => (max === min ? H / 2 : (H - P) - ((v - min) / (max - min)) * (H - 2 * P));
+                  const d = vals.map((v, i) => `${i ? "L" : "M"}${x(i).toFixed(1)} ${y(v).toFixed(1)}`).join(" ");
                   return (
-                    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 10 }} aria-label="Courbe de l'allocation estimée selon les cachets ajoutés">
-                      <path d={d} fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" />
-                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(ajDe(p))} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
-                      <text x={x(0)} y={y(ajDe(pts[0])) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{euros(ajDe(pts[0]))}</text>
-                      <text x={x(pts.length - 1)} y={y(ajDe(pts[pts.length - 1])) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{euros(ajDe(pts[pts.length - 1]))}</text>
-                      <text x={x(0)} y={H - 4} fontSize="9" fill="#6B8299">aujourd'hui</text>
-                      <text x={x(pts.length - 1)} y={H - 4} fontSize="9" fill="#6B8299" textAnchor="end">+{pts[pts.length - 1].cachets} cachets</text>
+                    <svg viewBox={`0 0 ${W} ${H}`} aria-hidden="true" style={{ width: 66, height: 28, flex: "none" }}>
+                      <path d={d} fill="none" stroke="#2E9E7C" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx={x(vals.length - 1)} cy={y(vals[vals.length - 1])} r="3.2" fill="#2E9E7C" />
                     </svg>
                   );
                 })();
-                return (
-                  <div style={shell}>
-                    {tete}
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
-                      <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
-                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{euros(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
-                      {/* Heures à la française (« 510,5 h » et non « 510.5 h »). Jamais arrondies à
-                          l'heure : 506,5 h deviendraient « 507 h », le seuil qu'on n'a pas encore. */}
-                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(pj.nht)} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
-                    </div>
-                    {courbe}
-                    {pts.length >= 2 && (
-                      <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
-                        {aPlat
-                          ? <>Là où ma courbe reste à plat, ce n'est pas une erreur : ton allocation nette bute sur une limite fixée par les règles. <strong style={{ color: "#9FE1CB" }}>Tes cachets comptent toujours pour tes heures.</strong></>
-                          : <><strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue.</>}
-                        {" "}Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{euros(pj.brut_moyen_cachet)}).
-                      </div>
-                    )}
-                    {pj.courbe_plafonnee_60 && (
-                      <div style={{ fontSize: 11, color: "#8FB4D8", marginTop: 6, lineHeight: 1.45 }}>
-                        La courbe s'arrête au plafond de l'allocation : au-delà, ajouter des cachets ne fait plus monter le montant journalier.
-                      </div>
-                    )}
-                    {/* Mini-simulateur « et si j'ajoute N cachets à X € ? » (demande testeuse 24/07 :
-                        « c'est le nombre de cachets PLUS combien ils sont payés qui décide ») */}
-                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(55,138,221,0.18)" }}>
-                      <div style={{ fontSize: 12, fontWeight: 700, color: "#C8E0F5", marginBottom: 8 }}>Et si j'ajoute… ?</div>
-                      {/* Deux façons de donner le montant : par cachet, ou le TOTAL sur la
-                          période (les cachets n'ont pas tous le même prix). */}
-                      <div style={{ display: "flex", gap: 6, marginBottom: 8 }}>
-                        {[["cachet", "€ par cachet"], ["total", "€ au total"]].map(([m, lib]) => (
-                          <button key={m} type="button" onClick={() => setProjSimMode(m)}
-                            style={{ background: projSimMode === m ? "rgba(55,138,221,0.25)" : "transparent", border: `1px solid ${projSimMode === m ? "#378ADD" : "#1e3a5f"}`, borderRadius: 999, padding: "4px 12px", fontSize: 11.5, fontWeight: 700, color: projSimMode === m ? "#C8E0F5" : "#8FB4D8", cursor: "pointer", fontFamily: "inherit" }}>
-                            {lib}
-                          </button>
-                        ))}
-                      </div>
-                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
-                        <input type="number" min="1" max="200" value={projSimCachets} onChange={e => setProjSimCachets(e.target.value)} placeholder="Nb cachets"
-                          style={{ flex: "1 1 90px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                        <MontantInput decimales value={projSimBrut} onChange={v => setProjSimBrut(v)} placeholder={projSimMode === "total" ? "€ au total (tous cachets)" : `€ par cachet (~${Math.round(pj.brut_moyen_cachet)})`}
-                          style={{ flex: "1 1 130px", background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                        <button type="button" disabled={projSimLoading || !projSimCachets} onClick={lancerSimulationAj}
-                          style={{ background: "#378ADD", color: "white", border: "none", borderRadius: 8, padding: "9px 16px", fontSize: 13, fontWeight: 700, cursor: projSimLoading || !projSimCachets ? "default" : "pointer", fontFamily: "inherit", opacity: projSimLoading || !projSimCachets ? 0.6 : 1 }}>
-                          {projSimLoading ? "…" : "Simuler"}
-                        </button>
-                      </div>
-                      {projSimResult && (
-                        <div style={{ fontSize: 12.5, marginTop: 9, lineHeight: 1.55, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 9, padding: "10px 13px", color: "#B5D4F4" }}>
-                          {projSimResult.erreur
-                            ? "La simulation n'a pas répondu, réessaie dans un instant."
-                            : projSimResult.affichable
-                              ? <>
-                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{paire(projSimResult.aj_nette, pj.aj_nette)[0]} /jour</strong> au lieu de {paire(projSimResult.aj_nette, pj.aj_nette)[1]}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
-                                  {projSimResult.brut_cachet > 0 && (
-                                    <div style={{ marginTop: 6, color: "#CBB3E8" }}>
-                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{euros(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
-                                    </div>
-                                  )}
-                                </>
-                              : <>Je n'arrive pas à chiffrer ce lot précisément, et je préfère me taire plutôt que t'avancer un montant à l'aveugle. Ce que je peux te dire de sûr : ça monte. 🐾</>}
+                const nomMois = MOIS_NOMS[em && em.mois ? em.mois - 1 : new Date().getMonth()];
+                const contenuMois = !em ? vide("Je t'estime ce que France Travail va te verser ce mois-ci.")
+                  : em.verrou ? vide("Avec TOTOR Veille, je t'estime ton versement du mois.")
+                  : em.ok === false && em.raison === "allocation_manquante" ? vide("Donne-moi ton allocation par jour, je t'estime ton versement.")
+                  : em.ok === false ? vide("Il me manque une information pour l'estimer : je te dis laquelle.")
+                  : <>{montant(formatEUR(em.net_estime))}{detail("nets estimés · France Travail")}</>;
+                const contenuRenouv = !pj ? vide("Je projette l'allocation de ton prochain renouvellement.")
+                  : pj.verrou ? vide("Avec TOTOR Veille, je projette ton allocation.")
+                  : pj.ok === false && pj.raison === "aucune_activite" ? vide("Ajoute tes contrats, je te l'estime.")
+                  : pj.ok === false && pj.raison === "bruts_incomplets" ? vide("Ajoute le salaire de tes contrats, je te l'estime.")
+                  : pj.affichable === false ? vide("Il me manque une information pour l'estimer.")
+                  : <>{montant(formatEUR(Math.round(pj.aj_nette)), miniCourbe)}{detail("nets par jour, estimés")}</>;
+                const anDeb = cs && cs.exercice_debut ? cs.exercice_debut.slice(0, 4) : "";
+                const anFin = cs && cs.exercice_fin ? cs.exercice_fin.slice(0, 4) : "";
+                const contenuConges = cs && cs.assiette > 0
+                  ? <>{montant(formatEUR(Math.round(cs.icp_brut)))}{detail(`bruts estimés · saison ${anDeb} / ${anFin}`)}</>
+                  : vide("Ajoute le salaire de tes contrats, je te les estime.");
+                const carte = (cle, fond, titre, contenu) => (
+                  <button key={cle} type="button" onClick={() => allerPage(cle)}
+                    style={isMobile
+                      ? { border: 0, width: "100%", textAlign: "left", borderRadius: 20, padding: "12px 18px", color: "#0A2540", background: fond, display: "grid", gridTemplateColumns: "minmax(0, 1fr) auto", alignItems: "center", columnGap: 10, cursor: "pointer", fontFamily: "inherit" }
+                      : { border: 0, width: "100%", textAlign: "left", borderRadius: 20, padding: 22, minHeight: 164, color: "#0A2540", background: fond, display: "flex", flexDirection: "column", justifyContent: "flex-start", alignItems: "stretch", position: "relative", cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box" }}>
+                    <span style={{ display: "block", minWidth: 0 }}>
+                      <span style={{ display: "block", fontSize: isMobile ? 15 : 14.5, fontWeight: 600, paddingRight: isMobile ? 0 : 26 }}>{titre}</span>
+                      {contenu}
+                    </span>
+                    <i className="ti ti-chevron-right" aria-hidden="true" style={isMobile ? { fontSize: 22 } : { position: "absolute", top: 20, right: 16, fontSize: 22 }} />
+                  </button>
+                );
+                const cartes = [
+                  carte("mois", "#F3EDE2", `Ton mois · ${nomMois}`, contenuMois),
+                  carte("renouv", "#F6F7F9", "Ton prochain renouvellement", contenuRenouv),
+                  carte("conges", "#E7E2F5", "Tes Congés Spectacles", contenuConges),
+                ];
+                // Toucher Totor lance la course (le jeu), comme dans la maquette.
+                const photo = (style) => (
+                  <button type="button" onClick={() => setShowGame(true)} aria-label="Toucher Totor : la course avec Totor" title="Touche-moi"
+                    style={{ position: "absolute", background: "none", border: "none", padding: 0, cursor: "pointer", ...style }}>
+                    <img src="/totor-serein.webp" alt="" style={{ width: "100%", display: "block", pointerEvents: "none", userSelect: "none" }} />
+                  </button>
+                );
+                const marque = (
+                  <div style={{ position: "relative", zIndex: 4, fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 30, letterSpacing: "0.02em", lineHeight: 1 }}>
+                    T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R
+                  </div>
+                );
+
+                if (isMobile) {
+                  return (
+                    <div style={{ position: "relative" }}>
+                      {marque}
+                      {photo({ width: 200, right: -14, top: 14, zIndex: 2 })}
+                      <div style={{ position: "relative", zIndex: 3, marginTop: 34 }}>{heros}</div>
+                      {manque && (
+                        <div style={{ position: "relative", zIndex: 3 }}>
+                          <OffresAccueil heuresManquantes={calc.manque} variante="bande" onToutVoir={() => allerPage("trouver-heures")} />
                         </div>
                       )}
+                      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginTop: 20 }}>
+                        {cartes}
+                        {aDesActivites && <div style={{ marginTop: 6 }}>{boutonAjout}</div>}
+                      </div>
                     </div>
-                    <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 10, fontStyle: "italic", lineHeight: 1.5 }}>
-                      Estimation d'après tes activités déclarées, affinée à chaque AEM scannée. Seule ta notification France Travail fera foi.
+                  );
+                }
+                // Ordinateur : quand il manque des heures, les offres prennent la place de
+                // la photo, à droite des heures ; la photo revient quand il ne manque rien.
+                return (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 22 }}>
+                    <div style={{ position: "relative", minHeight: 372, borderRadius: 26, overflow: "hidden", padding: "30px 36px", boxSizing: "border-box", background: "linear-gradient(135deg, #0E2946 0%, #0A1F38 70%)", display: manque ? "grid" : "block", gridTemplateColumns: manque ? "minmax(0, 480px) minmax(0, 1fr)" : undefined, columnGap: 40, alignItems: "center" }}>
+                      <div style={{ position: "relative", zIndex: 2, maxWidth: 480 }}>
+                        {heros}
+                        <div style={{ marginTop: 22 }}>{boutonAjout}</div>
+                        {lienScan}
+                      </div>
+                      {manque
+                        ? (
+                          <div style={{ position: "relative", zIndex: 2 }}>
+                            <OffresAccueil heuresManquantes={calc.manque} variante="liste" onToutVoir={() => allerPage("trouver-heures")} />
+                          </div>
+                        )
+                        : photo({ width: 330, right: 36, bottom: -54, zIndex: 1 })}
                     </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 16 }}>{cartes}</div>
                   </div>
                 );
               })()}
 
-              {/* ══ TOTOR VÉRIFIE : défini en tête de l'IIFE (blocVerdict), posé à GAUCHE
-                   en desktop. Ici sa place dans le flux mobile. « Ton mois », lui, est
-                   remonté tout en haut du cockpit téléphone (17/08/2026). ══ */}
-              {isMobile && blocVerdict}
-
-
-              {/* ═══ PROJECTION : "Quand pourrais-je renouveler ?" ═══ */}
-              {projection.dispo && (
-              <div style={{ background: "linear-gradient(160deg,#0d2440,#0a1322)", border: "1px solid rgba(55,138,221,0.25)", borderRadius: 16, padding: "18px 20px 20px" }}>
-                <div onClick={basculerProjection} role="button" tabIndex={0}
-                  onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); basculerProjection(); } }}
-                  style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4, cursor: "pointer" }}>
-                  <div style={{ width: 34, height: 34, borderRadius: "50%", background: "#07192E", border: "1.5px solid rgba(127,184,240,0.4)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                    <i className="ti ti-calendar-event" aria-hidden="true" style={{ color: "#7FB8F0", fontSize: 18 }} />
-                  </div>
-                  <div style={{ fontSize: 15.5, fontWeight: 800, color: "white" }}>Quand pourrais-tu renouveler ?</div>
-                  <span style={{ width: 26, height: 26, borderRadius: "50%", background: "rgba(255,255,255,0.07)", border: "1px solid rgba(255,255,255,0.16)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, marginLeft: "auto" }}><i className={`ti ti-chevron-${projectionOuverte ? "up" : "down"}`} aria-hidden="true" style={{ fontSize: 15, color: "#B5D4F4" }} /></span>
+              {/* ═══ LES PAGES DE DÉTAIL DE L'ACCUEIL (refonte du 27/09/2026) ═══
+                  Chaque carte courte de l'accueil ouvre sa page, avec les grandes cartes
+                  d'avant, intactes : rien de ce que TOTOR savait dire n'est perdu. */}
+              {interNav === "mois" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {blocMois || <div style={{ fontSize: 14, color: "#8BA5C0", lineHeight: 1.5 }}>Je prépare l'estimation de ton mois…</div>}
+                  {blocAllocation}
+                  {blocVerdict}
+                  {blocPAS}
+                  {porte({ icon: "ti-cash", titre: "Mes versements", sous: "Ce que France Travail t'a déjà versé, mois par mois.", onClick: () => allerPage("versements") })}
                 </div>
-                {projectionOuverte && (<>
-                <div style={{ fontSize: 11.5, color: "#7E97B3", marginBottom: 14, lineHeight: 1.45 }}>
-                  Des estimations, pas des certitudes, elles dépendent de ce qui va se passer.
-                </div>
-
-                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {projection.scenarios.map((s, i) => (
-                    <div key={i} style={{ background: "rgba(55,138,221,0.06)", border: "1px solid rgba(55,138,221,0.18)", borderRadius: 11, padding: "12px 14px", display: "flex", alignItems: "center", gap: 11 }}>
-                      <span style={{ fontSize: 14, flexShrink: 0 }}>🔵</span>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontSize: 12, color: "#8FB4D8", display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                          {s.label}
-                          {s.estimation && <span style={{ fontSize: 8.5, fontWeight: 700, letterSpacing: 0.4, color: "#F0C070", background: "rgba(240,190,90,0.12)", border: "1px solid rgba(240,190,90,0.3)", borderRadius: 10, padding: "1px 6px", textTransform: "uppercase" }}>estimation</span>}
-                        </div>
-                        <div style={{ fontSize: 14.5, fontWeight: 800, color: s.ok ? "white" : "#F0997F", lineHeight: 1.2, marginTop: 1 }}>
-                          {s.ok ? "tu pourrais y être " : ""}{s.valeur}
-                        </div>
-                        {s.note && <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 1 }}>{s.note}</div>}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {projection.nbPrevus === 0 && (
-                  <div style={{ marginTop: 12, background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "13px 15px" }}>
-                    <div style={{ fontSize: 12.5, color: "#C2E6D8", lineHeight: 1.5, marginBottom: 10 }}>
-                      🗓️ <strong style={{ color: "white" }}>Tu as déjà des cachets signés pour les mois à venir&nbsp;?</strong> Ajoute-les avec leur vraie date, je te montre tout de suite où tu en seras à ta date anniversaire.
-                    </div>
-                    <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); }}
-                      style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "11px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                      <i className="ti ti-calendar-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un contrat déjà signé
-                    </button>
-                  </div>
-                )}
-
-                {!calc.aDateAnniv && (
-                  <div style={{ fontSize: 10.5, color: "#6B8299", marginTop: 12, lineHeight: 1.5, textAlign: "center" }}>
-                    🐾 Ajoute ta date anniversaire ci-dessus pour affiner ces estimations.
-                  </div>
-                )}
-                </>)}
-              </div>
               )}
-              {isMobile && blocFrise}
-              {isMobile && blocPAS}
-
-                {/* Action + bannière ligne comblent le bas de la colonne droite. */}
-                {/* Le murmure « je pourrais veiller pour toi » etait le TOUT PREMIER
-                    bloc du cockpit, avant meme le bonjour et la carte de Totor.
-                    Un argumentaire d'abonnement en position 1, sur un compte vide,
-                    poussait tout le reste vers le bas. Il rejoint les autres blocs
-                    de fin de cockpit. */}
-                {interNav === "cockpit" && renderMurmureVeille(() => setInterNav("abonnement"))}
-                {blocActionLigne}
-                </div>{/* ── fin colonne droite ── */}
-              </div>
-                </>);
-              })()}
-
-              {/* ═══ ACTIONS (tout en bas : on agit après avoir lu) ═══ */}
-              <div style={{ marginTop: 4 }}>
-                    {/* LE gros bouton : Totor fait les calculs */}
-                    <button type="button" onClick={() => setInterNav("calcul")}
-                      style={{ width: "100%", marginTop: 16, background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 11, padding: "15px", fontSize: 15, fontWeight: 800, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
-                      <i className="ti ti-calculator" aria-hidden="true" style={{ fontSize: 18 }} /> Analyser ma situation
-                    </button>
-                    <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-                      <button type="button" onClick={() => setInterNav("activites")}
-                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                        <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 15 }} /> Ajouter un contrat
-                      </button>
-                      <button type="button" onClick={() => setInterNav("mesaem")}
-                        style={{ flex: 1, background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 10, padding: "11px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                        <i className="ti ti-camera" aria-hidden="true" style={{ fontSize: 15 }} /> Scanner une AEM
-                      </button>
-                    </div>
-              </div>
-
-              </>)}
+              {interNav === "renouv" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {blocProjectionAj || <div style={{ fontSize: 14, color: "#8BA5C0", lineHeight: 1.5 }}>Ajoute tes contrats : je projette l'allocation de ton prochain renouvellement.</div>}
+                  {blocQuandRenouveler}
+                  {porte({ icon: "ti-coins", titre: "Simuler une allocation", sous: "Teste une autre situation, sans toucher à ton dossier", onClick: () => allerPage("simulateur") })}
+                </div>
+              )}
+              {interNav === "conges" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+                  {blocConges || <div style={{ fontSize: 14, color: "#8BA5C0", lineHeight: 1.5 }}>Ajoute le salaire de tes contrats : je t'estime tes Congés Spectacles.</div>}
+                </div>
+              )}
+              {/* « Ta progression », dans l'onglet Totor : la grande carte de Totor et ses
+                  paliers, qui ont quitté l'accueil (décision de Camille du 26/09). */}
+              {interNav === "progression" && (
+                <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                  {blocTotorGrand}
+                  {blocFrise}
+                  <button type="button" onClick={() => setShowGame(true)}
+                    style={{ width: "100%", background: "transparent", border: "1px solid rgba(159,203,245,0.35)", color: "#CFE3F7", borderRadius: 999, padding: "16px 20px", fontSize: 16, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", minHeight: 52 }}>
+                    La course avec Totor
+                  </button>
+                </div>
+              )}
 
               {/* ═══ PAGE ACTUALISATION — "Totor a déjà bossé pour toi" ═══ */}
               {interNav === "actu" && (<>
@@ -13157,6 +12931,12 @@ function AppInner() {
                 </button>
               </div>
 
+              {/* « Ta progression » : la grande carte de Totor et ses paliers vivent ici
+                  depuis la refonte du 27/09/2026 (ils ont quitté l'accueil). */}
+              <div style={{ margin: "12px 0 14px" }}>
+                {porte({ icon: "ti-trophy", titre: `Totor ${palierActuel.nom}`, sous: "Ta progression, palier par palier", onClick: () => allerPage("progression") })}
+              </div>
+
               {renderQuotaJauge("chat", "conversation")}
 
               {renderBanniereLigneTotor()}
@@ -13320,7 +13100,7 @@ function AppInner() {
                       </div>
                       {!c.date_anniversaire && (
                         <div style={{ fontSize: 10.5, color: "#8BA5C0", marginTop: 11, lineHeight: 1.5 }}>
-                          🐾 Renseigne ta date anniversaire sur le cockpit pour que je te dise si c'est à temps pour ton renouvellement.
+                          🐾 Renseigne ta date anniversaire sur l'accueil pour que je te dise si c'est à temps pour ton renouvellement.
                         </div>
                       )}
                     </div>
@@ -14240,7 +14020,7 @@ function AppInner() {
                   {profileDetailsSaved && <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600 }}>✓ Enregistré</span>}
                 </div>
                 <div style={{ fontSize: 11, color: "#5A7088", marginTop: 12, lineHeight: 1.5 }}>
-                  🐾 Ta date anniversaire se règle directement sur le cockpit, là où je surveille ton renouvellement.
+                  🐾 Ta date anniversaire se règle directement sur l'accueil, là où je surveille ton renouvellement.
                 </div>
               </div>
 
