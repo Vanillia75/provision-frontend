@@ -648,6 +648,8 @@ function AppInner() {
   const [areError, setAreError] = useState("");
   // Ligne d'activité dont on affiche le détail "AEM scannée" (id ou null)
   const [aemDetailId, setAemDetailId] = useState(null);
+  // Téléphone : le contrat dont le petit menu (voir, modifier, supprimer) est déroulé.
+  const [menuActiviteId, setMenuActiviteId] = useState(null);
   // Ligne dont le panneau « doublon : oui ou non ? » est ouvert (id ou null).
   const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
   // Projection AJ au prochain renouvellement (carte cockpit, TOTOR Veille).
@@ -2697,7 +2699,9 @@ function AppInner() {
     }
   }
 
-  const aideVivanteUI = (token && profile?.onboarding_complete && !aideMasquee) ? (
+  // Côté intermittent, l'aide ne s'ouvre plus que sur demande, depuis l'onglet Totor :
+  // l'ancien « masquer l'aide » (qui cachait la pastille) ne doit pas la rendre muette.
+  const aideVivanteUI = (token && profile?.onboarding_complete && (!aideMasquee || profile?.statut === "intermittent")) ? (
     <>
       <style>{`@keyframes aidePatte { 0%,100% { opacity: 0.15; } 50% { opacity: 1; } }`}</style>
       {aideOuverte && (
@@ -2807,23 +2811,31 @@ function AppInner() {
                 )}
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 6 }}>
                   <a href="mailto:bonjour@montotor.fr" style={{ fontSize: 11.5, color: "#5DCAA5", textDecoration: "underline" }}>Pas trouvé ? Écris à Camille →</a>
-                  <button type="button" onClick={masquerAide}
-                    style={{ background: "none", border: "none", color: "#4A6280", fontSize: 10.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
-                    masquer l'aide
-                  </button>
+                  {profile?.statut !== "intermittent" && (
+                    <button type="button" onClick={masquerAide}
+                      style={{ background: "none", border: "none", color: "#4A6280", fontSize: 10.5, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", padding: 0 }}>
+                      masquer l'aide
+                    </button>
+                  )}
                 </div>
               </>
             )}
           </div>
         </div>
       )}
-      {/* La pastille : petite, sereine, jamais de badge ni de rebond. */}
-      <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
-        title="Totor · aide & mode d'emploi"
-        style={{ position: "fixed", bottom: isMobile ? `calc(${aideBasMobile}px + env(safe-area-inset-bottom, 0px))` : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
-        <HectorTete size={38} />
-        <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
-      </button>
+      {/* La pastille : petite, sereine, jamais de badge ni de rebond.
+          ⚠️ Côté intermittent, elle DISPARAÎT avec la refonte (27/09/2026, Camille :
+          « on enlève et on garde que le chat ») : elle recouvrait le bas des cartes.
+          L'aide reste ouverte depuis l'onglet Totor (« Une question sur l'app ? »),
+          toujours hors quota. Le côté auto-entrepreneur, pas refondu, la garde. */}
+      {profile?.statut !== "intermittent" && (
+        <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
+          title="Totor · aide & mode d'emploi"
+          style={{ position: "fixed", bottom: isMobile ? `calc(${aideBasMobile}px + env(safe-area-inset-bottom, 0px))` : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
+          <HectorTete size={38} />
+          <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
+        </button>
+      )}
     </>
   ) : null;
 
@@ -10564,7 +10576,7 @@ function AppInner() {
           </nav>
         )}
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(150px + env(safe-area-inset-bottom, 0px))" : "40px 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(110px + env(safe-area-inset-bottom, 0px))" : "40px 20px 80px" }}>
 
           {/* Sur une sous-page, le chemin du retour vers la page d'où elle vient. */}
           {PAGE_PARENTE[interNav] && (
@@ -12933,9 +12945,16 @@ function AppInner() {
 
               {/* « Ta progression » : la grande carte de Totor et ses paliers vivent ici
                   depuis la refonte du 27/09/2026 (ils ont quitté l'accueil). */}
-              <div style={{ margin: "12px 0 14px" }}>
+              <div style={{ margin: "12px 0 8px" }}>
                 {porte({ icon: "ti-trophy", titre: `Totor ${palierActuel.nom}`, sous: "Ta progression, palier par palier", onClick: () => allerPage("progression") })}
               </div>
+              {/* L'aide sur l'app elle-même vit ici depuis que la pastille ronde est partie :
+                  toujours hors quota, elle ne compte pas dans les conversations avec Totor. */}
+              <button type="button" onClick={() => setAideOuverte(true)}
+                style={{ display: "inline-flex", alignItems: "center", gap: 7, margin: "0 0 14px", background: "none", border: "none", padding: 0, color: "#8FB4D8", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "left", minHeight: 36 }}>
+                <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 17, color: "#5DCAA5" }} />
+                Une question sur l'app ? Je t'explique, sans toucher à tes conversations.
+              </button>
 
               {renderQuotaJauge("chat", "conversation")}
 
@@ -13117,28 +13136,26 @@ function AppInner() {
               {/* ═══ PAGE MES ACTIVITÉS ═══ */}
               {interNav === "activites" && (<>
 
-              {/* ─── EN-TÊTE TÉLÉPHONE (18/08/2026, étape 2 de la maquette validée) :
-                  le compteur d'heures en accroche et la jauge en un clin d'œil,
-                  pour voir son avancée pendant qu'on ajoute ses contrats.
-                  Seulement s'il y a des activités : on n'affiche jamais un
-                  « 0 h au compteur » qu'on ne sait pas vrai. */}
-              {isMobile && interActivites.length > 0 && (
-                <div style={{ marginBottom: 14 }}>
-                  <div style={{ fontSize: 19, fontWeight: 800, color: "white" }}>Mes activités</div>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", marginTop: 2, fontWeight: 600 }}>
-                    {Math.round(calc.heures)} h au compteur · {interActivites.length} contrat{interActivites.length > 1 ? "s" : ""} 🐾
-                  </div>
-                  <div style={{ marginTop: 10, background: "rgba(93,202,165,0.09)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 14, padding: "11px 13px" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "#9FE1CB", fontWeight: 600 }}>
-                      <span>Vers les {calc.seuil} h</span>
-                      <span>{calc.heures >= calc.seuil ? "objectif atteint ✓" : `plus que ${Math.round(calc.manque)} h`}</span>
-                    </div>
-                    <div style={{ marginTop: 6, height: 8, background: "rgba(255,255,255,0.08)", borderRadius: 5 }}>
-                      <div style={{ width: `${Math.min(100, (calc.heures / calc.seuil) * 100)}%`, height: 8, background: "#5DCAA5", borderRadius: 5 }} />
-                    </div>
-                  </div>
+              {/* ─── EN-TÊTE DE L'ONGLET CONTRATS (refonte du 27/09/2026) ───
+                  Le compteur d'heures et sa jauge sont partis (« peut-être pas utile
+                  ici », Camille) : les heures sont déjà en très gros sur l'accueil.
+                  Il reste le titre, le bouton ➕ et, seulement s'il y en a, l'AEM
+                  qui manque (l'alerte vivait dans le briefing de l'ancien accueil). */}
+              <div style={{ marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: "white", margin: 0 }}>Contrats</h1>
+                  <button type="button" onClick={() => { setInterShowAdd(true); }} aria-label="Ajouter un contrat"
+                    style={{ width: 44, height: 44, borderRadius: "50%", background: "#378ADD", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0, boxShadow: "0 8px 18px -10px rgba(55,138,221,0.9)" }}>
+                    <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 22 }} />
+                  </button>
                 </div>
-              )}
+                {aemManquantes.length > 0 && (
+                  <button type="button" onClick={() => allerPage("mesaem")}
+                    style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 6, background: "none", border: "none", padding: 0, color: "#F2C879", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "left", minHeight: 32 }}>
+                    Il me manque l'AEM de {aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""} <i className="ti ti-chevron-right" aria-hidden="true" style={{ fontSize: 15 }} />
+                  </button>
+                )}
+              </div>
 
               {/* ─── LES PORTES DE L'ONGLET CONTRATS (refonte du 27/09/2026) ───
                   Trois lignes, aussi sur ordinateur : la page ne fait que 560 px de
@@ -13796,59 +13813,65 @@ function AppInner() {
                         ? ` · ${new Intl.NumberFormat("fr-FR").format(a.salaire_brut)} € brut` : "";
                       return (
                         <div key={a.id} style={{ background: "rgba(255,255,255,0.03)", border: `1px solid ${detailOuvert ? "rgba(93,202,165,0.3)" : "rgba(255,255,255,0.06)"}`, borderRadius: isMobile ? 14 : 10, overflow: "hidden" }}>
-                          {isMobile ? (
-                          <div style={{ padding: "11px 13px" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                              <div style={{ width: 34, height: 34, borderRadius: 10, background: teinteLigne.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {isMobile ? (() => {
+                          // ─── UNE LIGNE PAR CONTRAT (refonte du 27/09/2026, Camille : « menu
+                          //  roulant sinon beaucoup trop gros ») : les boutons voir / modifier /
+                          //  supprimer ne prennent plus une deuxième ligne sous chaque contrat.
+                          //  Toucher la ligne déroule un petit menu ; les pastilles AEM, Estimé
+                          //  et À venir deviennent de petites icônes à côté de l'employeur. ───
+                          const menuOuvert = menuActiviteId === a.id;
+                          const actionMenu = { display: "inline-flex", alignItems: "center", gap: 7, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.12)", color: "#C8DCEF", borderRadius: 10, padding: "9px 13px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 40 };
+                          return (
+                          <div style={{ padding: "10px 12px" }}>
+                            <button type="button" onClick={() => setMenuActiviteId(menuOuvert ? null : a.id)} aria-expanded={menuOuvert}
+                              aria-label={`${a.employeur || "Employeur à compléter"}, ${formatPeriode(a)}, ${detailLigne}. Voir, modifier ou supprimer`}
+                              style={{ display: "flex", alignItems: "center", gap: 10, width: "100%", background: "none", border: "none", padding: 0, textAlign: "left", cursor: "pointer", fontFamily: "inherit", color: "inherit" }}>
+                              <span style={{ width: 34, height: 34, borderRadius: 10, background: teinteLigne.bg, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
                                 <i className={`ti ${iconeLigne}`} aria-hidden="true" style={{ fontSize: 16, color: teinteLigne.fg }} />
-                              </div>
-                              <div style={{ flex: 1, minWidth: 0 }}>
-                                <div style={{ fontSize: 13, color: a.employeur ? "white" : "#5A7088", fontWeight: a.employeur ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                  {a.employeur || "Employeur à compléter"}
-                                </div>
-                                <div style={{ fontSize: 10.5, color: "#8FB4D8", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                              </span>
+                              <span style={{ flex: 1, minWidth: 0 }}>
+                                <span style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0 }}>
+                                  <span style={{ fontSize: 13, color: a.employeur ? "white" : "#5A7088", fontWeight: a.employeur ? 600 : 400, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                    {a.employeur || "Employeur à compléter"}
+                                  </span>
+                                  {estAEM && <i className="ti ti-file-check" title="AEM scannée" aria-hidden="true" style={{ fontSize: 13, color: "#5DCAA5", flexShrink: 0 }} />}
+                                  {a.estime === true && <i className="ti ti-bulb" title="Estimé" aria-hidden="true" style={{ fontSize: 13, color: "#9FCBF5", flexShrink: 0 }} />}
+                                  {a.date && a.date > todayISO && <i className="ti ti-clock" title="À venir" aria-hidden="true" style={{ fontSize: 13, color: "#7FB8F0", flexShrink: 0 }} />}
+                                </span>
+                                <span style={{ display: "block", fontSize: 10.5, color: "#8FB4D8", marginTop: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                                   {formatPeriode(a)} · {detailLigne}{brutLigne}
-                                </div>
-                              </div>
+                                </span>
+                              </span>
                               <span style={{ fontSize: 12.5, fontWeight: 800, color: heuresLigne > 0 ? "#5DCAA5" : "#5A7088", flexShrink: 0 }}>
                                 {heuresLigne > 0 ? `+${heuresLigne} h` : "0 h"}
                               </span>
-                            </div>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6 }}>
-                              {estAEM && (
-                                <span title="Extraite de ton AEM scannée" style={{ fontSize: 9.5, color: "#5DCAA5", background: "rgba(93,202,165,0.12)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                  <i className="ti ti-file-check" aria-hidden="true" style={{ fontSize: 11 }} /> AEM
-                                </span>
-                              )}
-                              {a.estime === true && (
-                                <span style={{ fontSize: 9.5, color: "#9FCBF5", background: "rgba(55,138,221,0.14)", border: "1px solid rgba(55,138,221,0.4)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                  <i className="ti ti-bulb" aria-hidden="true" style={{ fontSize: 11 }} /> Estimé
-                                </span>
-                              )}
-                              {a.date && a.date > todayISO && (
-                                <span style={{ fontSize: 9.5, color: "#7FB8F0", background: "rgba(55,138,221,0.10)", border: "1px solid rgba(93,202,165,0.4)", borderRadius: 5, padding: "2px 6px", fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 3 }}>
-                                  <i className="ti ti-clock" aria-hidden="true" style={{ fontSize: 11 }} /> À venir
-                                </span>
-                              )}
-                              <div style={{ marginLeft: "auto", display: "flex", alignItems: "center" }}>
-                                {estAEM && (
-                                  <button type="button" onClick={() => setAemDetailId(detailOuvert ? null : a.id)} aria-label="Revoir l'AEM"
-                                    style={{ background: "transparent", border: "none", color: detailOuvert ? "#5DCAA5" : "#6B8299", cursor: "pointer", fontSize: 15, padding: "4px 8px" }}>
-                                    <i className={`ti ${detailOuvert ? "ti-eye-off" : "ti-eye"}`} aria-hidden="true" />
-                                  </button>
+                              <i className={`ti ${menuOuvert ? "ti-chevron-up" : "ti-chevron-down"}`} aria-hidden="true" style={{ fontSize: 16, color: "#6B8299", flexShrink: 0 }} />
+                            </button>
+                            {menuOuvert && (
+                              <div style={{ marginTop: 10 }}>
+                                {(estAEM || a.estime === true || (a.date && a.date > todayISO)) && (
+                                  <div style={{ fontSize: 11.5, color: "#8FB4D8", marginBottom: 8, lineHeight: 1.5 }}>
+                                    {[estAEM && "AEM scannée", a.estime === true && "Estimation (à confirmer avec l'AEM)", a.date && a.date > todayISO && "À venir"].filter(Boolean).join(" · ")}
+                                  </div>
                                 )}
-                                <button type="button" onClick={() => startEditActivite(a)} aria-label="Modifier"
-                                  style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 15, padding: "4px 8px" }}>
-                                  <i className="ti ti-pencil" aria-hidden="true" />
-                                </button>
-                                <button type="button" onClick={() => { if (window.confirm("Supprimer cette activité ?")) handleDeleteActivite(a.id); }} aria-label="Supprimer"
-                                  style={{ background: "transparent", border: "none", color: "#6B8299", cursor: "pointer", fontSize: 15, padding: "4px 8px" }}>
-                                  <i className="ti ti-trash" aria-hidden="true" />
-                                </button>
+                                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                                  {estAEM && (
+                                    <button type="button" onClick={() => setAemDetailId(detailOuvert ? null : a.id)} style={{ ...actionMenu, color: detailOuvert ? "#5DCAA5" : actionMenu.color }}>
+                                      <i className={`ti ${detailOuvert ? "ti-eye-off" : "ti-eye"}`} aria-hidden="true" style={{ fontSize: 16 }} /> {detailOuvert ? "Masquer l'AEM" : "Voir l'AEM"}
+                                    </button>
+                                  )}
+                                  <button type="button" onClick={() => { setMenuActiviteId(null); startEditActivite(a); }} style={actionMenu}>
+                                    <i className="ti ti-pencil" aria-hidden="true" style={{ fontSize: 16 }} /> Modifier
+                                  </button>
+                                  <button type="button" onClick={() => { if (window.confirm("Supprimer cette activité ?")) { setMenuActiviteId(null); handleDeleteActivite(a.id); } }} style={{ ...actionMenu, color: "#F2A3A3", borderColor: "rgba(242,163,163,0.35)" }}>
+                                    <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 16 }} /> Supprimer
+                                  </button>
+                                </div>
                               </div>
-                            </div>
+                            )}
                           </div>
-                          ) : (
+                          );
+                          })() : (
                           <div style={{ display: "flex", alignItems: "center", padding: "11px 14px", gap: 8 }}>
                             {/* Date */}
                             <div style={{ width: 96, flexShrink: 0, fontSize: 12, color: "#9FB6CE", fontVariantNumeric: "tabular-nums" }}>{formatPeriode(a)}</div>
