@@ -2588,6 +2588,9 @@ function AppInner() {
   // Règles gravées : jamais d'ouverture auto, pas de badge, pas de rebond (Loi VII) ;
   // croix = masquée durablement ; le quota chat n'est pas consommé (mode "aide").
   const aideEcranCourant = profile?.statut === "intermittent" ? interNav : nav;
+  // Sur téléphone, la pastille se pose juste au-dessus de la barre du bas : la barre
+  // des 5 onglets côté intermittent (refonte du 27/09/2026), la barre flottante côté AE.
+  const aideBasMobile = profile?.statut === "intermittent" ? 80 : 102;
   const AIDE_SUGGESTIONS = {
     // Mode auto-entrepreneur (nav)
     dashboard: ["Où je renseigne mon solde ?", "C'est quoi la réserve de sécurité ?", "Comment marche la Paie de Totor ?"],
@@ -2602,7 +2605,7 @@ function AppInner() {
     abonnement: ["Que donne TOTOR Veille ?", "Comment activer un code ?"],
     profil: ["Comment appeler la ligne TOTOR ?", "Comment couper un email de rappel ?", "Comment changer mon mot de passe ?"],
     // Mode intermittent (interNav)
-    cockpit: ["Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
+    cockpit: ["Où trouver mes AEM et mes documents ?", "Comment ajouter un cachet ?", "À quoi sert ma date anniversaire ?", "Pourquoi France Travail m'a repris de l'argent ?"],
     activites: ["Comment ajouter un cachet ?", "Comment saisir plusieurs jours d'un coup ?"],
     mesaem: ["Comment scanner une AEM ?", "Que faire si le scan échoue ?"],
     versements: ["Où trouver mon relevé de situation ?", "Que veut dire l'écart affiché ?", "Pourquoi vérifier mes versements ?"],
@@ -2693,7 +2696,7 @@ function AppInner() {
     <>
       <style>{`@keyframes aidePatte { 0%,100% { opacity: 0.15; } 50% { opacity: 1; } }`}</style>
       {aideOuverte && (
-        <div style={{ position: "fixed", bottom: isMobile ? "calc(162px + env(safe-area-inset-bottom, 0px))" : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
+        <div style={{ position: "fixed", bottom: isMobile ? `calc(${aideBasMobile + 60}px + env(safe-area-inset-bottom, 0px))` : 88, right: isMobile ? 10 : 20, width: "min(370px, calc(100vw - 20px))", maxHeight: "min(560px, calc(100vh - 120px))", background: "#0a1322", border: "1px solid rgba(93,202,165,0.35)", borderRadius: 16, zIndex: 320, display: "flex", flexDirection: "column", boxShadow: "0 12px 40px rgba(0,0,0,0.45)", overflow: "hidden" }}>
           {/* En-tête : la vocation lisible sans cliquer */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
             <HectorTete size={28} />
@@ -2812,7 +2815,7 @@ function AppInner() {
       {/* La pastille : petite, sereine, jamais de badge ni de rebond. */}
       <button type="button" onClick={() => setAideOuverte(o => !o)} aria-label="Aide et mode d'emploi"
         title="Totor · aide & mode d'emploi"
-        style={{ position: "fixed", bottom: isMobile ? "calc(102px + env(safe-area-inset-bottom, 0px))" : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
+        style={{ position: "fixed", bottom: isMobile ? `calc(${aideBasMobile}px + env(safe-area-inset-bottom, 0px))` : 22, right: isMobile ? 12 : 22, width: 52, height: 52, borderRadius: "50%", background: "#0d1f38", border: "1.5px solid rgba(93,202,165,0.5)", zIndex: 310, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 6px 20px rgba(0,0,0,0.35)", padding: 0 }}>
         <HectorTete size={38} />
         <span style={{ position: "absolute", bottom: -2, right: -2, background: "#5DCAA5", color: "#04342C", borderRadius: "50%", width: 18, height: 18, fontSize: 11, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center" }}>?</span>
       </button>
@@ -9344,66 +9347,110 @@ function AppInner() {
       safeStorage.setItem("actuHistorique", JSON.stringify(next));
     };
 
-    // Les entrées du menu intermittent, dans l'ordre du PARCOURS RÉEL :
-    // mon dossier au quotidien (piloter, saisir, scanner, m'actualiser),
-    // puis avancer (trouver des heures, simuler, demander), puis lire,
-    // et l'administratif à la fin. Réordonné le 24/07 (retour Camille).
-    const interMenuItems = [
-      { id: "cockpit", icon: "ti-gauge", label: "Cockpit", dispo: true },
-      { id: "activites", icon: "ti-calendar-event", label: "Mes activités", dispo: true },
-      { id: "mesaem", icon: "ti-file-check", label: "Mes AEM", dispo: true },
-      { id: "versements", icon: "ti-cash", label: "Mes versements", dispo: true },
-      { id: "actu", icon: "ti-clipboard-check", label: "Actualisation", dispo: true, badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3) },
-      { id: "trouver-heures", icon: "ti-briefcase", label: "Offres spectacle", dispo: true },
-      { id: "calcul", icon: "ti-calculator", label: "Calcul des heures", dispo: true },
-      { id: "simulateur", icon: "ti-coins", label: "Simuler une allocation", dispo: true },
-      { id: "hector", icon: "ti-message-2", label: "Parle à Totor", dispo: true },
-      { id: "attestation", icon: "ti-folder", label: "Mes documents", dispo: true },
-      { id: "conseils", icon: "ti-book", label: "Comprendre", dispo: true },
-      { id: "abonnement", icon: "ti-paw", label: "TOTOR Veille", dispo: true },
+    // ─── LES 5 ONGLETS DE LA REFONTE (27/09/2026, maquette validée par Camille) ───
+    // Chaque onglet regroupe des pages (valeurs de interNav, inchangées). Téléphone :
+    // les 5 onglets en bas, plus de tiroir. Ordinateur : chaque onglet montre ses
+    // sous-pages sous son nom (sur grand écran, montrer la structure rassure, la
+    // cacher inquiète), et « Abonnement » reste collé en bas de la colonne, visible
+    // depuis toutes les pages : sous le nom « TOTOR Veille », beaucoup de gens ne
+    // trouvaient pas où s'abonner (décision de Camille du 26/09).
+    // Ce qui vivait au bas de l'ancien menu (Pourquoi TOTOR ?, la course, la
+    // visite, la déconnexion) est rangé dans Réglages, sous l'onglet Totor.
+    // ⚠️ Toute page déplacée doit l'être aussi dans l'aide vivante (aide_app.py
+    // + AIDE_SUGGESTIONS), sinon l'aide envoie vers des menus qui n'existent plus.
+    const ONGLETS_INTER = [
+      { id: "accueil", icon: "ti-home", label: "Accueil", court: "Accueil", defaut: "cockpit", retour: "Accueil",
+        pages: ["cockpit", "calcul", "simulateur"],
+        sous: [
+          { page: "calcul", label: "Tes heures" },
+          { page: "cockpit", ancre: "carte-mois", label: "Ton mois" },
+          { page: "simulateur", label: "Ton renouvellement" },
+          { page: "cockpit", ancre: "carte-conges", label: "Tes Congés" },
+        ] },
+      { id: "contrats", icon: "ti-file-text", label: "Contrats", court: "Contrats", defaut: "activites", retour: "Mes contrats",
+        pages: ["activites", "trouver-heures", "mesaem", "attestation"],
+        sous: [
+          // « Trouver du travail » en tête et TOUJOURS là : on cherche du travail
+          // même avec ses 507 h (question de Camille, 26/09).
+          { page: "trouver-heures", label: "Trouver du travail" },
+          { page: "activites", label: "Mes contrats" },
+          { page: "mesaem", label: "Mes AEM" },
+          { page: "attestation", label: "Mes documents" },
+        ] },
+      { id: "actu", icon: "ti-refresh", label: "Actualisation", court: "Actualiser", defaut: "actu", retour: "Actualisation",
+        badge: !dejaActualise && (actuOuverte || joursAvantOuverture <= 3),
+        pages: ["actu", "versements"],
+        sous: [{ page: "versements", label: "Mes versements" }] },
+      { id: "totor", icon: "ti-paw", label: "Totor", court: "Totor", defaut: "hector", retour: "Parle à Totor",
+        pages: ["hector", "conseils", "reglages"],
+        sous: [
+          { page: "hector", label: "Parle à Totor" },
+          { page: "conseils", label: "Comprendre" },
+          { page: "reglages", label: "Réglages" },
+        ] },
+      { id: "abonnement", icon: "ti-credit-card", label: "Abonnement", court: "Abonnement", defaut: "abonnement", pages: ["abonnement"], sous: [] },
     ];
+    const ongletActif = ONGLETS_INTER.find(o => o.pages.includes(interNav)) || ONGLETS_INTER[0];
+    // Ouvre une page ; avec une ancre, descend jusqu'à la carte voulue (« Ton mois »
+    // et « Tes Congés » sont des cartes de l'accueil, pas des pages).
+    const allerPage = (page, ancre) => {
+      setInterNav(page);
+      setInterMenuOpen(false);
+      if (ancre) setTimeout(() => { const el = document.getElementById(ancre); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 120);
+      else window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+    // Une « porte » : une ligne qui mène à une page (même dessin que la maquette).
+    const porte = ({ cle, icon, titre, sous, onClick }) => (
+      <button key={cle || titre} type="button" onClick={onClick}
+        style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", alignItems: "center", gap: 12, textAlign: "left", width: "100%", background: "#0B2038", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 14, color: "white", cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box" }}>
+        <span style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(93,202,165,0.12)", color: "#5DCAA5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <i className={`ti ${icon}`} aria-hidden="true" style={{ fontSize: 21 }} />
+        </span>
+        <span style={{ minWidth: 0 }}>
+          <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{titre}</span>
+          {sous && <span style={{ display: "block", fontSize: 13, color: "#B5C8DC", marginTop: 3, lineHeight: 1.4 }}>{sous}</span>}
+        </span>
+        <i className="ti ti-chevron-right" aria-hidden="true" style={{ color: "#6F8BA8", fontSize: 18 }} />
+      </button>
+    );
+    const boutonSousMenu = (s) => {
+      const actif = interNav === s.page && !s.ancre;
+      return (
+        <button key={s.label} type="button" onClick={() => allerPage(s.page, s.ancre)} aria-current={actif ? "page" : undefined}
+          style={{ display: "block", background: actif ? "rgba(93,202,165,0.08)" : "transparent", border: "none", borderRadius: 8, padding: "6px 10px", fontSize: 13, color: actif ? "#5DCAA5" : "#8FA6BD", fontWeight: actif ? 600 : 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+          {s.label}
+        </button>
+      );
+    };
     const interSidebar = (
-      <div style={{ width: 220, flexShrink: 0, background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px", minHeight: isMobile ? "100%" : "100vh" }}>
-        <div style={{ padding: "4px 8px 16px" }}><Logo size={30} dark /></div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          {interMenuItems.map(item => {
-            const actif = interNav === item.id;
+      <div style={{ width: 232, flexShrink: 0, alignSelf: "flex-start", position: "sticky", top: 0, height: "100vh", boxSizing: "border-box", overflowY: "auto", scrollbarWidth: "none", background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px 14px" }}>
+        <div style={{ padding: "4px 8px 18px" }}><Logo size={30} dark /></div>
+        <nav aria-label="Onglets" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {ONGLETS_INTER.filter(o => o.id !== "abonnement").map(o => {
+            const actif = ongletActif.id === o.id;
             return (
-              <button key={item.id} type="button" disabled={!item.dispo}
-                onClick={() => { if (item.dispo) { setInterNav(item.id); setInterMenuOpen(false); window.scrollTo({ top: 0, behavior: "smooth" }); } }}
-                style={{ display: "flex", alignItems: "center", gap: 10, background: actif ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: actif ? "#5DCAA5" : (item.dispo ? "#B5D4F4" : "#4A6280"), fontWeight: actif ? 700 : 500, cursor: item.dispo ? "pointer" : "default", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-                <i className={`ti ${item.icon}`} aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
-                <span>{item.label}</span>
-                {item.badge && <span style={{ marginLeft: "auto", width: 8, height: 8, borderRadius: "50%", background: "#5DCAA5", flexShrink: 0, boxShadow: "0 0 0 3px rgba(93,202,165,0.2)" }} />}
-                {!item.dispo && <span style={{ marginLeft: "auto", fontSize: 9, color: "#4A6280", background: "rgba(255,255,255,0.05)", borderRadius: 4, padding: "2px 5px" }}>bientôt</span>}
-              </button>
+              <div key={o.id}>
+                <button type="button" onClick={() => allerPage(o.defaut)} aria-current={actif && interNav === o.defaut && !o.sous.some(s => s.page === o.defaut && !s.ancre) ? "page" : undefined}
+                  style={{ display: "flex", alignItems: "center", gap: 11, background: actif ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 10, padding: "10px 12px", fontSize: 14.5, color: actif ? "#5DCAA5" : "#B5D4F4", fontWeight: actif ? 700 : 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
+                  <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 19, flexShrink: 0 }} />
+                  <span>{o.label}</span>
+                  {o.badge && <span style={{ marginLeft: "auto", width: 8, height: 8, borderRadius: "50%", background: "#5DCAA5", flexShrink: 0, boxShadow: "0 0 0 3px rgba(93,202,165,0.2)" }} />}
+                </button>
+                {o.sous.length > 0 && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 1, margin: "2px 0 8px 21px", paddingLeft: 11, borderLeft: "1px solid rgba(255,255,255,0.09)" }}>
+                    {o.sous.map(boutonSousMenu)}
+                  </div>
+                )}
+              </div>
             );
           })}
-          {/* La lettre du fondateur — l'âme du produit mérite sa place au menu. */}
-          <button type="button" onClick={() => { setLegalPage("pourquoi"); setInterMenuOpen(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-            <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
-            <span>Pourquoi TOTOR ?</span>
-          </button>
-        </div>
-        <div style={{ marginTop: "auto", paddingTop: 16, borderTop: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", gap: 2 }}>
-          <button type="button" onClick={() => { setInterNav("reglages"); setInterMenuOpen(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 10, background: interNav === "reglages" ? "rgba(93,202,165,0.12)" : "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: interNav === "reglages" ? "#5DCAA5" : "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-            <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 17 }} /> Réglages
-          </button>
-          {/* Le mini-jeu, rangé en fin de menu : un cadeau, pas une fonction de premier rang. */}
-          <button type="button" onClick={() => { setShowGame(true); setInterMenuOpen(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#8BA5C0", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-            <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 17, flexShrink: 0 }} />
-            <span>Course avec Totor</span>
-          </button>
-          <button type="button" onClick={() => { setShowWalkthrough(true); setInterMenuOpen(false); }}
-            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#B5D4F4", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-            <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 17 }} /> Aide · Visite guidée
-          </button>
-          <button type="button" onClick={handleLogout}
-            style={{ display: "flex", alignItems: "center", gap: 10, background: "transparent", border: "none", borderRadius: 8, padding: "10px 12px", fontSize: 13.5, color: "#8BA5C0", cursor: "pointer", fontFamily: "inherit", textAlign: "left", width: "100%" }}>
-            <i className="ti ti-logout" aria-hidden="true" style={{ fontSize: 17 }} /> Déconnexion
+        </nav>
+        {/* « Abonnement », collé en bas de la colonne : visible depuis toutes les pages. */}
+        <div style={{ marginTop: "auto", paddingTop: 14, position: "sticky", bottom: 0, background: "#07192E" }}>
+          <button type="button" onClick={() => allerPage("abonnement")} aria-current={interNav === "abonnement" ? "page" : undefined}
+            style={{ display: "flex", alignItems: "center", gap: 11, width: "100%", background: interNav === "abonnement" ? "#0F3148" : "#0D2744", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 12, padding: "11px 12px", fontSize: 14.5, color: interNav === "abonnement" ? "#5DCAA5" : "#DCE7F2", fontWeight: 600, cursor: "pointer", fontFamily: "inherit", textAlign: "left" }}>
+            <i className="ti ti-credit-card" aria-hidden="true" style={{ fontSize: 19, flexShrink: 0 }} />
+            <span>Abonnement</span>
           </button>
         </div>
       </div>
@@ -9871,88 +9918,46 @@ function AppInner() {
           </div>
         )}
 
-        {/* Sidebar desktop */}
+        {/* Ordinateur : la colonne des onglets, avec ce que chacun contient. */}
         {!isMobile && interSidebar}
 
-        {/* Sidebar mobile (drawer) */}
-        {isMobile && interMenuOpen && (
-          <div style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.5)" }} onClick={() => setInterMenuOpen(false)}>
-            <div onClick={e => e.stopPropagation()} style={{ position: "fixed", top: 0, left: 0, bottom: 0, zIndex: 201, overflowY: "auto", WebkitOverflowScrolling: "touch", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>{interSidebar}</div>
-          </div>
-        )}
-
         <div style={{ flex: 1, minWidth: 0 }}>
-        <nav style={{ position: "sticky", top: 0, zIndex: 100, background: "rgba(7,25,46,0.95)", backdropFilter: "blur(12px)", borderBottom: "1px solid rgba(255,255,255,0.07)", padding: "0 24px", height: 56, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            {isMobile && (
-              <button type="button" onClick={() => setInterMenuOpen(true)} aria-label="Menu" style={{ background: "transparent", border: "none", color: "white", fontSize: 22, cursor: "pointer", padding: 0 }}>
-                <i className="ti ti-menu-2" aria-hidden="true" />
-              </button>
-            )}
-            <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, background: "rgba(93,202,165,0.1)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 20, padding: "5px 12px" }}>Mode intermittent</span>
-          </div>
-          <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("auto_entrepreneur")}
-            style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "6px 12px", fontSize: 12, cursor: "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
-            ← Mode auto-entrepreneur
-          </button>
-        </nav>
+        {/* Téléphone : plus de barre du haut ni de tiroir (refonte du 27/09/2026).
+            Le texte qui défile ne doit pas passer sous l'heure du téléphone : dans
+            les apps, la zone de l'encoche reçoit un fond (0 px dans un navigateur).
+            Le changement de statut vit dans Réglages (« Mon statut »). */}
+        {isMobile && <div aria-hidden="true" style={{ position: "fixed", top: 0, left: 0, right: 0, height: "env(safe-area-inset-top, 0px)", background: "#07192E", zIndex: 260 }} />}
 
-        {/* ─── BARRE D'ONGLETS DU BAS, mobile uniquement (15/08/2026) ───
-            Version DÉFILANTE (demande de Camille) : les 5 gestes du quotidien
-            d'abord, et TOUT le reste du menu à la glisse, comme une rangée de
-            vignettes. Un dégradé sur le bord droit souffle qu'il y a une suite.
-            Le Scanner reste le plus gros bouton, mais DANS la barre : un bouton
-            surélevé serait rogné par le conteneur qui défile.
-            La barre s'efface quand le tiroir est ouvert (tiroir à zIndex 201,
-            sous elle) : sinon elle recouvrait Déconnexion. */}
-        {isMobile && !interMenuOpen && (
-          <nav aria-label="Navigation rapide" style={{ position: "fixed", left: 10, right: 10, bottom: "calc(10px + env(safe-area-inset-bottom, 0px))", zIndex: 250, background: "#0E1B30", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 24, boxShadow: "0 10px 30px rgba(0,0,0,0.5)", overflow: "hidden" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 2, overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch", padding: "9px 26px 8px 8px" }}>
-              {[
-                { id: "cockpit", icon: "ti-gauge", label: "Cockpit" },
-                { id: "activites", icon: "ti-calendar-event", label: "Activités" },
-                { id: "mesaem", icon: "ti-scan", label: "Scanner", central: true },
-                { id: "attestation", icon: "ti-folder", label: "Documents" },
-                { id: "versements", icon: "ti-cash", label: "Versements" },
-                { id: "hector", label: "Totor", totor: true },
-                { id: "actu", icon: "ti-clipboard-check", label: "Actu" },
-                { id: "trouver-heures", icon: "ti-briefcase", label: "Offres" },
-                { id: "calcul", icon: "ti-calculator", label: "Calcul" },
-                { id: "simulateur", icon: "ti-coins", label: "Simuler" },
-                { id: "conseils", icon: "ti-book", label: "Comprendre" },
-                { id: "abonnement", icon: "ti-paw", label: "Veille" },
-              ].map(o => {
-                const actif = interNav === o.id;
-                if (o.central) {
-                  return (
-                    <button key={o.id} type="button" onClick={() => { setInterNav(o.id); window.scrollTo(0, 0); }}
-                      aria-label="Scanner une AEM"
-                      style={{ flex: "0 0 auto", background: "none", border: "none", padding: "0 4px", cursor: "pointer", fontFamily: "inherit", textAlign: "center" }}>
-                      <span style={{ display: "flex", width: 50, height: 50, borderRadius: "50%", background: "#5DCAA5", outline: actif ? "3px solid rgba(93,202,165,0.55)" : "2px solid rgba(93,202,165,0.25)", alignItems: "center", justifyContent: "center", color: "#04342C", margin: "0 auto", boxShadow: "0 4px 14px rgba(93,202,165,0.35)" }}>
-                        <i className="ti ti-scan" aria-hidden="true" style={{ fontSize: 24 }} />
-                      </span>
-                      <span style={{ display: "block", fontSize: 9.5, fontWeight: 700, color: "#9FE1CB", marginTop: 2 }}>{o.label}</span>
-                    </button>
-                  );
-                }
+        {/* ─── LA BARRE DES 5 ONGLETS, téléphone (refonte du 27/09/2026) ───
+            Remplace la barre défilante à 12 vignettes et le tiroir à 17 entrées :
+            5 onglets fixes, toujours les mêmes, « Abonnement » compris. */}
+        {isMobile && (
+          <nav aria-label="Onglets" style={{ position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 250, background: "#0B2038", borderTop: "1px solid rgba(255,255,255,0.07)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, minmax(0, 1fr))", padding: "8px 2px 6px" }}>
+              {ONGLETS_INTER.map(o => {
+                const actif = ongletActif.id === o.id;
                 return (
-                  <button key={o.id} type="button" onClick={() => { setInterNav(o.id); window.scrollTo(0, 0); }}
-                    style={{ flex: "0 0 auto", background: actif ? "rgba(93,202,165,0.16)" : "none", border: actif ? "1px solid rgba(93,202,165,0.45)" : "1px solid transparent", borderRadius: 15, padding: "6px 8px 4px", cursor: "pointer", fontFamily: "inherit", textAlign: "center", color: actif ? "#5DCAA5" : "#7C93AC", minWidth: 56 }}>
-                    {o.totor
-                      ? <span style={{ display: "inline-block", transform: actif ? "scale(1.12)" : "none", transition: "transform 0.15s" }}><HectorTete size={24} /></span>
-                      : <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 22 }} />}
-                    <span style={{ display: "block", fontSize: 9.5, fontWeight: actif ? 700 : 500, marginTop: 1 }}>{o.label}</span>
-                    {actif && <span style={{ display: "block", fontSize: 8, lineHeight: "6px", color: "#5DCAA5" }}>🐾</span>}
+                  <button key={o.id} type="button" onClick={() => allerPage(o.defaut)} aria-current={actif ? "page" : undefined}
+                    style={{ position: "relative", background: "none", border: "none", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, padding: "4px 0", minHeight: 50, cursor: "pointer", fontFamily: "inherit", color: actif ? "#5DCAA5" : "#A9BDD1", fontSize: 11.5, fontWeight: actif ? 700 : 500, whiteSpace: "nowrap" }}>
+                    <i className={`ti ${o.icon}`} aria-hidden="true" style={{ fontSize: 24 }} />
+                    <span>{o.court}</span>
+                    {o.badge && <span aria-hidden="true" style={{ position: "absolute", top: 2, left: "calc(50% + 9px)", width: 9, height: 9, borderRadius: "50%", background: "#5DCAA5", boxShadow: "0 0 0 2px #0B2038" }} />}
                   </button>
                 );
               })}
             </div>
-            {/* Le souffle « il y a une suite » : dégradé sur le bord droit. */}
-            <div aria-hidden="true" style={{ position: "absolute", right: 0, top: 0, bottom: 0, width: 34, background: "linear-gradient(to left, #0E1B30, rgba(14,27,48,0))", pointerEvents: "none", borderRadius: "0 24px 24px 0" }} />
           </nav>
         )}
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "40px 20px 130px" : "40px 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(150px + env(safe-area-inset-bottom, 0px))" : "40px 20px 80px" }}>
+
+          {/* Téléphone : sur une sous-page, le chemin du retour vers la page de l'onglet. */}
+          {isMobile && interNav !== ongletActif.defaut && (
+            <button type="button" onClick={() => allerPage(ongletActif.defaut)}
+              style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "none", border: "none", padding: "4px 0", marginBottom: 10, color: "#8FB4D8", fontSize: 13.5, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 36 }}>
+              <i className="ti ti-chevron-left" aria-hidden="true" style={{ fontSize: 17 }} /> {ongletActif.retour}
+            </button>
+          )}
 
           {/* ─── Bannière d'installation PWA (écran d'accueil) ─── */}
           {!pwaDismissed && (
@@ -10623,10 +10628,10 @@ function AppInner() {
                   les deux revenus du mois (France Travail | tes employeurs) se voient
                   SANS défiler : les heures d'abord (héros), le briefing, puis l'argent.
                   Sur ordinateur, la carte reste à gauche sous Totor (inchangé). */}
-              {isMobile && blocMois && <div style={{ marginBottom: 12 }}>{blocMois}</div>}
+              {isMobile && blocMois && <div id="carte-mois" style={{ marginBottom: 12 }}>{blocMois}</div>}
               {/* Congés Spectacles juste après l'argent du mois (18/08/2026,
                   demande de Camille : « congé spectacle placer plus haut »). */}
-              {isMobile && blocConges && <div style={{ marginBottom: 12 }}>{blocConges}</div>}
+              {isMobile && blocConges && <div id="carte-conges" style={{ marginBottom: 12 }}>{blocConges}</div>}
 
               {/* ═══ OBJECTIF (en gros) + jauge renouvellement ═══
                    ⚠️ GARDE-FOU DU 06/08/2026, mesuré sur les comptes réels : 20 intermittents
@@ -11110,7 +11115,7 @@ function AppInner() {
                     cherchait la carte : « ou ca ») : « Ton mois » vivait SOUS la
                     grande carte de Totor, invisible sans défiler. Elle passe en
                     tête de la colonne de gauche, Totor juste dessous. */}
-                {!isMobile && blocMois}
+                {!isMobile && blocMois && <div id="carte-mois">{blocMois}</div>}
                 {/* Wrapper sans overflow : Totor détouré flotte au-dessus de la carte,
                     les oreilles dépassent du cadre (même signature que la carte AE ;
                     l'espace du débord est RÉSERVÉ par paddingTop, jamais de top négatif). */}
@@ -11221,7 +11226,7 @@ function AppInner() {
                     au-dessus de la grande carte de Totor : ne pas le re-poser ici.) */}
                 {!isMobile && blocVerdict}
                 {!isMobile && blocFrise}
-                {!isMobile && blocConges}
+                {!isMobile && blocConges && <div id="carte-conges">{blocConges}</div>}
                 {!isMobile && blocPAS}
                 {/* La date de renouvellement arrive JUSTE apres Totor : c'est la
                     premiere chose dont il a besoin pour repondre a la question de
@@ -12057,6 +12062,11 @@ function AppInner() {
                   )}
                 </div>
               )}
+
+              {/* « Mes versements » est rangé dans l'onglet Actualisation (refonte du 27/09/2026). */}
+              <div style={{ marginTop: 18 }}>
+                {porte({ icon: "ti-cash", titre: "Mes versements", sous: "Ce que France Travail t'a déjà versé, mois par mois.", onClick: () => allerPage("versements") })}
+              </div>
               </>)}
 
               {/* ═══ SIMULER UNE ALLOCATION (27/07, demande Camille) ═══
@@ -13136,10 +13146,15 @@ function AppInner() {
                 <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
                   <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-message" fallbackColor="#3a5169" />
                 </div>
-                <div>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontSize: 16, fontWeight: 800, color: "white" }}>Parle à Totor</div>
                   <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Ton expert du régime intermittent. Pose-lui tes questions.</div>
                 </div>
+                {/* Les Réglages vivent dans l'onglet Totor : la roue dentée y mène (maquette validée). */}
+                <button type="button" onClick={() => allerPage("reglages")} aria-label="Réglages"
+                  style={{ width: 44, height: 44, borderRadius: "50%", background: "#0B2038", border: "1px solid rgba(255,255,255,0.1)", color: "#B5D4F4", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0 }}>
+                  <i className="ti ti-settings" aria-hidden="true" style={{ fontSize: 21 }} />
+                </button>
               </div>
 
               {renderQuotaJauge("chat", "conversation")}
@@ -13312,6 +13327,11 @@ function AppInner() {
                   );
                 })()}
               </div>
+
+              {/* « Comprendre » (les fiches) est rangé dans l'onglet Totor (refonte du 27/09/2026). */}
+              <div style={{ marginTop: 16 }}>
+                {porte({ icon: "ti-book", titre: "Comprendre ton régime", sous: "Les fiches de Totor, sans jargon", onClick: () => allerPage("conseils") })}
+              </div>
               </>)}
 
               {/* ═══ PAGE MES ACTIVITÉS ═══ */}
@@ -13339,6 +13359,17 @@ function AppInner() {
                   </div>
                 </div>
               )}
+
+              {/* ─── LES PORTES DE L'ONGLET CONTRATS (refonte du 27/09/2026) ───
+                  Trois lignes, aussi sur ordinateur : la page ne fait que 560 px de
+                  large, trois tuiles côte à côte y cassaient le texte mot par mot.
+                  « Trouver du travail » est TOUJOURS là, qu'il manque des heures ou
+                  non : on cherche du travail même avec ses 507 h (Camille, 26/09). */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 18 }}>
+                {porte({ icon: "ti-search", titre: "Trouver du travail", sous: "Des offres du spectacle près de chez toi", onClick: () => allerPage("trouver-heures") })}
+                {porte({ icon: "ti-scan", titre: "Mes AEM", sous: "Scanner, vérifier, retrouver", onClick: () => allerPage("mesaem") })}
+                {porte({ icon: "ti-folder", titre: "Mes documents", sous: "Par employeur, et le récap de revenus", onClick: () => allerPage("attestation") })}
+              </div>
 
               {/* ── Reporter les heures déjà faites (saisie de départ) ── */}
               <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 14, padding: "16px 18px", marginBottom: 16 }}>
@@ -14299,8 +14330,17 @@ function AppInner() {
                 )}
               </div>
 
-              {/* Aide + déconnexion */}
+              {/* Aide + déconnexion. Depuis la refonte du 27/09/2026, on y trouve aussi
+                  ce qui vivait au bas de l'ancien menu : la lettre du fondateur et la course. */}
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <button type="button" onClick={() => setLegalPage("pourquoi")}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                  <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 15 }} /> Pourquoi TOTOR ?
+                </button>
+                <button type="button" onClick={() => setShowGame(true)}
+                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                  <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 15 }} /> Course avec Totor
+                </button>
                 <button type="button" onClick={() => setShowWalkthrough(true)}
                   style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
                   <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15 }} /> Revoir la visite guidée
@@ -14311,7 +14351,7 @@ function AppInner() {
                 </button>
               </div>
 
-              <p style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 20, display: "flex", gap: 8, justifyContent: "center" }}>
+              <p style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 20, display: "flex", flexWrap: "wrap", gap: "4px 8px", justifyContent: "center" }}>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
                 <span>·</span>
                 <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("cgu")}>CGU</button>
