@@ -9468,7 +9468,8 @@ function AppInner() {
       );
     };
     const interSidebar = (
-      <div style={{ width: 232, flexShrink: 0, alignSelf: "flex-start", position: "sticky", top: 0, height: "100vh", boxSizing: "border-box", overflowY: "auto", scrollbarWidth: "none", background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "16px 12px 14px" }}>
+      // L'encoche compte aussi ici : sur une tablette, l'app native montre cette colonne.
+      <div style={{ width: 232, flexShrink: 0, alignSelf: "flex-start", position: "sticky", top: 0, height: "100vh", boxSizing: "border-box", overflowY: "auto", scrollbarWidth: "none", background: "#07192E", borderRight: "1px solid rgba(255,255,255,0.07)", display: "flex", flexDirection: "column", padding: "calc(16px + env(safe-area-inset-top, 0px)) 12px calc(14px + env(safe-area-inset-bottom, 0px))" }}>
         <div style={{ padding: "4px 8px 18px" }}><Logo size={30} dark /></div>
         <nav aria-label="Onglets" style={{ display: "flex", flexDirection: "column", gap: 2 }}>
           {ONGLETS_INTER.filter(o => o.id !== "abonnement").map(o => {
@@ -10576,7 +10577,7 @@ function AppInner() {
           </nav>
         )}
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(110px + env(safe-area-inset-bottom, 0px))" : "40px 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(110px + env(safe-area-inset-bottom, 0px))" : "calc(40px + env(safe-area-inset-top, 0px)) 20px 80px" }}>
 
           {/* Sur une sous-page, le chemin du retour vers la page d'où elle vient. */}
           {PAGE_PARENTE[interNav] && (
