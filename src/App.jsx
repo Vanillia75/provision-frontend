@@ -2341,15 +2341,23 @@ function AppInner() {
 
   const [billingBusy, setBillingBusy] = useState(false);
   const [planChoisi, setPlanChoisi] = useState("annuel");   // "pionnier" | "annuel" (recommandé) | "mensuel"
-  // ── Tarif solidaire (19/08/2026) : 4,99 €/mois pendant un an, sur l'honneur.
-  const [solidaireOuvert, setSolidaireOuvert] = useState(false);
-  const [solidaireEtat, setSolidaireEtat] = useState(null);  // null | "chargement" | {type:"code",...} | {type:"bientot"} | {type:"erreur"}
   // Offre Pionnier : compteur RÉEL lu au backend (places restantes sur 100).
   // null = pas encore chargé -> la page n'affiche pas l'offre tant qu'on ne sait pas.
   const [offresBilling, setOffresBilling] = useState(null);
   const chargerOffresBilling = async () => {
     try { setOffresBilling(await apiFetch("/billing/offres")); } catch { /* silencieux : la page retombe sur mensuel/annuel */ }
   };
+  // Les MONTANTS viennent du serveur (/billing/offres), jamais du code : les apps
+  // iPhone et Android embarquent une copie FIGÉE du site, donc un prix écrit en dur
+  // resterait faux jusqu'à la prochaine publication sur les stores. Les valeurs de
+  // secours ci-dessous ne servent que si le serveur ne répond pas : ce sont celles
+  // de la grille du 24/09/2026 (mensuel 4,99 · annuel 34,99 · Pionnier 24,99).
+  const prixServeur = offresBilling?.prix || {};
+  const prixAn = (plan, secours) => (prixServeur[plan] != null ? formatEUR(prixServeur[plan] / 100) : secours);
+  const prixMois = (plan, secours) => (prixServeur[plan] != null ? formatEUR(Math.round(prixServeur[plan] / 12) / 100) : secours);
+  const remiseAnnuel = (prixServeur.mensuel && prixServeur.annuel)
+    ? Math.round((1 - prixServeur.annuel / (prixServeur.mensuel * 12)) * 100)
+    : 42;
   const [promoInput, setPromoInput] = useState("");
   const [promoStatus, setPromoStatus] = useState(null); // { ok: bool|null, msg: string }
   const [billingSuccess, setBillingSuccess] = useState(false); // retour de paiement Stripe
@@ -2390,25 +2398,6 @@ function AppInner() {
   useEffect(() => {
     if (token && (interNav === "abonnement" || nav === "abonnement")) chargerOffresBilling();
   }, [token, interNav, nav]);
-
-  // Le tarif solidaire : la personne DIT que c'est dur, on la croit. Web →
-  // paiement Stripe à 4,99 € (coupon serveur). App iPhone/Android → un code
-  // de réduction du store, pioché dans la réserve, avec son lien direct.
-  async function demanderSolidaire() {
-    setSolidaireEtat("chargement");
-    try {
-      const plateforme = PLATEFORME_NATIVE === "ios" ? "apple" : PLATEFORME_NATIVE === "android" ? "google" : "web";
-      if (profile?.statut) safeStorage.setItem("billing_return_mode", profile.statut);
-      const r = await apiFetch("/billing/solidaire", {
-        method: "POST",
-        body: JSON.stringify({ plateforme, mode: profile?.statut || null, origin: window.location.origin }),
-      });
-      if (r.type === "stripe" && r.url) { window.location = r.url; return; }
-      setSolidaireEtat(r);
-    } catch {
-      setSolidaireEtat({ type: "erreur" });
-    }
-  }
 
   async function openBillingPortal() {
     setBillingBusy(true);
@@ -3173,58 +3162,6 @@ function AppInner() {
             </button>
           </div>
 
-          {/* ─── LE TARIF SOLIDAIRE, version NATIVE (19/08/2026) ───
-              Le bloc vivait uniquement dans l'écran web/Stripe plus bas → les
-              utilisateurs iPhone/Android ne le voyaient JAMAIS (même mésaventure
-              que le bandeau d'essai de juillet : posé dans la mauvaise branche).
-              Ici il remet un code de réduction du store avec son lien direct.
-              ⚠️ Différence voulue avec la version web : l'état « bientot » ne
-              mentionne PAS montotor.fr (anti-steering, règle absolue en natif). */}
-          <div style={{ marginTop: 16 }}>
-            {!solidaireOuvert ? (
-              <button type="button" onClick={() => setSolidaireOuvert(true)}
-                style={{ background: "transparent", border: "none", color: "#8FB4D8", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", width: "100%", minHeight: 34 }}>
-                🐾 Les fins de mois sont dures en ce moment ? Dis-le-moi.
-              </button>
-            ) : (
-              <>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#E6EDF5", marginBottom: 8 }}>Le tarif solidaire</div>
-                <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 10 }}>
-                  Si payer 9,99 € par mois est un vrai problème en ce moment, TOTOR Veille passe à <strong style={{ color: "#9FE1CB" }}>4,99 € par mois pendant un an</strong>. Sur l'honneur, sans justificatif : tu me le dis, je te crois. Et si tu peux payer plein tarif, c'est toi qui finances la veille d'un collègue qui ne peut pas. 🐾
-                </div>
-                {solidaireEtat === null && (
-                  <button type="button" style={{ ...S.btnSecondary, width: "100%" }} onClick={demanderSolidaire}>
-                    C'est dur en ce moment · je passe à 4,99 €
-                  </button>
-                )}
-                {solidaireEtat === "chargement" && (
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Un instant…</div>
-                )}
-                {solidaireEtat && solidaireEtat.type === "code" && (
-                  <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 12, color: "#9FE1CB", marginBottom: 6 }}>Ton code solidaire, rien qu'à toi :</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "white", letterSpacing: 1.5, fontFamily: "Consolas, monospace", userSelect: "all", marginBottom: 10 }}>{solidaireEtat.code}</div>
-                    <a href={solidaireEtat.lien} target="_blank" rel="noopener noreferrer"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#5DCAA5", color: "#04342C", borderRadius: 9, padding: "10px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none", minHeight: 40 }}>
-                      L'activer dans {solidaireEtat.plateforme === "apple" ? "l'App Store" : "Google Play"} →
-                    </a>
-                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
-                      Il vaut 4,99 €/mois pendant 12 mois, puis retour au tarif normal tout seul. Si c'est encore dur dans un an, tu reviendras me le dire.
-                    </div>
-                  </div>
-                )}
-                {solidaireEtat && solidaireEtat.type === "bientot" && (
-                  <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
-                    Les codes solidaires arrivent d'ici quelques jours — reviens me voir ici, ils t'attendront.
-                  </div>
-                )}
-                {solidaireEtat && solidaireEtat.type === "erreur" && (
-                  <div style={{ fontSize: 12.5, color: "#F0997F" }}>Ça n'a pas marché, réessaie dans un instant.</div>
-                )}
-              </>
-            )}
-          </div>
-
           {/* Liens légaux DANS l'app : exigence Apple pour les abonnements (3.1.2). */}
           <div style={{ textAlign: "center", marginTop: 14, display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
             <button type="button" onClick={() => setLegalPage("confidentialite")}
@@ -3317,14 +3254,14 @@ function AppInner() {
             {/* Payant — Je prends le relais */}
             <div style={{ ...S.card, position: "relative", border: `2px solid ${ACCENT}` }}>
               <div style={{ fontSize: 16, fontWeight: 600, color: "#E6EDF5", marginBottom: 8 }}>🐶 Je prends le relais</div>
-              {/* Pionnier : 44,99 €/an À VIE, 100 premiers. Compteur RÉEL lu au backend,
+              {/* Pionnier : 24,99 €/an À VIE, 100 premiers. Compteur RÉEL lu au backend,
                   l'offre disparaît d'elle-même à la 100e place prise (jamais de fausse rareté). */}
               {offresBilling?.pionnier_ouvert && (
                 <button type="button" onClick={() => setPlanChoisi("pionnier")}
                   style={{ width: "100%", textAlign: "left", background: planChoisi === "pionnier" ? "rgba(93,202,165,0.14)" : "rgba(93,202,165,0.06)", border: `1.5px solid ${planChoisi === "pionnier" ? "#5DCAA5" : "rgba(93,202,165,0.35)"}`, borderRadius: 12, padding: "10px 13px", marginBottom: 10, cursor: "pointer", fontFamily: "inherit" }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 7, flexWrap: "wrap" }}>
                     <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: "#04342C", background: "#5DCAA5", borderRadius: 6, padding: "2px 8px" }}>PIONNIER</span>
-                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>44,99 €/an, à vie</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 700, color: "#E6EDF5" }}>{prixAn("pionnier", "24,99 €")}/an, à vie</span>
                   </div>
                   <div style={{ fontSize: 11.5, color: "#9FD9C2", marginTop: 5, lineHeight: 1.45 }}>
                     Réservé aux 100 premiers. Ce prix ne bougera jamais tant que tu restes abonné·e, même quand le tarif public augmentera.
@@ -3342,24 +3279,24 @@ function AppInner() {
                 {[["annuel", "Annuel"], ["mensuel", "Mensuel"]].map(([v, lab]) => (
                   <button key={v} type="button" onClick={() => setPlanChoisi(v)}
                     style={{ flex: 1, background: planChoisi === v ? ACCENT : "transparent", color: planChoisi === v ? "white" : "#8BA5C0", border: "none", borderRadius: 999, padding: "6px 8px", fontSize: 12.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                    {lab}{v === "annuel" ? <span style={{ fontSize: 9.5, marginLeft: 4, fontWeight: 800, color: planChoisi === v ? "white" : "#5DCAA5" }}>−34 %</span> : null}
+                    {lab}{v === "annuel" ? <span style={{ fontSize: 9.5, marginLeft: 4, fontWeight: 800, color: planChoisi === v ? "white" : "#5DCAA5" }}>−{remiseAnnuel} %</span> : null}
                     {v === "mensuel" && estNatif() ? <span style={{ fontSize: 9.5, marginLeft: 4, fontWeight: 800, color: planChoisi === v ? "white" : "#5DCAA5" }}>essai 7 j</span> : null}
                   </button>
                 ))}
               </div>
               {planChoisi === "pionnier" && offresBilling?.pionnier_ouvert ? (
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>3,75 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 44,99 € par an, verrouillé à vie · 🐾 Pionnier</div>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: "#5DCAA5" }}>{prixMois("pionnier", "2,08 €")}</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit {prixAn("pionnier", "24,99 €")} par an, verrouillé à vie · 🐾 Pionnier</div>
                 </div>
               ) : planChoisi === "annuel" ? (
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>6,58 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
-                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit 79 € facturé une fois par an · ⭐ Recommandé</div>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>{prixMois("annuel", "2,92 €")}</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>soit {prixAn("annuel", "34,99 €")} facturé une fois par an · ⭐ Recommandé</div>
                 </div>
               ) : (
                 <div style={{ marginBottom: 4 }}>
-                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>9,99 €</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
+                  <span style={{ fontSize: 30, fontWeight: 700, color: ACCENT }}>{prixAn("mensuel", "4,99 €")}</span><span style={{ fontSize: 13, color: "#8BA5C0" }}>/mois</span>
                   {estNatif() && <div style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600, marginTop: 2 }}>Gratuit les 7 premiers jours</div>}
                 </div>
               )}
@@ -3399,7 +3336,7 @@ function AppInner() {
               </button>
               <div style={{ fontSize: 11, color: "#6B8299", marginTop: 8, textAlign: "center" }}>
                 {estNatif() && planChoisi === "mensuel"
-                  ? "Gratuit 7 jours, puis 9,99 €/mois. Sans engagement, annulable quand tu veux."
+                  ? `Gratuit 7 jours, puis ${prixAn("mensuel", "4,99 €")}/mois. Sans engagement, annulable quand tu veux.`
                   : "Sans engagement : tu annules quand tu veux, en 2 clics."}
               </div>
             </div>
@@ -3427,58 +3364,9 @@ function AppInner() {
             )}
           </div>
 
-          {/* ─── LE TARIF SOLIDAIRE (19/08/2026) ───
-              Retours de terrain : « 9,99 c'est trop cher pour beaucoup
-              d'intermittents précaires ». Réponse : 4,99 €/mois pendant un an,
-              SUR L'HONNEUR, sans justificatif. La ligne est discrète exprès :
-              il faut faire le geste de la déplier, et le texte dit à ceux qui
-              peuvent payer plein tarif pourquoi c'est important qu'ils le
-              fassent. Au bout d'un an, retour au tarif normal tout seul
-              (expiration du coupon Stripe ou du code store). */}
-          <div style={{ ...S.card, maxWidth: 460, margin: "12px auto 0" }}>
-            {!solidaireOuvert ? (
-              <button type="button" onClick={() => setSolidaireOuvert(true)}
-                style={{ background: "transparent", border: "none", color: "#8FB4D8", fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: "2px 0", textAlign: "left", width: "100%", minHeight: 34 }}>
-                🐾 Les fins de mois sont dures en ce moment ? Dis-le-moi.
-              </button>
-            ) : (
-              <>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#E6EDF5", marginBottom: 8 }}>Le tarif solidaire</div>
-                <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55, marginBottom: 10 }}>
-                  Si payer 9,99 € par mois est un vrai problème en ce moment, TOTOR Veille passe à <strong style={{ color: "#9FE1CB" }}>4,99 € par mois pendant un an</strong>. Sur l'honneur, sans justificatif : tu me le dis, je te crois. Et si tu peux payer plein tarif, c'est toi qui finances la veille d'un collègue qui ne peut pas. 🐾
-                </div>
-                {solidaireEtat === null && (
-                  <button type="button" style={{ ...S.btnSecondary, width: "100%" }} onClick={demanderSolidaire}>
-                    C'est dur en ce moment · je passe à 4,99 €
-                  </button>
-                )}
-                {solidaireEtat === "chargement" && (
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>Un instant…</div>
-                )}
-                {solidaireEtat && solidaireEtat.type === "code" && (
-                  <div style={{ background: "rgba(93,202,165,0.07)", border: "1px solid rgba(93,202,165,0.3)", borderRadius: 10, padding: "12px 14px" }}>
-                    <div style={{ fontSize: 12, color: "#9FE1CB", marginBottom: 6 }}>Ton code solidaire, rien qu'à toi :</div>
-                    <div style={{ fontSize: 20, fontWeight: 800, color: "white", letterSpacing: 1.5, fontFamily: "Consolas, monospace", userSelect: "all", marginBottom: 10 }}>{solidaireEtat.code}</div>
-                    <a href={solidaireEtat.lien} target="_blank" rel="noopener noreferrer"
-                      style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#5DCAA5", color: "#04342C", borderRadius: 9, padding: "10px 14px", fontSize: 13, fontWeight: 700, textDecoration: "none", minHeight: 40 }}>
-                      L'activer dans {solidaireEtat.plateforme === "apple" ? "l'App Store" : "Google Play"} →
-                    </a>
-                    <div style={{ fontSize: 11, color: "#8BA5C0", marginTop: 8, lineHeight: 1.45 }}>
-                      Il vaut 4,99 €/mois pendant 12 mois, puis retour au tarif normal tout seul. Si c'est encore dur dans un an, tu reviendras me le dire.
-                    </div>
-                  </div>
-                )}
-                {solidaireEtat && solidaireEtat.type === "bientot" && (
-                  <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.5 }}>
-                    Les codes solidaires arrivent dans l'application d'ici quelques jours. En attendant, ça marche déjà sur <strong style={{ color: "#9FE1CB" }}>montotor.fr</strong> depuis un navigateur : même compte, même prix.
-                  </div>
-                )}
-                {solidaireEtat && solidaireEtat.type === "erreur" && (
-                  <div style={{ fontSize: 12.5, color: "#F0997F" }}>Ça n'a pas marché, réessaie dans un instant.</div>
-                )}
-              </>
-            )}
-          </div>
+          {/* Le TARIF SOLIDAIRE (19/08/2026) a été retiré le 24/09/2026 : le prix
+              public est descendu à son niveau (4,99 €/mois pour tout le monde), donc
+              plus personne n'a à demander quoi que ce soit ni à se justifier. */}
 
           <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", marginTop: 14 }}>
             Paiement sécurisé par Stripe · Sans engagement · Résiliable en 1 clic.
@@ -8150,7 +8038,7 @@ function AppInner() {
               </button>
               <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Ton disponible réel en moins d'une minute.</div>
               {badgesBientot}
-              {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
+              {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre ton activité · TOTOR Veille {prixMois("annuel", "2,92 €")}/mois si tu veux que je m'occupe de tout.</div>}
             </div>
           </section>
 
@@ -8484,7 +8372,7 @@ function AppInner() {
             </button>
             <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 16 }}>Aucune carte bancaire • Tes heures comptées en moins d'une minute.</div>
               {badgesBientot}
-            {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · TOTOR Veille 6,58 €/mois si tu veux que je m'occupe de tout.</div>}
+            {!IS_NATIVE_APP && <div style={{ fontSize: 12, color: "#5A7088", marginTop: 7 }}>Gratuit pour suivre tes heures · TOTOR Veille {prixMois("annuel", "2,92 €")}/mois si tu veux que je m'occupe de tout.</div>}
           </div>
         </section>
 
@@ -11848,21 +11736,36 @@ function AppInner() {
                   );
                 }
                 // Affichable : le chiffre + la courbe « chaque cachet compte ».
+                // ⚠️ TOUT EN NET, ARRONDI À L'EURO (19/09/2026, capture de Camille) : le gros
+                // chiffre était en net et la courbe en brut, et la carte montrait 46,04 € puis
+                // 47,36 € pour le même jour. Décision de Camille : un seul chiffre, rond.
+                // « environ 46,04 € » se contredisait de toute façon. Repli sur le brut tant
+                // que le serveur n'envoie pas le net des points.
                 const pts = pj.points || [];
+                const ajDe = p => (p.aj_nette != null ? p.aj_nette : p.aj_brute);
+                const euros = v => formatEUR(Math.round(v));
+                // Le mini-simulateur suit la même règle, sauf quand l'arrondi effacerait
+                // l'écart qu'il doit montrer (« 46 € au lieu de 46 € ») : centimes alors.
+                const paire = (a, b) => (Math.round(a) === Math.round(b) ? [formatEUR(a), formatEUR(b)] : [euros(a), euros(b)]);
+                // En net, la courbe ne descend jamais (balayé sur 3 740 profils le 19/09/2026),
+                // mais elle peut rester à plat : au minimum garanti, ou autour de 62 €, là où
+                // les prélèvements sociaux absorbent la hausse. « La pente est continue »
+                // serait alors faux : la phrase sous la courbe change.
+                const aPlat = pts.some((p, i) => i > 0 && ajDe(p) === ajDe(pts[i - 1]));
                 const courbe = (() => {
                   if (pts.length < 2) return null;
                   const W = 300, H = 110, PAD = 22;
-                  const ajs = pts.map(p => p.aj_brute);
+                  const ajs = pts.map(ajDe);
                   const min = Math.min(...ajs), max = Math.max(...ajs);
                   const x = (i) => PAD + i * ((W - 2 * PAD) / (pts.length - 1));
                   const y = (v) => max === min ? H / 2 : (H - PAD) - ((v - min) / (max - min)) * (H - 2 * PAD);
-                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(p.aj_brute).toFixed(1)}`).join(" ");
+                  const d = pts.map((p, i) => `${i === 0 ? "M" : "L"}${x(i).toFixed(1)},${y(ajDe(p)).toFixed(1)}`).join(" ");
                   return (
                     <svg viewBox={`0 0 ${W} ${H}`} style={{ width: "100%", height: "auto", display: "block", marginTop: 10 }} aria-label="Courbe de l'allocation estimée selon les cachets ajoutés">
                       <path d={d} fill="none" stroke="#5DCAA5" strokeWidth="2.5" strokeLinecap="round" />
-                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.aj_brute)} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
-                      <text x={x(0)} y={y(pts[0].aj_brute) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{pts[0].aj_brute.toFixed(2).replace(".", ",")} €</text>
-                      <text x={x(pts.length - 1)} y={y(pts[pts.length - 1].aj_brute) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{pts[pts.length - 1].aj_brute.toFixed(2).replace(".", ",")} €</text>
+                      {pts.map((p, i) => <circle key={i} cx={x(i)} cy={y(ajDe(p))} r={i === 0 ? 4 : 2.5} fill={i === 0 ? "#9FE1CB" : "#5DCAA5"} />)}
+                      <text x={x(0)} y={y(ajDe(pts[0])) - 8} fontSize="10" fill="#9FE1CB" fontWeight="700">{euros(ajDe(pts[0]))}</text>
+                      <text x={x(pts.length - 1)} y={y(ajDe(pts[pts.length - 1])) - 8} fontSize="10" fill="#8BA5C0" textAnchor="end">{euros(ajDe(pts[pts.length - 1]))}</text>
                       <text x={x(0)} y={H - 4} fontSize="9" fill="#6B8299">aujourd'hui</text>
                       <text x={x(pts.length - 1)} y={H - 4} fontSize="9" fill="#6B8299" textAnchor="end">+{pts[pts.length - 1].cachets} cachets</text>
                     </svg>
@@ -11873,16 +11776,21 @@ function AppInner() {
                     {tete}
                     <div style={{ display: "flex", alignItems: "baseline", gap: 9, flexWrap: "wrap" }}>
                       <div style={{ fontSize: 30, fontWeight: 800, color: "#9FE1CB", lineHeight: 1.1 }}>
-                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{formatEUR(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
+                        <span style={{ fontSize: 16, color: "#7FB8A8", fontWeight: 600 }}>environ </span>{euros(pj.aj_nette)}<span style={{ fontSize: 15, color: "#7FB8A8", fontWeight: 600 }}> /jour</span>
                       </div>
                     </div>
                     <div style={{ fontSize: 12, color: "#8FB4D8", marginTop: 6, lineHeight: 1.5 }}>
-                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{pj.nht} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
+                      {/* Heures à la française (« 510,5 h » et non « 510.5 h »). Jamais arrondies à
+                          l'heure : 506,5 h deviendraient « 507 h », le seuil qu'on n'a pas encore. */}
+                      Si ton dossier était examiné tel quel : <strong style={{ color: "#C8E0F5" }}>{new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(pj.nht)} h</strong> et <strong style={{ color: "#C8E0F5" }}>{formatEUR(pj.sr)}</strong> déclarés sur la fenêtre{pj.date_anniversaire ? <> menant à ta date anniversaire</> : null}.{pj.annexe_indeterminee ? " Métiers non départagés : hypothèse prudente." : ""}
                     </div>
                     {courbe}
                     {pts.length >= 2 && (
                       <div style={{ fontSize: 11.5, color: "#8BA5C0", marginTop: 8, lineHeight: 1.5 }}>
-                        <strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue. Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{formatEUR(pj.brut_moyen_cachet)}).
+                        {aPlat
+                          ? <>Là où ma courbe reste à plat, ce n'est pas une erreur : ton allocation nette bute sur une limite fixée par les règles. <strong style={{ color: "#9FE1CB" }}>Tes cachets comptent toujours pour tes heures.</strong></>
+                          : <><strong style={{ color: "#9FE1CB" }}>Chaque cachet compte</strong> : pas de paliers, la pente est continue.</>}
+                        {" "}Hypothèse : tes prochains cachets au niveau de ton cachet moyen réel (~{euros(pj.brut_moyen_cachet)}).
                       </div>
                     )}
                     {pj.courbe_plafonnee_60 && (
@@ -11920,10 +11828,10 @@ function AppInner() {
                             ? "La simulation n'a pas répondu, réessaie dans un instant."
                             : projSimResult.affichable
                               ? <>
-                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{formatEUR(projSimResult.aj_nette)} /jour</strong> au lieu de {formatEUR(pj.aj_nette)}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
+                                  Avec <strong style={{ color: "#C8E0F5" }}>+{projSimResult.cachets} cachet{projSimResult.cachets > 1 ? "s" : ""} {projSimResult.mode === "total" && projSimResult.total_saisi != null ? <>pour {formatEUR(projSimResult.total_saisi)} au total</> : <>à {formatEUR(projSimResult.brut_cachet)}</>}</strong> : environ <strong style={{ color: "#9FE1CB" }}>{paire(projSimResult.aj_nette, pj.aj_nette)[0]} /jour</strong> au lieu de {paire(projSimResult.aj_nette, pj.aj_nette)[1]}.{projSimResult.plafond_applique ? " (plafond atteint)" : ""}
                                   {projSimResult.brut_cachet > 0 && (
                                     <div style={{ marginTop: 6, color: "#CBB3E8" }}>
-                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{formatEUR(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
+                                      🎭 Et ces cachets nourriraient aussi tes <strong style={{ color: "#E3D4F5" }}>Congés Spectacles</strong> : environ <strong style={{ color: "#E3D4F5" }}>+{euros(projSimResult.cachets * projSimResult.brut_cachet * 0.10)}</strong> brut sur la saison Audiens concernée (comptée d'avril à mars, ~10 % des bruts, estimation).
                                     </div>
                                   )}
                                 </>
