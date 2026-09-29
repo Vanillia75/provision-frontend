@@ -161,8 +161,8 @@ export default function TrouverDesHeures({ sansTitre = false, compact = false } 
             <i className="ti ti-briefcase" aria-hidden="true" style={{ color: BLEU_CLAIR, fontSize: 20 }} />
           </div>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Trouver des cachets & des heures</h1>
-            <p style={{ fontSize: 13.5, color: TEXTE_DOUX, margin: "2px 0 0" }}>Des missions qui peuvent t'aider à te rapprocher des 507h.</p>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "white", margin: 0 }}>Trouver du travail</h1>
+            <p style={{ fontSize: 13.5, color: TEXTE_DOUX, margin: "2px 0 0" }}>Des offres du spectacle publiées par France Travail, près de chez toi.</p>
           </div>
         </div>
       )}

@@ -506,7 +506,10 @@ function AppInner() {
       : p === "/intermittent" ? "intermittent"
       : "choix";
   };
-  const [landingStatut, setLandingStatut] = useState(() => pathToStatut(typeof window !== "undefined" ? window.location.pathname : "/"));
+  // Dans les apps, TOTOR ne s'occupe que des intermittents (décision de Camille du
+  // 27/09/2026) : pas de page de choix, on arrive directement côté intermittent.
+  // L'espace auto-entrepreneur reste sur le site.
+  const [landingStatut, setLandingStatut] = useState(() => (estNatif() ? "intermittent" : pathToStatut(typeof window !== "undefined" ? window.location.pathname : "/")));
   const chooseLandingStatut = (s) => { safeStorage.setItem("landingStatut", s); setLandingStatut(s); };
   const resetLandingStatut = () => { safeStorage.removeItem("landingStatut"); setLandingStatut(null); };
 
@@ -523,7 +526,7 @@ function AppInner() {
   useEffect(() => {
     if (token) return; // ne concerne que les visiteurs non connectés
     const applyFromPath = () => {
-      const s = pathToStatut(window.location.pathname);
+      const s = estNatif() ? "intermittent" : pathToStatut(window.location.pathname);
       setLandingStatut(s);
       if (s !== "choix") safeStorage.setItem("landingStatut", s);
     };
@@ -650,6 +653,11 @@ function AppInner() {
   const [aemDetailId, setAemDetailId] = useState(null);
   // Téléphone : le contrat dont le petit menu (voir, modifier, supprimer) est déroulé.
   const [menuActiviteId, setMenuActiviteId] = useState(null);
+  // Réglages (refonte) : la ligne dépliée (prénom, ligne TOTOR, mot de passe, 2FA).
+  const [reglageOuvert, setReglageOuvert] = useState(null);
+  // Abonnement (refonte) : « J'ai un code » déplié, et le détail de TOTOR Veille.
+  const [codeOuvert, setCodeOuvert] = useState(false);
+  const [veilleDetail, setVeilleDetail] = useState(false);
   // Ligne dont le panneau « doublon : oui ou non ? » est ouvert (id ou null).
   const [aemDoublonPanelId, setAemDoublonPanelId] = useState(null);
   // Projection AJ au prochain renouvellement (carte cockpit, TOTOR Veille).
@@ -1618,7 +1626,8 @@ function AppInner() {
         // Ouvrir le walkthrough au premier accès de CE compte uniquement.
         // `p.walkthrough_vu` vient du serveur : c'est lui qui survit à une
         // réinstallation, contrairement au marqueur local.
-        if (!walkthroughDejaVu(p.email, p.walkthrough_vu)) {
+        // (Plus jamais côté intermittent : voir la refonte du 27/09/2026, plus bas.)
+        if (p.statut !== "intermittent" && !walkthroughDejaVu(p.email, p.walkthrough_vu)) {
           setShowWalkthrough(true);
         }
       }
@@ -3118,6 +3127,153 @@ function AppInner() {
       <div style={{ display: "flex", justifyContent: "center" }}><BadgesBientot centre /></div>
     </div>
   );
+
+  // ─── L'ABONNEMENT CÔTÉ INTERMITTENT, rangé comme la maquette (refonte du 27/09/2026) ───
+  // Gratuit : une phrase, une carte, trois formules, un bouton, « J'ai un code ».
+  // Abonné : ce qu'on sait VRAIMENT de son abonnement (le serveur ne donne ni la formule
+  // ni la date de renouvellement : on ne les invente pas), et où le gérer.
+  // Dans les apps, l'écran d'achat des stores (renderAbonnement) reste seul maître.
+  // Le côté auto-entrepreneur, pas refondu, garde renderAbonnement.
+  const renderAbonnementInter = () => {
+    if (estNatif()) return renderAbonnement(() => setInterNav("cockpit"));
+    const titre = <h1 style={{ fontSize: 26, fontWeight: 800, color: "white", margin: "0 0 8px" }}>Abonnement</h1>;
+    const intro = (t) => <p style={{ fontSize: 15, color: "#B5C8DC", lineHeight: 1.55, margin: "0 0 18px" }}>{t}</p>;
+    const carte = { background: "#0B2038", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "16px 18px" };
+    const note = { fontSize: 13, color: "#8BA5C0", lineHeight: 1.55, marginTop: 14, fontStyle: "italic" };
+    const lienVert = { background: "none", border: "none", padding: 0, marginTop: 10, color: "#5DCAA5", fontSize: 14, fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3, cursor: "pointer", fontFamily: "inherit", minHeight: 32 };
+    if (profile?.is_premium) {
+      const source = profile?.premium_source;
+      const enEssai = source === "stripe" && profile?.trial_days_left != null;
+      const jours = profile?.trial_days_left;
+      // ⚠️ Un abonné App Store ou Google Play n'est PAS un Membre VIP : l'ancienne page
+      // le lui affichait (« accès à vie ») dès que l'abonnement ne venait pas de Stripe.
+      const offert = source !== "stripe" && source !== "apple" && source !== "google";
+      const paiement = source === "stripe" ? "Carte bancaire" : source === "apple" ? "App Store" : source === "google" ? "Google Play" : "Offert, à vie";
+      const lignes = [
+        ["Formule", "TOTOR Veille"],
+        enEssai && ["Essai gratuit", jours > 0 ? `il te reste ${jours} jour${jours > 1 ? "s" : ""}` : "dernier jour"],
+        ["Paiement", paiement],
+      ].filter(Boolean);
+      return (
+        <div style={{ maxWidth: 560 }}>
+          {titre}
+          {intro(offert
+            ? <>Tu es <b style={{ color: "white" }}>Membre VIP</b> : TOTOR Veille est à toi, à vie. Merci. ❤️</>
+            : <>Ton abonnement <b style={{ color: "white" }}>TOTOR Veille</b> est actif : je m'occupe de tout pour toi.</>)}
+          <div style={{ ...carte, padding: "2px 18px" }}>
+            {lignes.map(([k, v], i) => (
+              <div key={k} style={{ display: "flex", justifyContent: "space-between", gap: 12, padding: "13px 0", borderTop: i ? "1px solid rgba(255,255,255,0.08)" : "none", fontSize: 14.5 }}>
+                <span style={{ color: "#B5C8DC" }}>{k}</span><b style={{ color: "white", textAlign: "right" }}>{v}</b>
+              </div>
+            ))}
+          </div>
+          {source === "stripe" && (<>
+            <button type="button" disabled={billingBusy} onClick={openBillingPortal}
+              style={{ width: "100%", marginTop: 16, background: "transparent", border: "1px solid rgba(159,203,245,0.35)", color: "#DCE7F2", borderRadius: 999, padding: "15px 18px", fontSize: 16, fontWeight: 700, cursor: billingBusy ? "default" : "pointer", fontFamily: "inherit", minHeight: 52, opacity: billingBusy ? 0.6 : 1 }}>
+              {billingBusy ? "…" : (enEssai ? "Gérer ou annuler mon essai" : "Gérer ou résilier mon abonnement")}
+            </button>
+            <p style={note}>Sans engagement : tu résilies en deux clics, et TOTOR Veille reste actif jusqu'à la fin de la période payée.</p>
+          </>)}
+          {(source === "apple" || source === "google") && (
+            <p style={note}>Ton abonnement passe par {source === "apple" ? "l'App Store" : "Google Play"} : tu le gères ou le résilies dans les réglages d'abonnement de ton téléphone.</p>
+          )}
+          {offert && <p style={note}>🐾 Rien à gérer, rien à payer : profite à fond.</p>}
+        </div>
+      );
+    }
+    const formule = (id, gauche, prix, unite) => {
+      const actif = planChoisi === id;
+      return (
+        <button key={id} type="button" onClick={() => setPlanChoisi(id)} aria-pressed={actif}
+          style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, width: "100%", textAlign: "left", background: actif ? "rgba(93,202,165,0.08)" : "#0B2038", border: `1.5px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.08)"}`, borderRadius: 18, padding: "14px 16px", color: "white", cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box" }}>
+          <span style={{ minWidth: 0 }}>{gauche}</span>
+          <span style={{ textAlign: "right", flexShrink: 0 }}>
+            <span style={{ display: "block", fontSize: 22, fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>{prix}</span>
+            <span style={{ display: "block", fontSize: 12.5, color: "#B5C8DC" }}>{unite}</span>
+          </span>
+        </button>
+      );
+    };
+    const sousFormule = (t) => <span style={{ display: "block", fontSize: 13, color: "#B5C8DC", marginTop: 3, lineHeight: 1.4 }}>{t}</span>;
+    const pionnierOuvert = !!offresBilling?.pionnier_ouvert;
+    return (
+      <div style={{ maxWidth: 560 }}>
+        {titre}
+        {intro(<>Tu es en <b style={{ color: "white" }}>gratuit</b>, et ça le reste : tes heures, tes contrats et ton actualisation ne te coûtent rien.</>)}
+        <div style={{ ...carte, marginBottom: 12 }}>
+          <div style={{ fontSize: 16.5, fontWeight: 700, color: "white", marginBottom: 6 }}>TOTOR Veille : je m'occupe de tout</div>
+          <div style={{ fontSize: 14, color: "#B5C8DC", lineHeight: 1.55 }}>Ton renouvellement projeté, ton mois estimé, les AEM manquantes signalées, le chat sans limite et ta ligne téléphonique.</div>
+          <button type="button" onClick={() => setVeilleDetail(v => !v)} aria-expanded={veilleDetail} style={lienVert}>
+            {veilleDetail ? "Masquer le détail" : "Tout ce que je fais pour toi"}
+          </button>
+          {veilleDetail && (
+            <div style={{ marginTop: 10 }}>
+              {[
+                "Tout le gratuit SANS LIMITE : scans d'AEM, conversations, Mode Achat",
+                "Ma ligne TOTOR : tu appelles, ça répond à tes questions, à toute heure",
+                "Le vrai mode Veille : je te préviens s'il te manque une AEM ou si un montant cloche",
+                "Je vérifie ta décision face à France Travail",
+                "Je repère les écarts qui te coûteraient des droits",
+                "Je projette ton allocation au prochain renouvellement, affinée à chaque AEM",
+                "J'estime ton versement France Travail du mois en cours, mis à jour à chaque contrat",
+                "Le simulateur « et si j'ajoute 5 cachets à 200 € ? » : l'effet sur tes heures ET ton allocation",
+                "Je surveille tes jours par employeur avant que ça coince",
+                "Ton espace auto-entrepreneur complet inclus : paie 3 scénarios, relances d'impayés, radar acompte, taux horaire",
+                "Toutes les prochaines fonctionnalités, incluses d'office",
+              ].map((f, j) => (
+                <div key={j} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, color: "#C4D2E0", marginBottom: 7, lineHeight: 1.4 }}>
+                  <span style={{ color: "#5DCAA5", flexShrink: 0, marginTop: 1 }}>✓</span>{f}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* Pionnier : 100 premiers, compteur RÉEL lu au backend ; l'offre disparaît
+              d'elle-même à la 100e place, et le compteur ne s'affiche qu'à la moitié
+              (jamais de fausse rareté : on masque, on n'invente pas). */}
+          {pionnierOuvert && formule("pionnier", <>
+            <span style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: 0.5, color: "#04342C", background: "#5DCAA5", borderRadius: 6, padding: "2px 8px" }}>PIONNIER</span>
+              <b style={{ fontSize: 15.5 }}>À vie</b>
+            </span>
+            {sousFormule(<>Réservé aux 100 premiers : ce prix ne bougera jamais tant que tu restes abonné·e.{offresBilling.pionnier_restantes <= (offresBilling.pionnier_limite || 100) / 2 && <> Il reste {offresBilling.pionnier_restantes} place{offresBilling.pionnier_restantes > 1 ? "s" : ""}.</>}</>)}
+          </>, prixAn("pionnier", "24,99 €"), "par an")}
+          {formule("annuel", <><b style={{ fontSize: 15.5 }}>Annuel</b>{sousFormule(`Soit ${prixMois("annuel", "2,92 €")} par mois`)}</>, prixAn("annuel", "34,99 €"), "par an")}
+          {formule("mensuel", <><b style={{ fontSize: 15.5 }}>Mensuel</b>{sousFormule("Sans engagement")}</>, prixAn("mensuel", "4,99 €"), "par mois")}
+        </div>
+        <button type="button" disabled={billingBusy} onClick={() => startCheckout(null, planChoisi)}
+          style={{ width: "100%", marginTop: 16, border: 0, borderRadius: 999, background: "#378ADD", color: "white", fontSize: 17, fontWeight: 700, padding: "17px 20px", minHeight: 54, cursor: billingBusy ? "default" : "pointer", fontFamily: "inherit", boxShadow: "0 10px 22px -12px rgba(55,138,221,0.9)", opacity: billingBusy ? 0.7 : 1 }}>
+          {billingBusy ? "…" : "Je passe à TOTOR Veille"}
+        </button>
+        <div style={{ fontSize: 12, color: "#8BA5C0", textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>Sans engagement : tu annules quand tu veux, en 2 clics. Paiement sécurisé par Stripe.</div>
+        <div style={{ textAlign: "center" }}>
+          <button type="button" onClick={() => setCodeOuvert(o => !o)} aria-expanded={codeOuvert} style={{ ...lienVert, color: "#5DA7EC", textDecoration: "none", fontSize: 15, marginTop: 14 }}>
+            J'ai un code
+          </button>
+        </div>
+        {codeOuvert && (
+          <div style={{ ...carte, marginTop: 10 }}>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <input
+                style={{ ...S.input, flex: 1, minWidth: 160, textTransform: "uppercase" }}
+                placeholder="Ton code cadeau" aria-label="Ton code cadeau"
+                autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
+                value={promoInput}
+                onChange={e => { setPromoInput(e.target.value); setPromoStatus(null); }}
+                onKeyDown={e => { if (e.key === "Enter") applyPromo(); }}
+              />
+              <button style={{ ...S.btnSecondary }} disabled={!promoInput.trim()} onClick={applyPromo}>Valider</button>
+            </div>
+            {promoStatus && (
+              <div style={{ fontSize: 12, marginTop: 8, color: promoStatus.ok === true ? "#5DCAA5" : promoStatus.ok === false ? "#F0997F" : "#8BA5C0" }}>{promoStatus.msg}</div>
+            )}
+          </div>
+        )}
+        <div style={{ display: "flex", justifyContent: "center", marginTop: 18 }}><BadgesBientot centre /></div>
+      </div>
+    );
+  };
 
   // Jauge de quota — côté GRATUIT uniquement. Lit profile.quotas[type] = { used, limit }.
   // Masquée si abonné (pas de limite) OU si la limite est neutralisée (> 100, ex. 9999).
@@ -5314,11 +5470,10 @@ function AppInner() {
   useEffect(() => {
     if (token && profile && profile.statut === "intermittent") {
       loadIntermittentCockpit();
-      // Walkthrough intermittent au premier accès (indépendant de loadEverything,
-      // qui appelle des endpoints AE pouvant échouer pour un intermittent).
-      if (profile.onboarding_complete && !walkthroughDejaVu(profile.email, profile.walkthrough_vu)) {
-        setShowWalkthrough(true);
-      }
+      // La visite guidée de 10 écrans ne s'ouvre PLUS côté intermittent (refonte du
+      // 27/09/2026) : elle décrivait l'ancienne app, et 64 % des nouveaux venus
+      // décrochaient juste après elle. L'accueil (« Faisons connaissance ») et son
+      // bouton « Ajouter mon premier contrat » font maintenant ce travail.
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, profile?.statut]);
@@ -8221,11 +8376,12 @@ function AppInner() {
               </div>
             </div>
             <div style={{ marginTop: 14, fontFamily: "'Playfair Display', Georgia, serif", fontSize: 26, fontWeight: 700, letterSpacing: 2, color: "white" }}>T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R</div>
-            <h1 style={{ fontSize: 24, fontWeight: 800, color: "white", margin: "16px 0 8px" }}>Bienvenue ! Dis-moi qui tu es.</h1>
+            {/* Dans les apps, une seule porte : intermittent (l'AE reste sur le site). */}
+            <h1 style={{ fontSize: 24, fontWeight: 800, color: "white", margin: "16px 0 8px" }}>{estNatif() ? "Bienvenue !" : "Bienvenue ! Dis-moi qui tu es."}</h1>
             <p style={{ fontSize: 14, color: "#8BA5C0", margin: "0 0 28px", lineHeight: 1.5 }}>
-              Je m'adapte à ton activité. Tu pourras changer à tout moment dans les réglages.
+              {estNatif() ? "Ici, je m'occupe des intermittents du spectacle." : "Je m'adapte à ton activité. Tu pourras changer à tout moment dans les réglages."}
             </p>
-            {carteOnb("auto_entrepreneur", null, "ti-briefcase", "Je suis auto-entrepreneur", "Je te dis ce que tu peux vraiment dépenser, sans l'URSSAF qui surprend.")}
+            {!estNatif() && carteOnb("auto_entrepreneur", null, "ti-briefcase", "Je suis auto-entrepreneur", "Je te dis ce que tu peux vraiment dépenser, sans l'URSSAF qui surprend.")}
             {carteOnb("intermittent", null, "ti-movie", "Je suis intermittent du spectacle", "Je compte tes heures et tes cachets vers tes 507h.")}
           </div>
         </div>
@@ -8537,6 +8693,67 @@ function AppInner() {
           <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
         </div>
         <div style={{ color: "#8BA5C0", fontSize: 14 }}>Je prépare ton espace…</div>
+      </div>
+    );
+  }
+
+  // ═══ DANS LES APPS, L'ESPACE AUTO-ENTREPRENEUR EST SUR LE SITE (27/09/2026) ═══
+  // Décision de Camille : les apps des stores ne s'occupent que des intermittents,
+  // le site garde tout (« la version PC sera toujours plus complète »). Un compte
+  // auto-entrepreneur qui ouvre l'app arrive ici : rien n'est perdu, tout l'attend
+  // sur montotor.fr. ⚠️ Apple exige de pouvoir supprimer son compte DEPUIS l'app :
+  // la suppression reste donc accessible sur cet écran.
+  if (profile && profile.statut === "auto_entrepreneur" && estNatif()) {
+    const carteAe = { background: "#0B2038", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: "16px 18px" };
+    return (
+      <div style={{ background: "#07192E", minHeight: "100vh", color: "white", padding: "calc(28px + env(safe-area-inset-top, 0px)) 20px calc(28px + env(safe-area-inset-bottom, 0px))", boxSizing: "border-box" }}>
+        <style>{CSS}</style>
+        <div style={{ maxWidth: 460, margin: "0 auto" }}>
+          <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 30, letterSpacing: "0.02em" }}>T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R</div>
+          <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2, margin: "22px 0 10px" }}>Ton espace auto-entrepreneur est sur le site</h1>
+          <p style={{ fontSize: 15, color: "#B5C8DC", lineHeight: 1.55, margin: 0 }}>
+            Dans l'app, je m'occupe des intermittents du spectacle. Tes factures, tes relances et tout ton espace auto-entrepreneur t'attendent sur <b style={{ color: "white" }}>montotor.fr</b>, depuis un ordinateur ou le navigateur de ton téléphone.
+          </p>
+          <a href="https://www.montotor.fr" target="_blank" rel="noopener noreferrer"
+            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 22, background: "#378ADD", color: "white", borderRadius: 999, padding: "16px 20px", minHeight: 52, fontSize: 16, fontWeight: 700, textDecoration: "none", boxSizing: "border-box" }}>
+            Ouvrir montotor.fr
+          </a>
+          <div style={{ ...carteAe, marginTop: 18 }}>
+            <div style={{ fontSize: 15, fontWeight: 700 }}>Tu es aussi intermittent·e ?</div>
+            <div style={{ fontSize: 13.5, color: "#B5C8DC", marginTop: 4, lineHeight: 1.5 }}>Je compte tes heures et tes cachets vers tes 507 h, ici même.</div>
+            <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")}
+              style={{ marginTop: 12, background: "transparent", border: "1px solid rgba(93,202,165,0.45)", color: "#9FE1CB", borderRadius: 999, padding: "11px 16px", minHeight: 44, fontSize: 14, fontWeight: 700, cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
+              {statutSaving ? "…" : "Passer à l'espace intermittent"}
+            </button>
+          </div>
+          <div style={{ ...carteAe, marginTop: 12 }}>
+            <button type="button" onClick={() => setShowDeleteAccount(true)}
+              style={{ background: "none", border: "none", padding: 0, color: "#F2A3A3", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 36 }}>
+              Supprimer mon compte
+            </button>
+            {showDeleteAccount && (
+              <div style={{ marginTop: 10 }}>
+                <p style={{ fontSize: 12.5, color: "#E8C4C4", margin: "0 0 8px", lineHeight: 1.5 }}>⚠️ C'est irréversible : toutes tes données (profil, factures, encaissements) seront définitivement supprimées. Tape <strong>SUPPRIMER</strong> pour confirmer :</p>
+                <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER" aria-label="Tape SUPPRIMER pour confirmer"
+                  style={{ background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 10, width: "100%", boxSizing: "border-box" }} />
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button type="button" onClick={handleDeleteAccount} disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
+                    style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? 0.5 : 1 }}>
+                    {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
+                  </button>
+                  <button type="button" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}
+                    style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "10px 14px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+          <button type="button" onClick={handleLogout}
+            style={{ display: "block", margin: "18px auto 0", background: "none", border: "none", color: "#8BA5C0", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 40 }}>
+            Déconnexion
+          </button>
+        </div>
       </div>
     );
   }
@@ -9444,6 +9661,14 @@ function AppInner() {
       setInterMenuOpen(false);
       window.scrollTo({ top: 0, behavior: "smooth" });
     };
+    // « Ajouter un contrat » : ouvre le formulaire ET descend jusqu'à lui. Sous les
+    // portes de Contrats, il s'ouvrait hors de vue et on croyait que rien ne se passait.
+    const ouvrirAjoutContrat = () => {
+      setInterNav("activites");
+      setInterMenuOpen(false);
+      setInterShowAdd(true);
+      setTimeout(() => { const el = document.getElementById("inter-activites"); if (el) el.scrollIntoView({ behavior: "smooth", block: "start" }); }, 80);
+    };
     // Une « porte » : une ligne qui mène à une page (même dessin que la maquette).
     const porte = ({ cle, icon, titre, sous, onClick }) => (
       <button key={cle || titre} type="button" onClick={onClick}
@@ -10291,7 +10516,7 @@ function AppInner() {
                     <div style={shell}>
                       {tete}
                       <div style={{ fontSize: 12.5, color: "#B5D4F4", lineHeight: 1.55 }}>
-                        Pour projeter ton allocation, il me faut tes <strong style={{ color: "#C8E0F5" }}>salaires bruts</strong> : je ne les connais que sur <strong style={{ color: "#F2C879" }}>{pj.completude} %</strong> de tes heures. Complète-les dans « Mes activités » (ou scanne tes AEM, je lis tout), et je te donne le chiffre.
+                        Pour projeter ton allocation, il me faut tes <strong style={{ color: "#C8E0F5" }}>salaires bruts</strong> : je ne les connais que sur <strong style={{ color: "#F2C879" }}>{pj.completude} %</strong> de tes heures. Complète-les dans Contrats (ou scanne tes AEM, je lis tout), et je te donne le chiffre.
                       </div>
                     </div>
                   );
@@ -10456,7 +10681,7 @@ function AppInner() {
                     <div style={{ fontSize: 12.5, color: "#C2E6D8", lineHeight: 1.5, marginBottom: 10 }}>
                       🗓️ <strong style={{ color: "white" }}>Tu as déjà des cachets signés pour les mois à venir&nbsp;?</strong> Ajoute-les avec leur vraie date, je te montre tout de suite où tu en seras à ta date anniversaire.
                     </div>
-                    <button type="button" onClick={() => { setInterNav("activites"); setInterShowAdd(true); }}
+                    <button type="button" onClick={ouvrirAjoutContrat}
                       style={{ width: "100%", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 9, padding: "11px 14px", fontSize: 13.5, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
                       <i className="ti ti-calendar-plus" aria-hidden="true" style={{ fontSize: 17 }} /> Ajouter un contrat déjà signé
                     </button>
@@ -10577,7 +10802,7 @@ function AppInner() {
           </nav>
         )}
 
-        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul" || interNav === "abonnement") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(110px + env(safe-area-inset-bottom, 0px))" : "calc(40px + env(safe-area-inset-top, 0px)) 20px 80px" }}>
+        <div style={{ maxWidth: (interNav === "cockpit" || interNav === "calcul") ? 920 : 560, margin: "0 auto", padding: isMobile ? "calc(22px + env(safe-area-inset-top, 0px)) 20px calc(110px + env(safe-area-inset-bottom, 0px))" : "calc(40px + env(safe-area-inset-top, 0px)) 20px 80px" }}>
 
           {/* Sur une sous-page, le chemin du retour vers la page d'où elle vient. */}
           {PAGE_PARENTE[interNav] && (
@@ -10996,14 +11221,14 @@ function AppInner() {
                         <div style={{ fontSize: 12, color: "#6B8299", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>🔒 Ton document reste privé : conservé en sécurité, jamais partagé, supprimable à tout moment. Et si tu as déjà saisi un contrat à la main, scanne quand même, <strong style={{ color: "#9FE1CB" }}>je repère les doublons</strong>.</div>
                         <div style={{ fontSize: 12.5, color: "#8BA5C0", lineHeight: 1.6, maxWidth: 440, margin: "12px auto 0" }}>
                           Pas d'AEM sous la main ? Tu peux saisir tes cachets et tes heures directement dans{" "}
-                          <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités →</button>
+                          <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes contrats →</button>
                         </div>
                       </div>
                     ) : (
                       <>
                         {/* Totaux en cachets ET en heures (retour testeuse 24/07 : « un cachet, c'est une journée » — son unité mentale) */}
                         <div id="aem-liste-scannees" style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
-                          <strong style={{ color: "#C8E0F5" }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}{(() => { const tc = aems.reduce((s, x) => s + ((x.type_activite === "cachet_isole" || x.type_activite === "cachet_groupe" || x.type_activite === "cachet") ? (parseFloat(x.nombre) || 0) : 0), 0); const th = Math.round(aems.reduce((s, x) => s + heuresDe(x), 0)); return ` · ${tc} cachet${tc > 1 ? "s" : ""} · ${th} h`; })()}</strong>. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>Mes activités</button>. Ton document original est conservé : tu peux le rouvrir à tout moment.</div>
+                          <strong style={{ color: "#C8E0F5" }}>{aems.length} AEM scannée{aems.length > 1 ? "s" : ""}{(() => { const tc = aems.reduce((s, x) => s + ((x.type_activite === "cachet_isole" || x.type_activite === "cachet_groupe" || x.type_activite === "cachet") ? (parseFloat(x.nombre) || 0) : 0), 0); const th = Math.round(aems.reduce((s, x) => s + heuresDe(x), 0)); return ` · ${tc} cachet${tc > 1 ? "s" : ""} · ${th} h`; })()}</strong>. 🐾 Chaque AEM scannée ajoute ses cachets et ses heures dans <button type="button" onClick={() => setInterNav("activites")} style={{ background: "none", border: "none", color: "#5DCAA5", fontWeight: 700, fontSize: 12.5, cursor: "pointer", fontFamily: "inherit", padding: 0, textDecoration: "underline" }}>tes contrats</button>. Ton document original est conservé : tu peux le rouvrir à tout moment.</div>
                         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                           {aems.map((a, i) => (
                             <Fragment key={a.id || i}>
@@ -11062,7 +11287,7 @@ function AppInner() {
                                 </div>
                                 <button type="button" onClick={() => { setAemDetailId(null); setInterNav("activites"); startEditActivite(a); }}
                                   style={{ marginTop: 9, background: "transparent", border: "1px solid rgba(93,202,165,0.4)", color: "#9FE1CB", borderRadius: 8, padding: "8px 13px", fontSize: 12, fontWeight: 700, cursor: "pointer", fontFamily: "inherit" }}>
-                                  Modifier dans Mes activités →
+                                  Modifier dans Contrats →
                                 </button>
                               </div>
                             )}
@@ -11116,7 +11341,7 @@ function AppInner() {
                 const manque = aDesActivites && calc.heures < calc.seuil;
                 const nbH = (n) => new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 1 }).format(n);
                 const MOIS_NOMS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
-                const ajouterContrat = () => { setInterNav("activites"); setInterShowAdd(true); window.scrollTo(0, 0); };
+                const ajouterContrat = ouvrirAjoutContrat;
                 const lienVert = { display: "block", marginTop: 9, fontSize: 13, lineHeight: 1.45, color: "#5DCAA5", fontWeight: 600, textDecoration: "underline", textUnderlineOffset: 3, background: "none", border: "none", padding: 0, fontFamily: "inherit", textAlign: "left", cursor: "pointer" };
                 const champ = { width: "100%", marginTop: 3, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
 
@@ -11706,99 +11931,73 @@ function AppInner() {
                 </div>
               )}
 
-              {/* ── État NORMAL : Totor a préparé l'actualisation ── */}
-              {!actuVide && !dejaActualise && (<>
+              {/* ── État NORMAL : Totor a préparé l'actualisation ──
+                  Allégé le 27/09/2026 (maquette validée par Camille) : un titre, une phrase
+                  qui dit QUAND, et UNE carte « Ce que tu vas déclarer » avec ses boutons.
+                  La tête de Totor, le verdict « j'ai tout vérifié » et la liste « voilà ce
+                  que j'ai fait » sont partis ; seule l'AEM qui manque reste signalée, parce
+                  qu'elle change ce qu'on déclare. Le « ~15 » reste approximatif exprès : le
+                  calendrier exact varie selon France Travail (Loi I, jamais une promesse). */}
+              {!actuVide && !dejaActualise && (() => {
+                const moisSuivantNom = MOIS_FR[(moisDecl.getMonth() + 1) % 12];
+                const nf = (n) => new Intl.NumberFormat("fr-FR").format(Math.round(n));
+                const totaux = [
+                  totalCachetsMois > 0 && `${totalCachetsMois} cachet${totalCachetsMois > 1 ? "s" : ""}`,
+                  `${nf(totalHeuresMois)} h`,
+                  !brutManquant && `${nf(totalBrutMois)} € bruts`,
+                ].filter(Boolean).join(" · ");
+                return (<>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: "white", margin: "0 0 8px" }}>Actualisation</h1>
+                  <p style={{ fontSize: 15, color: "#B5C8DC", lineHeight: 1.55, margin: "0 0 18px" }}>
+                    Ton actualisation de <b style={{ color: "white" }}>{moisDeclNom}</b> se fait sur France Travail du 28 {moisDeclNom} au ~15 {moisSuivantNom}.{" "}
+                    {actuOuverte ? "Elle est ouverte : je t'ai tout préparé." : `Elle ouvre dans ${joursAvantOuverture} jour${joursAvantOuverture > 1 ? "s" : ""} : je te prépare tout.`}
+                  </p>
 
-                {/* 1. LA PRÉSENCE */}
-                <div style={{ textAlign: "center", marginBottom: 26 }}>
-                  <div style={{ width: 88, height: 88, borderRadius: "50%", margin: "0 auto 16px", background: "radial-gradient(circle at 50% 35%, #12304f, #0a1322)", border: "2px solid rgba(93,202,165,0.45)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 0 0 8px rgba(93,202,165,0.05), 0 10px 30px rgba(0,0,0,0.4)", overflow: "hidden" }}>
-                    <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-dog" fallbackColor="#5DCAA5" />
-                  </div>
-                  <h1 style={{ fontSize: 21, fontWeight: 800, color: "white", lineHeight: 1.3, maxWidth: 420, margin: "0 auto" }}>Salut 🐾 J'ai préparé ton actualisation de {moisDeclNom}.</h1>
-                  <div style={{ fontSize: 12.5, color: "#6B8299", marginTop: 8 }}>
-                    {actuOuverte ? "Elle est ouverte, tu peux y aller" : `Elle ouvre dans ${joursAvantOuverture} jour${joursAvantOuverture > 1 ? "s" : ""}`}{" "}· on déclare toujours le mois écoulé, jusqu'au ~15 du mois suivant
-                  </div>
-                </div>
-
-                {/* 2. LE VERDICT */}
-                <div style={{ borderRadius: 16, padding: "18px 20px", marginBottom: 26, border: `1px solid ${actuNiveau === "green" ? "rgba(93,202,165,0.3)" : "rgba(250,199,117,0.28)"}`, background: actuNiveau === "green" ? "rgba(93,202,165,0.08)" : "rgba(250,199,117,0.07)", display: "flex", alignItems: "center", gap: 15 }}>
-                  <div style={{ width: 46, height: 46, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24, background: actuNiveau === "green" ? "rgba(93,202,165,0.15)" : "rgba(250,199,117,0.15)" }}>{actuNiveau === "green" ? "🟢" : "🟠"}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 16, fontWeight: 800, color: actuNiveau === "green" ? "white" : "#FAE3B6", lineHeight: 1.3 }}>
-                      {actuNiveau === "green" ? "J'ai tout vérifié. Tu peux y aller tranquille." : "Presque prêt. Jette un œil ci-dessous."}
-                    </div>
-                  </div>
-                  {actuConfiance != null && (
-                    <div style={{ textAlign: "right", flexShrink: 0 }}>
-                      <div style={{ fontSize: 24, fontWeight: 800, lineHeight: 1, color: actuNiveau === "green" ? "#5DCAA5" : "#FAC775" }}>{actuConfiance}%</div>
-                      <div style={{ fontSize: 9, color: "#6B8299", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 3 }}>confiance</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 3. LA PREUVE — ce que j'ai fait */}
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: "white", margin: "0 2px 12px", display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 16 }}>✅</span> Voilà ce que j'ai fait pour toi</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 7, marginBottom: 28 }}>
-                  <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 15px" }}>
-                    <div style={{ width: 21, height: 21, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, marginTop: 1, background: "rgba(93,202,165,0.15)", color: "#5DCAA5" }}><i className="ti ti-check" aria-hidden="true" /></div>
-                    <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600, color: "#E8F4FF", lineHeight: 1.4 }}>J'ai trouvé {actusDuMois.length} activité{actusDuMois.length > 1 ? "s" : ""} chez {nbEmployeursMois} employeur{nbEmployeursMois > 1 ? "s" : ""}</div></div>
-                  </div>
-                  {aemManquantes.length === 0 ? (
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 12, padding: "12px 15px" }}>
-                      <div style={{ width: 21, height: 21, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, marginTop: 1, background: "rgba(93,202,165,0.15)", color: "#5DCAA5" }}><i className="ti ti-check" aria-hidden="true" /></div>
-                      <div style={{ flex: 1 }}><div style={{ fontSize: 13.5, fontWeight: 600, color: "#E8F4FF", lineHeight: 1.4 }}>Tout est cohérent, j'ai agrégé ton mois</div></div>
-                    </div>
-                  ) : (
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.22)", borderRadius: 12, padding: "12px 15px" }}>
-                      <div style={{ width: 21, height: 21, borderRadius: "50%", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12, marginTop: 1, background: "rgba(250,199,117,0.18)", color: "#FAC775" }}><i className="ti ti-alert-triangle" aria-hidden="true" /></div>
+                  {aemManquantes.length > 0 && (
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12, background: "rgba(250,199,117,0.06)", border: "1px solid rgba(250,199,117,0.22)", borderRadius: 14, padding: "12px 15px", marginBottom: 14 }}>
+                      <i className="ti ti-alert-triangle" aria-hidden="true" style={{ fontSize: 18, color: "#FAC775", marginTop: 1, flexShrink: 0 }} />
                       <div style={{ flex: 1 }}>
                         <div style={{ fontSize: 13.5, fontWeight: 600, color: "#FAE3B6", lineHeight: 1.4 }}>Il me manque l'AEM de {aemManquantes.length} employeur{aemManquantes.length > 1 ? "s" : ""}</div>
                         <div style={{ fontSize: 12, color: "#8BA5C0", marginTop: 2, lineHeight: 1.45 }}>{aemManquantes.map(e => e.nom).join(", ")} : au moins un contrat du mois n'a pas son attestation. Sans elle, ces heures ne comptent pas.</div>
-                        <div style={{ display: "flex", gap: 8, marginTop: 9, flexWrap: "wrap" }}>
-                          <button type="button" onClick={() => setInterNav("activites")} style={{ fontFamily: "inherit", fontSize: 11.5, fontWeight: 600, cursor: "pointer", borderRadius: 7, padding: "11px 14px", minHeight: 44, display: "inline-flex", alignItems: "center", border: "1px solid #FAC775", background: "#FAC775", color: "#412402" }}>Voir mes activités</button>
-                        </div>
+                        <button type="button" onClick={() => allerPage("mesaem")}
+                          style={{ marginTop: 9, fontFamily: "inherit", fontSize: 12.5, fontWeight: 700, cursor: "pointer", borderRadius: 9, padding: "10px 14px", minHeight: 42, display: "inline-flex", alignItems: "center", border: "1px solid #FAC775", background: "#FAC775", color: "#412402" }}>
+                          Mes AEM
+                        </button>
                       </div>
                     </div>
                   )}
-                </div>
 
-                {/* 4. LE RÉSULTAT — voilà ton mois */}
-                <div style={{ fontSize: 14.5, fontWeight: 700, color: "white", margin: "0 2px 12px", display: "flex", alignItems: "center", gap: 8 }}><span style={{ fontSize: 16 }}>📋</span> Et voilà ton mois, prêt à recopier</div>
-                <div style={{ background: "linear-gradient(160deg,#11203a,#0d1a30)", border: "1px solid rgba(93,202,165,0.2)", borderRadius: 16, padding: "18px 20px", marginBottom: 28 }}>
-                  <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr 1fr" : "repeat(4, 1fr)", gap: 9, marginBottom: 4 }}>
-                    <div style={{ textAlign: "center", padding: "6px 4px" }}><div style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1 }}>{nbEmployeursMois}</div><div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 6 }}>employeur{nbEmployeursMois > 1 ? "s" : ""}</div></div>
-                    <div style={{ textAlign: "center", padding: "6px 4px" }}><div style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1 }}>{totalCachetsMois}</div><div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 6 }}>cachets</div></div>
-                    <div style={{ textAlign: "center", padding: "6px 4px" }}><div style={{ fontSize: 22, fontWeight: 800, color: "white", lineHeight: 1 }}>{Math.round(totalHeuresMois)}<span style={{ fontSize: 13, color: "#6B8299", fontWeight: 600 }}>h</span></div><div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 6 }}>heures</div></div>
-                    <div style={{ textAlign: "center", padding: "6px 4px" }}><div style={{ fontSize: 22, fontWeight: 800, color: brutManquant ? "#6B8299" : "white", lineHeight: 1 }}>{brutManquant ? "—" : new Intl.NumberFormat("fr-FR").format(Math.round(totalBrutMois))}<span style={{ fontSize: 13, color: "#6B8299", fontWeight: 600 }}>€</span></div><div style={{ fontSize: 10, color: "#8BA5C0", marginTop: 6 }}>brut</div></div>
+                  <div style={{ background: "#0B2038", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 20, padding: "18px 18px 16px" }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: "white", marginBottom: 8 }}>Ce que tu vas déclarer</div>
+                    {employeursMois.map((e, i) => (
+                      <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 10, fontSize: 13.5, color: "#B5C8DC", padding: "2px 0", lineHeight: 1.4 }}>
+                        {/* Le nom entier, sur deux lignes s'il le faut : c'est lui qu'on recopie. */}
+                        <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{e.nom}</span>
+                        <span style={{ flexShrink: 0 }}>{e.cachets > 0 ? `${e.cachets} cachet${e.cachets > 1 ? "s" : ""}` : `${nf(e.heures)} h`}{e.brut > 0 ? ` · ${nf(e.brut)} €` : ""}</span>
+                      </div>
+                    ))}
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "white", marginTop: 8 }}>{totaux}</div>
+                    {brutManquant && (
+                      <div style={{ marginTop: 8, fontSize: 12, color: "#8BA5C0", lineHeight: 1.5 }}>
+                        🐾 Je n'ai pas encore tous tes salaires bruts. Ajoute-les sur tes contrats pour un récap complet.
+                      </div>
+                    )}
+                    <button type="button" onClick={() => { setActuGuideStep(0); setActuEmpChecked({}); }}
+                      style={{ width: "100%", marginTop: 16, fontFamily: "inherit", fontSize: 16, fontWeight: 700, cursor: "pointer", background: "#378ADD", color: "white", border: "none", borderRadius: 999, padding: 15, minHeight: 52, display: "flex", alignItems: "center", justifyContent: "center", gap: 9, boxShadow: "0 10px 22px -12px rgba(55,138,221,0.9)" }}>
+                      Me guider pour recopier
+                    </button>
+                    <a href={FT_ESPACE_URL} target="_blank" rel="noopener noreferrer"
+                      style={{ width: "100%", boxSizing: "border-box", fontFamily: "inherit", fontSize: 15, fontWeight: 700, cursor: "pointer", background: "transparent", color: "#DCE7F2", border: "1px solid rgba(159,203,245,0.35)", borderRadius: 999, padding: 13, minHeight: 50, marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
+                      Ouvrir France Travail
+                    </a>
+                    <button type="button" onClick={declarerActualise}
+                      style={{ display: "block", margin: "12px auto 0", background: "none", border: "none", color: "#5DA7EC", fontSize: 14, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 36 }}>
+                      Je me suis déjà actualisé·e ailleurs
+                    </button>
+                    <div style={{ fontSize: 11, color: "#6B8299", textAlign: "center", lineHeight: 1.5, marginTop: 4 }}>C'est toujours toi qui valides sur France Travail.</div>
                   </div>
-                  {employeursMois.length > 0 && (
-                    <div style={{ marginTop: 14, paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.08)" }}>
-                      {employeursMois.map((e, i) => (
-                        <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", fontSize: 12.5 }}>
-                          <span style={{ color: "#D6E8FA", display: "flex", alignItems: "center", gap: 8 }}><i className="ti ti-building" aria-hidden="true" style={{ color: "#5A7088", fontSize: 14 }} /> {e.nom}</span>
-                          <span style={{ color: "#8BA5C0" }}>{e.cachets > 0 ? `${e.cachets} cachet${e.cachets > 1 ? "s" : ""}` : `${Math.round(e.heures)}h`}{e.brut > 0 ? ` · ${new Intl.NumberFormat("fr-FR").format(Math.round(e.brut))} €` : ""}</span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {brutManquant && (
-                    <div style={{ marginTop: 12, fontSize: 11, color: "#8BA5C0", lineHeight: 1.5, background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 12px" }}>
-                      🐾 Je n'ai pas encore tes salaires bruts. Ajoute-les sur tes contrats pour un récap complet.
-                    </div>
-                  )}
-                </div>
-
-                {/* 5. LA PASSATION */}
-                <button type="button" onClick={() => { setActuGuideStep(0); setActuEmpChecked({}); }} style={{ width: "100%", fontFamily: "inherit", fontSize: 15.5, fontWeight: 700, cursor: "pointer", background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 13, padding: 16, display: "flex", alignItems: "center", justifyContent: "center", gap: 9 }}>
-                  <i className="ti ti-player-play" aria-hidden="true" style={{ fontSize: 18 }} /> M'actualiser sereinement
-                </button>
-                <a href={FT_ESPACE_URL} target="_blank" rel="noopener noreferrer"
-                  style={{ width: "100%", boxSizing: "border-box", fontFamily: "inherit", fontSize: 13.5, fontWeight: 700, cursor: "pointer", background: "transparent", color: "#9FCBF5", border: "1px solid rgba(159,203,245,0.3)", borderRadius: 13, padding: 13, marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, textDecoration: "none" }}>
-                  <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 16 }} /> Ouvrir France Travail dans un autre onglet
-                </a>
-                <div style={{ fontSize: 10.5, color: "#45596F", textAlign: "center", lineHeight: 1.5, marginTop: 14 }}>C'est toujours toi qui valides sur France Travail.</div>
-                <button type="button" onClick={declarerActualise} style={{ display: "block", margin: "12px auto 0", background: "none", border: "none", color: "#6B8299", fontSize: 12, textDecoration: "underline", cursor: "pointer", fontFamily: "inherit" }}>Je me suis déjà actualisé·e ailleurs</button>
-              </>)}
+                </>);
+              })()}
 
               {/* ── Historique des actualisations ── */}
               {(actuHistorique || []).length > 0 && (
@@ -12949,6 +13148,13 @@ function AppInner() {
               <div style={{ margin: "12px 0 8px" }}>
                 {porte({ icon: "ti-trophy", titre: `Totor ${palierActuel.nom}`, sous: "Ta progression, palier par palier", onClick: () => allerPage("progression") })}
               </div>
+              {/* Réglages en ENTRÉE VISIBLE (retour TestFlight de Camille, 29/09, build 37 :
+                  la roue seule en haut à droite était introuvable — décision : les Réglages
+                  restent dans l'onglet Totor, mais affichés comme une porte. La roue reste
+                  en raccourci. Appli/téléphone : l'écran ordinateur du site fera autrement. */}
+              <div style={{ margin: "0 0 8px" }}>
+                {porte({ icon: "ti-settings", titre: "Réglages", sous: "Rappels, mot de passe, mes données, déconnexion", onClick: () => allerPage("reglages") })}
+              </div>
               {/* L'aide sur l'app elle-même vit ici depuis que la pastille ronde est partie :
                   toujours hors quota, elle ne compte pas dans les conversations avec Totor. */}
               <button type="button" onClick={() => setAideOuverte(true)}
@@ -13145,7 +13351,7 @@ function AppInner() {
               <div style={{ marginBottom: 14 }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                   <h1 style={{ fontSize: 26, fontWeight: 800, color: "white", margin: 0 }}>Contrats</h1>
-                  <button type="button" onClick={() => { setInterShowAdd(true); }} aria-label="Ajouter un contrat"
+                  <button type="button" onClick={ouvrirAjoutContrat} aria-label="Ajouter un contrat"
                     style={{ width: 44, height: 44, borderRadius: "50%", background: "#378ADD", border: "none", color: "white", display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", flexShrink: 0, padding: 0, boxShadow: "0 8px 18px -10px rgba(55,138,221,0.9)" }}>
                     <i className="ti ti-plus" aria-hidden="true" style={{ fontSize: 22 }} />
                   </button>
@@ -13234,9 +13440,9 @@ function AppInner() {
               </div>
 
               {/* ── Brique 5.2 : saisie + liste des activités ── */}
-              <div id="inter-activites" style={{ marginTop: 24, marginBottom: 16 }}>
+              <div id="inter-activites" style={{ marginTop: 24, marginBottom: 16, scrollMarginTop: "calc(12px + env(safe-area-inset-top, 0px))" }}>
                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#B5D4F4", textTransform: "uppercase", letterSpacing: 0.5 }}>Tes activités</div>
+                  <div style={{ fontSize: 13, fontWeight: 700, color: "#B5D4F4", textTransform: "uppercase", letterSpacing: 0.5 }}>Mes contrats</div>
                   <button type="button" onClick={() => setInterShowAdd(v => !v)}
                     style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "8px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", fontFamily: "inherit", display: "inline-flex", alignItems: "center", gap: 6 }}>
                     <i className={`ti ${interShowAdd ? "ti-x" : "ti-plus"}`} aria-hidden="true" />
@@ -14009,164 +14215,162 @@ function AppInner() {
               </div>
               </>)}
 
-              {/* ═══ PAGE RÉGLAGES ═══ */}
+              {/* ═══ PAGES TROUVER DU TRAVAIL ET ABONNEMENT ═══ */}
               {interNav === "trouver-heures" && <TrouverDesHeures />}
-              {interNav === "abonnement" && renderAbonnement(() => setInterNav("cockpit"))}
-              {interNav === "reglages" && (<>
-              <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 20 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: "#0a1322", border: "1.5px solid rgba(93,202,165,0.4)", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden", flexShrink: 0 }}>
-                  <NiveauImage src="/totor-tete.webp?v=2" fallbackIcon="ti-settings" fallbackColor="#5DCAA5" />
-                </div>
-                <div>
-                  <div style={{ fontSize: 17, fontWeight: 800, color: "white" }}>Réglages</div>
-                  <div style={{ fontSize: 12.5, color: "#8BA5C0" }}>{profile?.email}</div>
-                </div>
-              </div>
+              {interNav === "abonnement" && renderAbonnementInter()}
+              {/* ═══ PAGE RÉGLAGES, rangée comme la maquette (refonte du 27/09/2026) ═══
+                  Quatre parties : Mon compte, Aide, Mes données, Déconnexion. Chaque réglage
+                  est une ligne ; ceux qui ont un formulaire se déplient sur place. Rien ne
+                  disparaît : prénom, abonnement, ligne TOTOR, rappel, mot de passe, double
+                  vérification, statut, contact, lettre du fondateur, avis, export, suppression
+                  du compte (exigée par Apple) et déconnexion. La visite guidée est partie :
+                  elle décrivait l'ancienne app. */}
+              {interNav === "reglages" && (() => {
+                const titreSection = (t) => (
+                  <div style={{ margin: "24px 2px 10px", fontSize: 13, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: "#7F96AD" }}>{t}</div>
+                );
+                const ligne = ({ cle, icon, titre, sous, onClick, href, droite, depliable, danger, interrupteur }) => {
+                  const ouvert = depliable ? reglageOuvert === cle : undefined;
+                  // Une ligne est un bouton, ou un vrai lien quand elle mène à une adresse (email) ;
+                  // avec `interrupteur`, le bouton entier est l'interrupteur (lu comme tel).
+                  const Balise = href ? "a" : "button";
+                  const proprietes = href ? { href }
+                    : interrupteur !== undefined ? { type: "button", onClick, role: "switch", "aria-checked": interrupteur }
+                    : { type: "button", onClick: onClick || (() => setReglageOuvert(ouvert ? null : cle)), "aria-expanded": ouvert };
+                  return (
+                    <Balise key={cle} {...proprietes}
+                      style={{ display: "grid", gridTemplateColumns: "auto minmax(0, 1fr) auto", alignItems: "center", gap: 12, width: "100%", textAlign: "left", background: "#0B2038", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 16, padding: 14, color: "white", cursor: "pointer", fontFamily: "inherit", boxSizing: "border-box", textDecoration: "none" }}>
+                      <span style={{ width: 40, height: 40, borderRadius: 12, background: danger ? "rgba(242,163,163,0.12)" : "rgba(93,202,165,0.12)", color: danger ? "#F2A3A3" : "#5DCAA5", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <i className={`ti ${icon}`} aria-hidden="true" style={{ fontSize: 21 }} />
+                      </span>
+                      <span style={{ minWidth: 0 }}>
+                        <span style={{ display: "block", fontSize: 15, fontWeight: 600 }}>{titre}</span>
+                        {sous && <span style={{ display: "block", fontSize: 13, color: "#B5C8DC", marginTop: 3, lineHeight: 1.4 }}>{sous}</span>}
+                      </span>
+                      {droite || <i className={`ti ${depliable ? (ouvert ? "ti-chevron-up" : "ti-chevron-down") : "ti-chevron-right"}`} aria-hidden="true" style={{ color: "#6F8BA8", fontSize: 18 }} />}
+                    </Balise>
+                  );
+                };
+                const deplie = (contenu) => <div style={{ marginTop: 8 }}>{contenu}</div>;
+                const champ = { width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" };
+                const rappelActif = profile?.rappel_actu_active !== false;
+                const pile = { display: "flex", flexDirection: "column", gap: 10 };
+                return (<>
+                  <h1 style={{ fontSize: 26, fontWeight: 800, color: "white", margin: 0 }}>Réglages</h1>
+                  <div style={{ fontSize: 13, color: "#8BA5C0", marginTop: 4 }}>{profile?.email}</div>
 
-              {/* Mes infos */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 14 }}>Mes infos</div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 140px" }}>Prénom
-                    <input type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Ton prénom"
-                      style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                  </label>
-                  <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 140px" }}>Nom
-                    <input type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Ton nom"
-                      style={{ width: "100%", marginTop: 5, background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", boxSizing: "border-box" }} />
-                  </label>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
-                  <button type="button" onClick={handleSaveProfileDetails} disabled={profileDetailsSaving}
-                    style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: profileDetailsSaving ? "default" : "pointer", fontFamily: "inherit", opacity: profileDetailsSaving ? 0.6 : 1 }}>
-                    {profileDetailsSaving ? "…" : "Enregistrer"}
-                  </button>
-                  {profileDetailsSaved && <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600 }}>✓ Enregistré</span>}
-                </div>
-                <div style={{ fontSize: 11, color: "#5A7088", marginTop: 12, lineHeight: 1.5 }}>
-                  🐾 Ta date anniversaire se règle directement sur l'accueil, là où je surveille ton renouvellement.
-                </div>
-              </div>
-
-              {renderCodeVocal()}
-              {renderChangePassword()}
-              {renderMfa()}
-
-              {/* Une question ? — le contact humain, bien visible */}
-              <div style={{ background: "rgba(93,202,165,0.06)", border: "1px solid rgba(93,202,165,0.22)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>💬 Une question ?</div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 12, lineHeight: 1.5 }}>Un doute, un bug, une idée ? Écris-moi, c'est Camille (le créateur de TOTOR) qui te répond en personne.</div>
-                <a href="mailto:bonjour@montotor.fr" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "1px solid rgba(93,202,165,0.4)", color: "#5DCAA5", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, textDecoration: "none", fontFamily: "inherit" }}>
-                  <i className="ti ti-mail" aria-hidden="true" style={{ fontSize: 15 }} /> bonjour@montotor.fr
-                </a>
-              </div>
-
-              {renderAvisCard()}
-
-              {/* Rappel d'actualisation (email du 28) — opt-out simple */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>🐾 Rappel d'actualisation</div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>
-                  Le 28 de chaque mois, quand la fenêtre France Travail ouvre, je t'envoie un email avec ton mois déjà préparé. Un seul par mois, jamais plus.
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  {[{ v: true, l: "Activé" }, { v: false, l: "Désactivé" }].map(o => {
-                    const actif = (profile?.rappel_actu_active !== false) === o.v;
-                    return (
-                      <button key={String(o.v)} type="button" disabled={rappelActuSaving} onClick={() => saveRappelActu(o.v)}
-                        style={{ flex: "0 1 auto", background: actif ? "#5DCAA5" : "transparent", color: actif ? "#04342C" : "#B5D4F4", border: `1.5px solid ${actif ? "#5DCAA5" : "rgba(255,255,255,0.2)"}`, borderRadius: 8, padding: "9px 18px", fontSize: 13, fontWeight: 700, cursor: rappelActuSaving ? "default" : "pointer", fontFamily: "inherit", opacity: rappelActuSaving ? 0.6 : 1 }}>
-                        {actif ? "✓ " : ""}{o.l}
-                      </button>
-                    );
-                  })}
-                </div>
-                {!emailVerified && (
-                  <div style={{ fontSize: 11.5, color: "#FAC775", marginTop: 12, lineHeight: 1.5 }}>
-                    ⚠️ Pense à vérifier ton adresse email (bandeau en haut de l'app) pour être sûr·e de bien le recevoir.
+                  {titreSection("Mon compte")}
+                  <div style={pile}>
+                    <div>
+                      {ligne({ cle: "prenom", icon: "ti-pencil", titre: "Mon prénom", sous: profilPrenom || "À renseigner", depliable: true })}
+                      {reglageOuvert === "prenom" && deplie(
+                        <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "16px 18px" }}>
+                          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                            <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 140px" }}>Prénom
+                              <input type="text" value={profilPrenom} onChange={e => setProfilPrenom(e.target.value)} placeholder="Ton prénom" style={champ} />
+                            </label>
+                            <label style={{ fontSize: 12, color: "#8BA5C0", fontWeight: 600, flex: "1 1 140px" }}>Nom
+                              <input type="text" value={profilNom} onChange={e => setProfilNom(e.target.value)} placeholder="Ton nom" style={champ} />
+                            </label>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14 }}>
+                            <button type="button" onClick={handleSaveProfileDetails} disabled={profileDetailsSaving}
+                              style={{ background: "#5DCAA5", color: "#04342C", border: "none", borderRadius: 8, padding: "10px 20px", fontSize: 13.5, fontWeight: 700, cursor: profileDetailsSaving ? "default" : "pointer", fontFamily: "inherit", opacity: profileDetailsSaving ? 0.6 : 1, minHeight: 42 }}>
+                              {profileDetailsSaving ? "…" : "Enregistrer"}
+                            </button>
+                            {profileDetailsSaved && <span style={{ fontSize: 12, color: "#5DCAA5", fontWeight: 600 }}>✓ Enregistré</span>}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: "#5A7088", marginTop: 12, lineHeight: 1.5 }}>
+                            🐾 Ta date anniversaire se règle directement sur l'accueil, là où je surveille ton renouvellement.
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                    {ligne({ cle: "abonnement", icon: "ti-credit-card", titre: "Abonnement", sous: profile?.is_premium ? "TOTOR Veille, actif" : "Gratuit · voir les formules", onClick: () => allerPage("abonnement") })}
+                    {codeVocal && (
+                      <div>
+                        {ligne({ cle: "ligne", icon: "ti-phone", titre: "Ma ligne TOTOR", sous: "Tu appelles, je réponds, à toute heure", depliable: true })}
+                        {reglageOuvert === "ligne" && deplie(renderCodeVocal())}
+                      </div>
+                    )}
+                    <div>
+                      {ligne({ cle: "rappel", icon: "ti-bell", titre: "Rappel d'actualisation", sous: "Un email le 28 de chaque mois, ton mois déjà préparé",
+                        onClick: () => { if (!rappelActuSaving) saveRappelActu(!rappelActif); }, interrupteur: rappelActif,
+                        droite: (
+                          <span aria-hidden="true"
+                            style={{ position: "relative", width: 50, height: 30, borderRadius: 999, background: rappelActif ? "#5DCAA5" : "rgba(255,255,255,0.18)", flexShrink: 0, opacity: rappelActuSaving ? 0.6 : 1, transition: "background 0.2s" }}>
+                            <span style={{ position: "absolute", top: 3, left: rappelActif ? 23 : 3, width: 24, height: 24, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
+                          </span>
+                        ) })}
+                      {rappelActif && !emailVerified && (
+                        <div style={{ fontSize: 11.5, color: "#FAC775", marginTop: 8, lineHeight: 1.5, padding: "0 4px" }}>
+                          ⚠️ Pense à vérifier ton adresse email (bandeau en haut de l'app) pour être sûr·e de bien le recevoir.
+                        </div>
+                      )}
+                    </div>
+                    <div>
+                      {ligne({ cle: "mdp", icon: "ti-lock", titre: "Mot de passe", sous: "Le changer", depliable: true })}
+                      {reglageOuvert === "mdp" && deplie(renderChangePassword())}
+                    </div>
+                    <div>
+                      {ligne({ cle: "mfa", icon: "ti-shield-check", titre: "Double vérification", sous: "Un code en plus à la connexion", depliable: true })}
+                      {reglageOuvert === "mfa" && deplie(renderMfa())}
+                    </div>
+                    {/* L'espace auto-entrepreneur n'existe que sur le site (décision du 27/09/2026). */}
+                    {!estNatif() && ligne({ cle: "statut", icon: "ti-briefcase", titre: "Mode auto-entrepreneur", sous: statutSaving ? "…" : "Passer au cockpit auto-entrepreneur",
+                      onClick: () => { if (!statutSaving) handleChangeStatut("auto_entrepreneur"); } })}
                   </div>
-                )}
-              </div>
 
-              {/* Mon statut */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mon statut</div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Tu es en mode intermittent du spectacle. Tu peux basculer vers le cockpit auto-entrepreneur à tout moment.</div>
-                <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("auto_entrepreneur")}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: statutSaving ? "default" : "pointer", fontFamily: "inherit", opacity: statutSaving ? 0.6 : 1 }}>
-                  <i className="ti ti-briefcase" aria-hidden="true" style={{ fontSize: 16 }} /> {statutSaving ? "…" : "Passer en mode auto-entrepreneur"}
-                </button>
-              </div>
+                  {titreSection("Aide")}
+                  <div style={pile}>
+                    {ligne({ cle: "question", icon: "ti-lifebuoy", titre: "Une question ?", sous: "Écris-moi à bonjour@montotor.fr : c'est Camille, le créateur de TOTOR, qui te répond", href: "mailto:bonjour@montotor.fr" })}
+                    {ligne({ cle: "aide", icon: "ti-help-circle", titre: "Comment marche l'app ?", sous: "Je t'explique, sans toucher à tes conversations", onClick: () => setAideOuverte(true) })}
+                    {ligne({ cle: "pourquoi", icon: "ti-heart", titre: "Pourquoi TOTOR ?", sous: "La lettre du fondateur", onClick: () => setLegalPage("pourquoi") })}
+                  </div>
+                  <div style={{ marginTop: 10 }}>{renderAvisCard()}</div>
 
-              {/* Mes données (RGPD) */}
-              <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "18px 20px", marginBottom: 16 }}>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "white", marginBottom: 4 }}>Mes données</div>
-                <div style={{ fontSize: 12.5, color: "#8BA5C0", marginBottom: 14, lineHeight: 1.5 }}>Conformément au RGPD, tu peux exporter toutes tes données ou supprimer définitivement ton compte.</div>
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                  <button type="button" onClick={handleExportData} disabled={exportingData}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: exportingData ? "default" : "pointer", fontFamily: "inherit", opacity: exportingData ? 0.6 : 1 }}>
-                    <i className="ti ti-download" aria-hidden="true" style={{ fontSize: 15 }} /> {exportingData ? "Export…" : "Exporter mes données"}
-                  </button>
-                  <button type="button" onClick={() => setShowDeleteAccount(true)}
-                    style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(226,75,74,0.4)", color: "#F09595", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                    <i className="ti ti-trash" aria-hidden="true" style={{ fontSize: 15 }} /> Supprimer mon compte
-                  </button>
-                </div>
-                {showDeleteAccount && (
-                  <div style={{ marginTop: 14, padding: "14px 16px", background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 10 }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, color: "#F09595", marginBottom: 6 }}>⚠️ Cette action est irréversible</div>
-                    <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 10px", lineHeight: 1.5 }}>
-                      Toutes tes données (profil, activités, AEM, actualisations) seront définitivement supprimées. Pense à exporter avant si besoin.
-                    </p>
-                    <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 8px" }}>Tape <strong>SUPPRIMER</strong> pour confirmer :</p>
-                    <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER"
-                      style={{ background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 10, maxWidth: 240, width: "100%", boxSizing: "border-box" }} />
-                    <div style={{ display: "flex", gap: 10 }}>
-                      <button type="button" onClick={handleDeleteAccount} disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
-                        style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? 0.5 : 1 }}>
-                        {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
-                      </button>
-                      <button type="button" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}
-                        style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                        Annuler
-                      </button>
+                  {titreSection("Mes données")}
+                  <div style={pile}>
+                    {ligne({ cle: "export", icon: "ti-download", titre: "Exporter mes données", sous: exportingData ? "Export…" : "Tout ce que je sais de toi, en un fichier", onClick: () => { if (!exportingData) handleExportData(); } })}
+                    <div>
+                      {ligne({ cle: "supprimer", icon: "ti-trash", titre: "Supprimer mon compte", sous: "Définitif : tout est effacé", danger: true, onClick: () => setShowDeleteAccount(true) })}
+                      {showDeleteAccount && (
+                        <div style={{ marginTop: 10, padding: "14px 16px", background: "rgba(226,75,74,0.07)", border: "1px solid rgba(226,75,74,0.3)", borderRadius: 12 }}>
+                          <div style={{ fontSize: 13, fontWeight: 700, color: "#F09595", marginBottom: 6 }}>⚠️ Cette action est irréversible</div>
+                          <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 10px", lineHeight: 1.5 }}>
+                            Toutes tes données (profil, activités, AEM, actualisations) seront définitivement supprimées. Pense à exporter avant si besoin.
+                          </p>
+                          <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 8px" }}>Tape <strong>SUPPRIMER</strong> pour confirmer :</p>
+                          <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER"
+                            style={{ background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 10, maxWidth: 240, width: "100%", boxSizing: "border-box" }} />
+                          <div style={{ display: "flex", gap: 10 }}>
+                            <button type="button" onClick={handleDeleteAccount} disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
+                              style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? 0.5 : 1 }}>
+                              {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
+                            </button>
+                            <button type="button" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}
+                              style={{ background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
+                              Annuler
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
-                )}
-              </div>
 
-              {/* Aide + déconnexion. Depuis la refonte du 27/09/2026, on y trouve aussi
-                  ce qui vivait au bas de l'ancien menu : la lettre du fondateur et la course. */}
-              <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <button type="button" onClick={() => setLegalPage("pourquoi")}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                  <i className="ti ti-heart" aria-hidden="true" style={{ fontSize: 15 }} /> Pourquoi TOTOR ?
-                </button>
-                <button type="button" onClick={() => setShowGame(true)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                  <i className="ti ti-device-gamepad-2" aria-hidden="true" style={{ fontSize: 15 }} /> Course avec Totor
-                </button>
-                <button type="button" onClick={() => setShowWalkthrough(true)}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#B5D4F4", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                  <i className="ti ti-help-circle" aria-hidden="true" style={{ fontSize: 15 }} /> Revoir la visite guidée
-                </button>
-                <button type="button" onClick={handleLogout}
-                  style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#8BA5C0", borderRadius: 8, padding: "10px 16px", fontSize: 13, cursor: "pointer", fontFamily: "inherit" }}>
-                  <i className="ti ti-logout" aria-hidden="true" style={{ fontSize: 15 }} /> Déconnexion
-                </button>
-              </div>
+                  <div style={{ marginTop: 24 }}>
+                    {ligne({ cle: "deconnexion", icon: "ti-logout", titre: "Déconnexion", sous: "Tu te reconnectes quand tu veux", onClick: handleLogout })}
+                  </div>
 
-              <p style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 20, display: "flex", flexWrap: "wrap", gap: "4px 8px", justifyContent: "center" }}>
-                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("mentions")}>Mentions légales</button>
-                <span>·</span>
-                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("cgu")}>CGU</button>
-                <span>·</span>
-                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("confidentialite")}>Confidentialité</button>
-                <span>·</span>
-                <button type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline" }} onClick={() => setLegalPage("nouveautes")}>Nouveautés</button>
-                <span>·</span>
-                <a href="mailto:bonjour@montotor.fr" style={{ color: "#5A7088", fontSize: 11, fontFamily: "inherit", textDecoration: "underline" }}>Contact</a>
-              </p>
-              </>)}
+                  {/* Sans points de séparation : sur téléphone, la ligne passe à la ligne et un
+                      point restait seul en bout de ligne. L'écart suffit à séparer les liens. */}
+                  <p style={{ fontSize: 11, color: "#5A7088", textAlign: "center", marginTop: 20, display: "flex", flexWrap: "wrap", gap: "2px 16px", justifyContent: "center" }}>
+                    {[["mentions", "Mentions légales"], ["cgu", "CGU"], ["confidentialite", "Confidentialité"], ["nouveautes", "Nouveautés"]].map(([page, label]) => (
+                      <button key={page} type="button" style={{ background: "none", border: "none", color: "#5A7088", fontSize: 11, cursor: "pointer", fontFamily: "inherit", textDecoration: "underline", minHeight: 32 }} onClick={() => setLegalPage(page)}>{label}</button>
+                    ))}
+                  </p>
+                </>);
+              })()}
             </>
           )}
         {/* ===== WALKTHROUGH (rendu aussi dans la vue intermittente) ===== */}
