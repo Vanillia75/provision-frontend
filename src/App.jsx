@@ -3012,8 +3012,11 @@ function AppInner() {
   // du tarif web (anti-steering). Le backend reste le juge unique du premium.
   const renderDecouverteVeille = () => {
     const produitChoisi = veillePlanNatif === "mensuel" ? veilleProduits?.mensuel : veilleProduits?.annuel;
-    // LE grand comparatif : tout ce qui existe, avec sa vraie colonne Gratuit.
-    // Un seul abonnement débloque les DEUX espaces : on montre tout.
+    // LE grand comparatif : tout ce qui existe DANS L'APP, avec sa vraie colonne Gratuit.
+    // Depuis la 1.1.13, les apps sont 100 % intermittent (décision de Camille du
+    // 27/09/2026) : l'espace auto-entrepreneur n'existe plus que sur le site. On ne
+    // vend donc plus ici ce qu'on ne peut pas ouvrir dans l'app (un achat intégré
+    // doit débloquer quelque chose DANS l'app, règles App Store et Google Play).
     const sectionIntermittent = ["🎭 Côté intermittent", [
       ["L'essentiel : 507h comptées, disponible du jour, allocation expliquée, rappels d'actualisation", "✓", "✓"],
       ["Scans d'AEM et de tes documents France Travail : tu photographies, je remplis", "Limités", "Illimités"],
@@ -3023,25 +3026,12 @@ function AppInner() {
       ["Je recalcule ton allocation après chaque AEM", "🔒", "✓"],
       ["Je surveille tes jours par employeur avant que ça coince", "🔒", "✓"],
     ]];
-    const sectionAE = ["💼 Côté auto-entrepreneur", [
-      ["L'essentiel : cockpit, chiffre d'affaires, déclaration URSSAF et son rappel", "✓", "✓"],
-      ["Ta paie calculée chaque mois", "1 scénario", "3 scénarios"],
-      ["Je relance tes impayés à ta place, sans relâche", "🔒", "✓"],
-      ["Le radar acompte : je repère les mauvais payeurs avant le devis", "🔒", "✓"],
-      ["Ton taux horaire réel calculé : tu sais enfin ce que tu vaux", "🔒", "✓"],
-      ["Je regarde ton mois prochain : ce qui rentre, ce qui va manquer", "🔒", "✓"],
-      ["Factures et devis pro, aux mentions impeccables", "Limités", "Illimités"],
-      ["Scans de factures et reçus : je lis tout", "Limités", "Illimités"],
-    ]];
-    const sectionPartout = ["🐾 Et partout", [
+    // Le Mode Achat est parti avec l'espace auto-entrepreneur : il n'est plus listé.
+    const sectionPartout = ["🐾 Et aussi", [
       ["Conversations avec Totor, il connaît ton dossier", "Limitées", "Illimitées"],
-      ["Le Mode Achat : « puis-je me le permettre ? »", "Limité", "Illimité"],
       ["Toutes les prochaines fonctionnalités, incluses d'office", "", "✓"],
     ]];
-    // Ton métier d'abord et complet ; l'autre métier replié derrière une ligne cliquable.
-    const sectionsComparatif = profile?.statut === "intermittent"
-      ? [[...sectionIntermittent, false], [...sectionAE, true], [...sectionPartout, false]]
-      : [[...sectionAE, false], [...sectionIntermittent, true], [...sectionPartout, false]];
+    const sectionsComparatif = [[...sectionIntermittent, false], [...sectionPartout, false]];
     return (
     <div>
       <div style={isMobile ? { ...S.pageHeader, flexDirection: "column", alignItems: "flex-start", gap: 10 } : S.pageHeader}>
@@ -3073,7 +3063,6 @@ function AppInner() {
           </div>
 
           {/* LE grand comparatif vendeur : gratuit (je te montre) vs Veille (je m'en occupe) */}
-          <div style={{ fontSize: 11.5, color: "#5DCAA5", fontWeight: 700, marginBottom: 8 }}>Un seul abonnement, les deux espaces : intermittent ET auto-entrepreneur.</div>
           <table style={{ width: "100%", borderCollapse: "collapse", marginBottom: 16, fontSize: 12 }}>
             <thead>
               <tr>
