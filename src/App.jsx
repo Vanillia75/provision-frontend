@@ -3310,6 +3310,12 @@ function AppInner() {
   const [exportingData, setExportingData] = useState(false);
   const [showDeleteAccount, setShowDeleteAccount] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState("");
+  // Le mot de confirmation, sans tenir compte des majuscules ni des espaces : sur un
+  // téléphone, le clavier écrit « Supprimer » tout seul, et le bouton restait grisé
+  // sans rien dire (retour du Mac sur la build 39, le 29/09/2026). Un mot faux est
+  // désormais signalé sous le champ.
+  const suppressionConfirmee = deleteConfirmText.trim().toUpperCase() === "SUPPRIMER";
+  const motSuppressionFaux = deleteConfirmText.trim() !== "" && !suppressionConfirmee;
   const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [pwdCurrent, setPwdCurrent] = useState("");
@@ -3873,7 +3879,7 @@ function AppInner() {
   }
 
   async function handleDeleteAccount() {
-    if (deleteConfirmText !== "SUPPRIMER") return;
+    if (!suppressionConfirmee) return;
     setDeletingAccount(true);
     try {
       await apiFetch("/account", { method: "DELETE" });
@@ -8711,14 +8717,14 @@ function AppInner() {
         <div style={{ maxWidth: 460, margin: "0 auto" }}>
           <div style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 700, fontSize: 30, letterSpacing: "0.02em" }}>T<span style={{ color: "#5DCAA5" }}>O</span>T<span style={{ color: "#5DCAA5" }}>O</span>R</div>
           <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.2, margin: "22px 0 10px" }}>Ton espace auto-entrepreneur est sur le site</h1>
+          {/* Texte seul, SANS lien ni bouton vers le site (verdict du Mac, 29/09/2026) :
+              l'espace auto-entrepreneur du site passe par un abonnement payé chez Stripe,
+              et un bouton qui y mène serait un renvoi vers un achat hors de l'App Store
+              (règle 3.1.1). On informe, on n'envoie pas. */}
           <p style={{ fontSize: 15, color: "#B5C8DC", lineHeight: 1.55, margin: 0 }}>
             Dans l'app, je m'occupe des intermittents du spectacle. Tes factures, tes relances et tout ton espace auto-entrepreneur t'attendent sur <b style={{ color: "white" }}>montotor.fr</b>, depuis un ordinateur ou le navigateur de ton téléphone.
           </p>
-          <a href="https://www.montotor.fr" target="_blank" rel="noopener noreferrer"
-            style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, marginTop: 22, background: "#378ADD", color: "white", borderRadius: 999, padding: "16px 20px", minHeight: 52, fontSize: 16, fontWeight: 700, textDecoration: "none", boxSizing: "border-box" }}>
-            Ouvrir montotor.fr
-          </a>
-          <div style={{ ...carteAe, marginTop: 18 }}>
+          <div style={{ ...carteAe, marginTop: 24 }}>
             <div style={{ fontSize: 15, fontWeight: 700 }}>Tu es aussi intermittent·e ?</div>
             <div style={{ fontSize: 13.5, color: "#B5C8DC", marginTop: 4, lineHeight: 1.5 }}>Je compte tes heures et tes cachets vers tes 507 h, ici même.</div>
             <button type="button" disabled={statutSaving} onClick={() => handleChangeStatut("intermittent")}
@@ -8735,10 +8741,14 @@ function AppInner() {
               <div style={{ marginTop: 10 }}>
                 <p style={{ fontSize: 12.5, color: "#E8C4C4", margin: "0 0 8px", lineHeight: 1.5 }}>⚠️ C'est irréversible : toutes tes données (profil, factures, encaissements) seront définitivement supprimées. Tape <strong>SUPPRIMER</strong> pour confirmer :</p>
                 <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER" aria-label="Tape SUPPRIMER pour confirmer"
+                  autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
                   style={{ background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "10px 12px", fontSize: 14, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 10, width: "100%", boxSizing: "border-box" }} />
+                {motSuppressionFaux && (
+                  <div role="alert" style={{ fontSize: 12.5, color: "#F0997F", margin: "-4px 0 10px", lineHeight: 1.45 }}>Le mot ne correspond pas : tape SUPPRIMER pour confirmer.</div>
+                )}
                 <div style={{ display: "flex", gap: 10 }}>
-                  <button type="button" onClick={handleDeleteAccount} disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
-                    style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? 0.5 : 1 }}>
+                  <button type="button" onClick={handleDeleteAccount} disabled={!suppressionConfirmee || deletingAccount}
+                    style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 16px", fontSize: 13, fontWeight: 700, cursor: (!suppressionConfirmee || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (!suppressionConfirmee || deletingAccount) ? 0.5 : 1 }}>
                     {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
                   </button>
                   <button type="button" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}
@@ -14341,11 +14351,15 @@ function AppInner() {
                             Toutes tes données (profil, activités, AEM, actualisations) seront définitivement supprimées. Pense à exporter avant si besoin.
                           </p>
                           <p style={{ fontSize: 12, color: "#E8C4C4", margin: "0 0 8px" }}>Tape <strong>SUPPRIMER</strong> pour confirmer :</p>
-                          <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER"
+                          <input type="text" value={deleteConfirmText} onChange={e => setDeleteConfirmText(e.target.value)} placeholder="SUPPRIMER" aria-label="Tape SUPPRIMER pour confirmer"
+                            autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
                             style={{ background: "#0d2440", border: "1px solid #1e3a5f", borderRadius: 8, padding: "9px 12px", fontSize: 13, color: "white", outline: "none", fontFamily: "inherit", marginBottom: 10, maxWidth: 240, width: "100%", boxSizing: "border-box" }} />
+                          {motSuppressionFaux && (
+                            <div role="alert" style={{ fontSize: 12, color: "#F0997F", margin: "-4px 0 10px", lineHeight: 1.45 }}>Le mot ne correspond pas : tape SUPPRIMER pour confirmer.</div>
+                          )}
                           <div style={{ display: "flex", gap: 10 }}>
-                            <button type="button" onClick={handleDeleteAccount} disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
-                              style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (deleteConfirmText !== "SUPPRIMER" || deletingAccount) ? 0.5 : 1 }}>
+                            <button type="button" onClick={handleDeleteAccount} disabled={!suppressionConfirmee || deletingAccount}
+                              style={{ background: "#E24B4A", color: "white", border: "none", borderRadius: 8, padding: "10px 18px", fontSize: 13, fontWeight: 700, cursor: (!suppressionConfirmee || deletingAccount) ? "default" : "pointer", fontFamily: "inherit", opacity: (!suppressionConfirmee || deletingAccount) ? 0.5 : 1 }}>
                               {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
                             </button>
                             <button type="button" onClick={() => { setShowDeleteAccount(false); setDeleteConfirmText(""); }}
@@ -18390,13 +18404,18 @@ function AppInner() {
                     value={deleteConfirmText}
                     onChange={e => setDeleteConfirmText(e.target.value)}
                     placeholder="SUPPRIMER"
+                    aria-label="Tapez SUPPRIMER pour confirmer"
+                    autoCapitalize="characters" autoCorrect="off" autoComplete="off" spellCheck={false}
                   />
+                  {motSuppressionFaux && (
+                    <div role="alert" style={{ fontSize: 12, color: "#A32D2D", margin: "-4px 0 10px", lineHeight: 1.45 }}>Le mot ne correspond pas : tapez SUPPRIMER pour confirmer.</div>
+                  )}
                   <div style={{ display: "flex", gap: 10 }}>
                     <button
                       type="button"
                       style={{ ...S.btnPrimary, width: "auto", padding: "10px 20px", background: "#A32D2D" }}
                       onClick={handleDeleteAccount}
-                      disabled={deleteConfirmText !== "SUPPRIMER" || deletingAccount}
+                      disabled={!suppressionConfirmee || deletingAccount}
                     >
                       {deletingAccount ? "Suppression…" : "Supprimer définitivement"}
                     </button>
