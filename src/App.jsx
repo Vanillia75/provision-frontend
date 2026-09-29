@@ -13239,6 +13239,13 @@ function AppInner() {
               <div style={{ margin: "12px 0 8px" }}>
                 {porte({ icon: "ti-trophy", titre: `Totor ${palierActuel.nom}`, sous: "Ta progression, palier par palier", onClick: () => allerPage("progression") })}
               </div>
+              {/* Réglages en ENTRÉE VISIBLE (retour TestFlight de Camille, 29/09, build 37 :
+                  la roue seule en haut à droite était introuvable — décision : les Réglages
+                  restent dans l'onglet Totor, mais affichés comme une porte. La roue reste
+                  en raccourci. Appli/téléphone : l'écran ordinateur du site fera autrement. */}
+              <div style={{ margin: "0 0 8px" }}>
+                {porte({ icon: "ti-settings", titre: "Réglages", sous: "Rappels, mot de passe, mes données, déconnexion", onClick: () => allerPage("reglages") })}
+              </div>
               {/* L'aide sur l'app elle-même vit ici depuis que la pastille ronde est partie :
                   toujours hors quota, elle ne compte pas dans les conversations avec Totor. */}
               <button type="button" onClick={() => setAideOuverte(true)}
