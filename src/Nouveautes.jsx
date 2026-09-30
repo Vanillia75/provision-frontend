@@ -9,6 +9,19 @@ import { CSS } from "./theme";
 
 const VAGUES = [
   {
+    date: "30 septembre 2026",
+    titre: "Je fais peau neuve",
+    items: [
+      { qui: "intermittent", texte: "Toute l'app est refaite pour aller à l'essentiel : cinq onglets, Accueil, Contrats, Actualiser, Totor et Abonnement. Sur téléphone, ils t'attendent en bas de l'écran ; sur ordinateur, dans la colonne de gauche." },
+      { qui: "intermittent", texte: "En ouvrant, tes heures en très grand et ta date anniversaire, puis trois cartes : ton mois, ton renouvellement et tes congés. Chaque carte s'ouvre d'un appui sur tout le détail." },
+      { qui: "intermittent", texte: "« Contrats » rassemble tout ton travail : les offres du spectacle près de chez toi, tes contrats, tes AEM et tes documents. Chaque contrat tient sur une ligne, et son petit menu se déroule quand tu en as besoin." },
+      { qui: "intermittent", texte: "Ton actualisation tient maintenant dans une seule carte : ce que tu vas déclarer ce mois-ci, et je te guide pour le recopier sur France Travail." },
+      { qui: "intermittent", texte: "Tes réglages sont rangés en trois blocs, derrière une porte bien visible dans l'onglet Totor. Et pour une question sur l'app, c'est toujours là, sans compter dans tes conversations : « Une question sur l'app ? ». 🐾" },
+      { qui: "tous", texte: "Dans les applications iPhone et Android, à partir de la version 1.1.13, je me consacre aux intermittents du spectacle. Si tu es auto-entrepreneur, rien ne change pour toi sur le site : ton espace t'attend sur montotor.fr, depuis un ordinateur ou le navigateur de ton téléphone." },
+      { qui: "tous", texte: "Et sur iPhone, la version 1.1.13 de l'application se lance de nouveau normalement avec iOS 27." },
+    ],
+  },
+  {
     date: "24 septembre 2026",
     titre: "Les prix baissent, pour tout le monde",
     items: [
@@ -38,7 +51,7 @@ const VAGUES = [
     titre: "Tes heures en très gros, et des couleurs qui rassurent",
     items: [
       { qui: "intermittent", texte: "En ouvrant l'app, LE chiffre que tu vois maintenant, c'est tes heures : « Tu es à 502 h sur 507 » en très gros, la jauge, et mon état du moment en une petite ligne dessous. Fini le pavé." },
-      { qui: "intermittent", texte: "Et j'arrête de te faire peur avec le rouge : la carte du haut reste bleu nuit même quand ça se corse, seule une petite ligne 🔴 ou 🟡 te tient au courant. La carte ne passe entière en couleur que pour une bonne nouvelle : le vert des droits sécurisés, ça c'est une fête." },
+      { qui: "intermittent", texte: "Et j'arrête de te faire peur avec le rouge : la carte du haut reste bleu nuit même quand ça se corse, seule une petite ligne 🔴 ou 🟡 te tient au courant. La carte ne passe entière en couleur que pour une bonne nouvelle : le vert de tes 507 heures atteintes, ça c'est une fête." },
       { qui: "intermittent", texte: "« Mes activités » fait peau neuve : ton compteur en accroche (« 502 h au compteur · 19 contrats »), et chaque contrat dans sa propre case avec son icône, son employeur, son brut et ses heures gagnées. En bas de la liste, deux boutons t'attendent : ajouter un contrat, ou scanner une AEM." },
       { qui: "intermittent", texte: "La carte « Ton mois » apprend à se faire petite : l'essentiel reste affiché (le total, les deux colonnes, la date du versement prévu), et le reste se déplie d'un geste avec « Simuler des cachets · tout le détail ». Rien ne disparaît, tout respire." },
       { qui: "intermittent", texte: "Et « Tes Congés Spectacles » est remontée juste sous « Ton mois » : tout ton argent au même endroit, dans l'ordre où tu le touches." },
