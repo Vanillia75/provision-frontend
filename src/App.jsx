@@ -10765,8 +10765,11 @@ function AppInner() {
         {docViewer && (
           <div onClick={() => setDocViewer(null)} style={{ position: "fixed", inset: 0, zIndex: 500, background: "rgba(4,12,24,0.9)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: isMobile ? 0 : 24, animation: "celebrIn 0.25s ease" }}>
             <div onClick={e => e.stopPropagation()} style={{ position: "relative", width: "100%", maxWidth: 820, height: isMobile ? "100%" : "90vh", background: "#0c1f38", borderRadius: isMobile ? 0 : 16, overflow: "hidden", display: "flex", flexDirection: "column", border: "1px solid rgba(93,202,165,0.25)" }}>
-              {/* En-tête */}
-              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
+              {/* En-tête. ⚠️ Safe-area sur téléphone : sans elle, l'en-tête et sa croix
+                  passaient SOUS l'encoche de l'iPhone. Plus aucun bouton visible, un PDF
+                  zoomé en plein écran, il fallait quitter l'app (Lucile, bulletin de
+                  paie, 29/09/2026). Même piège que le visualiseur PDF, réglé le 15/08. */}
+              <div style={{ display: "flex", alignItems: "center", gap: 10, padding: isMobile ? "calc(10px + env(safe-area-inset-top, 0px)) 12px 10px 16px" : "13px 16px", borderBottom: "1px solid rgba(255,255,255,0.08)", flexShrink: 0 }}>
                 <i className="ti ti-file-text" aria-hidden="true" style={{ color: "#5DCAA5", fontSize: 18 }} />
                 <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, color: "white", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{docViewer.filename}</div>
                 {docViewer.url && (
@@ -10774,8 +10777,11 @@ function AppInner() {
                     <i className="ti ti-external-link" aria-hidden="true" style={{ fontSize: 14 }} /> {!isMobile && "Onglet"}
                   </a>
                 )}
-                <button type="button" onClick={() => setDocViewer(null)} style={{ background: "transparent", border: "none", color: "#8BA5C0", fontSize: 22, cursor: "pointer", padding: "0 4px", lineHeight: 1 }}>
-                  <i className="ti ti-x" aria-hidden="true" />
+                {/* Un vrai bouton « Fermer », écrit en toutes lettres et assez grand pour
+                    le doigt : une petite croix grise ne se voyait pas sur un document. */}
+                <button type="button" onClick={() => setDocViewer(null)}
+                  style={{ display: "flex", alignItems: "center", gap: 6, background: "transparent", border: "1px solid rgba(255,255,255,0.2)", color: "#C5D4E3", borderRadius: 9, padding: "9px 14px", fontSize: 13, fontWeight: 600, cursor: "pointer", fontFamily: "inherit", minHeight: 44, flexShrink: 0 }}>
+                  <i className="ti ti-x" aria-hidden="true" style={{ fontSize: 15 }} /> Fermer
                 </button>
               </div>
               {/* Contenu */}
