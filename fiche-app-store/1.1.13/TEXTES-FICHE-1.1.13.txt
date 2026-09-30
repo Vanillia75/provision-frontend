@@ -12,7 +12,7 @@ TOTOR fait peau neuve.
 • Ton mois, ton renouvellement et tes congés se lisent d'un coup d'œil sur l'accueil.
 • Ton actualisation tient dans une seule carte : ce que tu vas déclarer, et je te guide pour le recopier.
 • Tes réglages sont rangés en trois blocs, depuis l'onglet Totor.
-• TOTOR Veille baisse ses prix.
+• L'abonnement TOTOR Veille baisse ses prix : 4,99 € par mois avec 7 jours d'essai gratuit, ou 34,99 € par an.
 • Correction : l'app se lance de nouveau normalement sur iOS 27.
 
 L'espace auto-entrepreneur quitte l'application : il reste disponible sur le site TOTOR.
@@ -21,7 +21,7 @@ L'espace auto-entrepreneur quitte l'application : il reste disponible sur le sit
 
 2. TEXTE PROMOTIONNEL (120 caractères sur 170 ; il se change à tout moment, sans examen)
 ----------------------------------------------------------------------
-Nouvelle version, plus simple : tes heures, ton mois et ton actualisation en un coup d'œil. Respire : TOTOR s'en charge.
+L'app des intermittents du spectacle, en plus simple : tes 507 heures, tes AEM et ton actualisation en un coup d'œil. Respire : TOTOR s'en charge.
 ----------------------------------------------------------------------
 
 
@@ -37,26 +37,29 @@ Tes 507 heures, je veille.
 ----------------------------------------------------------------------
 
 
-5. DESCRIPTION (remplace tout l'ancien texte : il parlait des auto-entrepreneurs et affichait 9,99 € et 79 €)
+5. DESCRIPTION (3 065 caractères sur 4 000 ; remplace tout l'ancien texte, qui parlait des auto-entrepreneurs et affichait 9,99 € et 79 €)
 ----------------------------------------------------------------------
 Tes 507 heures comptées, tes AEM lues d'une photo, ton allocation expliquée. Respire : TOTOR s'en charge.
 
-TOTOR est le compagnon des intermittents du spectacle, artistes et techniciens. Tu fais ton métier, TOTOR veille sur le reste.
+TOTOR est l'app des intermittents du spectacle, artistes (annexe 10) comme techniciens (annexe 8). Elle est pensée pour une seule chose : que l'administratif de l'intermittence ne te prenne plus la tête. Tu fais ton métier, TOTOR veille sur le reste.
 
-TES HEURES, EN GRAND
-Dès l'ouverture, ton compteur vers les 507 heures, à jour en permanence, et ce qu'il te reste à faire avant ta date anniversaire. Tu photographies ton AEM, ton GUSO ou ton FCTU : TOTOR les lit et remplit tout à ta place. Plus de tableur, plus de calcul de coin de table.
+TES 507 HEURES, EN GRAND
+Dès l'ouverture, ton compteur vers les 507 heures, à jour à chaque contrat. Tu vois ce qu'il te reste à faire avant ta date anniversaire. Et quand il te manque des heures, TOTOR te montre les offres du spectacle publiées par France Travail, près de chez toi.
+
+TES AEM, LUES D'UNE PHOTO
+Tu photographies ton AEM, ton GUSO ou ton FCTU : TOTOR les lit et remplit tout à ta place. Employeur, cachets, heures, salaire : plus de tableur, plus de calcul de coin de table.
 
 TON ALLOCATION, EXPLIQUÉE
-Annexe 8 pour les techniciens, annexe 10 pour les artistes : TOTOR reconstitue ton allocation journalière à partir de tes heures et de tes salaires, te montre le détail ligne par ligne, et va jusqu'au net.
+Annexe 8 ou annexe 10 : TOTOR reconstitue ton allocation journalière à partir de ton salaire de référence et de tes heures, te montre le détail ligne par ligne, et va jusqu'au net.
 
 TON ACTUALISATION, PRÉPARÉE
-TOTOR te prévient quand la fenêtre s'ouvre, rassemble tes contrats du mois et te guide pour recopier chaque ligne sur France Travail. C'est toujours toi qui valides.
+Quand la fenêtre s'ouvre, le 28, TOTOR a déjà rassemblé tes contrats du mois et te guide pour recopier chaque ligne sur France Travail. C'est toujours toi qui valides.
 
-TES CONTRATS ET TES DOCUMENTS
-Tous tes contrats au même endroit. Contrats, bulletins de paie, attestations Congés Spectacles : tu les déposes, TOTOR les range par employeur. Et quand il te manque des heures, il te montre les offres du spectacle publiées par France Travail, près de chez toi.
+TES CONTRATS, TES DOCUMENTS, TES CONGÉS
+Tous tes contrats au même endroit. Contrats, bulletins de paie, attestations Congés Spectacles : tu les déposes, TOTOR les range par employeur. Et tes Congés Spectacles de l'année sont estimés, directement sur l'accueil.
 
 PARLE À TOTOR
-Pose ta question en français : TOTOR connaît ton dossier, t'explique son raisonnement et garde le fil de vos conversations.
+Une question sur ton régime ? Date anniversaire, clause de rattrapage, cachets, annexes : pose-la avec tes mots. TOTOR connaît ton dossier, t'explique son raisonnement et garde le fil de vos conversations.
 
 NOTRE ENGAGEMENT
 Ne jamais t'afficher un chiffre que nous n'avons pas vérifié. Nos calculs d'allocation sont confrontés au simulateur officiel de France Travail, situation par situation. Quand un montant n'a pas été vérifié, TOTOR préfère te le dire plutôt que de deviner. Seul France Travail fait foi pour le montant officiel.
@@ -64,7 +67,7 @@ Ne jamais t'afficher un chiffre que nous n'avons pas vérifié. Nos calculs d'al
 TOTOR est gratuit, et le restera.
 
 TOTOR VEILLE, L'ABONNEMENT
-Avec TOTOR Veille, il s'occupe de tout : il estime ton versement du mois, projette ton allocation au prochain renouvellement, te prévient s'il te manque une AEM ou si un montant cloche, vérifie ta décision France Travail, et tes scans comme tes conversations deviennent illimités.
+Avec TOTOR Veille, TOTOR s'occupe de tout : il estime ton versement France Travail du mois, projette ton allocation à ton prochain renouvellement, te prévient s'il te manque une AEM ou si un montant cloche, vérifie ta décision France Travail, et tes scans comme tes conversations deviennent illimités.
 
 TOTOR Veille est un abonnement auto-renouvelable, en deux formules :
 • Mensuel : 4,99 € par mois, avec 7 jours d'essai gratuit
@@ -81,34 +84,35 @@ Respire. TOTOR s'en charge.
 
 6. CAPTURES D'ÉCRAN (rubrique iPhone, dans cet ordre)
 ----------------------------------------------------------------------
-Supprimer les 7 anciennes (deux montraient l'espace auto-entrepreneur, et une autre disait « sécuriser tes droits »), puis déposer les 6 de ce dossier, dans l'ordre :
-01_accueil, 02_mois, 03_renouvellement, 04_contrats, 05_actualisation, 06_totor.
+Supprimer les 7 anciennes (deux montraient l'espace auto-entrepreneur, et une autre disait « sécuriser tes droits »), puis déposer les 8 nouvelles de ce dossier, dans l'ordre :
+01_accueil, 02_scan, 03_offres, 04_renouvellement, 05_mois, 06_contrats, 07_actualisation, 08_totor.
 Taille 1290 x 2796 (écran 6,9 pouces). Si App Store Connect réclame aussi le 6,5 pouces : le sous-dossier 6-5 (1242 x 2688).
-Les 3 premières sont celles qu'on voit dans les résultats de recherche.
-02 et 03 portent la mention « Avec TOTOR Veille » : ces deux écrans sont réservés aux abonnés (règle Apple 2.3.2).
+Les 3 premières sont celles qu'on voit dans les résultats de recherche : l'accueil, le scan, les offres.
+04 et 05 portent la mention « Avec TOTOR Veille » : ces deux écrans sont réservés aux abonnés (règle Apple 2.3.2).
+Les séries précédentes sont gardées dans le sous-dossier ancienne-version.
 ----------------------------------------------------------------------
 
 
 7. NOTES POUR L'EXAMEN (rubrique « Informations pour l'examen de l'app », champ Notes)
 ----------------------------------------------------------------------
-Version 1.1.13 (build 39):
+Version 1.1.13 (build 40):
 - Fixes a crash at launch on iOS 27 (UIScene lifecycle).
 - New, simplified interface with 5 tabs.
 - The app is now dedicated to French entertainment-industry workers (intermittents du spectacle). The former self-employed section (auto-entrepreneur) has been removed from the app. Existing self-employed accounts see an information screen and can still delete their account from the app.
 - Lower subscription prices for TOTOR Veille (4,99 € per month with a 7-day free trial, 34,99 € per year). No new in-app purchase products.
 
-Demo account (unchanged): an intermittent account with TOTOR Veille already granted, so every feature is visible. To test the purchase flow, please create a new free account and open the "Abonnement" tab.
+Demo account (a free intermittent account): every core feature is visible. The "Abonnement" tab shows the subscription offer (4,99 EUR/month with a 7-day free trial, 34,99 EUR/year). TOTOR Veille premium features unlock after a sandbox purchase on this account, or you may create a new free account.
 ----------------------------------------------------------------------
 
 
 8. DEMANDE D'EXAMEN ACCÉLÉRÉ (à envoyer JUSTE APRÈS la soumission)
 Formulaire : https://developer.apple.com/contact/app-store/?topic=expedite
 ----------------------------------------------------------------------
-Critical bug fix: version 1.1.12 of TOTOR closes at launch on iOS 27, so users who updated to iOS 27 can no longer open the app. Version 1.1.13 (build 39) fixes this crash. We kindly ask for an expedited review so these users can use the app again.
+Critical bug fix: version 1.1.12 of TOTOR closes at launch on iOS 27, so users who updated to iOS 27 can no longer open the app. Version 1.1.13 (build 40) fixes this crash. We kindly ask for an expedited review so these users can use the app again.
 ----------------------------------------------------------------------
 
 
 9. AU MOMENT DE SOUMETTRE
-- Sélectionner la build 39.
+- Sélectionner la build 40.
 - Publication de la version : MANUELLE (on publie le même jour que le nouveau site).
 - Achats intégrés : rien à ajouter, les produits existent déjà.
